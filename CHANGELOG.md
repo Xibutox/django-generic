@@ -26,6 +26,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   database, its tables not there yet.
 - `pytest` in the development image passes whoever owns the mounted
   checkout: the coverage data go to `/tmp`.
+- Mail is configured the Django 6.1 way, with `MAILERS`, and still
+  with `EMAIL_BACKEND` and the `EMAIL_*` settings on Django 5.2
+  (`mail_settings` in `example_project/settings/base.py`). The same
+  `EMAIL_*` variables drive production; without `EMAIL_HOST`, mail
+  still goes to the log and `check --deploy` still has nothing to say.
 
 ## [1.0.0] - 2026-09-25
 

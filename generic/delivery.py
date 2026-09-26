@@ -144,9 +144,12 @@ def mail(
     sender = getattr(settings, "DEFAULT_FROM_EMAIL", None)
 
     try:
+        # Nothing but the messages: the default mailer, errors raised.
+        # fail_silently - even False, the default - is deprecated since
+        # Django 6.1 and gone in 7.0, where passing it would fail every
+        # mail into the handler below without a word.
         send_mass_mail(
-            [(title, text, sender, [address]) for address in addresses],
-            fail_silently=False,
+            [(title, text, sender, [address]) for address in addresses]
         )
     except Exception:
         # A mail server that is down must not fail whatever was being

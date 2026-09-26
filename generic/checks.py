@@ -14,6 +14,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W003  the framework's own endpoints are not mounted
     generic.W004  LOGIN_URL leads nowhere
     generic.W005  a WebSocket is offered but nothing serves ASGI
+    generic.W006  Django 6.1 or later, and MAILERS is not set
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -22,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
+import django
 from django.conf import settings
 from django.core import checks
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
@@ -42,6 +44,9 @@ MIDDLEWARE = {
 }
 
 DOCS = "See docs/installation.md."
+
+#: Django 6.1 configures mail with MAILERS; 7.0 sends none without it.
+HAS_MAILERS = django.VERSION >= (6, 1)
 
 
 @checks.register(checks.Tags.templates)
@@ -135,6 +140,32 @@ def check_rest_framework(app_configs: Any = None, **kwargs: Any) -> list:
             "and every form they ask the API for.",
             hint=f"Add {SESSION_AUTHENTICATION!r}. {DOCS}",
             id="generic.E003",
+        )
+    ]
+
+
+@checks.register()
+def check_mail(app_configs: Any = None, **kwargs: Any) -> list:
+    """The mails the framework sends have a mailer to leave through.
+
+    Django says so itself only in a deprecation warning, which Python
+    hides; and a mail that cannot leave is logged, never raised, so the
+    day it breaks nobody is told - the people who asked for mail just
+    stop receiving it.
+    """
+    if not HAS_MAILERS or settings.is_overridden("MAILERS"):
+        return []
+
+    return [
+        checks.Warning(
+            "MAILERS is not set: the mails the framework sends - "
+            "notifications, watches, task reports, messages - go through "
+            "the EMAIL_* settings Django 6.1 deprecates, and from Django "
+            "7.0 nowhere.",
+            hint="Define MAILERS = {'default': {'BACKEND': ...}} in place "
+            "of EMAIL_BACKEND and the EMAIL_* settings (Django's "
+            "'Migrating email to mailers'). " + DOCS,
+            id="generic.W006",
         )
     ]
 

@@ -24,7 +24,7 @@ example_project/settings/
 ├── base.py         what the project is: apps, middleware, templates,
 │                   languages, GENERIC - and the helpers reading the
 │                   environment (env, env_bool, env_list, env_required,
-│                   database_from_url, redis_backends)
+│                   database_from_url, redis_backends, mail_settings)
 ├── dev.py          from .base import *, then development
 └── prod.py         from .base import *, then production
 ```
@@ -224,7 +224,7 @@ ones that matter first:
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://desk.example.com` | Scheme included |
 | `DJANGO_SITE_URL` | `https://desk.example.com` | For the links in the mails the site sends |
 | `DJANGO_HSTS_SECONDS` | `31536000` | One hour by default; raise it once HTTPS works everywhere |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | | Without `EMAIL_HOST`, mails go to the log |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | | Without `EMAIL_HOST`, mails go to the log. Read into `MAILERS` from Django 6.1, into the settings of the same names before (`mail_settings`) |
 | `DJANGO_LOG_LEVEL` | `INFO` | Everything is logged to standard output: `docker compose ... logs web` |
 
 ### Trying it on your machine
@@ -260,7 +260,10 @@ sent back over plain HTTP, and signing in would fail without a word.
   `SECURE_HSTS_INCLUDE_SUBDOMAINS` and `SECURE_HSTS_PRELOAD` are off
   unless asked for — they promise things about every subdomain and the
   browsers' built-in list — and their two warnings are silenced while
-  they are, so that a warning there still means one.
+  they are, so that a warning there still means one. So is Django
+  6.1's objection to the console mailer (`mail.E001`) while there is
+  no `EMAIL_HOST`: standard output is the log, and the log is where
+  those mails are meant to go.
 
 ### Updating
 

@@ -15,8 +15,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import django
 import pytest
+from django.core import mail
 from django.core.exceptions import ImproperlyConfigured
+from django.test import override_settings
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -36,8 +39,31 @@ READ = (
     "REDIS_URL",
     "CELERY_BROKER_URL",
     "EMAIL_HOST",
+    "EMAIL_PORT",
+    "EMAIL_HOST_USER",
+    "EMAIL_HOST_PASSWORD",
+    "EMAIL_USE_TLS",
     "DEBUG_TOOLBAR",
 )
+
+#: The settings Django 6.1 deprecates for MAILERS, and refuses to start
+#: with beside it.
+EMAIL_SETTINGS = {
+    "EMAIL_BACKEND",
+    "EMAIL_FILE_PATH",
+    "EMAIL_HOST",
+    "EMAIL_HOST_PASSWORD",
+    "EMAIL_HOST_USER",
+    "EMAIL_PORT",
+    "EMAIL_SSL_CERTFILE",
+    "EMAIL_SSL_KEYFILE",
+    "EMAIL_TIMEOUT",
+    "EMAIL_USE_SSL",
+    "EMAIL_USE_TLS",
+}
+
+SMTP = "django.core.mail.backends.smtp.EmailBackend"
+CONSOLE = "django.core.mail.backends.console.EmailBackend"
 
 PRODUCTION = {
     "DJANGO_SECRET_KEY": "test-" + "k3y" * 20,
@@ -61,6 +87,21 @@ def load(monkeypatch):
         return runpy.run_module(f"example_project.settings.{mode}")
 
     return run
+
+
+def mail_backend(settings: dict) -> str:
+    """What the settings send mail through, on the Django running."""
+    if "MAILERS" in settings:
+        return settings["MAILERS"]["default"]["BACKEND"]
+
+    return settings["EMAIL_BACKEND"]
+
+
+def mail_only(settings: dict) -> dict:
+    """The mail settings alone, to hand to override_settings."""
+    names = {"MAILERS"} | EMAIL_SETTINGS
+
+    return {name: settings[name] for name in names if name in settings}
 
 
 class TestProduction:
@@ -147,7 +188,9 @@ class TestProduction:
     def test_mail_goes_to_the_log_without_a_server(self, load):
         settings = load("prod", **PRODUCTION)
 
-        assert settings["EMAIL_BACKEND"].endswith("console.EmailBackend")
+        assert mail_backend(settings) == CONSOLE
+        # Decided, so the deployment check does not call it an error.
+        assert "mail.E001" in settings["SILENCED_SYSTEM_CHECKS"]
 
     def test_mail_goes_out_with_one(self, load):
         settings = load(
@@ -157,10 +200,105 @@ class TestProduction:
             **PRODUCTION,
         )
 
-        assert settings["EMAIL_BACKEND"].endswith("smtp.EmailBackend")
-        assert settings["EMAIL_PORT"] == 587
+        assert mail_backend(settings) == SMTP
+        assert "mail.E001" not in settings["SILENCED_SYSTEM_CHECKS"]
         # The links in those mails are absolute.
         assert settings["GENERIC"]["SITE_URL"] == "https://desk.example.com"
+
+    def test_django_builds_the_mailer_they_describe(self, load):
+        """The variables reach the SMTP backend, under whichever
+        settings the Django running reads them from."""
+        settings = load(
+            "prod",
+            EMAIL_HOST="smtp.example.com",
+            EMAIL_HOST_USER="desk",
+            EMAIL_HOST_PASSWORD="s3cret",
+            **PRODUCTION,
+        )
+
+        with override_settings(**mail_only(settings)):
+            if hasattr(mail, "mailers"):
+                backend = mail.mailers.default
+            else:
+                backend = mail.get_connection()
+
+        assert type(backend).__module__.endswith("smtp")
+        assert (backend.host, backend.port) == ("smtp.example.com", 587)
+        assert (backend.username, backend.password) == ("desk", "s3cret")
+        assert backend.use_tls is True
+
+
+class TestMail:
+    """MAILERS from Django 6.1, the EMAIL_* settings before: 6.1 refuses
+    the two together, 5.2 - the oldest supported - knows only the
+    second."""
+
+    @pytest.mark.parametrize(
+        "mode,environ",
+        [
+            ("dev", {}),
+            ("prod", PRODUCTION),
+            ("prod", {**PRODUCTION, "EMAIL_HOST": "smtp.example.com"}),
+        ],
+        ids=["development", "production", "production-smtp"],
+    )
+    def test_each_mode_speaks_the_running_django_s(self, load, mode, environ):
+        settings = load(mode, **environ)
+
+        if django.VERSION >= (6, 1):
+            assert "default" in settings["MAILERS"]
+            assert not EMAIL_SETTINGS & settings.keys()
+        else:
+            assert "MAILERS" not in settings
+            assert "EMAIL_BACKEND" in settings
+
+    def test_mailers_from_django_6_1(self, monkeypatch):
+        from example_project.settings.base import mail_settings
+
+        monkeypatch.setattr(django, "VERSION", (6, 1, 0, "final", 0))
+
+        assert mail_settings(CONSOLE) == {
+            "MAILERS": {"default": {"BACKEND": CONSOLE}}
+        }
+        assert mail_settings(SMTP, host="smtp.example.com", port=587) == {
+            "MAILERS": {
+                "default": {
+                    "BACKEND": SMTP,
+                    "OPTIONS": {"host": "smtp.example.com", "port": 587},
+                }
+            }
+        }
+
+    def test_the_email_settings_before(self, monkeypatch):
+        from example_project.settings.base import mail_settings
+
+        monkeypatch.setattr(django, "VERSION", (5, 2, 0, "final", 0))
+
+        assert mail_settings(
+            SMTP,
+            host="smtp.example.com",
+            port=587,
+            username="desk",
+            password="s3cret",
+            use_tls=True,
+        ) == {
+            "EMAIL_BACKEND": SMTP,
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": 587,
+            "EMAIL_HOST_USER": "desk",
+            "EMAIL_HOST_PASSWORD": "s3cret",
+            "EMAIL_USE_TLS": True,
+        }
+
+    def test_an_option_no_email_setting_holds_is_refused(self, monkeypatch):
+        """A third-party backend's own option, say: before 6.1 it has
+        no EMAIL_* setting to go to, and dropping it would be silent."""
+        from example_project.settings.base import mail_settings
+
+        monkeypatch.setattr(django, "VERSION", (5, 2, 0, "final", 0))
+
+        with pytest.raises(ImproperlyConfigured, match="region"):
+            mail_settings(SMTP, region="eu")
 
 
 class TestDevelopment:
@@ -288,16 +426,26 @@ class TestProductionForReal:
             "DJANGO_STATIC_ROOT": str(tmp_path / "static"),
         }
 
-    def test_check_deploy_has_nothing_to_say(self, tmp_path):
+    @pytest.mark.parametrize(
+        "mail",
+        [{}, {"EMAIL_HOST": "smtp.example.com"}],
+        ids=["mail-to-the-log", "mail-by-smtp"],
+    )
+    def test_check_deploy_has_nothing_to_say(self, tmp_path, mail):
         result = manage(
             "check",
             "--deploy",
             "--fail-level",
             "WARNING",
+            # Django's deprecations are pending ones, hidden by default:
+            # shown, the mail settings must not be among them.
+            PYTHONWARNINGS="always::PendingDeprecationWarning",
             **self.environ(tmp_path),
+            **mail,
         )
 
         assert result.returncode == 0, result.stdout + result.stderr
+        assert "MAILERS" not in result.stderr, result.stderr
 
     def test_the_static_files_collect_with_hashed_names(self, tmp_path):
         """What the image build runs. A vendored file mentioning a

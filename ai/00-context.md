@@ -207,7 +207,7 @@ The **reference implementation** is `example/` (a support desk) with
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
 helpers `env`, `env_bool`, `env_int`, `env_list`, `env_required`,
-`database_from_url`, `redis_backends`), `dev.py` and `prod.py`, each
+`database_from_url`, `redis_backends`, `mail_settings`), `dev.py` and `prod.py`, each
 starting `from .base import *`. `manage.py` and `celery.py` default to
 `dev`; `asgi.py` and `wsgi.py` to `prod`; the package alone raises.
 `example_project/__init__.py` imports the Celery app (`celery_app`), so
@@ -219,9 +219,19 @@ WebSocket.
 `prod.py` reads every secret with `env_required` (no start without
 `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DATABASE_URL`,
 `REDIS_URL`), assumes HTTPS unless `DJANGO_HTTPS=0`, uses
-`ManifestStaticFilesStorage`, logs to stdout, SMTP when `EMAIL_HOST`.
+`ManifestStaticFilesStorage`, logs to stdout, SMTP when `EMAIL_HOST`
+(else the console, `mail.E001` silenced as decided).
 Never give a production secret a default; in `dev.py` build new lists
 (`[*INSTALLED_APPS, ...]`), never mutate base's.
+**Mail settings switch on the Django version**: `MAILERS` from 6.1,
+`EMAIL_BACKEND` + `EMAIL_*` before - 6.1 refuses the two together, 5.2
+knows only the second. `globals().update(mail_settings(backend,
+host=..., port=..., username=..., password=..., use_tls=...))` writes
+whichever applies (MAILERS' option names; before 6.1 an option with no
+`EMAIL_*` setting raises). Never define an `EMAIL_*` name at module
+level in a settings module (not even to read `EMAIL_HOST` into):
+on 6.1 it is a deprecated setting. `tests/settings.py` sets a locmem
+`MAILERS` on 6.1, or every mail sent warns.
 
 `dev.py` turns on **Django Debug Toolbar** when it is installed (the
 `dev` extra), outside a test runner and unless `DEBUG_TOOLBAR=0`: the
@@ -264,7 +274,8 @@ The full wiring with every line explained is `docs/installation.md`;
 `python manage.py check` names what is missing or misplaced
 (`generic.E001` request context processor, `E002` middleware before
 the auth, `E003` no session auth in DRF, `E004` `site.urls` not
-mounted, `E005` wiki without nh3, `W001`-`W005`, `I001`). `site.urls`
+mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
+without `MAILERS`, `I001`). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1100,7 +1111,12 @@ for channels, group in by_preference(readers).items():
             message=lambda: (gettext("Title"), gettext("Body"), NotificationLevel.INFO))
 ```
 
-`mail` sends one e-mail per address (never one mail to all).
+`mail` sends one e-mail per address (never one mail to all), through
+`send_mass_mail` and Django's default mailer, with nothing but the
+messages - no `fail_silently` (deprecated in 6.1, gone in 7.0, where
+the `TypeError` would be swallowed with the mail). Failures are logged,
+never raised; `generic.W006` names a project on Django ≥ 6.1 without
+`MAILERS`.
 
 **Messages** (`generic.Message`, `generic/events/models.py`,
 `messages.py`, `resources.py`): *People › Messages*, a `ModelResource`
@@ -1175,6 +1191,14 @@ Read them via `from generic.conf import generic_settings`.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
   `pytest` (coverage ≥ 80%).
+- CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
+  3.12 and 3.13. Where the two Djangos differ, switch on
+  `django.VERSION`, never on the Python version, and never name in
+  `filterwarnings` a warning class one of them lacks: pytest refuses to
+  start. A `DeprecationWarning` from `generic.*` fails the suite;
+  pending ones (Django's `RemovedInDjango70Warning` on 6.1, DRF's own)
+  vary with what is installed, so a test pins the one that matters
+  instead (`tests/test_delivery.py`: sending mail warns of nothing).
 
 ## 12. Translation (English and French ship)
 

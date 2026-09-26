@@ -209,6 +209,7 @@ names what is missing, with the line to write:
 | `generic.W003` | `generic.urls` is not mounted |
 | `generic.W004` | `LOGIN_URL` leads to a page nobody serves |
 | `generic.W005` | Channels is installed but nothing serves ASGI |
+| `generic.W006` | Django 6.1 or later, and no `MAILERS` ([Mail](#mail)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.
@@ -325,6 +326,31 @@ The `tasks` extra and a Celery app, imported by the project package's
 server never loads it, and a task started from a page runs in the
 request instead of going to the worker. `beat` for schedules managed
 from the pages. See [Tasks](tasks.md).
+
+### Mail
+
+Whoever asked to be told by e-mail - on their account, on a watch, as
+a task's audience, in a message - is sent one through Django's default
+mailer: one mail per address, from `DEFAULT_FROM_EMAIL`, its link made
+absolute with `GENERIC["SITE_URL"]`. From Django 6.1 the mailer is
+`MAILERS`:
+
+```python
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {"host": "smtp.example.com", "use_tls": True},
+    }
+}
+```
+
+Before 6.1 it is `EMAIL_BACKEND` and the `EMAIL_*` settings, which 6.1
+deprecates and refuses beside `MAILERS`. A settings module serving
+both, like the example's, switches on `django.VERSION` -
+`mail_settings()` in `example_project/settings/base.py`. On 6.1 and
+later, `check` warns without `MAILERS` (`generic.W006`): Django 7.0
+sends nothing without it, and a mail that cannot leave is logged, never
+raised - the people who asked for it would simply stop receiving it.
 
 ### Translations
 
