@@ -1,0 +1,68 @@
+{% load i18n generic_ui %}
+{# The account's API tokens (generic.tokens). A new token is shown once, #}
+{# here, and never again: the server keeps only a hash of it.            #}
+{{ api_tokens|json_script:"api-tokens-config" }}
+<section class="card" id="api-tokens" x-data="apiTokens('api-tokens-config')">
+  <div class="card__header">
+    <h2 class="card__title">{% icon "key" %} {% translate "API tokens" %}</h2>
+  </div>
+
+  <p class="card__description">
+    {% blocktranslate trimmed %}
+      A script sends one in an <code>Authorization: Token ...</code>
+      header and acts as you, with your permissions.
+    {% endblocktranslate %}
+  </p>
+
+  <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+    <span x-text="error"></span>
+  </div>
+
+  <template x-if="created">
+    <div class="callout callout--success tokens__created">
+      <strong>{% translate "Copy it now: it will not be shown again." %}</strong>
+      <div class="cluster">
+        <code class="tokens__secret" x-text="created.token"></code>
+        <button type="button" class="button button--sm" @click="copy()">
+          {% icon "content_copy" "icon--sm" %} {% translate "Copy" %}
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <ul class="tokens__list" x-show="rows.length" x-cloak>
+    <template x-for="row in rows" :key="row.id">
+      <li class="tokens__item">
+        <div class="tokens__what">
+          <strong x-text="row.name"></strong>
+          <code class="muted" x-text="row.prefix + '…'"></code>
+          <div class="muted tokens__meta" x-text="describe(row)"></div>
+        </div>
+        <button type="button" class="button button--sm button--danger-ghost" @click="revoke(row)">
+          {% translate "Revoke" %}
+        </button>
+      </li>
+    </template>
+  </ul>
+
+  <p class="muted" x-show="!loading && !rows.length" x-cloak>{% translate "No token yet." %}</p>
+
+  <template x-if="config.canCreate">
+    <form class="tokens__form cluster" @submit.prevent="create()">
+      <input class="input" type="text" required maxlength="80" x-model="name"
+             placeholder="{% translate 'What will use it' %}" aria-label="{% translate 'Name' %}">
+      <select class="input" x-model="scope" aria-label="{% translate 'Scope' %}">
+        <option value="read">{% translate "Read only" %}</option>
+        <option value="read_write">{% translate "Read and write" %}</option>
+      </select>
+      <select class="input" x-model="days" aria-label="{% translate 'Valid for' %}">
+        <template x-for="option in durations()" :key="option.value">
+          <option :value="option.value" x-text="option.label"></option>
+        </template>
+      </select>
+      <button type="submit" class="button button--primary" :disabled="busy || !name">
+        {% icon "add" "icon--sm" %} {% translate "Create a token" %}
+      </button>
+    </form>
+  </template>
+</section>

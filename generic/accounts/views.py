@@ -214,6 +214,25 @@ class AccountView(SiteViewMixin, TemplateView):
             "objectUrl": _reverse(object_name),
         }
 
+    @staticmethod
+    def api_tokens(user: Any) -> dict[str, Any] | None:
+        """The API tokens section, where ``generic.tokens`` is installed."""
+        from django.apps import apps
+
+        from generic.conf import generic_settings
+
+        url = _reverse("generic:api-token-list")
+
+        if not url or not apps.is_installed("generic.tokens"):
+            return None
+
+        return {
+            "url": url,
+            "canCreate": user.has_perm("generic_tokens.add_apitoken"),
+            "defaultDays": generic_settings.API_TOKEN_DEFAULT_DAYS,
+            "maxDays": generic_settings.API_TOKEN_MAX_DAYS,
+        }
+
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -230,6 +249,7 @@ class AccountView(SiteViewMixin, TemplateView):
                 ),
                 "is_external_account": is_external_account(user),
                 "can_change_password": not is_external_account(user),
+                "api_tokens": self.api_tokens(user),
             }
         )
 

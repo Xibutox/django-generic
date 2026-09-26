@@ -175,6 +175,14 @@ thing in the way. It is a separate extra (`.[beat]`) for exactly that
 reason, and the framework works without it — a project that has no
 scheduler still gets the catalogue and the runs.
 
+### The framework's own task
+
+`generic.send_scheduled_mailings` sends the
+[scheduled mailings](mailings.md) that are due. Give it a periodic
+task every five minutes - or a cron line running
+`manage.py send_scheduled_mailings`. It does not, on its own, make the
+task pages appear: only a task the project declares does.
+
 ## Permissions
 
 | Permission | Lets a user |

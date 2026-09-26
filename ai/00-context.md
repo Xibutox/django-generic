@@ -116,6 +116,9 @@ generic/
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── charts.py           Chart: declared aggregates -> chart payload; chart_payload()
+│   ├── transitions.py      a model's django-fsm-2 transitions: read, offered, taken
+│   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
+│   │                       validated by the form serializer, written all or nothing
 │   ├── inlines.py          TabularInline, StackedInline
 │   ├── decorators.py       @action, @display
 │   └── realtime.py         post_save/post_delete -> "resource.changed"; announce()
@@ -132,6 +135,9 @@ generic/
 ├── locale/fr/LC_MESSAGES/  django.po/.mo (pages) and djangojs.po/.mo (browser)
 ├── maintenance/            announced restarts: RestartAnnouncement, the three
 │                           warnings and the restart (scheduler.py), api, page
+├── mailings/               ScheduledMailing: a list's state e-mailed on a schedule; sending.py
+│                           (as each recipient, through the resource's own export),
+│                           dispatch.py (the generic.send_scheduled_mailings task)
 ├── tasks/                  declared tasks: registry, runner (announce, run,
 │                           collect, report), TaskRun, the catalogue page and
 │                           the django-celery-beat screens
@@ -147,7 +153,16 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning
+├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
+│                           its own table), TokenAuthentication (scope, last use),
+│                           api/generic/tokens/, the account section, the People screen
+├── openapi/                framework_schema(), ResourceAutoSchema (drf-spectacular),
+│                           urls.py: api/schema/ and api/docs/ (sidecar files)
+├── search/                 optional app generic.search: accents set aside in every text match
+│                           (text_lookup, fold, normalize), lookups.py the unaccented transform,
+│                           operations.py InstallUnaccent / CreateSearchIndex, ranking.py search_rank
 ├── forms/fieldsets.py      admin-style fieldsets for classic Django forms
+├── testing/                PageSweep (pytest + pytest-django): a project's pages swept
 ├── views/                  classic server-rendered views: GenericListView, GenericDetailView,
 │                           GenericCreateView, GenericUpdateView, GenericDeleteView, DataTableView;
 │                           mixins.py (PageMixin...), toolbar.py (ToolbarItem, Breadcrumb)
@@ -275,7 +290,9 @@ The full wiring with every line explained is `docs/installation.md`;
 (`generic.E001` request context processor, `E002` middleware before
 the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
-without `MAILERS`, `I001`). `site.urls`
+without `MAILERS`, `W007` `search_rank` without `generic.search`,
+`E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
+drf-spectacular, `I001`). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -290,6 +307,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "generic",
     "generic.wiki",                 # optional
+    "generic.search",               # optional: searches ignore accents (§5.14)
     "myapp",
 ]
 TEMPLATES[0]["OPTIONS"]["context_processors"] must include
@@ -457,6 +475,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_display_links` | first column | columns linking to the row's page |
 | `list_select_related`, `list_prefetch_related` | auto | extra joins |
 | `list_per_page` | settings | first page size |
+| `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength` |
@@ -465,6 +484,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
 | `show_export`, `show_full_result_count` | True, True | export menu; count all rows each draw |
+| `transitions`, `transition_actions` | `()`, True | FSM state fields whose `@transition`s become buttons, bulk actions (`transition:<name>`) and `<pk>/transitions/<name>/` (§5.16); the field turns read only |
+| `imports` | None | `Import(fields=, key=, mode=, lookups=, defaults=, permission=, max_rows=, description=)`: an *Import* button and page (§5.15); None offers nothing and 404s the endpoint |
 | `filter_row` | `"open"` | search fields under the column headers: `"open"` from the start, `"toggle"` behind a toolbar button, `False` not offered; anything else raises `ImproperlyConfigured` (same attribute on `DataTableView`) |
 | `table_serializer`, `table_options` | None, `{}` | hand-written table serializer; client options |
 | `tag_fields` | `{}` | fields drawn as coloured tags (table + summary + chart colours) |
@@ -482,6 +503,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
 | `realtime` | True | publish changes; open tables, summaries and charts refresh |
+| `mailing` | True | the list may be e-mailed on a schedule (§13d), offered to holders of `generic.add_scheduledmailing` |
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
 | `history` | True | keep a version of every record, read back by its History tab (§13c) |
 | `history_exclude` | `()` | fields left out of that version, by name |
@@ -502,6 +524,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `get_object_label(obj)`, `get_object_description(obj)` | palette and autocomplete labels |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
+| `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
 | `create_editable(request, values, fixed)` | create the record of a row added in a grid; `values` by column, `fixed` by field (§5.10) |
 | `get_detail_fieldsets(request)`, `get_detail_stats(request)` | per-request summary sections and figures |
 | `get_actions(request)`, `get_row_actions(request)`, `get_table_options(request)` | per-request table behaviour |
@@ -935,6 +958,108 @@ registration (`check_pages`). In templates: `{% include
 `extrastyle`. Example: `example/pages.py` (customer map + GeoJSON,
 ticket timeline, service runbook), `docs/pages.md`.
 
+### 5.14 Searches that ignore accents (`generic.search`)
+
+```python
+INSTALLED_APPS = [..., "generic", "generic.search", ...]    # then migrate
+
+# myapp/migrations/00xx_search_indexes.py - PostgreSQL only, a no-op elsewhere
+from generic.search.operations import CreateSearchIndex
+operations = [CreateSearchIndex("ticket", ("reference", "title"), name="ticket_search")]
+
+# a project's own search agrees with the framework's:
+from generic.search import fold, normalize, text_lookup
+Ticket.objects.filter(**{text_lookup("title"): term})   # title__unaccented__icontains
+```
+
+- Installed, **every** text match sets accents aside: table search,
+  column text filters (contains/is/starts/ends), facets value search
+  (choice labels by `normalize`), palette, resource and
+  `AutocompleteView` autocompletes, `GenericListView ?q=`, wiki,
+  `DataResource` rows (`rows.py`: `TRANSFORM` in `TRANSFORMS`, `fold`).
+  Not installed: exactly the old `icontains`. Never write
+  `f"{field}__icontains"` in the framework - call `text_lookup`.
+- The `unaccented` transform is registered on every `Field`, bilateral,
+  output text: PostgreSQL `generic_unaccent((col)::text)` (an
+  `IMMUTABLE` wrapper over `unaccent`, created with the `unaccent` and
+  `pg_trgm` extensions by `InstallUnaccent`, the app's migration -
+  trusted extensions, the database owner suffices), SQLite a Python
+  function registered on `connection_created`, others the bare column.
+- `CreateSearchIndex` is a migration operation, not a `Meta.indexes`
+  entry, because it must not exist outside PostgreSQL: one GIN
+  `gin_trgm_ops` index per field on `UPPER(generic_unaccent(col))`.
+- `search_rank = True`: `resource.rank_search_results(request,
+  queryset, term)` orders by `word_similarity` (fields crossing a
+  many-valued relation skipped); a no-op off PostgreSQL. See
+  `docs/search.md`.
+
+### 5.15 Imports (`Import`)
+
+```python
+from generic.sites import Import
+
+class TicketResource(ModelResource):
+    imports = Import(fields=("reference", "title", "customer", "status", "tags"),
+                     key="reference",                 # found -> updated; None: create only
+                     lookups={"customer": "code"})    # default: related naming field
+```
+
+- Off by default. Page `site:<app>_<model>_import` (`ResourceImportView`,
+  `generic/resource/import.html`, Alpine `resourceImport` in
+  `js/imports.js`), button on the list for `resource.can_import(request)`
+  (declared + add or change as the mode needs + `permission`).
+- Endpoints: `GET import/schema/`, `GET import/template/` (xlsx),
+  `POST import/` multipart `file`, `mapping` (JSON list aligned with the
+  headers), `commit`. Answer: `headers mapping unmatched missing rows
+  counts errors preview committed`.
+- Headers match name / translated title / export title / verbose name,
+  accents and case aside (`simplify`). Cells: choices by value or label
+  in any `LANGUAGES`, yes/no words, Excel/ISO/localized dates, `3,5`,
+  relations by `text_lookup(lookup, "iexact")` **within the related
+  resource's `get_queryset(request)`**, M2M comma-separated. Rows:
+  resource form serializer (partial for updates; empty cell = keep),
+  `has_change_permission(request, obj)` per update.
+- One transaction; any error or `commit=false` rolls back (the preview
+  is a real dry run). `acting_as(user, source="Import <file>")`, live
+  events folded by `realtime.batch(resource)`. Declaration errors raise
+  at registration (`check_import`) or first use (form fields). See
+  `docs/imports.md`.
+
+### 5.16 State machines (`transitions`)
+
+```python
+# models.py - django-fsm-2
+status = FSMField(choices=Status.choices, default=Status.OPEN)
+
+@transition(field=status, source=[Status.OPEN], target=Status.RESOLVED,
+            permission="app.resolve_ticket",            # or callable(instance, user)
+            conditions=[has_owner],
+            custom={"label": _("Resolve"), "icon": "task_alt",
+                    "confirm": _("Sure?"), "variant": "danger",
+                    "fields": ("resolution",)})           # asked in a dialog
+def resolve(self): ...
+
+# resources.py
+class TicketResource(ModelResource):
+    transitions = ("status",)
+```
+
+- Offered when: `has_change_permission(request, obj)` + the
+  transition's permission + conditions + source state
+  (`transitions.may_take`). The summary JSON has `transitions` and
+  `urls.transitions`; `detail.html` draws them, `summary.js` `take()`
+  (confirm, or `Generic.dialogs.fields`), POST
+  `<pk>/transitions/<name>/` -> the new summary.
+- `transitions.take()`: row lock (`select_for_update(of=("self",))`),
+  409 if the state moved or a condition fails, 403, 404, 400 (fields
+  through the form serializer, partial); `acting_as(source=
+  "Transition: <label>")`. Bulk: transitions without `fields`, each
+  row through `take`, skipped ones counted.
+- The state is read only: added to `get_readonly_fields`, refused in
+  `editable_fields`, so not importable. Metadata only in `custom`;
+  checked at registration (`get_transitions`). See
+  `docs/transitions.md`.
+
 ---
 
 ## 6. URLs and endpoints (generated)
@@ -961,6 +1086,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/deletion-preview/` | cascade preview |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}` |
+| `GET .../import/schema/`, `.../import/template/`, `POST .../import/` | where `imports` is declared (§5.15) |
+| `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 
@@ -1144,12 +1271,15 @@ write (also a *Write a message* button on the notifications page),
 strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
-`EXPORT_DATETIME_FORMAT`, `AUTOCOMPLETE_PAGE_SIZE`,
+`EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
+`IMPORT_PREVIEW_ROWS`, `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
-`SHOW_MESSAGES`, `SHOW_TASKS`, `HISTORY`.
+`SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
+`API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
+`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`.
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1174,12 +1304,17 @@ Read them via `from generic.conf import generic_settings`.
 
 ## 11. Testing conventions
 
-- **Every page is already covered**: `tests/test_pages.py` walks the
-  URLconf and opens each page three ways (superuser → 200; a user with
-  no permissions and a stranger → anything below 500), plus every
-  generated endpoint per resource — rows, form schema, summary, each
-  column's `facets/`, both exports, every chart. A new page needs no
-  new test; a page whose address needs a value adds a record to `Pool`.
+- **Every page is already covered**: `tests/test_pages.py` is a
+  `generic.testing.PageSweep` subclass: it walks the URLconf and opens
+  each page three ways (superuser → 200 or `expected`; a user with no
+  permissions and a stranger → anything below 500), plus every
+  generated endpoint per resource — rows, form schema, summary,
+  history, each column's `facets/`, both exports, every chart, the
+  import's schema and template, a record's transitions — and the
+  OpenAPI description. A new page needs no new test; a page whose
+  address needs a value adds a record to the `records` fixture (by model
+  label) or teaches `value_for`. Framework models are pooled by the base
+  (`framework_records`). **Every new project gets one** (docs/testing.md).
 - pytest + pytest-django; `pytestmark = pytest.mark.django_db`.
 - Use Django's `client.force_login(user)` / `admin_client` for pages and
   the JSON API; assert on JSON and `response.context`, not on scraped HTML.
@@ -1423,6 +1558,65 @@ history_of(ticket)                 # every version, newest first
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
   `generic.history.prune()` deletes what is older. See
   `docs/history.md`.
+
+## 13e. The API for scripts (`generic.tokens`, `generic.openapi`)
+
+```python
+INSTALLED_APPS += ["knox", "generic.tokens", "drf_spectacular", "drf_spectacular_sidecar"]
+REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] += ["generic.tokens.authentication.TokenAuthentication"]
+REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+path("api/", include("generic.openapi.urls"))      # before site.urls
+```
+
+- A token = `ApiToken(AbstractAuthToken)`, its own table, never
+  `KNOX_TOKEN_MODEL` (knox's first migration creates its table anyway,
+  and PostgreSQL then cannot truncate `auth_user` between tests):
+  digest (pk), token_key, user (`related_name="api_tokens"`), created,
+  expiry + name, scope (`read`/`read_write`),
+  last_used_at (written once a minute at most, by `update()`). It acts
+  with its owner's permissions; a read token on an unsafe method is a
+  403 raised by the authentication class. Made on the account page
+  (`AccountView.api_tokens`, `generic/account/api_tokens.html`, Alpine
+  `apiTokens`), shown once; `generic_tokens.add_apitoken` to make one.
+  `api/generic/tokens/` is session only. People › API tokens: read and
+  revoke (`view_`/`delete_apitoken`), never add or change.
+- Framework viewsets and hand-built API views carry `schema =
+  framework_schema()`: `ResourceAutoSchema` when `drf_spectacular` is
+  in `INSTALLED_APPS`, DRF's `DefaultSchema` otherwise. It types the
+  list through `DataTablesPagination.get_paginated_response_schema`,
+  adds the filter parameters, answers hand-built actions as objects or
+  files, maps `TagsColumn`/`ManyRelatedColumn` by extensions, names
+  generated serializers `<App><Name>`. A new endpoint or column type
+  must keep `manage.py spectacular --validate --fail-on-warn` clean (CI
+  runs it on the example). A user-scoped viewset sets `queryset =
+  Model.objects.none()` for the generator. See `docs/api.md`.
+
+## 13d. Scheduled mailings
+
+- *Send by e-mail on a schedule…* in a list's Views menu (option
+  `mailingUrl` of `get_table_options`, from `get_mailing_url`) opens the
+  `ScheduledMailing` add form with `?table=<state key>&state=<json>`;
+  `ResourceFormView.get_initial` reads JSON fields as JSON.
+- `generic.ScheduledMailing`: name, owner, table (`site.<app>.<model>`),
+  state (a saved view's), format xlsx/csv, frequency
+  daily/weekdays/weekly/monthly + time (project `TIME_ZONE`), weekday,
+  day_of_month (1-28), include_owner, users, groups (active, with an
+  address, distinct), send_when_empty, is_active, next_run_at,
+  last_sent_at, last_error.
+- **Rows as each recipient**: `sending.send(mailing)` calls the
+  resource's own `list` (count) and `export`/`export_csv` actions
+  through a synthetic GET signed in as the recipient, state turned into
+  `filters`/`search`/`ordering`/`columns` (`parameters()`), inside the
+  recipient's language. Never read rows another way.
+- Dispatcher `generic.send_scheduled_mailings` (`managed_task`, page
+  channel only) or `manage.py send_scheduled_mailings`: claim under
+  `select_for_update(skip_locked=True)`, move `next_run_at` first. A
+  `MailingProblem` pauses the mailing and notifies the owner.
+- Permissions: `add_scheduledmailing` (own), `view_`/`change_`/
+  `delete_scheduledmailing` (everyone's). `mailing = False` on a
+  resource, `SHOW_MAILINGS = False` for the project. The framework's
+  own `generic.*` tasks do not turn `SHOW_TASKS = None` on. See
+  `docs/mailings.md`.
 
 ## 14. Known pitfalls
 

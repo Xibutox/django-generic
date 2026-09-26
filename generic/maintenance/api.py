@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from generic.maintenance.models import RestartAnnouncement
 from generic.maintenance.scheduler import announce_restart, cancel_restart
 from generic.maintenance.serializers import RestartAnnouncementSerializer
+from generic.openapi import framework_schema
 
 
 def may_announce(user: Any) -> bool:
@@ -29,6 +30,8 @@ def may_announce(user: Any) -> bool:
 
 class RestartAnnouncementView(APIView):
     """The current announcement: read it, make one, call it off."""
+
+    schema = framework_schema()
 
     permission_classes = (IsAuthenticated,)
 
@@ -91,6 +94,8 @@ class RestartAnnouncementView(APIView):
 
 class RestartFormSchemaView(APIView):
     """The announcement form, described for the page that draws it."""
+
+    schema = framework_schema()
 
     permission_classes = (IsAuthenticated,)
 

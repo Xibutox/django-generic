@@ -27,6 +27,14 @@ INSTALLED_APPS = [
     "rest_framework",
     "generic",
     "generic.wiki",
+    # Accent-insensitive search: installed, as a project would, so the
+    # suite runs every search through it - on SQLite and on PostgreSQL.
+    "generic.search",
+    # The API for scripts: tokens, and its OpenAPI description.
+    "knox",
+    "generic.tokens",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "tests.testapp",
     # Covered by the suite too: the example is a deliverable, and a
     # broken example is a broken promise.
@@ -114,7 +122,9 @@ STATIC_URL = "/static/"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        "generic.tokens.authentication.TokenAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }

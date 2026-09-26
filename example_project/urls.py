@@ -23,6 +23,9 @@ urlpatterns = [
     path("api/generic/", include("generic.urls", namespace="generic")),
     # The wiki: pages, their editor and their API.
     path("wiki/", include("generic.wiki.urls")),
+    # The API described for scripts: api/schema/ (OpenAPI) and
+    # api/docs/ (Swagger UI), for signed-in readers, token or session.
+    path("api/", include("generic.openapi.urls")),
     # The hand-written REST endpoints the classic pages use.
     path("api/", include("example.api_urls", namespace="example_api")),
     # The classic, server-rendered views, kept for comparison.

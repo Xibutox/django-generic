@@ -27,6 +27,7 @@ from generic.conf import generic_settings
 from generic.history import recording as history
 from generic.i18n import language_menu
 from generic.sites import realtime
+from generic.sites.imports import check_import, declaration_of
 from generic.sites.resources import ModelResource
 from generic.sites.shortcuts import (
     Shortcut,
@@ -156,8 +157,11 @@ class GenericSite:
                 )
 
             resource = klass(model, self)
-            # A page that could not work is refused where it is declared.
+            # A page that could not work is refused where it is declared,
+            # and so is an import naming what the model does not have.
             resource.check_pages()
+            check_import(resource)
+            resource.get_transitions()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)
@@ -595,6 +599,20 @@ class GenericSite:
                         model=resource.model,
                     ),
                     name=f"{name}_delete",
+                ),
+                # Spreadsheets read into records, where declared.
+                *(
+                    [
+                        path(
+                            f"{prefix}import/",
+                            views.ResourceImportView.as_view(
+                                site=self, resource=resource
+                            ),
+                            name=f"{name}_import",
+                        )
+                    ]
+                    if declaration_of(resource) is not None
+                    else []
                 ),
                 # The project's own pages of the resource and of each
                 # record (generic.sites.pages).

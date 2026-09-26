@@ -37,6 +37,23 @@
   <div class="summary" x-data="recordSummary('record-summary')">
     <div id="datatable-error" class="callout callout--danger" role="alert" hidden></div>
 
+    {# What this reader may do to the record's state, now: its        #}
+    {# transitions (generic.sites.transitions).                        #}
+    <template x-if="data.transitions && data.transitions.length">
+      <div class="summary__actions summary__transitions" role="group" aria-label="{% translate 'State' %}">
+        <template x-for="transition in data.transitions" :key="transition.name">
+          <button type="button"
+                  class="button button--sm"
+                  :class="transition.variant === 'danger' ? 'button--danger' : 'button--primary'"
+                  :disabled="busy"
+                  @click="take(transition)">
+            <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="transition.icon" x-text="transition.icon"></span>
+            <span x-text="transition.label"></span>
+          </button>
+        </template>
+      </div>
+    </template>
+
     <template x-if="data.actions.length">
       <div class="summary__actions" role="group" aria-label="{% translate 'Actions' %}">
         <template x-for="action in data.actions" :key="action.name">

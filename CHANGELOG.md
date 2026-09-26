@@ -12,6 +12,26 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Added
+- Searches ignore accents: `region` finds *Région Occitanie*. The
+  project installs `generic.search`, and tickets and customers have
+  trigram indexes on PostgreSQL. Some seeded names carry their accents
+  to show it.
+- Tickets and customers can be imported from a spreadsheet: *Import*
+  on their lists. A ticket's reference and a customer's code find the
+  record to update.
+- The admin account is sent the open urgent tickets every weekday at
+  eight (*Scheduled mailings*, in the Tasks group), and the scheduler
+  runs the mailings every five minutes.
+- A ticket moves through its life by buttons: *Wait for the customer*,
+  *Customer answered*, *Resolve* (with a resolution), *Close*, and
+  *Reopen* for supervisors (`example.reopen_ticket`). The status is no
+  longer edited in forms, the Triage grid or imports, and the list's
+  *Close* action is the generated one.
+- Scripts call the API with a token made on the account page; the
+  seed prints a read-only one for admin. `api/docs/` describes every
+  endpoint.
+
 ### Fixed
 - *Run now* hands the task to the Celery worker. The web server never
   loaded the project's Celery application, found no broker, and ran

@@ -11,6 +11,11 @@ Run it against the package as it will be installed, not the checkout::
     python -m venv /tmp/try && /tmp/try/bin/pip install dist/*.whl
     /tmp/try/bin/python scripts/smoke_install.py
 
+``--sweep`` then gives the new project the test a project would write
+first - ``generic.testing.PageSweep`` - and runs it with pytest, which
+must be installed (``pip install pytest pytest-django``): the helper is
+tested from the wheel, as a project uses it.
+
 It imports nothing from the repository: whatever it finds is what the
 wheel carries. It exits non-zero, naming what failed, when anything
 does.
@@ -176,6 +181,28 @@ class BookResource(ModelResource):
     @page(title="Shelf", icon="shelves", template="library/shelf.html")
     def shelf(self, request):
         return {"books": self.get_queryset(request)}
+"""
+
+SWEEP_TEST = """
+import pytest
+
+from generic.testing import PageSweep
+
+
+class TestEveryPage(PageSweep):
+    @pytest.fixture
+    def records(self, db):
+        from library.models import Book
+
+        book = Book.objects.create(title="Dune", author="Frank Herbert")
+
+        return {"library.book": book}
+"""
+
+PYTEST_INI = """
+[pytest]
+DJANGO_SETTINGS_MODULE = mysite.settings
+python_files = test_*.py
 """
 
 SHELF = """
@@ -407,6 +434,24 @@ def run(root: Path, prefix: str) -> int:
     return 1 if smoke.failures else 0
 
 
+def sweep(root: Path) -> int:
+    """The project's own page sweep, run by pytest, from the wheel."""
+    import subprocess
+
+    write(root, "tests/__init__.py", "")
+    write(root, "tests/test_pages.py", SWEEP_TEST)
+    write(root, "pytest.ini", PYTEST_INI)
+
+    print("\nThe page sweep (generic.testing.PageSweep)")
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root)},
+    )
+
+    return completed.returncode
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument(
@@ -414,6 +459,12 @@ def main() -> int:
         default="",
         help="mount the site under this prefix, e.g. 'app/', as a project "
         "whose root is already taken would",
+    )
+    parser.add_argument(
+        "--sweep",
+        action="store_true",
+        help="also run generic.testing.PageSweep over the new project, "
+        "with pytest and pytest-django",
     )
     arguments = parser.parse_args()
     prefix = arguments.prefix.strip("/")
@@ -426,7 +477,12 @@ def main() -> int:
         build_project(root, prefix)
 
         try:
-            return run(root, prefix)
+            status = run(root, prefix)
+
+            if status == 0 and arguments.sweep:
+                status = sweep(root)
+
+            return status
         finally:
             # The database file is let go before its folder is removed.
             from django.db import connections

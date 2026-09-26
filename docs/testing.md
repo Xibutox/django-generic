@@ -130,7 +130,9 @@ the inline ordering rules.
 
 `tests/test_pages.py` walks the URLconf and turns it into tests. Nobody
 lists the pages: each registered resource brings five, and a page added
-tomorrow is covered tomorrow.
+tomorrow is covered tomorrow. It is the framework's own use of the
+helper every project gets, `generic.testing.PageSweep` - see [Your
+project's pages](#your-projects-pages) below.
 
 Each page is opened three ways, and each answer means something
 different:
@@ -159,6 +161,60 @@ catch is the one a user sees first, and because three real defects came
 out of writing them: a third-party field whose choices were not JSON,
 the same field's form schema, and the Excel export refusing a cell type
 it had never met.
+
+## Your project's pages
+
+The same sweep, for a project built on the framework, from a subclass:
+
+```python
+# tests/test_pages.py
+import pytest
+
+from generic.testing import PageSweep
+from myapp.models import Project
+
+
+class TestEveryPage(PageSweep):
+    @pytest.fixture
+    def records(self, db):
+        """One record per model a page's address may name."""
+        return {"myapp.project": Project.objects.create(name="Apollo")}
+```
+
+It needs pytest and pytest-django (`pip install pytest pytest-django`)
+and nothing else from the project. The tests write themselves, one per
+page or per resource:
+
+| Test | Checks |
+| --- | --- |
+| `test_every_page_is_covered` | no page escapes because its address takes an argument nothing fills; the gap is named |
+| `test_page_loads` | each page, as a superuser, answers 200 - or its `expected` status - in each of `languages` |
+| `test_page_never_breaks_for_a_stranger` | signed out: below 500 |
+| `test_page_never_breaks_without_permissions` | signed in, allowed nothing: below 500 |
+| `test_resource_endpoints` | rows, form schema, a record's summary and history |
+| `test_every_column_lists_its_values` | each column's `facets/`: 200 or 400, never 500 |
+| `test_resource_exports` | both exports stream |
+| `test_every_chart_draws` | each declared chart |
+| `test_feature_endpoints` | where declared: the import's schema and template, a record's transitions |
+| `test_the_api_description` | the OpenAPI description, where `generic.openapi` is mounted |
+
+What a subclass may set:
+
+| Attribute | |
+| --- | --- |
+| `records` (fixture) | the project's records, by model label (`"myapp.project"`), and by the first word of a hand-written page's name (`"project"` for `project-detail`) |
+| `skipped` | `{url name: reason}` |
+| `expected` | `{url name: (status, ...)}`, where a superuser does not get 200 |
+| `languages` | `("en", "fr")` opens every page in each; empty, once |
+| `value_for(url_name, argument, records)` | the value of an address argument the default cannot work out; call `super()` for the rest |
+| `urlconf`, `site`, `excluded_namespaces` | another URLconf or site; the namespaces left to their own tests (`admin`, `djdt`) |
+
+The framework's own screens - people, groups, permissions, changes,
+messages, runs, mailings, tokens, the wiki, the schedules - get a
+record each from the base class (`framework_records`): a project feeds
+only its own models. `scripts/smoke_install.py --sweep` runs such a
+subclass against the installed wheel in CI, so the helper is tested as
+a project uses it.
 
 ## Fixtures
 

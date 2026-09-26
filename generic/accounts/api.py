@@ -21,6 +21,7 @@ from generic.accounts.serializers import (
     ProfileSerializer,
     SavedViewSerializer,
 )
+from generic.openapi import framework_schema
 
 
 class SingletonFormView(APIView):
@@ -29,6 +30,8 @@ class SingletonFormView(APIView):
     ``GET form-schema/`` on the sibling route describes the form, so the
     account page renders it with the same code as any resource form.
     """
+
+    schema = framework_schema()
 
     serializer_class: Any = None
     permission_classes = (IsAuthenticated,)
@@ -58,6 +61,8 @@ class SingletonFormView(APIView):
 
 class FormSchemaView(APIView):
     """The form schema of a serializer, for a singleton form."""
+
+    schema = framework_schema()
 
     serializer_class: Any = None
     permission_classes = (IsAuthenticated,)
@@ -93,6 +98,10 @@ class SavedViewViewSet(viewsets.ModelViewSet):
     """Named table layouts: ``?table=<state key>`` lists one table's."""
 
     serializer_class = SavedViewSerializer
+
+    #: Read by the API description, which cannot ask get_queryset() -
+    #: it has no signed-in user. Every request goes through it anyway.
+    queryset = SavedView.objects.none()
     permission_classes = (IsAuthenticated,)
     pagination_class = None
 

@@ -15,6 +15,10 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W004  LOGIN_URL leads nowhere
     generic.W005  a WebSocket is offered but nothing serves ASGI
     generic.W006  Django 6.1 or later, and MAILERS is not set
+    generic.W007  a resource ranks its search without generic.search
+    generic.E006  generic.tokens without knox (generic/tokens/checks.py)
+    generic.W008  generic.tokens, its authentication class not in DRF
+    generic.E008  the OpenAPI pages without drf-spectacular
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -272,4 +276,68 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
             )
         )
 
+    messages.extend(check_search_rank())
+    messages.extend(check_openapi())
+
     return messages
+
+
+def check_openapi() -> list:
+    """The OpenAPI pages mounted: what they need to answer."""
+    from django.apps import apps
+
+    try:
+        reverse("generic_openapi:schema")
+    except NoReverseMatch:
+        return []
+
+    missing = [
+        name
+        for name in ("drf_spectacular", "drf_spectacular_sidecar")
+        if not apps.is_installed(name)
+    ]
+    schema_class = getattr(settings, "REST_FRAMEWORK", {}).get(
+        "DEFAULT_SCHEMA_CLASS", ""
+    )
+
+    if schema_class != "drf_spectacular.openapi.AutoSchema":
+        missing.append(
+            "REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = "
+            "'drf_spectacular.openapi.AutoSchema'"
+        )
+
+    if not missing:
+        return []
+
+    return [
+        checks.Error(
+            "generic.openapi's pages are mounted, but the description "
+            "cannot be written without: " + ", ".join(missing) + ".",
+            hint="pip install 'django-generic[api]' and see docs/api.md.",
+            id="generic.E008",
+        )
+    ]
+
+
+def check_search_rank() -> list:
+    """``search_rank`` needs the app that installs ``pg_trgm``."""
+    from django.apps import apps
+
+    if apps.is_installed("generic.search"):
+        return []
+
+    from generic.sites import site
+
+    return [
+        checks.Warning(
+            f"{type(resource).__name__} sets search_rank = True, but "
+            f"generic.search is not installed: its results keep their "
+            f"usual order.",
+            hint="Add 'generic.search' to INSTALLED_APPS and migrate "
+            "(docs/search.md), or drop search_rank.",
+            obj=type(resource),
+            id="generic.W007",
+        )
+        for resource in site.get_resources()
+        if getattr(resource, "search_rank", False)
+    ]

@@ -55,9 +55,9 @@ TEAMS = [
 AGENTS = [
     "Camille Rousseau",
     "Yanis Bertrand",
-    "Norah Lefevre",
+    "Norah Lef\u00e8vre",
     "Tomas Klein",
-    "Aurelie Meunier",
+    "Aur\u00e9lie Meunier",
     "Sofiane Bakri",
     "Elena Vasquez",
     "Marek Nowak",
@@ -94,7 +94,7 @@ CUSTOMERS = [
         "Lille",
         "https://adatum.example",
     ),
-    ("Region Occitanie", "OCC", "public", "Toulouse", ""),
+    ("R\u00e9gion Occitanie", "OCC", "public", "Toulouse", ""),
     ("Litware Labs", "LWL", "small", "Rennes", ""),
 ]
 
@@ -270,6 +270,8 @@ class Command(BaseCommand):
         self.create_notifications(users)
         self.create_wiki_pages(users)
         self.create_schedule()
+        self.create_mailing(users)
+        self.create_api_token(users)
         self.work_a_few_tickets(tickets, agents, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
@@ -363,6 +365,104 @@ class Command(BaseCommand):
                     "the desk."
                 ),
             },
+        )
+
+    def create_mailing(self, users: dict[str, Any]) -> None:
+        """Every weekday at eight, the open urgent tickets for admin.
+
+        With the dispatcher on the scheduler every five minutes where
+        it is installed; the development stack's console mailer then
+        shows the mail in the worker's log.
+        """
+        from generic.mailings.dispatch import TASK
+        from generic.mailings.models import ScheduledMailing
+        from generic.mailings.schedule import next_run
+
+        admin = users["admin"]
+        mailing, created = ScheduledMailing.objects.get_or_create(
+            name="Open urgent tickets",
+            owner=admin,
+            defaults={
+                "table": "site.example.ticket",
+                "state": {
+                    "columns": [
+                        "reference",
+                        "title",
+                        "customer",
+                        "team",
+                        "assignee",
+                        "due_on",
+                    ],
+                    "order": [["due_on", "asc"]],
+                    "filters": {
+                        "match": "all",
+                        "conditions": [
+                            {
+                                "column": "status",
+                                "operator": "any_of",
+                                "value": ["open", "pending"],
+                            },
+                            {
+                                "column": "priority",
+                                "operator": "any_of",
+                                "value": ["urgent"],
+                            },
+                        ],
+                    },
+                    "search": "",
+                },
+                "frequency": ScheduledMailing.Frequency.WEEKDAYS,
+                "time": "08:00",
+            },
+        )
+
+        if created:
+            mailing.next_run_at = next_run(mailing)
+            mailing.save(update_fields=["next_run_at"])
+
+        if not apps.is_installed("django_celery_beat"):
+            return
+
+        interval = apps.get_model("django_celery_beat", "IntervalSchedule")
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        every, _created = interval.objects.get_or_create(
+            every=5, period="minutes"
+        )
+        periodic.objects.get_or_create(
+            name="Scheduled mailings",
+            defaults={
+                "task": TASK,
+                "interval": every,
+                "description": "Sends the mailings whose time has come.",
+            },
+        )
+
+    def create_api_token(self, users: dict[str, Any]) -> None:
+        """A read token for admin, printed once, as the account page does.
+
+        Only a hash is kept: a second run cannot print it again, and
+        makes none - revoke it on the account page to get a new one.
+        """
+        if not apps.is_installed("generic.tokens"):
+            return
+
+        from generic.tokens.models import ApiToken
+
+        admin = users["admin"]
+
+        if ApiToken.objects.filter(user=admin, name="Seed script").exists():
+            return
+
+        _instance, token = ApiToken.objects.create(
+            user=admin,
+            name="Seed script",
+            scope=ApiToken.Scope.READ,
+            expiry=datetime.timedelta(days=90),
+        )
+        self.stdout.write(
+            f"A read-only API token for admin (shown once): {token}\n"
+            f"  curl -H 'Authorization: Token {token}' "
+            f"http://127.0.0.1:8000/api/example/ticket/?length=5"
         )
 
     # -- the equipment ---------------------------------------------------

@@ -58,6 +58,11 @@ Changelog = "https://github.com/Xibutox/django-generic/blob/main/generic/CHANGEL
 # Excel export (generic.api.exports).
 export = ["openpyxl>=3.1"]
 
+# Imports (generic.sites.imports): Excel files read, and read safely -
+# defusedxml makes openpyxl refuse the XML tricks a file could carry.
+# CSV needs neither.
+import = ["openpyxl>=3.1", "defusedxml>=0.7"]
+
 # Real-time events (generic.events).
 events = ["channels>=4.0", "channels-redis>=4.2", "daphne>=4.1"]
 
@@ -72,11 +77,29 @@ beat = ["django-celery-beat>=2.6"]
 
 postgres = ["psycopg[binary]>=3.1"]
 
+# The API for scripts: personal tokens (generic.tokens, on
+# django-rest-knox) and its OpenAPI description and docs page
+# (generic.openapi, on drf-spectacular, its assets served locally).
+# State machines (generic.sites.transitions): a model's transitions as
+# buttons and bulk actions.
+fsm = ["django-fsm-2>=4.0"]
+
+api = [
+    "django-rest-knox>=5.0",
+    "drf-spectacular>=0.28",
+    "drf-spectacular-sidecar>=2025.1",
+]
+
 # The wiki (generic.wiki): cleaning the HTML its editor produces.
 wiki = ["nh3>=0.2.17"]
 
 dev = [
     "nh3>=0.2.17",
+    "defusedxml>=0.7",
+    "django-rest-knox>=5.0",
+    "drf-spectacular>=0.28",
+    "drf-spectacular-sidecar>=2025.1",
+    "django-fsm-2>=4.0",
     # The example project turns it on by itself when it is installed.
     "django-debug-toolbar>=6.0",
     "pytest>=8.0",

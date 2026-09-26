@@ -12,8 +12,10 @@ should publish with :func:`announce` itself.
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import Any
+from contextvars import ContextVar
+from typing import Any, Iterator
 
 from django.db.models.signals import post_delete, post_save
 from django.utils.encoding import force_str
@@ -25,6 +27,48 @@ logger = logging.getLogger(__name__)
 
 #: Event type the table client listens for.
 EVENT_TYPE = "resource.changed"
+
+#: Resources whose changes are being held for one ``bulk`` event, by
+#: label, with whether anything changed yet.
+_held: ContextVar[dict[str, bool] | None] = ContextVar(
+    "generic_realtime_held", default=None
+)
+
+
+@contextlib.contextmanager
+def batch(resource: Any) -> Iterator[None]:
+    """One ``bulk`` event for every change made in the block.
+
+    An import saving a thousand rows would otherwise send a thousand
+    events, and every open table would reload a thousand times. Inside a
+    transaction, the event waits for the commit like any other - and a
+    block rolled back announces nothing. Watchers are still told of
+    each record: that is what they asked for.
+    """
+    held = dict(_held.get() or {})
+    held[resource.label_lower] = False
+    token = _held.set(held)
+
+    try:
+        yield
+    finally:
+        changed = held.get(resource.label_lower, False)
+        _held.reset(token)
+
+    if changed:
+        announce(resource, "bulk")
+
+
+def holding(resource: Any) -> bool:
+    """Whether a change of ``resource`` waits for its batch's event."""
+    held = _held.get()
+
+    if held is None or resource.label_lower not in held:
+        return False
+
+    held[resource.label_lower] = True
+
+    return True
 
 
 def _dispatch_uid(resource: Any, signal: str) -> str:
@@ -105,11 +149,15 @@ def connect(resource: Any) -> None:
 
         change = "created" if created else "updated"
 
-        announce(resource, change, instance.pk)
+        if not holding(resource):
+            announce(resource, change, instance.pk)
+
         tell_watchers(resource, instance, change)
 
     def deleted(sender: Any, instance: Any, **kwargs: Any) -> None:
-        announce(resource, "deleted", instance.pk)
+        if not holding(resource):
+            announce(resource, "deleted", instance.pk)
+
         tell_watchers(resource, instance, "deleted")
 
     post_save.connect(

@@ -19,6 +19,7 @@ from django.contrib.admin.utils import NotRelationField, get_fields_from_path
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import models
 from django.utils.encoding import force_str
+from django.utils.functional import lazy
 from django.utils.text import slugify
 from rest_framework import serializers
 
@@ -98,6 +99,15 @@ def plain_ordering(model: type[models.Model]) -> list[str]:
             names.append(name)
 
     return names
+
+
+def _joined_title(*parts: Any) -> str:
+    return " ".join(force_str(part) for part in parts).capitalize()
+
+
+#: ``Customer name`` from ``customer`` and ``name``, translated when it
+#: is read rather than when the serializer class is built.
+joined_title = lazy(_joined_title, str)
 
 
 def label_field_for(model: type[models.Model]) -> str | None:
@@ -328,8 +338,10 @@ class TableSerializerBuilder:
         function: Callable[[Any], Any],
     ) -> None:
         title = getattr(function, "short_description", None)
+        # Kept lazy: the class is built once per process, and a title
+        # forced here would stay in the language of the first request.
         options: dict[str, Any] = {
-            "title": force_str(title) if title else prettify_field_name(name)
+            "title": title if title else prettify_field_name(name)
         }
 
         ordering = getattr(function, "admin_order_field", None)
@@ -392,13 +404,13 @@ class TableSerializerBuilder:
                 f"method column instead."
             )
 
-        title = " ".join(
-            force_str(
+        title = joined_title(
+            *(
                 getattr(field, "verbose_name", None)
                 or field.related_model._meta.verbose_name_plural
+                for field in path
             )
-            for field in path
-        ).capitalize()
+        )
 
         prefix = entry.split("__")[:-1]
 
@@ -777,8 +789,10 @@ def sections_from_fieldsets(
         sections.append(
             {
                 "name": name,
-                "title": force_str(title or ""),
-                "description": force_str(options.get("description", "")),
+                # Lazy, like every title here: read in the language of
+                # the request that sends the schema, not the first one.
+                "title": title or "",
+                "description": options.get("description", ""),
                 "position": index,
                 "collapsed": "collapse" in classes,
                 "tab": "tab" in classes,
@@ -893,7 +907,7 @@ def build_form_serializer(
 
         label = getattr(function, "short_description", None)
         declared[field_name] = serializers.SerializerMethodField(
-            label=force_str(label) if label else None
+            label=label or None
         )
         methods[f"get_{field_name}"] = make_display_getter(function)
 

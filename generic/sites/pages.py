@@ -71,7 +71,9 @@ from generic.views.toolbar import Breadcrumb, ToolbarItem
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 #: Taken by the generated pages' routes: ``<prefix>_list``, ``_add``...
-RESERVED_NAMES = frozenset({"add", "change", "delete", "detail", "list"})
+RESERVED_NAMES = frozenset(
+    {"add", "change", "delete", "detail", "import", "list"}
+)
 
 #: What a method page may answer; a view of its own answers what it
 #: implements.

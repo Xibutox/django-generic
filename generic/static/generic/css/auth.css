@@ -152,3 +152,47 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The account page's API tokens (generic.tokens). */
+
+.tokens__created {
+  margin-block: var(--space-3);
+}
+
+.tokens__secret {
+  padding: var(--space-1) var(--space-2);
+  overflow-wrap: anywhere;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.tokens__list {
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tokens__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tokens__what {
+  min-width: 0;
+}
+
+.tokens__meta {
+  font-size: var(--font-size-sm);
+}
+
+.tokens__form {
+  margin-top: var(--space-3);
+}
+
+.tokens__form .input[type="text"] {
+  flex: 1 1 12rem;
+}

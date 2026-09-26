@@ -24,8 +24,9 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 
-from generic.api.filters import apply_search
+from generic.api.filters import apply_search, split_search_terms
 from generic.conf import generic_settings
+from generic.search.ranking import rank
 from generic.sites.decorators import action
 from generic.sites.pages import PagesMixin
 from generic.sites.serializers import (
@@ -108,6 +109,11 @@ class ModelResource(PagesMixin):
     #: What the global search box, the autocomplete and the command
     #: palette match against.
     search_fields: Sequence[str] = ()
+    #: Order the command palette's and the autocompletes' results by
+    #: how closely they match, best first (PostgreSQL with
+    #: ``generic.search``; elsewhere the usual order). Tables keep the
+    #: order their reader chose.
+    search_rank: bool = False
     ordering: Sequence[str] | None = None
     #: A hand-written table serializer, replacing the generated one.
     table_serializer: Any = None
@@ -143,7 +149,18 @@ class ModelResource(PagesMixin):
     #: Bulk actions: method names, or functions taking
     #: ``(resource, request, queryset)``.
     actions: Sequence[Any] = ("delete_selected",)
+    #: State fields (django-fsm-2 ``FSMField``) whose ``@transition``
+    #: methods become buttons on a record's page. The fields become read
+    #: only in forms and grids. See ``generic.sites.transitions``.
+    transitions: Sequence[str] = ()
+    #: Whether each transition is also a bulk action of the list.
+    transition_actions: bool = True
     show_export: bool = True
+    #: Records loaded from a spreadsheet: ``Import(fields=..., key=...)``
+    #: gives the list page an *Import* button and its page. None - the
+    #: default - offers nothing and refuses the endpoint. See
+    #: ``generic.sites.imports``.
+    imports: Any = None
     #: The row of search fields under the column headers: ``"open"``
     #: from the start, ``"toggle"`` behind a toolbar button, ``False``
     #: not offered. Each user's own choice is remembered with the table.
@@ -202,6 +219,10 @@ class ModelResource(PagesMixin):
     #: Publish every change so open tables refresh themselves.
     realtime: bool = True
 
+    #: Whether this list may be sent by e-mail on a schedule - offered
+    #: to holders of ``generic.add_scheduledmailing`` (generic.mailings).
+    mailing: bool = True
+
     #: Offer users the choice of being told when a record changes, or
     #: when any record of this model does. False for models whose
     #: changes are nobody's news - a log, a run, a schedule's counter.
@@ -229,6 +250,7 @@ class ModelResource(PagesMixin):
         self._form_serializer_class: Any = None
         self._inline_instances: list[Any] | None = None
         self._editable_columns: dict[str, Any] | None = None
+        self._transitions: dict[str, Any] | None = None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} for {self.opts.label}>"
@@ -389,6 +411,39 @@ class ModelResource(PagesMixin):
     def get_actions_url(self) -> str:
         return self._reverse(self.api_url_name("actions"))
 
+    def get_mailing_url(self, request: Any) -> str:
+        """The add form of a mailing of this list, or ``""``."""
+        from generic.mailings.models import ScheduledMailing
+
+        if not self.mailing or not generic_settings.SHOW_MAILINGS:
+            return ""
+
+        user = getattr(request, "user", None)
+
+        if user is None or not user.has_perm("generic.add_scheduledmailing"):
+            return ""
+
+        resource = self.site.get_resource(ScheduledMailing)
+
+        return resource.get_add_url() if resource is not None else ""
+
+    def get_transitions_url(self, pk: Any) -> str:
+        """Where a record's transitions are listed; ``<name>/`` runs one."""
+        if not self.get_transitions():
+            return ""
+
+        return self._reverse(self.api_url_name("transitions"), pk=pk)
+
+    def get_import_url(self) -> str:
+        return self._reverse(self.url_name("import"))
+
+    def get_import_api_urls(self) -> dict[str, str]:
+        return {
+            "run": self._reverse(self.api_url_name("import-rows")),
+            "schema": self._reverse(self.api_url_name("import-schema")),
+            "template": self._reverse(self.api_url_name("import-template")),
+        }
+
     def get_view_on_site_url(self, obj: Any) -> str:
         if not self.view_on_site or not hasattr(obj, "get_absolute_url"):
             return ""
@@ -534,7 +589,23 @@ class ModelResource(PagesMixin):
             term,
         )
 
-        return list(queryset[:limit])
+        return list(self.rank_search_results(request, queryset, term)[:limit])
+
+    def rank_search_results(
+        self,
+        request: Any,
+        queryset: QuerySet,
+        term: str,
+    ) -> QuerySet:
+        """Best match first, when ``search_rank`` asks for it."""
+        if not self.search_rank:
+            return queryset
+
+        words = " ".join(
+            text for text, negated in split_search_terms(term) if not negated
+        )
+
+        return rank(queryset, self.get_search_fields(request), words)
 
     def get_object_label(self, obj: Any) -> str:
         return force_str(obj)
@@ -708,6 +779,8 @@ class ModelResource(PagesMixin):
             "bulkActionsUrl": self.get_actions_url(),
             "presets": self.get_presets(request),
             "savedViewsUrl": self._reverse("generic:saved-view-list"),
+            # Where "Send by e-mail on a schedule" leads, for who may.
+            "mailingUrl": self.get_mailing_url(request),
             "realtimeTopic": self.topic_name if self.realtime else "",
             "label": self.get_label(),
             "labelPlural": self.get_label_plural(),
@@ -999,7 +1072,17 @@ class ModelResource(PagesMixin):
         return default_form_fields(self.model, exclude=self.exclude)
 
     def get_readonly_fields(self, request: Any = None) -> tuple[str, ...]:
-        return tuple(self.readonly_fields)
+        from generic.sites.transitions import state_fields
+
+        declared = tuple(self.readonly_fields)
+        fields = set(self.get_fields(request))
+
+        # A state moves through its transitions, never through a form.
+        return declared + tuple(
+            name
+            for name in state_fields(self)
+            if name not in declared and name in fields
+        )
 
     def get_form_serializer_class(self) -> Any:
         if self.form_serializer is not None:
@@ -1092,6 +1175,55 @@ class ModelResource(PagesMixin):
                 icon=getattr(function, "icon", "") or "",
                 confirm=self._describe(confirm) if confirm else "",
                 variant=getattr(function, "variant", "default") or "default",
+            )
+
+        if self.transition_actions:
+            actions.update(self.get_transition_actions(request))
+
+        return actions
+
+    # -- transitions ----------------------------------------------------------
+
+    def get_transitions(self) -> dict[str, Any]:
+        """The model's transitions this resource offers, by name.
+
+        Read once per process, and checked: a bad declaration raises
+        ``ImproperlyConfigured`` when the resource is registered.
+        """
+        if self._transitions is None:
+            from generic.sites.transitions import read_transitions
+
+            self._transitions = read_transitions(self)
+
+        return self._transitions
+
+    def get_available_transitions(self, request: Any, obj: Any) -> list[Any]:
+        """The transitions ``request``'s user may take on ``obj`` now."""
+        from generic.sites.transitions import available
+
+        return available(self, request, obj)
+
+    def get_transition_actions(self, request: Any) -> dict[str, Any]:
+        """One bulk action per transition asking for nothing."""
+        from generic.sites.transitions import (
+            action_name,
+            bulk_action,
+            may_offer,
+        )
+
+        actions = {}
+
+        for info in self.get_transitions().values():
+            if info.fields or not may_offer(self, request, info):
+                continue
+
+            actions[action_name(info)] = ResourceAction(
+                name=action_name(info),
+                function=bulk_action(self, info),
+                description=force_str(info.label),
+                icon=info.icon,
+                confirm=force_str(info.confirm) if info.confirm else "",
+                variant=info.variant,
             )
 
         return actions
@@ -1243,6 +1375,55 @@ class ModelResource(PagesMixin):
 
     def delete_model(self, request: Any, obj: Any) -> None:
         obj.delete()
+
+    # -- imports ------------------------------------------------------------
+
+    def get_importer(self, request: Any) -> Any:
+        """The import of this resource for ``request``, or None."""
+        from generic.sites.imports import Importer, declaration_of
+
+        if declaration_of(self) is None:
+            return None
+
+        return Importer(self, request)
+
+    def can_import(self, request: Any) -> bool:
+        """Whether ``request``'s user may import into this resource."""
+        importer = self.get_importer(request)
+
+        return importer is not None and importer.is_allowed()
+
+    def clean_import_row(
+        self,
+        request: Any,
+        values: dict[str, Any],
+        row_number: int,
+    ) -> dict[str, Any]:
+        """One row's values, converted, before the form serializer sees
+        them. Return them, changed or not; raise ``ValidationError`` to
+        refuse the row with a message::
+
+            def clean_import_row(self, request, values, row_number):
+                values["reference"] = values["reference"].upper()
+
+                return values
+        """
+        return values
+
+    def save_import_row(
+        self,
+        request: Any,
+        serializer: Any,
+        instance: Any,
+    ) -> Any:
+        """Write one imported row. ``instance`` is None for a new one.
+
+        The default is the form's own step, ``save_model``, so a
+        resource stamping its author on save stamps imported rows too.
+        """
+        return self.save_model(
+            request, serializer, change=instance is not None
+        )
 
     def get_viewset_class(self) -> Any:
         from generic.sites.viewsets import ResourceViewSet

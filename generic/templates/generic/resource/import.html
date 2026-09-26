@@ -1,0 +1,192 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# A spreadsheet read into records (generic.sites.imports). Four steps: #}
+{# choose a file, match its columns, check the preview, import. Every   #}
+{# step is the resource's endpoint; the page only holds the file until  #}
+{# the reader confirms, and then sends it again. Override per model     #}
+{# with generic/resource/<app>/<model>/import.html.                     #}
+
+{% block bodyclass %}page-resource-import app-{{ opts.app_label }} model-{{ opts.model_name }}{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'generic/css/summary.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/imports.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/imports.js' %}" defer></script>
+{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% icon resource.get_icon "icon--sm" %}
+    <span>{{ resource.get_label_plural }}</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  {{ import_config|json_script:"import-config" }}
+
+  <div class="import stack" x-data="resourceImport('import-config')">
+    <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+      <span x-text="error"></span>
+    </div>
+
+    {# 1. The file. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "upload_file" %} {% translate "Choose a file" %}</h2>
+        <a class="button button--ghost button--sm" :href="config.urls.template">
+          {% icon "download" "icon--sm" %} {% translate "Download a template" %}
+        </a>
+      </div>
+
+      <p class="card__description" x-show="schema.description" x-text="schema.description"></p>
+
+      <label class="import__drop"
+             :class="{ 'import__drop--over': dragging }"
+             @dragover.prevent="dragging = true"
+             @dragleave.prevent="dragging = false"
+             @drop.prevent="drop($event)">
+        {% icon "cloud_upload" %}
+        <span x-show="!file">{% translate "Drop an Excel or CSV file here, or choose one" %}</span>
+        <strong x-show="file" x-text="file && file.name"></strong>
+        <input type="file" class="sr-only" accept=".xlsx,.csv" x-ref="input" @change="choose($event)">
+      </label>
+
+      <p class="muted import__limits" x-text="limits()"></p>
+      <p class="muted" x-show="schema.key" x-cloak>
+        <span x-text="keyText()"></span>
+      </p>
+    </section>
+
+    {# 2. Which column goes where. #}
+    <section class="card" x-show="headers.length" x-cloak>
+      <div class="card__header">
+        <h2 class="card__title">{% icon "view_column" %} {% translate "Match the columns" %}</h2>
+      </div>
+
+      <div class="callout callout--warning" x-show="missing.length">
+        <span x-text="missingText()"></span>
+      </div>
+
+      <table class="object-table import__mapping">
+        <thead>
+          <tr>
+            <th scope="col">{% translate "Column of the file" %}</th>
+            <th scope="col">{% translate "First value" %}</th>
+            <th scope="col">{% translate "Goes to" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(header, index) in headers" :key="index">
+            <tr>
+              <th scope="row" x-text="header || '—'"></th>
+              <td class="muted" x-text="sample(index)"></td>
+              <td>
+                <select class="input input--sm" :value="mapping[index] || ''" @change="remap(index, $event.target.value)">
+                  <option value="">{% translate "Ignore this column" %}</option>
+                  <template x-for="column in schema.columns" :key="column.name">
+                    <option :value="column.name" :selected="mapping[index] === column.name" x-text="column.title + (column.required ? ' *' : '')"></option>
+                  </template>
+                </select>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </section>
+
+    {# 3. What would happen. #}
+    <section class="card" x-show="result" x-cloak>
+      <div class="card__header">
+        <h2 class="card__title">
+          {% icon "fact_check" %}
+          <span x-text="stepTitle()"></span>
+        </h2>
+      </div>
+
+      <div class="summary__stats">
+        <div class="stat">
+          <div class="stat__label">{% translate "To create" %}</div>
+          <div class="stat__value" x-text="count('create')"></div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">{% translate "To update" %}</div>
+          <div class="stat__value" x-text="count('update')"></div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">{% translate "Unchanged" %}</div>
+          <div class="stat__value" x-text="count('unchanged')"></div>
+        </div>
+        <div class="stat" :class="{ 'import__stat--danger': count('error') }">
+          <div class="stat__label">{% translate "With errors" %}</div>
+          <div class="stat__value" x-text="count('error')"></div>
+        </div>
+      </div>
+
+      <template x-if="result && result.errors.length">
+        <table class="object-table import__errors">
+          <thead>
+            <tr>
+              <th scope="col">{% translate "Row" %}</th>
+              <th scope="col">{% translate "Column" %}</th>
+              <th scope="col">{% translate "Problem" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(entry, index) in result.errors" :key="index">
+              <tr>
+                <td x-text="entry.row"></td>
+                <td x-text="columnTitle(entry.column)"></td>
+                <td x-text="entry.message"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </template>
+
+      <template x-if="result && result.preview.length && !result.committed">
+        <div class="import__preview">
+          <table class="object-table">
+            <thead>
+              <tr>
+                <th scope="col">{% translate "Row" %}</th>
+                <th scope="col"></th>
+                <template x-for="(name, index) in mapping" :key="index">
+                  <th scope="col" x-show="name" x-text="columnTitle(name)"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="line in result.preview" :key="line.row">
+                <tr :class="'import__line--' + line.action">
+                  <td x-text="line.row"></td>
+                  <td><span class="badge" :class="badgeClass(line.action)" x-text="actionLabel(line.action)"></span></td>
+                  <template x-for="(name, index) in mapping" :key="index">
+                    <td x-show="name" x-text="line.cells[index]"></td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </section>
+
+    {# 4. Go. #}
+    <div class="cluster import__actions" x-show="file" x-cloak>
+      <button type="button" class="button" :disabled="busy || !file" @click="preview()">
+        {% icon "visibility" "icon--sm" %} {% translate "Check again" %}
+      </button>
+      <button type="button" class="button button--primary" :disabled="!canImport()" @click="commit()">
+        {% icon "upload" "icon--sm" %} {% translate "Import" %}
+      </button>
+      <span class="spinner" x-show="busy" aria-hidden="true"></span>
+      <a class="button button--ghost" :href="config.urls.list" x-show="result && result.committed">
+        {% translate "Back to the list" %}
+      </a>
+    </div>
+  </div>
+{% endblock %}

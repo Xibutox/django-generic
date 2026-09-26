@@ -8,6 +8,7 @@ deletion preview.
 from __future__ import annotations
 
 from django.db import models
+from django_fsm import FSMField, transition
 
 
 class Publisher(models.Model):
@@ -98,3 +99,67 @@ class Chapter(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+def has_a_summary(manuscript: "Manuscript") -> bool:
+    return bool(manuscript.summary)
+
+
+class Manuscript(models.Model):
+    """A state machine: draft, submitted, accepted or rejected.
+
+    Covers what transitions read from django-fsm-2: several sources, a
+    permission, a condition, a transition asking for a field, and one
+    marked dangerous.
+    """
+
+    class State(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+
+    title = models.CharField(max_length=200)
+    summary = models.TextField(blank=True, default="")
+    verdict = models.TextField("verdict", blank=True, default="")
+    state = FSMField(choices=State.choices, default=State.DRAFT)
+
+    class Meta:
+        ordering = ("title",)
+        permissions = [("accept_manuscript", "Can accept a manuscript")]
+
+    def __str__(self) -> str:
+        return self.title
+
+    @transition(
+        field=state,
+        source=State.DRAFT,
+        target=State.SUBMITTED,
+        conditions=[has_a_summary],
+        custom={"label": "Submit", "icon": "send"},
+    )
+    def submit(self) -> None:
+        pass
+
+    @transition(
+        field=state,
+        source=State.SUBMITTED,
+        target=State.ACCEPTED,
+        permission="testapp.accept_manuscript",
+        custom={"label": "Accept", "fields": ("verdict",)},
+    )
+    def accept(self) -> None:
+        pass
+
+    @transition(
+        field=state,
+        source=[State.SUBMITTED, State.ACCEPTED],
+        target=State.REJECTED,
+        custom={
+            "label": "Reject",
+            "confirm": "Reject this manuscript?",
+            "variant": "danger",
+        },
+    )
+    def reject(self) -> None:
+        pass

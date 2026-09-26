@@ -22,6 +22,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from django_fsm import FSMField, transition
 
 
 class Team(models.Model):
@@ -199,11 +200,20 @@ class Ticket(models.Model):
         choices=Priority.choices,
         default=Priority.NORMAL,
     )
-    status = models.CharField(
+    # A state machine: the status moves through the transitions below,
+    # which the ticket's page offers as buttons and the list as bulk
+    # actions (TicketResource.transitions) - never through a form.
+    status = FSMField(
         _("status"),
         max_length=10,
         choices=Status.choices,
         default=Status.OPEN,
+    )
+    resolution = models.TextField(
+        _("resolution"),
+        blank=True,
+        default="",
+        help_text=_("What was done, written when the ticket is resolved."),
     )
 
     is_billable = models.BooleanField(_("billable"), default=False)
@@ -227,9 +237,71 @@ class Ticket(models.Model):
         ordering = ("-opened_at", "-pk")
         verbose_name = _("ticket")
         verbose_name_plural = _("tickets")
+        permissions = [("reopen_ticket", _("Can reopen a ticket"))]
 
     def __str__(self) -> str:
         return f"{self.reference} - {self.title}"
+
+    # -- the life of a ticket ----------------------------------------------
+
+    @transition(
+        field=status,
+        source=Status.OPEN,
+        target=Status.PENDING,
+        custom={"label": _("Wait for the customer"), "icon": "hourglass_top"},
+    )
+    def wait(self) -> None:
+        """The desk asked the customer something."""
+
+    @transition(
+        field=status,
+        source=Status.PENDING,
+        target=Status.OPEN,
+        custom={"label": _("Customer answered"), "icon": "reply"},
+    )
+    def resume(self) -> None:
+        """Back on the desk's side."""
+
+    @transition(
+        field=status,
+        source=[Status.OPEN, Status.PENDING],
+        target=Status.RESOLVED,
+        custom={
+            "label": _("Resolve"),
+            "icon": "task_alt",
+            "fields": ("resolution",),
+        },
+    )
+    def resolve(self) -> None:
+        """Done, and said how: the resolution is asked first."""
+
+    @transition(
+        field=status,
+        source=[Status.OPEN, Status.PENDING, Status.RESOLVED],
+        target=Status.CLOSED,
+        custom={
+            "label": _("Close"),
+            "icon": "lock",
+            "confirm": _("Close this ticket?"),
+        },
+    )
+    def close(self) -> None:
+        """Nothing more to do."""
+
+    @transition(
+        field=status,
+        source=[Status.RESOLVED, Status.CLOSED],
+        target=Status.OPEN,
+        permission="example.reopen_ticket",
+        custom={
+            "label": _("Reopen"),
+            "icon": "undo",
+            "confirm": _("Reopen this ticket?"),
+            "variant": "danger",
+        },
+    )
+    def reopen(self) -> None:
+        """It was not over: only a supervisor may say so."""
 
     def get_absolute_url(self) -> str:
         return reverse("example:ticket-detail", kwargs={"pk": self.pk})

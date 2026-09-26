@@ -330,6 +330,7 @@ table by hand, `window.DrfDataTable`.
 | --- | --- |
 | `generic:datatable-ready` | a table finished initialising |
 | `generic:datatable-error` | it failed to start, or a request was rejected |
+| `generic:datatables-loaded` | on `document`, once `window.GenericDataTables.start` exists - for a script deferred before the tables' own |
 
 Both bubble, so one listener on `document` covers every table.
 

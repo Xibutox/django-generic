@@ -92,7 +92,10 @@ rather than inventing new wiring.
    SQLite and `InMemoryChannelLayer`; `pyproject.toml` pytest config
    (`DJANGO_SETTINGS_MODULE = "tests.settings"`, coverage on your apps);
    a smoke test: `/login/` 200, `/` redirects anonymous users, a signed-in
-   user gets the dashboard, `/api/generic/account/preferences/` 200.
+   user gets the dashboard, `/api/generic/account/preferences/` 200; and
+   `tests/test_pages.py` subclassing `generic.testing.PageSweep` with a
+   `records` fixture (one record per model label) - every page and
+   generated endpoint of the project, swept (docs/testing.md).
 7. **CI** — black, isort, flake8 once; pytest matrix; a job with Postgres
    and Redis services; the images built, the suite run in `dev`,
    `check --deploy --fail-level WARNING` in `prod`.

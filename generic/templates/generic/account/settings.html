@@ -3,6 +3,13 @@
 
 {% block bodyclass %}page-account{% endblock %}
 
+{% block components %}
+  {{ block.super }}
+  {% if api_tokens %}
+    <script src="{% static 'generic/js/tokens.js' %}" defer></script>
+  {% endif %}
+{% endblock %}
+
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'generic/css/auth.css' %}">
@@ -274,6 +281,10 @@
           {% endif %}
         </dl>
       </section>
+
+      {% if api_tokens %}
+        {% include "generic/account/api_tokens.html" %}
+      {% endif %}
     </div>
   </div>
 {% endblock %}

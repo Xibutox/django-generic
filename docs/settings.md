@@ -61,6 +61,16 @@ With it off, `-1` falls back to the default page size.
 | `EXPORT_DATE_FORMAT` | `DD/MM/YYYY` | Excel number format |
 | `EXPORT_DATETIME_FORMAT` | `DD/MM/YYYY HH:MM` | Excel number format |
 
+## Imports
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `IMPORT_MAX_ROWS` | `5000` | Rows one file may hold; `Import(max_rows=...)` wins |
+| `IMPORT_MAX_FILE_SIZE` | `5 * 1024 * 1024` | Bytes; a larger file is refused before it is read |
+| `IMPORT_PREVIEW_ROWS` | `20` | Rows the preview shows as they will be written |
+
+See [Imports](imports.md).
+
 ## Autocomplete
 
 | Setting | Default | Meaning |
@@ -123,10 +133,29 @@ See [Planned restarts](maintenance.md).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as a task is declared or `django_celery_beat` is installed |
+| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as the project declares a task or `django_celery_beat` is installed |
 | `TASK_RECENT_RUNS` | `5` | How many runs the catalogue lists under each task |
 
 See [Tasks](tasks.md).
+
+## API tokens
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `API_TOKEN_DEFAULT_DAYS` | `90` | A new token's life, unless its owner chooses |
+| `API_TOKEN_MAX_DAYS` | `365` | The longest a token may last; `None` allows tokens that never expire |
+| `API_TOKEN_LIMIT_PER_USER` | `10` | Tokens one person may hold at once |
+
+See [The API for scripts](api.md).
+
+## Scheduled mailings
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `SHOW_MAILINGS` | `True` | The list menu's *Send by e-mail on a schedule*, the Scheduled mailings screen and their dispatcher |
+| `MAILING_MAX_ATTACHMENT_SIZE` | `10 * 1024 * 1024` | Bytes; a larger file is not attached, and the mail links the list |
+
+See [Scheduled mailings](mailings.md).
 
 ## Signing in
 

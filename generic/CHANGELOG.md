@@ -9,6 +9,89 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.1.0] - 2026-09-26
+
+### Added
+- `generic.search`, an optional app: every text match the framework
+  makes - the table search, column filters, the filter editor, the
+  command palette, the autocompletes, classic list views, the wiki and
+  data resources - sets accents aside as well as case, so `societe`
+  finds *Société*. PostgreSQL through `unaccent` (its migration creates
+  the extension and an indexable wrapper), SQLite through a Python
+  function of the same name, other databases untouched.
+- `generic.search.operations.CreateSearchIndex`: a GIN trigram index on
+  exactly the expression a search compiles to, built on PostgreSQL and
+  skipped elsewhere.
+- Imports: `imports = Import(fields=..., key=...)` on a resource gives
+  its list an *Import* button and a page to choose an Excel or CSV
+  file, match its columns, preview what would be created, updated or
+  refused - by row and column - and import, all or nothing. Headers,
+  choices, relations and dates are read as the exports write them, so
+  an export imports back unchanged. Endpoints `import/schema/`,
+  `import/template/` and `import/`; hooks `clean_import_row` and
+  `save_import_row`; settings `IMPORT_MAX_ROWS`,
+  `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- `generic.testing.PageSweep`: a project's `tests/test_pages.py` in about
+  ten lines - every page opened by a superuser (in each of
+  `languages`), a user allowed nothing and a stranger, and every
+  generated endpoint behind them: rows, form schema, summary, history,
+  each column's values, exports, charts, imports, transitions, the
+  OpenAPI description. The framework's own screens get their records
+  from the base class; a page whose address nothing fills is named.
+  The framework's suite runs on it, and `scripts/smoke_install.py
+  --sweep` runs it from the wheel.
+- State machines: `transitions = ("status",)` on a resource offers
+  each django-fsm-2 `@transition` of that field as a button on the
+  record's page - only from the states it leaves, only to a reader
+  allowed to take it - as a bulk action on the list
+  (`transition:<name>`, rows it cannot move skipped and counted), and
+  as `<pk>/transitions/<name>/` (403, 404, 409 when the record has
+  moved, 400). Label, icon, confirmation, variant and fields to ask
+  for come from the transition's own `custom`; the state is read only
+  in forms, grids and imports; the history names the transition.
+  `Generic.dialogs.fields()` asks a few values at once. The `fsm` extra.
+- The API for scripts. `generic.tokens` (on django-rest-knox,
+  its hashing, in a table of its own): personal tokens made
+  on the account page and shown once, read only or read and write, with
+  an expiry and their last use; an *API tokens* screen under People to
+  revoke anyone's; `generic.tokens.authentication.TokenAuthentication`.
+  `generic.openapi` (on drf-spectacular): `api/schema/` and `api/docs/`
+  describe every generated endpoint as it behaves - the DataTables
+  envelope and its filter tree, charts, actions, exports, imports -
+  listing only what the reader may use, Swagger UI served from the
+  sidecar's files. Checks `generic.E006`, `W008`, `E008`;
+  settings `API_TOKEN_*`; the `api` extra.
+- Scheduled mailings (`generic.mailings`): *Send by e-mail on a
+  schedule* in a list's Views menu sends the table as it is - filters,
+  search, columns, order - as Excel or CSV, daily, on weekdays, weekly
+  or monthly, to people and groups. Each recipient gets the rows they
+  may see, computed as them through the resource's own export, in
+  their language. A dispatcher task (`generic.send_scheduled_mailings`,
+  or `manage.py send_scheduled_mailings` from cron) claims each due
+  mailing once; one that no longer works pauses and tells its owner.
+  Behind `generic.add_scheduledmailing`; `ModelResource.mailing`,
+  `SHOW_MAILINGS`, `MAILING_MAX_ATTACHMENT_SIZE`;
+  `generic.delivery.mail_with_attachment`.
+- `generic.sites.realtime.batch(resource)`: every change made in a
+  block announced as one `bulk` event.
+- `ModelResource.search_rank`: the command palette and the
+  autocompletes list the closest match first (`pg_trgm`); `generic.W007`
+  when the app is missing.
+
+### Fixed
+- A record's summary page no longer throws `GenericDataTables.start is
+  not a function` and leaves its first related tab empty when Alpine
+  shows the tab before the tables' script has loaded: the tab waits
+  for the new `generic:datatables-loaded` event.
+- Exports and forms speak each request's language. Column titles and
+  form sections were turned into text when a resource's serializers
+  were built - once per process - so every export and form after the
+  first request kept that request's language.
+- An account page shown to nobody - the API description, written with
+  no request - no longer fails asking an anonymous user for a password.
+- A JSON field of an add form takes its value from the address
+  (`?state={...}`) as JSON rather than as text.
+
 ## [1.0.0] - 2026-09-25
 
 The first official release: an admin-like application framework for

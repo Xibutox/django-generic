@@ -21,6 +21,12 @@ class GenericConfig(AppConfig):
         # before resources.py decides whether to offer the task pages.
         autodiscover_modules("tasks")
 
+        # The framework's own task: the dispatcher of the mailings.
+        from generic.conf import generic_settings
+
+        if generic_settings.SHOW_MAILINGS:
+            from generic.mailings import dispatch  # noqa: F401
+
         # Every app's resources.py registers its models on the site, the
         # way admin.py does for the admin. It has to happen before the
         # URLconf is read, which is why it happens here.
@@ -31,9 +37,11 @@ class GenericConfig(AppConfig):
         from generic.accounts.resources import register_screens as people
         from generic.events.resources import register_screens as messages
         from generic.history.resources import register_screens as history
+        from generic.mailings.resources import register_screens as mailings
         from generic.tasks.resources import register_screens as tasks
 
         tasks()
+        mailings()
         history()
         people()
         messages()

@@ -65,7 +65,9 @@ class TestTextEngine:
     def test_contains(self):
         condition, negate = text_engine("title", self.spec, "contains", "em")
 
-        assert condition == Q(title__icontains="em")
+        # Through generic.search, which the suite installs: accents are
+        # set aside as well as case.
+        assert condition == Q(title__unaccented__icontains="em")
         assert negate is False
 
     def test_not_contains_is_an_exclusion(self):

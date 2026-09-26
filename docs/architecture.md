@@ -54,6 +54,8 @@ generic/
 │   ├── decorators.py    @action, @display
 │   ├── related.py       RelatedTable: a summary page's related tables
 │   ├── charts.py        Chart: declared aggregates -> chart payloads
+│   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
+│   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint
 │   ├── summary.py       A record, typed and formatted for its summary
 │   └── realtime.py      Model changes -> resource.changed
 │
@@ -76,6 +78,12 @@ generic/
 │
 ├── watch/               Watch: a user follows a record or a model
 ├── tasks/               Declared tasks: the four steps, runs, schedules
+├── mailings/            A list, as each reader may see it, e-mailed on a schedule
+│   ├── models.py        ScheduledMailing: which table, as whom, to whom, when
+│   ├── schedule.py      The next sending, in local time
+│   ├── sending.py       As each recipient: the resource's own export
+│   ├── dispatch.py      The dispatcher task: what is due, claimed once
+│   └── resources.py     The Scheduled mailings screen
 ├── delivery.py          One message, some people, the channels they chose
 ├── locale/              The framework's own catalogs (English, French)
 │
@@ -90,6 +98,13 @@ generic/
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
 ├── wiki/                Optional: pages, editor, history, pinned pages
+├── testing/             PageSweep: a project's pages and endpoints, swept by pytest
+├── tokens/              Optional: personal API tokens on knox (ApiToken)
+├── openapi/             The OpenAPI description: ResourceAutoSchema, pages
+├── search/              Optional: every text match sets accents aside
+│   ├── lookups.py       The unaccented transform, per database
+│   ├── operations.py    Migration operations: unaccent, trigram indexes
+│   └── ranking.py       search_rank: best match first
 │
 ├── events/
 │   ├── registry.py      Declared topics and who may subscribe

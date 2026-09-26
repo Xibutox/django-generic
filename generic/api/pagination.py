@@ -137,6 +137,24 @@ class DataTablesPagination(LimitOffsetPagination):
             )
         )
 
+    def get_schema_operation_parameters(self, view: Any) -> list[dict]:
+        """``draw``, ``start`` and ``length``: what DataTables sends."""
+
+        def parameter(name: str, description: str) -> dict[str, Any]:
+            return {
+                "name": name,
+                "required": False,
+                "in": "query",
+                "description": description,
+                "schema": {"type": "integer"},
+            }
+
+        return [
+            parameter(self.draw_param, "Echoed back, as DataTables expects."),
+            parameter(self.start_param, "The first row, from 0."),
+            parameter(self.length_param, "How many rows; capped by the site."),
+        ]
+
     def get_paginated_response_schema(
         self,
         schema: dict[str, Any],

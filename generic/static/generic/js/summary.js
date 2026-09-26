@@ -28,6 +28,28 @@
     }
   }
 
+  /** Start a related table, once the tables' script has loaded.
+   *
+   * This script and Alpine run before the tables' own script, so the
+   * first tab may be shown before `GenericDataTables.start` exists.
+   */
+  function startTable(table) {
+    var tables = window.GenericDataTables;
+
+    if (tables && typeof tables.start === "function") {
+      tables.start(table);
+      return;
+    }
+
+    document.addEventListener(
+      "generic:datatables-loaded",
+      function () {
+        window.GenericDataTables.start(table);
+      },
+      { once: true }
+    );
+  }
+
   /** The name of the history tab, which is not a related table. */
   var HISTORY_TAB = "__history";
 
@@ -38,6 +60,7 @@
       object: data.object || {},
       urls: data.urls || {},
       actions: data.actions || [],
+      transitions: data.transitions || [],
       stats: data.stats || [],
       sections: data.sections || [],
       related: data.related || [],
@@ -298,7 +321,7 @@
               { once: true }
             );
 
-            window.GenericDataTables.start(table);
+            startTable(table);
           });
         },
 
@@ -419,6 +442,65 @@
             }
 
             refresh();
+          });
+        },
+
+        /**
+         * Take one of the record's transitions: confirmed, or its
+         * fields asked for, when it says so; the server checks again.
+         */
+        take: function (transition) {
+          var self = this;
+          var fields = transition.fields || [];
+          var asked;
+
+          if (fields.length) {
+            asked = Generic.dialogs.fields({
+              title: transition.label,
+              message: transition.confirm,
+              fields: fields,
+              confirmLabel: transition.label,
+              variant: transition.variant === "danger" ? "danger" : ""
+            });
+          } else if (transition.confirm) {
+            asked = Generic.dialogs
+              .confirm({
+                title: transition.label,
+                message: transition.confirm,
+                confirmLabel: transition.label,
+                variant: transition.variant === "danger" ? "danger" : ""
+              })
+              .then(function (yes) {
+                return yes ? {} : null;
+              });
+          } else {
+            asked = Promise.resolve({});
+          }
+
+          asked.then(function (values) {
+            if (!values) {
+              return;
+            }
+
+            self.busy = true;
+
+            Generic.api
+              .post(self.data.urls.transitions + transition.name + "/", values)
+              .then(function (summary) {
+                self.data = normalize(summary);
+                Generic.toast(Generic.format(t("%(action)s: done."), { action: transition.label }), "success");
+              })
+              .catch(function (error) {
+                var detail = error && error.data && error.data.detail;
+                var first = error && error.data && !detail ? Object.values(error.data)[0] : null;
+
+                Generic.toast(detail || (first && String(first)) || error.message, "error");
+
+                return self.refresh();
+              })
+              .then(function () {
+                self.busy = false;
+              });
           });
         },
 

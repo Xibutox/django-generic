@@ -218,6 +218,13 @@ INSTALLED_APPS = [
     "generic",
     # --- optional: the wiki ---
     "generic.wiki",
+    # --- optional: searches ignore accents (docs/search.md) ---
+    "generic.search",
+    # --- optional: the API for scripts (docs/api.md) ---
+    "knox",
+    "generic.tokens",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     # --- this example ---
     "example",
 ]
@@ -340,10 +347,35 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        # Personal tokens, made on the account page: a script calls
+        # the same endpoints the pages do, as its owner.
+        "generic.tokens.authentication.TokenAuthentication",
     ],
+    # The OpenAPI description at api/schema/, its pages at api/docs/.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+}
+
+# The OpenAPI description (generic.openapi, docs/api.md). Its pages are
+# served from drf-spectacular-sidecar's files, never from a CDN.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Support desk API",
+    "DESCRIPTION": (
+        "Every list, record, chart and export of the support desk. Sign "
+        "in with a token from your account page: "
+        "`Authorization: Token 3f9c...`."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+    # One name per choice set a column carries in several tables.
+    "ENUM_NAME_OVERRIDES": {
+        "TicketStatusEnum": "example.models.Ticket.Status",
+    },
 }
 
 # -- The framework -----------------------------------------------------

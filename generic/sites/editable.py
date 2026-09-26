@@ -130,6 +130,13 @@ def columns_of(resource: Any) -> dict[str, EditableColumn]:
                 f"to be on the table before it can be edited."
             )
 
+        if name in getattr(resource, "transitions", ()):
+            raise ImproperlyConfigured(
+                f"{type(resource).__name__}.editable_fields names "
+                f"'{name}', a state field: it changes through its "
+                f"transitions, never in a cell."
+            )
+
         resolved[str(name)] = resolve(resource, name)
 
     return resolved

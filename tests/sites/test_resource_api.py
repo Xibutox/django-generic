@@ -441,14 +441,18 @@ class TestBulkActions:
         response = self.run(
             worker_client,
             {
-                "action": "close",
+                # A transition of the ticket's state, as a bulk action.
+                "action": "transition:close",
                 "ids": [support_desk["login"].pk, support_desk["invoice"].pk],
             },
         )
 
         assert response.status_code == 200
         assert response.json() == {
-            "message": "2 tickets closed.",
+            "message": (
+                "Close: 2 done, 0 skipped (not in a state that allows it, "
+                "or not allowed)."
+            ),
             "level": "success",
             "count": 2,
         }

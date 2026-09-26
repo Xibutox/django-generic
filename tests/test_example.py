@@ -394,12 +394,19 @@ class TestTeamQueue:
 
         assert counts == {desk["team"].pk: 0, desk["empty_team"].pk: 1}
 
-    def test_closing_in_bulk_tells_the_team_too(self, desk, said):
-        """update() sends no signal: the action tells the teams itself."""
+    def test_closing_in_bulk_tells_the_team_too(self, desk, said, admin_user):
+        """Closing is a transition: each ticket saved, each team told."""
+        from django.test import RequestFactory
+
         from example.models import Ticket as Model
         from generic.sites import site
 
-        site.get_resource(Model).close(None, Model.objects.all())
+        request = RequestFactory().post("/")
+        request.user = admin_user
+        resource = site.get_resource(Model)
+        close = resource.get_transition_actions(request)["transition:close"]
+
+        close.function(request, Model.objects.all())
 
         assert said[-1][1] == {"team": desk["team"].pk, "open": 0}
 

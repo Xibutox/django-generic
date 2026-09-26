@@ -1359,3 +1359,84 @@ msgstr "≤ au plus"
 #: generic/static/generic/js/datatables/core.js:109
 msgid "≥ at least"
 msgstr "≥ au moins"
+
+msgid "Excel (.xlsx) or CSV, up to %(rows)s rows and %(size)s MB."
+msgstr "Excel (.xlsx) ou CSV, jusqu'à %(rows)s lignes et %(size)s Mo."
+
+msgid "A row whose %(key)s already exists updates that record."
+msgstr "Une ligne dont la valeur de %(key)s existe déjà met à jour cet enregistrement."
+
+msgid "Required for new records, and matched by no column: %(columns)s."
+msgstr "Obligatoire pour les nouveaux enregistrements, et associé à aucune colonne : %(columns)s."
+
+msgid "Imported"
+msgstr "Importé"
+
+msgid "Preview"
+msgstr "Aperçu"
+
+msgid "Import"
+msgstr "Importer"
+
+msgid "Create %(create)s and update %(update)s records?"
+msgstr "Créer %(create)s et mettre à jour %(update)s enregistrements ?"
+
+msgid "%(create)s created, %(update)s updated."
+msgstr "%(create)s créés, %(update)s mis à jour."
+
+msgid "Nothing was imported: fix the rows with errors first."
+msgstr "Rien n'a été importé : corrigez d'abord les lignes en erreur."
+
+msgid "To create"
+msgstr "À créer"
+
+msgid "To update"
+msgstr "À mettre à jour"
+
+msgid "Unchanged"
+msgstr "Inchangé"
+
+msgid "Error"
+msgstr "Erreur"
+
+msgid "Send by e-mail on a schedule"
+msgstr "Envoyer par e-mail selon un calendrier"
+
+msgid "%(days)s days"
+msgstr "%(days)s jours"
+
+msgid "Never expires"
+msgstr "N'expire jamais"
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "Read only"
+msgstr "Lecture seule"
+
+msgid "Copied."
+msgstr "Copié."
+
+msgid "Revoke this token?"
+msgstr "Révoquer ce jeton ?"
+
+msgid "%(name)s stops working at once, for whatever uses it."
+msgstr "%(name)s cesse de fonctionner immédiatement, pour tout ce qui l'utilise."
+
+msgid "Revoke"
+msgstr "Révoquer"
+
+msgid "expires: %(when)s"
+msgstr "expire : %(when)s"
+
+msgid "last used: %(when)s"
+msgstr "dernière utilisation : %(when)s"
+
+msgid "never"
+msgstr "jamais"
+
+msgid "not yet"
+msgstr "pas encore"
+
+msgid "%(action)s: done."
+msgstr "%(action)s : fait."

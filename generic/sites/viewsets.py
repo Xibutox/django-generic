@@ -32,9 +32,11 @@ permissions, the actions.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import Http404, HttpResponse
 from django.utils.translation import gettext
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -43,6 +45,7 @@ from rest_framework.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
@@ -53,6 +56,7 @@ from generic.api.pagination import DataTablesPagination
 from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
 from generic.api.viewsets import FormSchemaViewSetMixin
 from generic.conf import generic_settings
+from generic.openapi import framework_schema
 from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
 from generic.sites.related import RELATED_PARAM
 from generic.views.delete import collect_deletion_summary
@@ -82,7 +86,12 @@ class ResourcePermission(BasePermission):
         if name in ("create", "rows"):
             return resource.has_add_permission(request)
 
-        if name in ("update", "partial_update", "cells"):
+        # Declared, and allowed to write what the declaration writes:
+        # the import itself checks each row again.
+        if name in ("import_rows", "import_schema", "import_template"):
+            return resource.can_import(request)
+
+        if name in ("update", "partial_update", "cells", "take_transition"):
             return resource.has_change_permission(request)
 
         if name == "destroy":
@@ -125,6 +134,10 @@ class ResourceViewSet(
     ``resource`` is filled in per model by
     :meth:`ModelResource.get_viewset_class`.
     """
+
+    #: drf-spectacular's inspector, taught these endpoints, when it is
+    #: installed (generic.openapi); DRF's default otherwise.
+    schema = framework_schema()
 
     resource: Any = None
 
@@ -618,6 +631,167 @@ class ResourceViewSet(
 
         return {"message": message, "level": "success", "count": count}
 
+    # -- transitions -------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="transitions",
+        url_name="transitions",
+    )
+    def list_transitions(self, request: Any, pk: Any = None) -> Response:
+        """What this reader may do to this record's state, now."""
+        resource = self.resource
+
+        if not resource.get_transitions():
+            raise Http404
+
+        obj = self.get_object()
+
+        return Response(
+            [
+                info.describe(resource, obj)
+                for info in resource.get_available_transitions(request, obj)
+            ]
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"transitions/(?P<transition>[A-Za-z0-9_]+)",
+        url_name="take-transition",
+    )
+    def take_transition(
+        self,
+        request: Any,
+        pk: Any = None,
+        transition: str = "",
+    ) -> Response:
+        """Run one: the body carries the fields it asks for, if any.
+
+        Answers the record's summary, as its page reads it.
+        """
+        from generic.sites.summary import build_summary
+        from generic.sites.transitions import TransitionRefused, take
+
+        resource = self.resource
+        # Found through the queryset first: a record out of reach is a
+        # 404 like any other, before its state is looked at.
+        obj = self.get_object()
+        values = request.data if isinstance(request.data, dict) else {}
+
+        try:
+            obj = take(resource, request, obj.pk, transition, values)
+        except TransitionRefused as refusal:
+            return Response({"detail": refusal.message}, status=refusal.status)
+
+        return Response(build_summary(resource, request, obj))
+
+    # -- imports -----------------------------------------------------------
+
+    def get_importer(self) -> Any:
+        importer = self.resource.get_importer(self.request)
+
+        if importer is None:
+            raise Http404
+
+        return importer
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="import/schema",
+        url_name="import-schema",
+    )
+    def import_schema(self, request: Any) -> Response:
+        """What a file may fill, and how - before any file is chosen."""
+        return Response(self.get_importer().describe())
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="import/template",
+        url_name="import-template",
+    )
+    def import_template(self, request: Any) -> Any:
+        """An empty workbook with the right headers."""
+        importer = self.get_importer()
+
+        try:
+            content = importer.template()
+        except ImportError:
+            return Response(
+                {"detail": gettext("Excel files cannot be written here.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response = HttpResponse(
+            content,
+            content_type=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{self.resource.model_name}-import.xlsx"'
+        )
+
+        return response
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="import",
+        url_name="import-rows",
+        parser_classes=(MultiPartParser, FormParser),
+    )
+    def import_rows(self, request: Any) -> Response:
+        """Read a file: a preview, or - with ``commit`` - the import.
+
+        Multipart: ``file``, ``mapping`` (JSON list, one column name or
+        null per header of the file), ``commit`` (``true`` to write).
+        """
+        from generic.sites.imports import ImportRefused
+
+        importer = self.get_importer()
+        upload = request.FILES.get("file")
+
+        if upload is None:
+            return Response(
+                {"detail": gettext("Choose a file to import.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        raw_mapping = request.data.get("mapping")
+
+        try:
+            mapping = json.loads(raw_mapping) if raw_mapping else None
+        except ValueError:
+            return Response(
+                {
+                    "detail": gettext(
+                        "The columns chosen do not match the file."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        commit = str(request.data.get("commit", "")).lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+        try:
+            result = importer.run(upload, mapping, commit=commit)
+        except ImportRefused as refusal:
+            return Response(
+                {"detail": refusal.message},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(result)
+
     # -- autocomplete ------------------------------------------------------
 
     @action(
@@ -657,9 +831,9 @@ class ResourceViewSet(
         if len(term) < generic_settings.AUTOCOMPLETE_MIN_INPUT_LENGTH:
             return Response({"results": [], "pagination": {"more": False}})
 
-        queryset = apply_search(
-            queryset,
-            resource.get_search_fields(request),
+        queryset = resource.rank_search_results(
+            request,
+            apply_search(queryset, resource.get_search_fields(request), term),
             term,
         )
 

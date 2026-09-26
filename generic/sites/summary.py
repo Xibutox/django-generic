@@ -30,6 +30,7 @@ from generic.sites.serializers import (
     resolve_display_callable,
     tag_style_of,
 )
+from generic.sites.transitions import is_transition_action
 
 #: Related records listed inline as links, before "and N more".
 LINKS_LIMIT = 20
@@ -443,13 +444,19 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
                 else ""
             ),
             "actions": resource.get_actions_url(),
+            "transitions": resource.get_transitions_url(obj.pk),
         },
         # Bulk actions work on one record too; deleting has its own
-        # button.
+        # button, and transitions theirs, below.
         "actions": [
             entry.as_client()
             for name, entry in resource.get_actions(request).items()
-            if name != "delete_selected"
+            if name != "delete_selected" and not is_transition_action(name)
+        ],
+        # What this reader may do to this record's state, now.
+        "transitions": [
+            info.describe(resource, obj)
+            for info in resource.get_available_transitions(request, obj)
         ],
         "stats": [
             describe_entry(resource, request, obj, name)

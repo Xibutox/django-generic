@@ -71,6 +71,25 @@ DEFAULTS: dict[str, Any] = {
     "EXPORT_MAX_ROWS": 250_000,
     "EXPORT_DATE_FORMAT": "DD/MM/YYYY",
     "EXPORT_DATETIME_FORMAT": "DD/MM/YYYY HH:MM",
+    # --- Scheduled mailings (generic.mailings) ------------------------
+    # The Mailings screens, the list menu's entry and the dispatcher.
+    "SHOW_MAILINGS": True,
+    # Bytes; a larger file is not attached - the mail links the list.
+    "MAILING_MAX_ATTACHMENT_SIZE": 10 * 1024 * 1024,
+    # --- API tokens (generic.tokens) ----------------------------------
+    # Days a new token lasts unless its owner chooses.
+    "API_TOKEN_DEFAULT_DAYS": 90,
+    # The longest a token may last; None allows tokens that never expire.
+    "API_TOKEN_MAX_DAYS": 365,
+    # Tokens one person may hold at once.
+    "API_TOKEN_LIMIT_PER_USER": 10,
+    # --- Imports (a resource's ``imports``) -----------------------------
+    # Rows one file may hold; a resource's Import(max_rows=...) wins.
+    "IMPORT_MAX_ROWS": 5000,
+    # Refused before it is read, in bytes.
+    "IMPORT_MAX_FILE_SIZE": 5 * 1024 * 1024,
+    # Rows shown by the preview, as they will be written.
+    "IMPORT_PREVIEW_ROWS": 20,
     # --- Autocomplete ------------------------------------------------
     "AUTOCOMPLETE_PAGE_SIZE": 25,
     "AUTOCOMPLETE_MIN_INPUT_LENGTH": 0,

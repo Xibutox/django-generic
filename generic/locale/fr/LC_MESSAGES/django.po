@@ -2375,3 +2375,413 @@ msgstr "Modification"
 msgctxt "a recorded change"
 msgid "Changes"
 msgstr "Modifications"
+
+msgid "Choose an Excel (.xlsx) or CSV (.csv) file."
+msgstr "Choisissez un fichier Excel (.xlsx) ou CSV (.csv)."
+
+msgid "The file is larger than %(size)s MB."
+msgstr "Le fichier dépasse %(size)s Mo."
+
+msgid "The file has more than %(count)s rows. Split it and import each part."
+msgstr "Le fichier a plus de %(count)s lignes. Découpez-le et importez chaque partie."
+
+msgid "The file is empty."
+msgstr "Le fichier est vide."
+
+msgid "Excel files cannot be read here. Save the sheet as CSV and import that."
+msgstr "Les fichiers Excel ne peuvent pas être lus ici. Enregistrez la feuille en CSV et importez-la."
+
+msgid "This is not an Excel file it can read."
+msgstr "Ce n'est pas un fichier Excel lisible."
+
+msgid "The columns chosen do not match the file."
+msgstr "Les colonnes choisies ne correspondent pas au fichier."
+
+msgid "%(column)s cannot be imported."
+msgstr "%(column)s ne peut pas être importé."
+
+msgid "Two columns of the file go to %(column)s."
+msgstr "Deux colonnes du fichier vont dans %(column)s."
+
+msgid "%(value)s is not one of the choices."
+msgstr "%(value)s ne fait pas partie des choix."
+
+msgid "%(value)s is neither yes nor no."
+msgstr "%(value)s n'est ni oui ni non."
+
+msgid "%(value)s is not a date this can read."
+msgstr "%(value)s n'est pas une date lisible."
+
+msgid "%(value)s is not a number."
+msgstr "%(value)s n'est pas un nombre."
+
+msgid "%(value)s is not a whole number."
+msgstr "%(value)s n'est pas un nombre entier."
+
+msgid "No %(model)s is called %(value)s."
+msgstr "Aucun %(model)s ne s'appelle %(value)s."
+
+msgid "Several %(model)s are called %(value)s."
+msgstr "Plusieurs %(model)s s'appellent %(value)s."
+
+msgid "No record has this %(key)s."
+msgstr "Aucun enregistrement n'a cette valeur de %(key)s."
+
+msgid "You may not add records."
+msgstr "Vous ne pouvez pas ajouter d'enregistrements."
+
+msgid "This record exists already."
+msgstr "Cet enregistrement existe déjà."
+
+msgid "You may not change this record."
+msgstr "Vous ne pouvez pas modifier cet enregistrement."
+
+msgid "The database refused this row."
+msgstr "La base de données a refusé cette ligne."
+
+msgid "Allowed values"
+msgstr "Valeurs autorisées"
+
+msgid "Import"
+msgstr "Importer"
+
+msgid "Import %(name)s"
+msgstr "Importer des %(name)s"
+
+msgid "This table has no editable columns."
+msgstr "Ce tableau n'a aucune colonne modifiable."
+
+msgid "Send the columns to change, and their values."
+msgstr "Envoyez les colonnes à modifier, et leurs valeurs."
+
+msgid "Excel files cannot be written here."
+msgstr "Les fichiers Excel ne peuvent pas être écrits ici."
+
+msgid "Choose a file to import."
+msgstr "Choisissez un fichier à importer."
+
+msgid "Choose a file"
+msgstr "Choisir un fichier"
+
+msgid "Download a template"
+msgstr "Télécharger un modèle"
+
+msgid "Drop an Excel or CSV file here, or choose one"
+msgstr "Déposez un fichier Excel ou CSV ici, ou choisissez-en un"
+
+msgid "Match the columns"
+msgstr "Faire correspondre les colonnes"
+
+msgid "Column of the file"
+msgstr "Colonne du fichier"
+
+msgid "First value"
+msgstr "Première valeur"
+
+msgid "Goes to"
+msgstr "Va dans"
+
+msgid "Ignore this column"
+msgstr "Ignorer cette colonne"
+
+msgid "To create"
+msgstr "À créer"
+
+msgid "To update"
+msgstr "À mettre à jour"
+
+msgid "Unchanged"
+msgstr "Inchangés"
+
+msgid "With errors"
+msgstr "En erreur"
+
+msgid "Row"
+msgstr "Ligne"
+
+msgid "Column"
+msgstr "Colonne"
+
+msgid "Problem"
+msgstr "Problème"
+
+msgid "Check again"
+msgstr "Vérifier à nouveau"
+
+msgid "Back to the list"
+msgstr "Retour à la liste"
+
+msgid "Send scheduled mailings"
+msgstr "Envoyer les envois programmés"
+
+msgid "Sends every scheduled mailing whose time has come. Run it every few minutes."
+msgstr "Envoie chaque envoi programmé dont l'heure est venue. À lancer toutes les quelques minutes."
+
+msgid "%(count)s mailings sent."
+msgstr "%(count)s envois effectués."
+
+msgid "Excel"
+msgstr "Excel"
+
+msgid "CSV"
+msgstr "CSV"
+
+msgid "Every day"
+msgstr "Tous les jours"
+
+msgid "Every weekday"
+msgstr "Tous les jours ouvrés"
+
+msgid "Every week"
+msgstr "Toutes les semaines"
+
+msgid "Every month"
+msgstr "Tous les mois"
+
+msgid "Monday"
+msgstr "Lundi"
+
+msgid "Tuesday"
+msgstr "Mardi"
+
+msgid "Wednesday"
+msgstr "Mercredi"
+
+msgid "Thursday"
+msgstr "Jeudi"
+
+msgid "Friday"
+msgstr "Vendredi"
+
+msgid "Saturday"
+msgstr "Samedi"
+
+msgid "Sunday"
+msgstr "Dimanche"
+
+msgid "The subject of every e-mail."
+msgstr "L'objet de chaque e-mail."
+
+msgid "owner"
+msgstr "propriétaire"
+
+msgid "The list it sends, as the site names it."
+msgstr "La liste envoyée, telle que le site la nomme."
+
+msgid "layout"
+msgstr "présentation"
+
+msgid "Columns, order, filters and search of the list."
+msgstr "Colonnes, tri, filtres et recherche de la liste."
+
+msgid "format"
+msgstr "format"
+
+msgid "frequency"
+msgstr "fréquence"
+
+msgid "time"
+msgstr "heure"
+
+msgid "In the application's time zone."
+msgstr "Dans le fuseau horaire de l'application."
+
+msgid "day of the week"
+msgstr "jour de la semaine"
+
+msgid "For a weekly mailing."
+msgstr "Pour un envoi hebdomadaire."
+
+msgid "day of the month"
+msgstr "jour du mois"
+
+msgid "For a monthly mailing: 1 to 28, so every month has it."
+msgstr "Pour un envoi mensuel : de 1 à 28, pour que chaque mois l'ait."
+
+msgid "send it to me"
+msgstr "me l'envoyer"
+
+msgid "people"
+msgstr "personnes"
+
+msgid "groups"
+msgstr "groupes"
+
+msgid "send when empty"
+msgstr "envoyer si vide"
+
+msgid "Otherwise a list with no rows is not sent."
+msgstr "Sinon, une liste sans ligne n'est pas envoyée."
+
+msgid "active"
+msgstr "actif"
+
+msgid "next sending"
+msgstr "prochain envoi"
+
+msgid "last sent"
+msgstr "dernier envoi"
+
+msgid "last problem"
+msgstr "dernier problème"
+
+msgid "scheduled mailing"
+msgstr "envoi programmé"
+
+msgid "scheduled mailings"
+msgstr "envois programmés"
+
+msgid "Lists sent by e-mail on a schedule, each reader receiving the rows they may see."
+msgstr "Des listes envoyées par e-mail selon un calendrier, chaque lecteur recevant les lignes qu'il peut voir."
+
+msgid "To whom"
+msgstr "À qui"
+
+msgid "What"
+msgstr "Quoi"
+
+msgid "The list and its layout, as they were when the mailing was made."
+msgstr "La liste et sa présentation, telles qu'elles étaient à la création de l'envoi."
+
+msgid "Sending"
+msgstr "Envoi"
+
+msgid "List"
+msgstr "Liste"
+
+msgid "Choose a day from 1 to 28."
+msgstr "Choisissez un jour de 1 à 28."
+
+msgid "Send now"
+msgstr "Envoyer maintenant"
+
+msgid "%(count)s sent."
+msgstr "%(count)s envoyé(s)."
+
+msgid "Pause"
+msgstr "Suspendre"
+
+msgid "%(count)s paused."
+msgstr "%(count)s suspendu(s)."
+
+msgid "Resume"
+msgstr "Reprendre"
+
+msgid "%(count)s resumed."
+msgstr "%(count)s repris."
+
+msgid "%(sent)s sent, %(empty)s empty, %(refused)s not allowed, %(failed)s failed"
+msgstr "%(sent)s envoyés, %(empty)s vides, %(refused)s non autorisés, %(failed)s en échec"
+
+msgid "This list cannot be sent by e-mail."
+msgstr "Cette liste ne peut pas être envoyée par e-mail."
+
+msgid "You may not see this list."
+msgstr "Vous ne pouvez pas voir cette liste."
+
+msgid "The file is too large to attach: open the list to export it."
+msgstr "Le fichier est trop volumineux pour être joint : ouvrez la liste pour l'exporter."
+
+msgid "The list: %(url)s"
+msgstr "La liste : %(url)s"
+
+msgid "This list cannot be sent by e-mail any more."
+msgstr "Cette liste ne peut plus être envoyée par e-mail."
+
+msgid "Mailing paused: %(name)s"
+msgstr "Envoi suspendu : %(name)s"
+
+msgid "It could not be sent and is paused until it is corrected: %(problem)s"
+msgstr "Il n'a pas pu être envoyé et reste suspendu jusqu'à sa correction : %(problem)s"
+
+msgid "%(count)s row of %(list)s, as of %(when)s."
+msgid_plural "%(count)s rows of %(list)s, as of %(when)s."
+msgstr[0] "%(count)s ligne de %(list)s, au %(when)s."
+msgstr[1] "%(count)s lignes de %(list)s, au %(when)s."
+
+msgid "You may not create API tokens."
+msgstr "Vous ne pouvez pas créer de jetons d'API."
+
+msgid "You have %(count)s tokens already: revoke one first."
+msgstr "Vous avez déjà %(count)s jetons : révoquez-en un d'abord."
+
+msgid "API tokens"
+msgstr "Jetons d'API"
+
+msgid "This token may only read."
+msgstr "Ce jeton ne peut que lire."
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "What uses it: a script, a report, a colleague's tool."
+msgstr "Ce qui l'utilise : un script, un rapport, l'outil d'un collègue."
+
+msgid "scope"
+msgstr "portée"
+
+msgid "last used"
+msgstr "dernière utilisation"
+
+msgid "API token"
+msgstr "Jeton d'API"
+
+msgid "Tokens scripts call the API with, as the person who made them."
+msgstr "Les jetons avec lesquels des scripts appellent l'API, au nom de la personne qui les a créés."
+
+msgid "Valid for (days)"
+msgstr "Valable (jours)"
+
+msgid "Every token expires, within %(days)s days."
+msgstr "Tout jeton expire, sous %(days)s jours."
+
+msgid "At most %(days)s days."
+msgstr "Au plus %(days)s jours."
+
+msgid "Copy it now: it will not be shown again."
+msgstr "Copiez-le maintenant : il ne sera plus affiché."
+
+msgid "Copy"
+msgstr "Copier"
+
+msgid "Scope"
+msgstr "Portée"
+
+msgid "Expires"
+msgstr "Expire"
+
+msgid "Last used"
+msgstr "Dernière utilisation"
+
+msgid "Revoke"
+msgstr "Révoquer"
+
+msgid "No token yet."
+msgstr "Aucun jeton pour l'instant."
+
+msgid "Create a token"
+msgstr "Créer un jeton"
+
+msgid "What will use it"
+msgstr "Ce qui va l'utiliser"
+
+msgid "Valid for"
+msgstr "Valable"
+
+msgid "A script sends one in an <code>Authorization: Token ...</code> header and acts as you, with your permissions."
+msgstr "Un script l'envoie dans un en-tête <code>Authorization: Token ...</code> et agit en votre nom, avec vos permissions."
+
+msgid "There is no such transition."
+msgstr "Cette transition n'existe pas."
+
+msgid "There is no such record."
+msgstr "Cet enregistrement n'existe pas."
+
+msgid "This record is no longer in a state it can be %(action)s from."
+msgstr "Cet enregistrement n'est plus dans un état qui permet de le %(action)s."
+
+msgid "You may not do this to this record."
+msgstr "Vous ne pouvez pas faire cela à cet enregistrement."
+
+msgid "%(action)s: %(done)s done, %(skipped)s skipped (not in a state that allows it, or not allowed)."
+msgstr "%(action)s : %(done)s fait(s), %(skipped)s ignoré(s) (pas dans un état qui le permet, ou non autorisé)."

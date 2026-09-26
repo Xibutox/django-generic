@@ -34,7 +34,11 @@ def is_external_account(user: Any) -> bool:
     Such accounts have no usable local password, which is also what
     marks them: their name and password live with the provider.
     """
-    return bool(user and not user.has_usable_password())
+    # Anonymous has neither: nothing to be managed elsewhere.
+    if not getattr(user, "is_authenticated", False):
+        return False
+
+    return not user.has_usable_password()
 
 
 class PreferencesSerializer(FormModelSerializer):

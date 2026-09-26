@@ -30,6 +30,10 @@ jobs:
       - name: message catalogs
         # A .po edited without recompiling translates nothing.
         run: python scripts/compile_messages.py --check
+      - name: OpenAPI description
+        # Every endpoint of the example described, and no guess left:
+        # a resource the schema cannot describe fails here.
+        run: python manage.py spectacular --validate --fail-on-warn --file /dev/null
       - name: bandit
         # B101 (assert) is noise in a codebase that uses asserts as
         # internal invariants rather than as input validation.
@@ -142,8 +146,9 @@ jobs:
       - name: Every extra, on the oldest Django accepted
         run: |
           python -m venv /tmp/full
-          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*"
-          cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py"
+          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,import,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*" pytest pytest-django
+          # --sweep: the project's own PageSweep, from the wheel.
+          cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py" --sweep
       - uses: actions/upload-artifact@v4
         with:
           name: dist

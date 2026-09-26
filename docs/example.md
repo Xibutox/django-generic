@@ -265,7 +265,36 @@ allow, and the endpoint refuses the rest anyway. On a ticket's summary,
 the customer is named but not linked if the customer page is out of
 reach.
 
+**Importing.** On the ticket list, press **Import**, then *Download a
+template* - or export the list and drop the export back in: every row
+comes back *unchanged*. Change a title and a status (in English or
+French) in the file, add a row with a new reference, and drop it again:
+the preview says one to create, one to update, and names any cell it
+cannot read. As `viewer`, the button is not there.
+
+**A ticket's life.** Open an open ticket: the buttons at the top are
+what it can become - *Wait for the customer*, *Resolve* (which asks
+for the resolution), *Close*. Resolve it: the buttons change, and its
+History tab says *Transition: Resolve*. *Reopen* only appears to
+whoever holds `example.reopen_ticket`. On the list, select tickets and
+run *Close*: the ones already closed are counted as skipped.
+
+**Mailing a list.** Filter the ticket list, open **Views** and choose
+*Send by e-mail on a schedule…*: the form holds the list as you see
+it. *Scheduled mailings* (Tasks group) already has *Open urgent
+tickets* for `admin`; *Send now* on it, and the development stack's
+worker log shows the e-mail and its attachment.
+
+**From a script.** `seed_example` printed a read-only token for
+`admin`: `curl -H 'Authorization: Token ...'
+http://127.0.0.1:8000/api/example/ticket/?length=5`. Make others on the
+account page (*API tokens*), and read what each endpoint takes at
+`/api/docs/`. Signed in as `viewer`, the description lists only what
+`viewer` may open.
+
 **Everywhere.** Ctrl+K searches every page, record and wiki page.
+Accents do not matter (`generic.search`): `region` finds *Région
+Occitanie*, and `lefevre` finds the agent *Norah Lefèvre*.
 *Watch* on a record tells you when it changes, and the arrow beside it
 offers every ticket at once; both end up on the *Watching* page.
 
