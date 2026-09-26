@@ -1031,7 +1031,7 @@ class GenericSite:
         names = {
             "notifications": "generic:notification-list",
             "notificationsUnread": "generic:notification-unread-count",
-            "notificationsReadAll": "generic:notification-read-all",
+            "notificationsReadAll": "generic:notification-mark-all-read",
             "preferences": "generic:preferences",
             "profile": "generic:profile",
             "savedViews": "generic:saved-view-list",

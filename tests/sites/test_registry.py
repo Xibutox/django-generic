@@ -296,6 +296,19 @@ class TestChrome:
         assert chrome["client"]["websocketUrl"] == "/ws/events/"
         assert chrome["user"]["authenticated"] is True
 
+    def test_every_framework_endpoint_is_found(self):
+        """Each is looked up by route name, and a name that finds
+        nothing becomes "" - which a page then posts to, itself. The
+        bell's *Mark all as read* did, for a 405: it asked for
+        ``notification-read-all``, while DRF names the action after its
+        method, ``notification-mark-all-read``."""
+        api = site.get_framework_api()
+
+        assert [key for key, url in api.items() if not url] == []
+        assert api["notificationsReadAll"] == (
+            "/api/generic/notifications/read-all/"
+        )
+
     def test_an_anonymous_user_gets_no_socket(self, rf):
         chrome = site.get_chrome(request_for(rf, AnonymousUser()))
 

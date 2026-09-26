@@ -33,6 +33,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
+- *Mark all as read* works, in the bell and on the notifications page.
+  The framework looked its endpoint up by a route name DRF never gave
+  it, got no address, and the bell posted to the page itself (a 405);
+  the notifications page left the button out.
 - *Run now* hands the task to the Celery worker. The web server never
   loaded the project's Celery application, found no broker, and ran
   every task in the request; `example_project/__init__.py` now imports

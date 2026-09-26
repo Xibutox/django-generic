@@ -304,7 +304,9 @@ class NotificationsView(SiteViewMixin, TemplateView):
                 ],
             },
         }
-        context["read_all_url"] = _reverse("generic:notification-read-all")
+        context["read_all_url"] = _reverse(
+            "generic:notification-mark-all-read"
+        )
         context["write_url"] = self.get_write_url()
 
         return context
