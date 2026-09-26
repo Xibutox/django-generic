@@ -213,6 +213,27 @@ class TestReadTransitions:
         assert response.data == {"updated": 3}
         assert Notification.objects.for_user(user).unread().count() == 0
 
+    def test_the_addresses_the_pages_are_given_mark_all_read(
+        self,
+        authenticated_client,
+        client,
+        user,
+    ):
+        """The bell and the notifications page post where they are
+        told, not to a path written here: both were told "" (a 405)."""
+        from generic.sites import site
+
+        NotificationFactory(user=user)
+        client.force_login(user)
+        page = client.get("/notifications/")
+        bell = site.get_framework_api()["notificationsReadAll"]
+
+        assert page.context["read_all_url"] == bell
+        response = authenticated_client.post(bell)
+
+        assert response.status_code == 200
+        assert Notification.objects.for_user(user).unread().count() == 0
+
     def test_marking_all_read_leaves_other_users_alone(
         self,
         authenticated_client,

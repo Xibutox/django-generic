@@ -1621,6 +1621,11 @@ path("api/", include("generic.openapi.urls"))      # before site.urls
 ## 14. Known pitfalls
 
 - `site.urls` must be the **last** URL pattern.
+- A DRF `@action`'s route name comes from its **method** name, not its
+  `url_path`: `mark_all_read` with `url_path="read-all"` is
+  `notification-mark-all-read`. `get_framework_api()` turns a name that
+  finds nothing into `""`, and a page posting to `""` posts to itself
+  (a 405) - `tests/sites/test_registry.py` checks every entry resolves.
 - `daphne` first in `INSTALLED_APPS`, or `runserver` silently drops
   WebSockets.
 - A related table's model must be registered, or the tab cannot load.
