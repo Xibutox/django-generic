@@ -1,13 +1,16 @@
-"""The token knox uses: its hash and expiry, and what a person needs.
+"""A personal API token: knox's hash and expiry, and what a person needs.
 
-``KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"`` makes this the model
-knox reads and writes - knox's own ``AuthToken`` is then swapped out -
-so each token is one row: the hash knox checks, the expiry it enforces,
-and the name, scope and last use a person manages it by.
+It extends knox's abstract token - the hash, the key knox finds it by,
+the expiry - with the name, scope and last use a person manages it by,
+in a table of its own. Knox's own ``AuthToken`` is left alone, unused:
+swapping it (``KNOX_TOKEN_MODEL``) would leave behind the table knox's
+first migration creates regardless, which PostgreSQL then refuses to
+truncate between tests.
 """
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from knox.models import AbstractAuthToken
@@ -20,6 +23,12 @@ class ApiToken(AbstractAuthToken):
         READ = "read", _("Read only")
         READ_WRITE = "read_write", _("Read and write")
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("user"),
+        on_delete=models.CASCADE,
+        related_name="api_tokens",
+    )
     name = models.CharField(
         _("name"),
         max_length=80,

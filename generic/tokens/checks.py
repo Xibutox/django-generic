@@ -9,7 +9,6 @@ from django.conf import settings
 from django.core import checks
 
 AUTHENTICATION = "generic.tokens.authentication.TokenAuthentication"
-MODEL = "generic_tokens.ApiToken"
 
 
 @checks.register()
@@ -24,17 +23,6 @@ def check_tokens(app_configs: Any = None, **kwargs: Any) -> list:
                 hint="pip install 'django-generic[api]' and add 'knox' to "
                 "INSTALLED_APPS. See docs/api.md.",
                 id="generic.E006",
-            )
-        )
-
-    elif getattr(settings, "KNOX_TOKEN_MODEL", "") != MODEL:
-        messages.append(
-            checks.Error(
-                "generic.tokens is installed but knox keeps its own "
-                "tokens: the ones made on the account page would not "
-                "sign anybody in.",
-                hint=f"KNOX_TOKEN_MODEL = '{MODEL}'. See docs/api.md.",
-                id="generic.E007",
             )
         )
 

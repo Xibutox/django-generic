@@ -153,8 +153,8 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning
-├── tokens/                 optional app generic.tokens: ApiToken (knox's token model, via
-│                           KNOX_TOKEN_MODEL), TokenAuthentication (scope, last use),
+├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
+│                           its own table), TokenAuthentication (scope, last use),
 │                           api/generic/tokens/, the account section, the People screen
 ├── openapi/                framework_schema(), ResourceAutoSchema (drf-spectacular),
 │                           urls.py: api/schema/ and api/docs/ (sidecar files)
@@ -291,8 +291,7 @@ The full wiring with every line explained is `docs/installation.md`;
 the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
-`E006`/`E007`/`W008` `generic.tokens` without knox / without
-`KNOX_TOKEN_MODEL` / its class not in DRF, `E008` OpenAPI pages without
+`E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
 drf-spectacular, `I001`). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
@@ -1564,14 +1563,16 @@ history_of(ticket)                 # every version, newest first
 
 ```python
 INSTALLED_APPS += ["knox", "generic.tokens", "drf_spectacular", "drf_spectacular_sidecar"]
-KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] += ["generic.tokens.authentication.TokenAuthentication"]
 REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
 path("api/", include("generic.openapi.urls"))      # before site.urls
 ```
 
-- A token = `ApiToken(AbstractAuthToken)`: digest (pk), token_key,
-  user, created, expiry + name, scope (`read`/`read_write`),
+- A token = `ApiToken(AbstractAuthToken)`, its own table, never
+  `KNOX_TOKEN_MODEL` (knox's first migration creates its table anyway,
+  and PostgreSQL then cannot truncate `auth_user` between tests):
+  digest (pk), token_key, user (`related_name="api_tokens"`), created,
+  expiry + name, scope (`read`/`read_write`),
   last_used_at (written once a minute at most, by `update()`). It acts
   with its owner's permissions; a read token on an unsafe method is a
   403 raised by the authentication class. Made on the account page

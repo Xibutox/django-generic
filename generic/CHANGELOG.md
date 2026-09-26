@@ -51,7 +51,7 @@ version.
   in forms, grids and imports; the history names the transition.
   `Generic.dialogs.fields()` asks a few values at once. The `fsm` extra.
 - The API for scripts. `generic.tokens` (on django-rest-knox,
-  `KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"`): personal tokens made
+  its hashing, in a table of its own): personal tokens made
   on the account page and shown once, read only or read and write, with
   an expiry and their last use; an *API tokens* screen under People to
   revoke anyone's; `generic.tokens.authentication.TokenAuthentication`.
@@ -59,7 +59,7 @@ version.
   describe every generated endpoint as it behaves - the DataTables
   envelope and its filter tree, charts, actions, exports, imports -
   listing only what the reader may use, Swagger UI served from the
-  sidecar's files. Checks `generic.E006`, `E007`, `W008`, `E008`;
+  sidecar's files. Checks `generic.E006`, `W008`, `E008`;
   settings `API_TOKEN_*`; the `api` extra.
 - Scheduled mailings (`generic.mailings`): *Send by e-mail on a
   schedule* in a list's Views menu sends the table as it is - filters,

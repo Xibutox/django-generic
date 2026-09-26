@@ -60,8 +60,9 @@ class Migration(migrations.Migration):
                     "user",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="auth_token_set",
+                        related_name="api_tokens",
                         to=settings.AUTH_USER_MODEL,
+                        verbose_name="user",
                     ),
                 ),
             ],

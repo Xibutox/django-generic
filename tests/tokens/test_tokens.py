@@ -293,13 +293,6 @@ class TestTheScreens:
 
 
 class TestTheChecks:
-    def test_knox_keeping_its_own_tokens_is_named(self, settings):
-        from generic.tokens.checks import check_tokens
-
-        settings.KNOX_TOKEN_MODEL = "knox.AuthToken"
-
-        assert "generic.E007" in [message.id for message in check_tokens()]
-
     def test_tokens_the_api_does_not_accept_are_named(self, settings):
         from generic.tokens.checks import check_tokens
 

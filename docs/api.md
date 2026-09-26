@@ -31,9 +31,6 @@ INSTALLED_APPS = [
     ...,
 ]
 
-# The tokens knox writes are generic.tokens' own.
-KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
@@ -56,7 +53,7 @@ python manage.py migrate
 ```
 
 `python manage.py check` names what is missing: `generic.E006` knox not
-installed, `generic.E007` `KNOX_TOKEN_MODEL` not set, `generic.W008`
+installed, `generic.W008`
 the authentication class not in DRF's list, `generic.E008` the OpenAPI
 pages mounted without drf-spectacular, its sidecar or its schema class.
 

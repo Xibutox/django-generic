@@ -119,9 +119,6 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-# The tokens knox writes are generic.tokens' own (docs/api.md).
-KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",

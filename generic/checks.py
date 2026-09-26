@@ -17,7 +17,6 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W006  Django 6.1 or later, and MAILERS is not set
     generic.W007  a resource ranks its search without generic.search
     generic.E006  generic.tokens without knox (generic/tokens/checks.py)
-    generic.E007  generic.tokens, and KNOX_TOKEN_MODEL is not its model
     generic.W008  generic.tokens, its authentication class not in DRF
     generic.E008  the OpenAPI pages without drf-spectacular
     generic.I001  the JavaScript catalog is not mounted
