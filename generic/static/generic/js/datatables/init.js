@@ -121,6 +121,11 @@
   window.DrfDataTable = GenericDataTable;
   window.GenericDataTables.start = start;
 
+  // Scripts deferred before this one (a summary page's tabs, started
+  // by Alpine) may ask for a table before `start` exists: they wait
+  // for this.
+  document.dispatchEvent(new window.CustomEvent("generic:datatables-loaded"));
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       initialize(document);

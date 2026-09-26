@@ -79,6 +79,10 @@ version.
   when the app is missing.
 
 ### Fixed
+- A record's summary page no longer throws `GenericDataTables.start is
+  not a function` and leaves its first related tab empty when Alpine
+  shows the tab before the tables' script has loaded: the tab waits
+  for the new `generic:datatables-loaded` event.
 - Exports and forms speak each request's language. Column titles and
   form sections were turned into text when a resource's serializers
   were built - once per process - so every export and form after the

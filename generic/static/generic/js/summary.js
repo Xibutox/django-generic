@@ -28,6 +28,28 @@
     }
   }
 
+  /** Start a related table, once the tables' script has loaded.
+   *
+   * This script and Alpine run before the tables' own script, so the
+   * first tab may be shown before `GenericDataTables.start` exists.
+   */
+  function startTable(table) {
+    var tables = window.GenericDataTables;
+
+    if (tables && typeof tables.start === "function") {
+      tables.start(table);
+      return;
+    }
+
+    document.addEventListener(
+      "generic:datatables-loaded",
+      function () {
+        window.GenericDataTables.start(table);
+      },
+      { once: true }
+    );
+  }
+
   /** The name of the history tab, which is not a related table. */
   var HISTORY_TAB = "__history";
 
@@ -299,7 +321,7 @@
               { once: true }
             );
 
-            window.GenericDataTables.start(table);
+            startTable(table);
           });
         },
 
