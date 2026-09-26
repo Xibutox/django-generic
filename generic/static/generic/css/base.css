@@ -555,9 +555,23 @@ html:not(.sidebar-unpinned).sidebar-closed .sidebar {
   text-overflow: ellipsis;
 }
 
+/* A crumb's text shortens with an ellipsis rather than running under
+   the next separator. The crumbs on the way keep their width, a long
+   one - a record's title - capped; only the current page shrinks,
+   once there is no room left at all. */
+.breadcrumbs li a,
 .breadcrumbs li span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.breadcrumbs li:not(:last-child) {
+  flex-shrink: 0;
+}
+
+.breadcrumbs li:not(:first-child):not(:last-child) a {
+  max-width: 8rem;
 }
 
 .breadcrumbs li + li::before {

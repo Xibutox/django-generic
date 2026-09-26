@@ -7,6 +7,12 @@ charts computed by the database, schema-driven forms with inline
 editing, per-user colour personalisation, a small wiki, and real-time
 events over WebSocket.
 
+![A list page: charts computed by the database above a filterable table](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/list.png)
+
+*The example support desk that ships with the repository - every
+screenshot below is a page it generates, or a page of its own.*
+[More screenshots](#screenshots)
+
 The guiding idea is **declare once**. Declare how a model should appear
 and you get its list page, its summary page, its forms, its delete
 page, its REST endpoint and its place in the navigation:
@@ -74,6 +80,19 @@ class BookViewSet(DataTableViewSet):
     serializer_class = BookSerializer
     queryset = Book.objects.select_related("author")
 ```
+
+## Screenshots
+
+Taken from the example application in this repository
+([Seeing it run](#seeing-it-run)); click one for the full size.
+
+| | |
+| --- | --- |
+| [![Filters as chips](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/filters.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/filters.png) **Filters as chips** - typed as `status:open priority:urgent,high`, kept in the address | [![A record's summary page](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/record.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/record.png) **A summary page** - figures, typed values, actions, related tables |
+| [![A form](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/form.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/form.png) **Forms** - drawn from the serializer: tabs, Select2 relations with edit and add popups | [![Dark theme with charts](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/dark.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/dark.png) **Charts and the dark theme** - computed by the database, drawn in the page's colours |
+| [![An editable grid](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/grid.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/grid.png) **Grids** - every writable cell a control, saved as it is left | [![The command palette](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/palette.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/palette.png) **Ctrl+K** - every page and record, searched from anywhere |
+| [![A page of the project's own: a map](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/map.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/map.png) **Pages of your own** - a map, declared on the resource with `@page` | [![A page of the project's own: a timeline](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/timeline.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/timeline.png) **...or a timeline** - the record found, the permissions checked, the frame drawn |
+| [![The dashboard](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/dashboard.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/dashboard.png) **The dashboard** - a pinned wiki page, shortcuts with live counts, charts | [![On a phone](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/mobile.png)](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/mobile.png) **On a phone** - the same pages, the navigation as an overlay |
 
 ## Installation
 

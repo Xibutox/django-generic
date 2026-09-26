@@ -73,7 +73,11 @@ jobs:
           if [ -n "${{ matrix.django }}" ]; then pip install "Django==${{ matrix.django }}"; fi
           if [ -n "${{ matrix.drf }}" ]; then pip install "djangorestframework==${{ matrix.drf }}"; fi
           python -c "import django, rest_framework; print('Django', django.get_version(), 'DRF', rest_framework.VERSION)"
-      - run: pytest --cov=generic --cov-report=xml --cov-fail-under=80
+      - run: pytest --cov=generic --cov-report=xml --cov-fail-under=80 --junitxml=junit.xml
+      - name: Failures as annotations
+        # Readable on the run's page by anyone, without opening the log.
+        if: failure()
+        run: python scripts/ci_annotations.py junit.xml
 
   integration:
     name: Tests against Postgres and Redis
@@ -109,7 +113,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -e ".[export,events,tasks,postgres,wiki,dev]"
-      - run: pytest -q --no-cov
+      - run: pytest -q --no-cov --junitxml=junit.xml
+      - name: Failures as annotations
+        if: failure()
+        run: python scripts/ci_annotations.py junit.xml
 
   package:
     name: Package, installed as a user installs it

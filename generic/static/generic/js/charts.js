@@ -357,9 +357,10 @@
 
     var option = {
       grid: {
-        left: 4,
-        // The last category's label is centred on its bar and would
-        // overflow the edge; containLabel does not count it.
+        // The first and last categories' labels are centred on their
+        // bars and would overflow the edges - "05/19/2025" lost its 0 -
+        // and containLabel counts neither.
+        left: horizontal ? 4 : 28,
         right: horizontal ? 16 : 32,
         top: showLegend ? 36 : 12,
         bottom: crowded ? 44 : 4,
