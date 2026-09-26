@@ -193,10 +193,19 @@ def test_an_action_runs_on_the_selection(admin_client, projects):
     assert response.json()["count"] == 1
 
 
-def test_the_pages_render(admin_client, projects):
-    assert admin_client.get("/myapp/project/").status_code == 200
-    assert admin_client.get(f"/myapp/project/{projects['apollo'].pk}/").status_code == 200
-    assert admin_client.get("/myapp/project/add/").status_code == 200
+```
+
+```python
+# tests/test_pages.py - every page and generated endpoint, swept: write
+# no test per page (generic.testing.PageSweep, docs/testing.md).
+import pytest
+from generic.testing import PageSweep
+
+
+class TestEveryPage(PageSweep):
+    @pytest.fixture
+    def records(self, db, projects):
+        return {"myapp.project": projects["apollo"]}
 ```
 
 Minimum tests per resource: list, one filter, permission refusal, summary

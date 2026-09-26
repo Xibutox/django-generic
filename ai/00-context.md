@@ -162,6 +162,7 @@ generic/
 │                           (text_lookup, fold, normalize), lookups.py the unaccented transform,
 │                           operations.py InstallUnaccent / CreateSearchIndex, ranking.py search_rank
 ├── forms/fieldsets.py      admin-style fieldsets for classic Django forms
+├── testing/                PageSweep (pytest + pytest-django): a project's pages swept
 ├── views/                  classic server-rendered views: GenericListView, GenericDetailView,
 │                           GenericCreateView, GenericUpdateView, GenericDeleteView, DataTableView;
 │                           mixins.py (PageMixin...), toolbar.py (ToolbarItem, Breadcrumb)
@@ -1304,12 +1305,17 @@ Read them via `from generic.conf import generic_settings`.
 
 ## 11. Testing conventions
 
-- **Every page is already covered**: `tests/test_pages.py` walks the
-  URLconf and opens each page three ways (superuser → 200; a user with
-  no permissions and a stranger → anything below 500), plus every
-  generated endpoint per resource — rows, form schema, summary, each
-  column's `facets/`, both exports, every chart. A new page needs no
-  new test; a page whose address needs a value adds a record to `Pool`.
+- **Every page is already covered**: `tests/test_pages.py` is a
+  `generic.testing.PageSweep` subclass: it walks the URLconf and opens
+  each page three ways (superuser → 200 or `expected`; a user with no
+  permissions and a stranger → anything below 500), plus every
+  generated endpoint per resource — rows, form schema, summary,
+  history, each column's `facets/`, both exports, every chart, the
+  import's schema and template, a record's transitions — and the
+  OpenAPI description. A new page needs no new test; a page whose
+  address needs a value adds a record to the `records` fixture (by model
+  label) or teaches `value_for`. Framework models are pooled by the base
+  (`framework_records`). **Every new project gets one** (docs/testing.md).
 - pytest + pytest-django; `pytestmark = pytest.mark.django_db`.
 - Use Django's `client.force_login(user)` / `admin_client` for pages and
   the JSON API; assert on JSON and `response.context`, not on scraped HTML.

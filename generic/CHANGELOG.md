@@ -31,6 +31,15 @@ version.
   `import/template/` and `import/`; hooks `clean_import_row` and
   `save_import_row`; settings `IMPORT_MAX_ROWS`,
   `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- `generic.testing.PageSweep`: a project's `tests/test_pages.py` in about
+  ten lines - every page opened by a superuser (in each of
+  `languages`), a user allowed nothing and a stranger, and every
+  generated endpoint behind them: rows, form schema, summary, history,
+  each column's values, exports, charts, imports, transitions, the
+  OpenAPI description. The framework's own screens get their records
+  from the base class; a page whose address nothing fills is named.
+  The framework's suite runs on it, and `scripts/smoke_install.py
+  --sweep` runs it from the wheel.
 - State machines: `transitions = ("status",)` on a resource offers
   each django-fsm-2 `@transition` of that field as a button on the
   record's page - only from the states it leaves, only to a reader

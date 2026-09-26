@@ -98,6 +98,7 @@ generic/
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
 ├── wiki/                Optional: pages, editor, history, pinned pages
+├── testing/             PageSweep: a project's pages and endpoints, swept by pytest
 ├── tokens/              Optional: personal API tokens on knox (ApiToken)
 ├── openapi/             The OpenAPI description: ResourceAutoSchema, pages
 ├── search/              Optional: every text match sets accents aside
