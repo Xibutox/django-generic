@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
+from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
 from generic.events.bus import (
@@ -127,6 +131,30 @@ class TestDelivery:
         message = await communicator.receive_json_from()
 
         assert message["type"] == "pong"
+
+        await communicator.disconnect()
+
+    @pytest.mark.skipif(
+        "RedisChannelLayer"
+        not in settings.CHANNEL_LAYERS["default"]["BACKEND"],
+        reason="only the Redis layer waits on a connection",
+    )
+    async def test_a_quiet_socket_still_hears(self, user):
+        """channels-redis waits on Redis for the next event, 5 seconds
+        at a time. A connection that gives up on a reply first - as
+        redis-py 8 does by default - ends the consumer, and with it
+        every socket left quiet that long."""
+        communicator = await connect(user)
+
+        await asyncio.sleep(get_channel_layer().brpop_timeout + 1)
+        await asend_to_groups(
+            [user_group(user.pk)],
+            Event(type="notification.created", payload={"id": 2}),
+        )
+
+        message = await communicator.receive_json_from(timeout=5)
+
+        assert message["payload"] == {"id": 2}
 
         await communicator.disconnect()
 

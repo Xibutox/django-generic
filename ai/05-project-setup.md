@@ -20,7 +20,7 @@ rather than inventing new wiring.
 ├── pyproject.toml            dependencies: django-generic with its extras
 ├── manage.py                 defaults to <project>.settings.dev
 ├── <project>/
-│   ├── __init__.py           may import the Celery app (Celery's usual pattern)
+│   ├── __init__.py           imports the Celery app (Celery's usual pattern)
 │   ├── settings/             copy of example_project/settings/:
 │   │   ├── __init__.py       refuses to be the settings module itself
 │   │   ├── base.py           apps, middleware, templates, i18n, GENERIC,
@@ -78,11 +78,14 @@ rather than inventing new wiring.
 4. **Entry points** — `manage.py` and `celery.py` default to
    `<project>.settings.dev`, `asgi.py` and `wsgi.py` to
    `<project>.settings.prod`. Copy `example_project/asgi.py` and keep
-   `AllowedHostsOriginValidator`.
+   `AllowedHostsOriginValidator`. Copy `example_project/__init__.py`:
+   it imports the Celery app, without which the web server never
+   hands a task to the worker.
 5. **Docker** — copy `docker/` and `.dockerignore`, replacing
    `example_project` (Dockerfile `collectstatic` step and CMD, compose
    files) and the compose project names. Dev: runserver on the mounted
-   source, migrations on start. Prod: Caddy in front, a `migrate`
+   source, a `migrate` service on every start that web, worker and
+   beat wait for. Prod: Caddy in front, a `migrate`
    service the others wait for, nothing published but Caddy, every
    value from `docker/prod.env` via `--env-file`.
 6. **Tests** — `tests/settings.py` importing the project settings with

@@ -8,7 +8,7 @@ development value would be copied along with it.
 
 from __future__ import annotations
 
-import importlib
+import importlib.util
 import os
 import runpy
 import subprocess
@@ -99,6 +99,18 @@ class TestProduction:
         assert "RedisCache" in settings["CACHES"]["default"]["BACKEND"]
         assert settings["CELERY_TASK_ALWAYS_EAGER"] is False
         assert settings["CELERY_BROKER_URL"] == PRODUCTION["REDIS_URL"]
+
+    def test_a_quiet_socket_is_not_timed_out(self, load):
+        """channels-redis waits up to ``brpop_timeout`` on Redis for a
+        socket's next event. A read that gives up first - redis-py 8's
+        default does, after 5 seconds - closes every quiet socket."""
+        layer = pytest.importorskip("channels_redis.core").RedisChannelLayer
+        settings = load("prod", **PRODUCTION)
+
+        (host,) = settings["CHANNEL_LAYERS"]["default"]["CONFIG"]["hosts"]
+
+        assert host["address"] == PRODUCTION["REDIS_URL"]
+        assert host["socket_timeout"] > layer.brpop_timeout
 
     def test_https_is_assumed(self, load):
         settings = load("prod", **PRODUCTION)
@@ -299,3 +311,30 @@ class TestProductionForReal:
         assert result.returncode == 0, result.stdout + result.stderr
         assert (tmp_path / "static" / "staticfiles.json").exists()
         assert list((tmp_path / "static").rglob("base.*.css"))
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("celery") is None,
+    reason="Celery (the tasks extra) is not installed in this environment",
+)
+def test_a_task_started_by_the_site_goes_to_the_worker(tmp_path):
+    """Every process of the project loads its Celery application, not
+    only the worker: a task started from a page is handed to the broker
+    the settings name instead of running in the request. Asked in a
+    process of its own - the import makes that application Celery's
+    current one, and the suite's must stay its own."""
+    result = manage(
+        "shell",
+        "--no-imports",
+        "-c",
+        "from generic.tasks import get_task\n"
+        "from generic.tasks.runner import can_queue\n"
+        "print(can_queue(get_task('example.overdue_digest')))",
+        **{
+            **PRODUCTION,
+            "DATABASE_URL": f"sqlite:///{(tmp_path / 'db').as_posix()}",
+        },
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.split()[-1] == "True"

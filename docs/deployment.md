@@ -40,6 +40,12 @@ its default:
 | `example_project/asgi.py` | `prod` | what a server imports: a server started without the variable must never run with DEBUG on |
 | `example_project/wsgi.py` | `prod` | the same |
 
+`example_project/__init__.py` imports the Celery application, as
+Celery's own guide for Django does, so that every process of the
+project has it - the web server and `manage.py` as well as the worker.
+Without it only the worker would: a task started from a page would find
+no broker configured and run in the request, the worker idle.
+
 The production image sets `DJANGO_SETTINGS_MODULE` for every command
 run in it, `manage.py` included. `example_project.settings` alone is
 refused with a message saying which two to choose from — it is what an
@@ -75,9 +81,13 @@ docker compose -f docker/docker-compose.dev.yml up --build
 docker compose -f docker/docker-compose.dev.yml exec web python manage.py seed_example
 ```
 
-- **web** runs `migrate`, then `runserver 0.0.0.0:8000`, from the
-  `dev` image, with the working copy mounted over `/app`: a change to
-  the code reloads the server, as on the host.
+- **migrate** runs `migrate --noinput` and exits; web, worker and beat
+  wait for it to succeed. Beat reads its schedules the moment it
+  starts, and on a new database would find no table. A branch that
+  adds a migration is one more `up`.
+- **web** runs `runserver 0.0.0.0:8000` from the `dev` image, with the
+  working copy mounted over `/app`: a change to the code reloads the
+  server, as on the host.
 - **worker** and **beat** run Celery from the same image. Celery does
   not reload: after changing a task, restart the worker —
   `docker compose -f docker/docker-compose.dev.yml restart worker`.
@@ -93,6 +103,10 @@ The suite runs there too, against that Postgres and Redis:
 ```bash
 docker compose -f docker/docker-compose.dev.yml run --rm web pytest
 ```
+
+The image keeps the coverage data in `/tmp` (`COVERAGE_FILE`): the
+working copy mounted over `/app` is the host user's, who is not always
+the container's uid 1000.
 
 Nothing in this stack is a secret — fixed passwords, published ports.
 Never expose it beyond your machine.
