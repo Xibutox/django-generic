@@ -1,0 +1,12 @@
+{
+  // Offered when the folder is opened. The debugger is the one
+  // launch.json needs; the others run the checks CI runs.
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.flake8",
+    "batisteo.vscode-django"
+  ]
+}

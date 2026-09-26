@@ -1,0 +1,69 @@
+"""Framework REST routes.
+
+Mount them under whatever prefix suits the project::
+
+    path("api/generic/", include("generic.urls", namespace="generic")),
+
+The pages - dashboard, account, sign in - come with the site instead::
+
+    path("", site.urls),
+"""
+
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from generic.accounts.api import (
+    FormSchemaView,
+    PreferencesView,
+    ProfileView,
+    SavedViewViewSet,
+)
+from generic.accounts.serializers import (
+    PreferencesSerializer,
+    ProfileSerializer,
+)
+from generic.events.api import NotificationViewSet
+from generic.maintenance.api import (
+    RestartAnnouncementView,
+    RestartFormSchemaView,
+)
+from generic.watch.api import WatchViewSet
+
+app_name = "generic"
+
+router = DefaultRouter()
+router.register(
+    "notifications",
+    NotificationViewSet,
+    basename="notification",
+)
+router.register("saved-views", SavedViewViewSet, basename="saved-view")
+router.register("watches", WatchViewSet, basename="watch")
+
+urlpatterns = [
+    path(
+        "account/preferences/",
+        PreferencesView.as_view(),
+        name="preferences",
+    ),
+    path(
+        "account/preferences/form-schema/",
+        FormSchemaView.as_view(serializer_class=PreferencesSerializer),
+        name="preferences-schema",
+    ),
+    path("account/profile/", ProfileView.as_view(), name="profile"),
+    path(
+        "account/profile/form-schema/",
+        FormSchemaView.as_view(serializer_class=ProfileSerializer),
+        name="profile-schema",
+    ),
+    # Planned restarts: read by every page, written by whoever holds
+    # the announcement's add permission.
+    path("restart/", RestartAnnouncementView.as_view(), name="restart"),
+    path(
+        "restart/form-schema/",
+        RestartFormSchemaView.as_view(),
+        name="restart-schema",
+    ),
+    path("", include(router.urls)),
+]

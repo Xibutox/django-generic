@@ -1,0 +1,150 @@
+/* Server-rendered listings: table, sorting, bulk actions, pagination. */
+
+/* A wide table scrolls inside its own box; the page itself must never
+   scroll sideways. */
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+}
+
+.object-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-base);
+}
+
+.object-table th,
+.object-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.object-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-sunken);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.object-table thead th a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: inherit;
+}
+
+.object-table tbody tr:nth-child(even) {
+  background: var(--surface-stripe);
+}
+
+.object-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.object-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.object-table__select {
+  width: 2.5rem;
+  white-space: nowrap;
+}
+
+.object-table__empty td {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.sort-indicator {
+  display: inline-block;
+  min-width: 0.75em;
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+}
+
+/* -- Bulk actions ------------------------------------------------------ */
+
+.actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.actions-bar select {
+  min-height: var(--control-height-sm);
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+}
+
+.actions-bar__counter {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* -- Pagination -------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pagination__summary {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.pagination__pages a,
+.pagination__pages span {
+  display: inline-block;
+  min-width: 2rem;
+  padding: var(--space-1) var(--space-2);
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+.pagination__pages a:hover {
+  background: var(--surface-hover);
+  text-decoration: none;
+}
+
+.pagination__pages .is-current {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 600;
+}

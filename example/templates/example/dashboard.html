@@ -1,0 +1,181 @@
+{% extends "generic/site/index.html" %}
+{% load i18n generic_ui %}
+
+{# The site's dashboard, with a tour of what the example demonstrates. #}
+{# Pointed at from example/resources.py: site.index_template.          #}
+
+{% block dashboard_intro %}
+  {# Charts the resources declare, drawn anywhere with one tag each.   #}
+  {# A user without the view permission on a resource sees none of    #}
+  {# its charts.                                                        #}
+  <div class="chart-grid" style="margin-bottom: var(--space-5);">
+    {% generic_chart "example.ticket" "opened" %}
+    {% generic_chart "example.ticket" "effort" %}
+    {% generic_chart "example.timeentry" "hours_by_month" %}
+    {% generic_chart "example.ticket" "by_customer" %}
+  </div>
+
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <div class="card__header">
+      <h2 class="card__title">{% icon "explore" %} {% translate "What to try" %}</h2>
+      <span class="muted">{% translate "Everything below comes from example/resources.py" %}</span>
+    </div>
+
+    <div class="grid-auto">
+      <div class="stack">
+        <h3>{% icon "table" "icon--sm" %} {% translate "Tables" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            Filter any column, search with several words (put ! before one
+            to exclude it), hide columns, pick a suggested view or save
+            your own, export every matching row, tick rows and run a bulk
+            action. Status, priority and tags are coloured tags, their
+            colours read from the records. Right-click a row for its menu;
+            double-click to open it.
+          {% endblocktranslate %}
+        </p>
+        <a class="button button--sm" href="{% url 'site:example_ticket_list' %}">
+          {% icon "confirmation_number" "icon--sm" %} {% translate "Tickets" %}
+        </a>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "article" "icon--sm" %} {% translate "Summary pages" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            A record opens on its summary: figures, its values with links
+            to the related records, and a tab per related table - each
+            with its own filters, exports and live updates. The largest
+            customer has close to a hundred tickets and hundreds of hours.
+          {% endblocktranslate %}
+        </p>
+        <div class="cluster">
+          {% if busy_customer %}
+            <a class="button button--sm" href="{% url 'site:example_customer_detail' busy_customer.pk %}">
+              {% icon "domain" "icon--sm" %} {{ busy_customer }}
+            </a>
+          {% endif %}
+          {% if first_ticket %}
+            <a class="button button--sm" href="{% url 'site:example_ticket_detail' first_ticket.pk %}">
+              {% icon "confirmation_number" "icon--sm" %} {{ first_ticket.reference }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "bar_chart" "icon--sm" %} {% translate "Charts" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            Declared on the resources and computed by the database. Above a
+            list they follow its filters, and a click on a bar or a slice
+            filters the table. On a summary page they cover the record's
+            related rows. Switch the period, show the figures, or download
+            the image.
+          {% endblocktranslate %}
+        </p>
+        <div class="cluster">
+          <a class="button button--sm" href="{% url 'site:example_timeentry_list' %}">
+            {% icon "schedule" "icon--sm" %} {% translate "Time entries" %}
+          </a>
+          {% if busy_customer %}
+            <a class="button button--sm" href="{% url 'site:example_customer_detail' busy_customer.pk %}#related-tickets">
+              {% icon "domain" "icon--sm" %} {{ busy_customer }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "auto_stories" "icon--sm" %} {% translate "Wiki" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            Pages in a menu, written with a rich-text editor by the people
+            allowed to - admins. Every version is kept and can be restored;
+            a page can be pinned to this dashboard, like the one above.
+          {% endblocktranslate %}
+        </p>
+        <a class="button button--sm" href="{% url 'generic_wiki:index' %}">
+          {% icon "auto_stories" "icon--sm" %} {% translate "Open the wiki" %}
+        </a>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "edit_note" "icon--sm" %} {% translate "Forms and inlines" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            Team, assignee and tags are Select2 fields searching the API as
+            you type; the pencil and plus beside them edit or create the
+            related record in a popup. Comments are edited as table rows,
+            a team's agents as cards. History is a tab.
+          {% endblocktranslate %}
+        </p>
+        <div class="cluster">
+          <a class="button button--sm" href="{% url 'site:example_ticket_add' %}">
+            {% icon "add" "icon--sm" %} {% translate "New ticket" %}
+          </a>
+          {% if first_ticket %}
+            <a class="button button--sm" href="{% url 'site:example_ticket_change' first_ticket.pk %}">
+              {% icon "edit" "icon--sm" %} {{ first_ticket.reference }}
+            </a>
+          {% endif %}
+          {% if busy_team %}
+            <a class="button button--sm" href="{% url 'site:example_team_change' busy_team.pk %}">
+              {% icon "groups" "icon--sm" %} {{ busy_team }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "bolt" "icon--sm" %} {% translate "Live updates" %}</h3>
+        <p class="card__description">
+          {% blocktranslate trimmed %}
+            Open the ticket list in two windows and edit a ticket in one:
+            the other refreshes by itself. The bell counts notifications as
+            they arrive - from what you watch, from tasks, from messages.
+          {% endblocktranslate %}
+        </p>
+        <a class="button button--sm" href="{% url 'example:events' %}">
+          {% icon "bolt" "icon--sm" %} {% translate "Live updates" %}
+        </a>
+      </div>
+
+      <div class="stack">
+        <h3>{% icon "person" "icon--sm" %} {% translate "You" %}</h3>
+        <p class="card__description">
+          {% blocktranslate %}
+            Press Ctrl+K to search every page and record. Press Watch on a
+            record to be told when it changes, and open its History tab to
+            see who changed what. Your preferences - theme, rows per page,
+            whether tables remember their filters - are saved on your
+            account.
+          {% endblocktranslate %}
+        </p>
+        <a class="button button--sm" href="{% url 'site:account' %}">
+          {% icon "manage_accounts" "icon--sm" %} {% translate "Account settings" %}
+        </a>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block dashboard_extra %}
+  <section class="card" style="margin-top: var(--space-5);">
+    <div class="card__header">
+      <h2 class="card__title">{% icon "history_edu" %} {% translate "Classic views" %}</h2>
+    </div>
+    <p class="card__description">
+      {% blocktranslate %}
+        The server-rendered generic views - list, detail, create with a
+        Django form, delete with the cascade preview - are kept under
+        /demo/ for comparison, with their own feature guide.
+      {% endblocktranslate %}
+    </p>
+    <p style="margin-top: var(--space-3);">
+      <a class="button button--sm" href="{% url 'example:home' %}">
+        {% icon "menu_book" "icon--sm" %} {% translate "Feature guide" %}
+      </a>
+    </p>
+  </section>
+{% endblock %}

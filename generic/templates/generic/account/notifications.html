@@ -1,0 +1,22 @@
+{% extends "generic/datatable.html" %}
+{% load i18n generic_ui %}
+
+{% block bodyclass %}page-datatable page-notifications{% endblock %}
+
+{% block object_tools %}
+  {% if read_all_url %}
+    <button type="button"
+            class="button"
+            x-data
+            @click="Generic.api.post('{{ read_all_url|escapejs }}', {}).then(function () { document.dispatchEvent(new CustomEvent('generic:tables-reload')); Generic.toast('{{ _('Everything is marked as read.')|escapejs }}', 'success'); })">
+      {% icon "done_all" %}
+      {% translate "Mark all as read" %}
+    </button>
+  {% endif %}
+  {% if write_url %}
+    <a class="button" href="{{ write_url }}">
+      {% icon "campaign" %}
+      {% translate "Write a message" %}
+    </a>
+  {% endif %}
+{% endblock %}

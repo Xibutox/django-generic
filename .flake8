@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 79
+extend-exclude =
+    .venv,
+    migrations,
+    build,
+    dist
+# E203: black's slice spacing disagrees with pycodestyle.
+# W503: line break before binary operator, which black produces.
+extend-ignore = E203, W503
+per-file-ignores =
+    generic/api/__init__.py: F401
+    generic/events/__init__.py: F401
+    generic/models.py: F401
+    tests/*: E501

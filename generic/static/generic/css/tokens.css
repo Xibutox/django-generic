@@ -1,0 +1,305 @@
+/*
+ * Design tokens.
+ *
+ * Every colour used anywhere in the framework is named here, and every
+ * one of them is computed: from the colour scheme in force and five
+ * appearance parameters. Moving a few sliders restyles the whole
+ * interface - the way Linear generates its themes from a base, an
+ * accent and a contrast rather than hand-writing a hundred values.
+ *
+ * The colours are written in OKLCH, whose lightness is perceptual: the
+ * same L reads as the same brightness whatever the hue, so the text
+ * contrast worked out for one accent holds for every other.
+ *
+ * light-dark() picks the variant for the scheme in force:
+ *
+ *   :root                          follows the system
+ *   [data-theme="light" | "dark"]  an explicit choice, which wins
+ *
+ * Projects set the parameters, or override single tokens, through
+ * GENERIC["THEME"]; users set the parameters from their account page,
+ * rendered as an inline style on <html> so they apply before paint.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* -- Appearance parameters ---------------------------------------- */
+
+  /* Hue of the accent, in degrees: 262 blue, 150 green, 25 red. */
+  --ui-hue: 262;
+  /* How saturated colours are: 0 greys only, 1 standard, 1.3 vivid. */
+  --ui-colorfulness: 1;
+  /* How much of the hue the greys carry: 0 neutral, 1 tinted. */
+  --ui-tint: 0.35;
+  /* -1 soft, 0 standard, 1 strong. The system's "more contrast"
+     setting raises the default; a user's own choice wins over both. */
+  --ui-contrast: var(--ui-contrast-system, 0);
+  /* Alternate table rows: 0 none, 1 strong. */
+  --ui-stripes: 0.6;
+
+  /* Shorthands for the formulas below. */
+  --_h: var(--ui-hue);
+  --_c: var(--ui-contrast);
+  --_cf: var(--ui-colorfulness);
+  /* Chroma of the greys, and of the accent-tinted greys (hover). */
+  --_nc: calc(0.03 * var(--ui-tint) * min(var(--ui-colorfulness), 1));
+  --_tc: calc(var(--_nc) + 0.02 * var(--ui-colorfulness));
+
+  /*
+   * Each colour below is light-dark(<light>, <dark>). Lightness moves
+   * with the contrast: text away from the background, borders and
+   * stripes further from the surfaces. The ranges keep body and
+   * secondary text at WCAG AA (4.5:1) even at the softest setting.
+   */
+
+  /* -- Accent -------------------------------------------------------- */
+  --color-accent: light-dark(
+    oklch(calc(0.525 - 0.03 * var(--_c)) calc(0.19 * var(--_cf)) var(--_h)),
+    oklch(calc(0.72 + 0.04 * var(--_c)) calc(0.14 * var(--_cf)) var(--_h))
+  );
+  --color-accent-hover: light-dark(
+    oklch(calc(0.465 - 0.03 * var(--_c)) calc(0.19 * var(--_cf)) var(--_h)),
+    oklch(calc(0.79 + 0.04 * var(--_c)) calc(0.12 * var(--_cf)) var(--_h))
+  );
+  /* Text on an accent fill. */
+  --color-accent-contrast: light-dark(
+    oklch(0.99 0 0),
+    oklch(0.17 0.02 var(--_h))
+  );
+  --color-accent-subtle: light-dark(
+    oklch(0.955 calc(0.035 * var(--_cf)) var(--_h)),
+    oklch(calc(0.29 + 0.01 * var(--_c)) calc(0.05 * var(--_cf)) var(--_h))
+  );
+  --color-accent-border: light-dark(
+    oklch(calc(0.83 - 0.05 * var(--_c)) calc(0.09 * var(--_cf)) var(--_h)),
+    oklch(calc(0.43 + 0.04 * var(--_c)) calc(0.09 * var(--_cf)) var(--_h))
+  );
+
+  /* -- Status: fixed hues, so their meaning never moves ------------- */
+  --color-danger: light-dark(
+    oklch(calc(0.55 - 0.04 * var(--_c)) 0.2 27),
+    oklch(calc(0.71 + 0.03 * var(--_c)) 0.17 25)
+  );
+  --color-danger-hover: light-dark(
+    oklch(calc(0.49 - 0.04 * var(--_c)) 0.2 27),
+    oklch(calc(0.78 + 0.03 * var(--_c)) 0.14 25)
+  );
+  --color-danger-subtle: light-dark(oklch(0.965 0.02 25), oklch(0.28 0.06 25));
+
+  --color-success: light-dark(
+    oklch(calc(0.52 - 0.04 * var(--_c)) 0.14 150),
+    oklch(calc(0.77 + 0.03 * var(--_c)) 0.15 150)
+  );
+  --color-success-subtle: light-dark(
+    oklch(0.965 0.03 150),
+    oklch(0.28 0.05 150)
+  );
+
+  --color-warning: light-dark(
+    oklch(calc(0.56 - 0.04 * var(--_c)) 0.14 60),
+    oklch(calc(0.81 + 0.03 * var(--_c)) 0.14 80)
+  );
+  --color-warning-subtle: light-dark(
+    oklch(0.97 0.03 80),
+    oklch(0.29 0.05 75)
+  );
+
+  --color-info: light-dark(
+    oklch(calc(0.53 - 0.04 * var(--_c)) 0.12 235),
+    oklch(calc(0.77 + 0.03 * var(--_c)) 0.11 230)
+  );
+  --color-info-subtle: light-dark(oklch(0.965 0.02 235), oklch(0.28 0.04 235));
+
+  /* -- Surfaces ------------------------------------------------------ */
+  --surface-page: light-dark(
+    oklch(calc(0.97 - 0.025 * var(--_c)) var(--_nc) var(--_h)),
+    oklch(calc(0.185 - 0.035 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --surface-raised: light-dark(
+    oklch(0.998 calc(var(--_nc) * 0.3) var(--_h)),
+    oklch(calc(0.225 - 0.02 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --surface-sunken: light-dark(
+    oklch(calc(0.955 - 0.03 * var(--_c)) var(--_nc) var(--_h)),
+    oklch(calc(0.165 - 0.035 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --surface-header: var(--surface-raised);
+  --surface-sidebar: light-dark(
+    oklch(calc(0.985 - 0.02 * var(--_c)) var(--_nc) var(--_h)),
+    oklch(calc(0.2 - 0.03 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --surface-hover: light-dark(
+    oklch(calc(0.95 - 0.03 * var(--_c)) var(--_tc) var(--_h)),
+    oklch(calc(0.285 + 0.02 * var(--_c)) var(--_tc) var(--_h))
+  );
+  /* Every other table row, over the raised surface. */
+  --surface-stripe: light-dark(
+    oklch(
+      calc(0.998 - var(--ui-stripes) * (0.024 + 0.014 * var(--_c)))
+      var(--_nc)
+      var(--_h)
+    ),
+    oklch(
+      calc(
+        0.225 - 0.02 * var(--_c) + var(--ui-stripes) *
+          (0.03 + 0.016 * var(--_c))
+      )
+      var(--_nc)
+      var(--_h)
+    )
+  );
+  --surface-selected: light-dark(
+    oklch(calc(0.93 - 0.02 * var(--_c)) calc(0.05 * var(--_cf)) var(--_h)),
+    oklch(calc(0.33 + 0.02 * var(--_c)) calc(0.07 * var(--_cf)) var(--_h))
+  );
+  --surface-overlay: light-dark(
+    oklch(0.2 0.02 var(--_h) / 0.45),
+    oklch(0.05 0 0 / 0.6)
+  );
+
+  /* -- Text ---------------------------------------------------------- */
+  --text-primary: light-dark(
+    oklch(calc(0.235 - 0.075 * var(--_c)) calc(var(--_nc) * 1.5) var(--_h)),
+    oklch(calc(0.93 + 0.04 * var(--_c)) calc(var(--_nc) * 0.6) var(--_h))
+  );
+  --text-secondary: light-dark(
+    oklch(calc(0.43 - 0.09 * var(--_c)) calc(var(--_nc) * 1.5) var(--_h)),
+    oklch(calc(0.775 + 0.06 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --text-muted: light-dark(
+    oklch(calc(0.53 - 0.1 * var(--_c)) calc(var(--_nc) * 1.5) var(--_h)),
+    oklch(calc(0.66 + 0.07 * var(--_c)) var(--_nc) var(--_h))
+  );
+  /* Text on an accent or danger fill, which flips with the scheme. */
+  --text-inverse: light-dark(oklch(0.99 0 0), oklch(0.17 0.02 var(--_h)));
+  --text-on-header: var(--text-primary);
+  --text-link: var(--color-accent);
+
+  /* -- Lines --------------------------------------------------------- */
+  --border-color: light-dark(
+    oklch(calc(0.905 - 0.055 * var(--_c)) var(--_nc) var(--_h)),
+    oklch(calc(0.3 + 0.05 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --border-strong: light-dark(
+    oklch(calc(0.835 - 0.1 * var(--_c)) var(--_nc) var(--_h)),
+    oklch(calc(0.39 + 0.08 * var(--_c)) var(--_nc) var(--_h))
+  );
+  --border-radius: 8px;
+  --border-radius-sm: 6px;
+  --border-radius-lg: 12px;
+  --border-radius-pill: 999px;
+
+  /* -- Depth --------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px
+    light-dark(oklch(0.2 0.03 var(--_h) / 0.06), oklch(0 0 0 / 0.4));
+  --shadow-md: 0 4px 12px
+    light-dark(oklch(0.2 0.03 var(--_h) / 0.09), oklch(0 0 0 / 0.45));
+  --shadow-lg: 0 16px 40px
+    light-dark(oklch(0.2 0.03 var(--_h) / 0.16), oklch(0 0 0 / 0.6));
+
+  --focus-ring: 0 0 0 3px
+    color-mix(in oklch, var(--color-accent) 35%, transparent);
+
+  /* -- Rhythm -------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* -- Type ---------------------------------------------------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace;
+
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+
+  --line-height: 1.5;
+
+  /* -- Layout -------------------------------------------------------- */
+  --sidebar-width: 17rem;
+  --header-height: 3.5rem;
+  --content-max-width: 1600px;
+  --control-height: 2.25rem;
+  --control-height-sm: 1.875rem;
+
+  /* -- Motion -------------------------------------------------------- */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+}
+
+/* An explicit choice, which wins over the system in both directions. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* The operating system asks for more contrast: start stronger. */
+@media (prefers-contrast: more) {
+  :root {
+    --ui-contrast-system: 0.8;
+  }
+}
+
+/*
+ * A browser without light-dark() (before 2024) would drop every colour
+ * above. It gets the fixed light palette instead: no dark scheme and no
+ * sliders, but a page that still reads.
+ */
+@supports not (color: light-dark(#fff, #000)) {
+  :root {
+    color-scheme: light;
+
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+    --color-accent-contrast: #ffffff;
+    --color-accent-subtle: #eff4ff;
+    --color-accent-border: #bfd3fe;
+    --color-danger: #dc2626;
+    --color-danger-hover: #b91c1c;
+    --color-danger-subtle: #fef2f2;
+    --color-success: #15803d;
+    --color-success-subtle: #effaf3;
+    --color-warning: #b45309;
+    --color-warning-subtle: #fff8eb;
+    --color-info: #0369a1;
+    --color-info-subtle: #eff8ff;
+
+    --surface-page: #f6f7f9;
+    --surface-raised: #ffffff;
+    --surface-sunken: #f2f4f7;
+    --surface-header: #ffffff;
+    --surface-sidebar: #ffffff;
+    --surface-hover: #f2f4f7;
+    --surface-stripe: #f8f9fb;
+    --surface-selected: #eff4ff;
+    --surface-overlay: rgba(15, 23, 42, 0.45);
+
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #6b7280;
+    --text-inverse: #ffffff;
+    --text-on-header: #111827;
+
+    --border-color: #e5e7eb;
+    --border-strong: #d1d5db;
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+    --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.16);
+    --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  }
+}

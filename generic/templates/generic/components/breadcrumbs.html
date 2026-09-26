@@ -1,0 +1,20 @@
+{% load i18n generic_ui %}
+<nav class="breadcrumbs" aria-label="{% translate 'Breadcrumb' %}">
+  <ol>
+    <li>
+      <a href="{{ chrome.home_url|default:'/' }}" title="{% translate 'Home' %}">
+        {% translate "Home" as home_label %}
+        {% icon "home" "icon--sm" home_label %}
+      </a>
+    </li>
+    {% for crumb in breadcrumbs %}
+      <li{% if forloop.last %} aria-current="page"{% endif %}>
+        {% if crumb.is_link and not forloop.last %}
+          <a href="{{ crumb.url }}">{{ crumb.label }}</a>
+        {% else %}
+          <span>{{ crumb.label }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>

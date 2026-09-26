@@ -1,0 +1,83 @@
+{% load i18n generic_ui %}
+{# Be told when this changes.                                          #}
+{#                                                                     #}
+{# With a record id the button follows that record and the menu beside #}
+{# it offers the model as well - which is the only place the whole     #}
+{# model can be asked for from a record's page. Without one, on a list #}
+{# page, the button follows the model and there is no menu.            #}
+{% if user.is_authenticated and chrome.api.watchToggle and resource.watchable %}
+  <div class="watch-button{% if watch_object_id %} dropdown{% endif %}"
+       x-data="watchControl"
+       data-model="{{ resource.label_lower }}"
+       data-object-id="{{ watch_object_id|default:'' }}"
+       @keydown.escape.window="open = false"
+       @click.outside="open = false">
+    <button type="button"
+            class="button js-watch watch-button__main"
+            :class="{ 'is-active': main }"
+            :disabled="busy"
+            :aria-pressed="main.toString()"
+            :title="hint"
+            @click="toggleMain()">
+      <span class="icon material-symbols-outlined"
+            :class="{ 'is-filled': main }"
+            aria-hidden="true"
+            x-text="main ? 'notifications_active' : 'notifications'">notifications</span>
+      <span x-text="label">{% translate "Watch" %}</span>
+    </button>
+
+    {% if watch_object_id %}
+      <button type="button"
+              class="button watch-button__more"
+              :aria-expanded="open.toString()"
+              aria-haspopup="menu"
+              @click="open = !open">
+        <span class="sr-only">{% translate "Watching options" %}</span>
+        {% icon "expand_more" "icon--sm" %}
+      </button>
+
+      {# Opened from the left of the toolbar, so it hangs to the right #}
+      {# of the control rather than off the edge of the page.          #}
+      <div class="dropdown__menu dropdown__menu--left watch-button__menu"
+           role="menu"
+           x-show="open"
+           x-transition.origin.top.left
+           x-cloak>
+        {# The model's own name, as a heading rather than in a         #}
+        {# sentence: "every ticket" and "every team" do not decline    #}
+        {# the same way in every language the framework is read in.    #}
+        <div class="dropdown__label">{{ resource.get_label_plural }}</div>
+
+        <button type="button"
+                class="menu-item"
+                role="menuitemcheckbox"
+                :aria-checked="record.toString()"
+                :disabled="busy"
+                @click="toggleRecord()">
+          <span class="icon material-symbols-outlined" aria-hidden="true"
+                x-text="record ? 'check_box' : 'check_box_outline_blank'">check_box_outline_blank</span>
+          <span class="menu-item__label">{% translate "This one" %}</span>
+        </button>
+
+        <button type="button"
+                class="menu-item"
+                role="menuitemcheckbox"
+                :aria-checked="model.toString()"
+                :disabled="busy"
+                @click="toggleModel()">
+          <span class="icon material-symbols-outlined" aria-hidden="true"
+                x-text="model ? 'check_box' : 'check_box_outline_blank'">check_box_outline_blank</span>
+          <span class="menu-item__label">{% translate "All of them, including new ones" %}</span>
+        </button>
+
+        {% if chrome.urls.watches %}
+          <div class="dropdown__divider"></div>
+          <a class="menu-item" role="menuitem" href="{{ chrome.urls.watches }}">
+            {% icon "tune" %}
+            <span class="menu-item__label">{% translate "Choose how you are told" %}</span>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% endif %}

@@ -1,0 +1,284 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{% block bodyclass %}page-account{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/auth.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/appearance.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="account-grid">
+    <div class="stack">
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "person" %} {% translate "Profile" %}</h2>
+          {% if is_external_account %}
+            <span class="badge">{% translate "Managed externally" %}</span>
+          {% endif %}
+        </div>
+        {{ profile_config|json_script:"profile-form-config" }}
+        <div class="js-schema-form" data-config="profile-form-config"></div>
+      </section>
+
+      {% if chrome.api.preferences %}
+        {# Every colour of the interface is computed from these values  #}
+        {# (tokens.css). Moving a slider restyles the whole page at     #}
+        {# once, and Save keeps the result on the account.              #}
+        <section class="card appearance" id="appearance" x-data="appearanceEditor">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "palette" %} {% translate "Appearance" %}</h2>
+            <span class="badge badge--warning" x-show="dirty" x-cloak>{% translate "Not saved" %}</span>
+          </div>
+
+          <div class="appearance__row">
+            <span class="appearance__label" id="appearance-theme">{% translate "Theme" %}</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="appearance-theme">
+              <template x-for="option in themes" :key="option.value">
+                <button type="button"
+                        class="segmented__option"
+                        role="radio"
+                        :aria-checked="(theme === option.value).toString()"
+                        :class="{ 'is-active': theme === option.value }"
+                        @click="setTheme(option.value)">
+                  <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-text="option.icon"></span>
+                  <span x-text="option.label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <div class="appearance__label" id="appearance-presets">{% translate "Start from" %}</div>
+            <div class="appearance__presets" role="group" aria-labelledby="appearance-presets">
+              <template x-for="preset in presets" :key="preset.key">
+                <button type="button" class="preset" @click="usePreset(preset)">
+                  <span class="preset__swatch" :style="swatch(preset)" aria-hidden="true"></span>
+                  <span x-text="preset.label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div class="appearance__sliders">
+            <label class="slider">
+              <span class="slider__head">
+                <span>{% translate "Accent colour" %}</span>
+                <output x-text="values.accent_hue + '°'"></output>
+              </span>
+              <input type="range"
+                     class="slider__input slider__input--hue"
+                     min="0" max="360" step="1"
+                     x-model.number="values.accent_hue"
+                     @input="preview()">
+            </label>
+
+            <label class="slider">
+              <span class="slider__head">
+                <span>{% translate "Contrast" %}</span>
+                <output x-text="signed('contrast')"></output>
+              </span>
+              <input type="range"
+                     class="slider__input"
+                     min="-100" max="100" step="5"
+                     x-model.number="values.contrast"
+                     @input="preview()">
+              <span class="slider__hints" aria-hidden="true">
+                <span>{% translate "Soft" %}</span>
+                <span>{% translate "Strong" %}</span>
+              </span>
+            </label>
+
+            <label class="slider">
+              <span class="slider__head">
+                <span>{% translate "Colourfulness" %}</span>
+                <output x-text="percent('colorfulness')"></output>
+              </span>
+              <input type="range"
+                     class="slider__input"
+                     min="0" max="130" step="5"
+                     x-model.number="values.colorfulness"
+                     @input="preview()">
+              <span class="slider__hints" aria-hidden="true">
+                <span>{% translate "Greys" %}</span>
+                <span>{% translate "Vivid" %}</span>
+              </span>
+            </label>
+
+            <label class="slider">
+              <span class="slider__head">
+                <span>{% translate "Tint of the backgrounds" %}</span>
+                <output x-text="percent('tint')"></output>
+              </span>
+              <input type="range"
+                     class="slider__input"
+                     min="0" max="100" step="5"
+                     x-model.number="values.tint"
+                     @input="preview()">
+              <span class="slider__hints" aria-hidden="true">
+                <span>{% translate "Neutral" %}</span>
+                <span>{% translate "Tinted" %}</span>
+              </span>
+            </label>
+
+            <label class="slider">
+              <span class="slider__head">
+                <span>{% translate "Table stripes" %}</span>
+                <output x-text="percent('stripes')"></output>
+              </span>
+              <input type="range"
+                     class="slider__input"
+                     min="0" max="100" step="5"
+                     x-model.number="values.stripes"
+                     @input="preview()">
+              <span class="slider__hints" aria-hidden="true">
+                <span>{% translate "None" %}</span>
+                <span>{% translate "Strong" %}</span>
+              </span>
+            </label>
+          </div>
+
+          {# A sample of what the sliders act on. The whole page follows #}
+          {# too; this just puts a striped table within sight.           #}
+          <div class="appearance__preview" aria-hidden="true">
+            <div class="appearance__preview-bar">
+              <span class="button button--primary button--sm">{% icon "check" "icon--sm" %} {% translate "Save" %}</span>
+              <span class="button button--sm">{% translate "Cancel" %}</span>
+              <span class="badge badge--success">{% translate "Open" %}</span>
+              <span class="badge badge--warning">{% translate "Pending" %}</span>
+              <span class="badge badge--danger">{% translate "Urgent" %}</span>
+              <a href="#appearance" tabindex="-1">{% translate "A link" %}</a>
+            </div>
+            <div class="table-wrapper">
+              <table class="object-table">
+                <thead>
+                  <tr>
+                    <th>{% translate "Reference" %}</th>
+                    <th>{% translate "Title" %}</th>
+                    <th>{% translate "Hours" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>SD-1000</td><td>{% translate "Login fails after a password reset" %}</td><td>2.00</td></tr>
+                  <tr><td>SD-1001</td><td>{% translate "Invoice PDF is blank" %}</td><td>0.50</td></tr>
+                  <tr><td>SD-1002</td><td>{% translate "VPN drops every ten minutes" %}</td><td>16.00</td></tr>
+                  <tr><td>SD-1003</td><td>{% translate "Export times out on large accounts" %}</td><td>8.00</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="appearance__preview-note">{% translate "Secondary text, such as dates and hints, looks like this." %}</p>
+          </div>
+
+          <div class="appearance__actions">
+            <button type="button" class="button button--ghost" @click="reset()">
+              {% icon "restart_alt" %}
+              {% translate "Project defaults" %}
+            </button>
+            <button type="button" class="button" x-show="dirty" x-cloak @click="cancel()">
+              {% translate "Undo changes" %}
+            </button>
+            <button type="button"
+                    class="button button--primary"
+                    :disabled="!dirty || saving"
+                    @click="save()">
+              {% icon "check" %}
+              {% translate "Save" %}
+            </button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "tune" %} {% translate "Preferences" %}</h2>
+          </div>
+          {{ preferences_config|json_script:"preferences-form-config" }}
+          <div class="js-schema-form" data-config="preferences-form-config"></div>
+        </section>
+      {% endif %}
+    </div>
+
+    <div class="stack">
+      {% if chrome.api.watches %}
+        <section class="card module--flush" id="watching" x-data="apiResource('{{ chrome.api.watches|escapejs }}')">
+          <div class="card__header" style="margin: 0;">
+            <h2 class="card__title">{% icon "notifications" %} {% translate "Watching" %}</h2>
+          </div>
+
+          <template x-if="loading && !data">
+            <div class="loading"><span class="spinner"></span></div>
+          </template>
+
+          <template x-if="data && data.length === 0">
+            <div class="empty-state">
+              {% icon "notifications" %}
+              <span>{% translate "Nothing yet. Press Watch on a record, or on a list, to be told when it changes." %}</span>
+            </div>
+          </template>
+
+          <template x-for="item in (data || []).slice(0, 8)" :key="item.id">
+            <div class="app-card__row">
+              <span class="icon material-symbols-outlined" aria-hidden="true"
+                    x-text="item.wholeModel ? 'dataset' : 'description'"></span>
+              <a class="app-card__name" :href="item.url || '#'" x-text="item.label"></a>
+            </div>
+          </template>
+
+          {% if chrome.urls.watches %}
+            <div class="app-card__row">
+              <a class="button button--sm" href="{{ chrome.urls.watches }}">
+                {% icon "tune" "icon--sm" %}
+                {% translate "Choose how you are told" %}
+              </a>
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "shield_person" %} {% translate "Security" %}</h2>
+        </div>
+
+        {% if can_change_password and chrome.urls.password_change %}
+          <p class="card__description" style="margin-bottom: var(--space-3);">
+            {% translate "Choose a password you do not use anywhere else." %}
+          </p>
+          <a class="button" href="{{ chrome.urls.password_change }}">
+            {% icon "key" %}
+            {% translate "Change password" %}
+          </a>
+        {% else %}
+          <p class="card__description">
+            {% translate "Your account is managed by an external provider (directory or single sign-on). Your name, address and password are changed there." %}
+          </p>
+        {% endif %}
+
+        <dl class="detail-list" style="margin-top: var(--space-4);">
+          <div class="detail-list__row">
+            <dt>{% translate "Signed in as" %}</dt>
+            <dd>{{ user.get_username }}</dd>
+          </div>
+          {% if user.last_login %}
+            <div class="detail-list__row">
+              <dt>{% translate "Last sign-in" %}</dt>
+              <dd>{{ user.last_login }}</dd>
+            </div>
+          {% endif %}
+          {% if user.date_joined %}
+            <div class="detail-list__row">
+              <dt>{% translate "Member since" %}</dt>
+              <dd>{{ user.date_joined|date }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+      </section>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {% include "generic/includes/form_scripts.html" %}
+{% endblock %}

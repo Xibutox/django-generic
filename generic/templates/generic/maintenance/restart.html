@@ -1,0 +1,97 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{% block bodyclass %}page-restart{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {# The form is rendered from its schema, like any resource form. #}
+  {% include "generic/includes/form_scripts.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="stack" x-data="restartPlanner('{{ restart_url }}')">
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "schedule" %} {% translate "Announce a restart" %}</h2>
+      </div>
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          Everyone connected is warned three times: now, a minute before
+          the hour, and seconds before it. A manual operation only warns
+          them; otherwise the server restarts itself at that hour.
+        {% endblocktranslate %}
+      </p>
+
+      {{ form_config|json_script:"restart-form-config" }}
+      <div class="js-schema-form" data-config="restart-form-config"></div>
+    </section>
+
+    {% if current %}
+      <section class="card callout callout--warning">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "warning" %} {% translate "Planned" %}</h2>
+        </div>
+        <dl class="object-table">
+          <div>
+            <dt>{% translate "Restart at" %}</dt>
+            <dd>{{ current.scheduled_at }}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Estimated duration" %}</dt>
+            <dd>{% blocktranslate with minutes=current.duration_minutes %}{{ minutes }} minutes{% endblocktranslate %}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Manual operation" %}</dt>
+            <dd>{{ current.is_manual|yesno:_("Yes,No") }}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Announced by" %}</dt>
+            <dd>{{ current.created_by|default:"-" }}</dd>
+          </div>
+        </dl>
+        <button type="button" class="button button--danger" @click="cancel()">
+          {% icon "cancel" %} {% translate "Call it off" %}
+        </button>
+      </section>
+    {% endif %}
+
+    {% if recent %}
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "history" %} {% translate "Announced before" %}</h2>
+        </div>
+        <table class="object-table">
+          <thead>
+            <tr>
+              <th>{% translate "Restart at" %}</th>
+              <th>{% translate "Estimated duration" %}</th>
+              <th>{% translate "Manual operation" %}</th>
+              <th>{% translate "Announced by" %}</th>
+              <th>{% translate "State" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for announcement in recent %}
+              <tr>
+                <td>{{ announcement.scheduled_at }}</td>
+                <td>{{ announcement.duration_minutes }}</td>
+                <td>{{ announcement.is_manual|yesno:_("Yes,No") }}</td>
+                <td>{{ announcement.created_by|default:"-" }}</td>
+                <td>
+                  {% if announcement.cancelled_at %}
+                    {% translate "Cancelled" %}
+                  {% elif announcement.restarted_at %}
+                    {% translate "Carried out" %}
+                  {% else %}
+                    {% translate "Announced" %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

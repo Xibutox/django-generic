@@ -1,0 +1,43 @@
+{% load i18n %}
+<fieldset class="module fieldset {{ fieldset.classes }}"
+          {% if fieldset.is_collapsible %}data-collapsible="true"{% endif %}>
+  {% if fieldset.title %}
+    <legend class="fieldset__title">{{ fieldset.title }}</legend>
+  {% endif %}
+
+  {% if fieldset.description %}
+    <p class="fieldset__description">{{ fieldset.description }}</p>
+  {% endif %}
+
+  {% for row in fieldset %}
+    <div class="{{ row.css_classes }}">
+      {% for field in row %}
+        <div class="field-box{% if field.errors %} field-box--errors{% endif %}{% if field.is_hidden %} is-hidden{% endif %}">
+          {% if field.is_checkbox %}
+            <div class="field-checkbox">
+              {{ field }}
+              {{ field.label_tag }}
+            </div>
+          {% else %}
+            {{ field.label_tag }}
+            {% if field.is_readonly %}
+              <div class="field-readonly">{{ field.contents }}</div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+          {% endif %}
+
+          {% if field.errors %}
+            <ul class="field-errors">
+              {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+
+          {% if field.help_text %}
+            <p class="field-help">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</fieldset>

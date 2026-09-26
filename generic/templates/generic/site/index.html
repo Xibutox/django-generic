@@ -1,0 +1,66 @@
+{% extends "generic/base.html" %}
+{% load i18n generic_ui %}
+
+{% block bodyclass %}page-dashboard{% endblock %}
+
+{% block content %}
+  {# Wiki pages pinned to the dashboard, when generic.wiki is installed. #}
+  {% block dashboard_pinned %}
+    {% if wiki_pinned %}
+      {% include "generic/wiki/includes/pinned.html" %}
+    {% endif %}
+  {% endblock %}
+
+  {# The hub: where to go first, declared with site.add_shortcut() or #}
+  {# GENERIC["SHORTCUTS"]. Above everything a project writes, because #}
+  {# signposting is what somebody opening the dashboard came for; a   #}
+  {# project that disagrees moves the block.                          #}
+  {% block dashboard_shortcuts %}
+    {% if shortcuts %}
+      {% include "generic/site/includes/shortcuts.html" %}
+    {% endif %}
+  {% endblock %}
+
+  {% block dashboard_intro %}{% endblock %}
+
+  {% if app_list %}
+    <div class="app-list">
+      {% for group in app_list %}
+        <section class="app-card">
+          <h2 class="app-card__title">{{ group.label }}</h2>
+          {% for item in group.resources %}
+            <div class="app-card__row">
+              {% icon item.icon %}
+              {% if item.list_url %}
+                <a class="app-card__name" href="{{ item.list_url }}">{{ item.label }}</a>
+              {% else %}
+                <span class="app-card__name">{{ item.label }}</span>
+              {% endif %}
+              <div class="app-card__actions">
+                {% if item.add_url %}
+                  <a class="icon-button icon-button--sm" href="{{ item.add_url }}" title="{% translate 'Add' %}">
+                    {% translate "Add" as add_label %}
+                    {% icon "add" "icon--sm" add_label %}
+                  </a>
+                {% endif %}
+                {% if item.list_url %}
+                  <a class="icon-button icon-button--sm" href="{{ item.list_url }}" title="{% translate 'Open' %}">
+                    {% translate "Open" as open_label %}
+                    {% icon "arrow_forward" "icon--sm" open_label %}
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state">
+      {% icon "lock" %}
+      <p>{% translate "You do not have permission to view or edit anything yet." %}</p>
+    </div>
+  {% endif %}
+
+  {% block dashboard_extra %}{% endblock %}
+{% endblock %}

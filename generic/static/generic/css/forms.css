@@ -1,0 +1,753 @@
+/*
+ * Forms: fieldsets, inputs, validation, inlines and the submit row.
+ *
+ * Two renderers share these rules. The classic views render Django
+ * forms on the server (.generic-form); the resource pages render the
+ * DRF form schema in the browser (.schema-form). Both produce the same
+ * fieldset cards, so a screen looks the same whichever built it.
+ */
+
+.generic-form,
+.schema-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* -- Fieldsets --------------------------------------------------------- */
+
+.fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.fieldset__title {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+.fieldset__title + * {
+  clear: both;
+}
+
+.fieldset__description {
+  clear: both;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+/* A collapsed fieldset keeps a long form scannable. Only the legend
+   remains, and it stays a real button so it is reachable by keyboard. */
+.fieldset[data-collapsible="true"].is-collapsed .form-row,
+.fieldset[data-collapsible="true"].is-collapsed .fieldset__description,
+.fieldset[data-collapsible="true"].is-collapsed .sf-grid {
+  display: none;
+}
+
+.fieldset[data-collapsible="true"].is-collapsed {
+  padding-bottom: var(--space-4);
+}
+
+.fieldset[data-collapsible="true"].is-collapsed .fieldset__title {
+  margin-bottom: 0;
+}
+
+.fieldset__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.fieldset__toggle::after {
+  content: "expand_more";
+  font-family: "Material Symbols Outlined";
+  font-size: 1.1rem;
+  font-weight: normal;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.fieldset[data-collapsible="true"].is-collapsed
+  .fieldset__toggle::after {
+  transform: rotate(-90deg);
+}
+
+/* -- Classic rows ------------------------------------------------------ */
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-row.is-hidden {
+  display: none;
+}
+
+.field-box {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field-box.is-hidden {
+  display: none;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.field-checkbox label {
+  margin: 0;
+}
+
+/* -- Schema grid -------------------------------------------------------
+ *
+ * Twelve columns. A field declares how many it spans with
+ * --field-width, which is what a fieldset row of two fields becomes:
+ * two fields of six.
+ */
+
+.sf-grid {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.sf-field {
+  grid-column: span var(--field-width, 12);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (max-width: 760px) {
+  .sf-field {
+    grid-column: span 12;
+  }
+}
+
+/* -- Labels and inputs ------------------------------------------------- */
+
+.generic-form label,
+.sf-label {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.sf-required {
+  color: var(--color-danger);
+  margin-left: 0.15rem;
+}
+
+.input,
+.generic-form input[type="text"],
+.generic-form input[type="email"],
+.generic-form input[type="url"],
+.generic-form input[type="number"],
+.generic-form input[type="password"],
+.generic-form input[type="date"],
+.generic-form input[type="datetime-local"],
+.generic-form input[type="time"],
+.generic-form input[type="search"],
+.generic-form input[type="file"],
+.generic-form select,
+.generic-form textarea,
+.search-form input[type="search"] {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* A control that holds one line is exactly one control tall. The text
+   centres itself in the box, so the vertical padding above only made
+   the commonest control on a form disagree with every other one on its
+   row: a text input came out 39px against the 36 of every select,
+   Select2 field and button, and two fields side by side did not line
+   up. A file input keeps its padding - its button sits inside it. */
+input.input:not([type="file"]),
+select.input:not([multiple]),
+.generic-form select:not([multiple]),
+.generic-form input[type="text"],
+.generic-form input[type="email"],
+.generic-form input[type="url"],
+.generic-form input[type="number"],
+.generic-form input[type="password"],
+.generic-form input[type="date"],
+.generic-form input[type="datetime-local"],
+.generic-form input[type="time"],
+.generic-form input[type="search"],
+.search-form input[type="search"] {
+  height: var(--control-height);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.input:focus,
+.generic-form input:focus,
+.generic-form select:focus,
+.generic-form textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.input--sm {
+  min-height: var(--control-height-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+input.input--sm:not([type="file"]) {
+  height: var(--control-height-sm);
+}
+
+textarea.input,
+.generic-form textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+select.input[multiple] {
+  min-height: 7rem;
+}
+
+.input:disabled,
+.input[readonly],
+.generic-form input:disabled,
+.generic-form select:disabled,
+.generic-form textarea:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon .icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-with-icon .input {
+  padding-left: 2.25rem;
+}
+
+.field-readonly,
+.sf-readonly {
+  min-height: var(--control-height);
+  padding: var(--space-2) 0;
+  color: var(--text-primary);
+}
+
+.field-help,
+.sf-help {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* -- Switch (boolean) -------------------------------------------------- */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  appearance: none;
+  background: var(--border-strong);
+  border-radius: var(--border-radius-pill);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast);
+}
+
+.switch input:checked {
+  background: var(--color-accent);
+}
+
+.switch input:checked::after {
+  transform: translateX(1rem);
+}
+
+.switch input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.switch__label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* -- Validation -------------------------------------------------------- */
+
+.field-errors,
+.sf-errors {
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.sf-errors:empty {
+  display: none;
+}
+
+.field-box--errors input,
+.field-box--errors select,
+.field-box--errors textarea,
+.sf-field.has-error .input,
+.sf-field.has-error .select2-selection,
+.inline-cell.has-error .input {
+  border-color: var(--color-danger) !important;
+}
+
+.form-row--errors {
+  background: var(--color-danger-subtle);
+  border-radius: var(--border-radius);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+.form-errors {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius);
+  color: var(--color-danger);
+}
+
+.form-errors ul {
+  padding-left: var(--space-5);
+  list-style: disc;
+}
+
+/* -- Related object controls ------------------------------------------- */
+
+.related-control {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.related-control > select,
+.related-control > .select2-container {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* One control tall, the buttons centred in it: level with the field
+   beside them, and with its first line when a relation holding many
+   records grows over several. */
+.related-control__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: var(--control-height);
+}
+
+/* -- Inlines ----------------------------------------------------------- */
+
+.inline-group {
+  min-width: 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.inline-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inline-group__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+.inline-group__description {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.inline-group__errors {
+  padding: 0 var(--space-5);
+  color: var(--color-danger);
+}
+
+.inline-group__errors:not(:empty) {
+  padding-top: var(--space-3);
+}
+
+.inline-group__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.inline-table-wrapper {
+  overflow-x: auto;
+}
+
+.inline-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inline-table th,
+.inline-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inline-table th {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+}
+
+.inline-table th:first-child,
+.inline-table td:first-child {
+  padding-left: var(--space-5);
+}
+
+.inline-table th:last-child,
+.inline-table td:last-child {
+  padding-right: var(--space-5);
+}
+
+.inline-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.inline-table .inline-cell {
+  min-width: 8rem;
+}
+
+/* A choice is read whole: "Ordinateur portable", not "Ordinateur po".
+   The table widens instead, and its wrapper scrolls if it must. */
+.inline-table .inline-cell select:not([multiple]) {
+  min-width: max-content;
+}
+
+/* Text is given room for a few words: at the cell's bare minimum,
+   "Latitude 5440" was already cut. */
+.inline-table .inline-cell input[type="text"],
+.inline-table .inline-cell input[type="email"],
+.inline-table .inline-cell input[type="url"],
+.inline-table .inline-cell textarea {
+  min-width: 11rem;
+}
+
+.inline-table__actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.inline-row.is-deleted td:not(.inline-table__actions),
+.inline-card.is-deleted .inline-card__body {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.inline-row.is-new td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.inline-empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.inline-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.inline-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+}
+
+.inline-card.is-new {
+  border-color: var(--color-accent-border);
+}
+
+.inline-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  font-weight: 600;
+}
+
+.inline-card__body {
+  padding: var(--space-4);
+}
+
+.inline-cell-errors {
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+}
+
+.inline-cell-errors:empty {
+  display: none;
+}
+
+/* -- Submit row -------------------------------------------------------- */
+
+.submit-row {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.submit-row__start,
+.submit-row__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.submit-row__end {
+  margin-left: auto;
+}
+
+.submit-row__status {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.schema-form.is-dirty .submit-row__status {
+  color: var(--color-warning);
+}
+
+/* -- Schema form extras ------------------------------------------------ */
+
+/* A form living inside a card of its own - the account page - drops
+   its own card and its floating submit row. */
+.schema-form--embedded .fieldset {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+
+.schema-form--embedded .submit-row {
+  position: static;
+  padding: var(--space-3) 0 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.schema-form > .tabs {
+  margin-bottom: 0;
+}
+
+.sf-field.has-error .sf-label {
+  color: var(--color-danger);
+}
+
+.input--code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* A colour: a picker beside the value, which may stay empty. */
+.sf-color {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sf-color__picker {
+  flex: 0 0 auto;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0.2rem;
+  cursor: pointer;
+  background: var(--sf-color, transparent);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+}
+
+.sf-color.is-empty .sf-color__picker {
+  background: repeating-conic-gradient(
+      var(--surface-sunken) 0% 25%,
+      var(--surface-raised) 0% 50%
+    )
+    50% / 0.75rem 0.75rem;
+}
+
+.sf-color__picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+/* Separate rules: a browser drops a rule naming a pseudo-element it
+   does not know, with every selector beside it. */
+.sf-color__picker::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--border-radius) - 3px);
+}
+
+.sf-color__picker::-moz-color-swatch {
+  border: 0;
+  border-radius: calc(var(--border-radius) - 3px);
+}
+
+.sf-color.is-empty .sf-color__picker::-webkit-color-swatch {
+  opacity: 0;
+}
+
+.schema-form.is-read-only .sf-readonly {
+  min-height: 0;
+  padding: 0;
+}
+
+/* -- Search ------------------------------------------------------------ */
+
+.search-form {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.search-form input[type="search"] {
+  max-width: 320px;
+}
+
+@media (max-width: 600px) {
+  /* In the flow at the end of the form, not floating: stacked to the
+     width of a phone, five lines of buttons covered a third of it. */
+  .submit-row {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .submit-row__end {
+    margin-left: 0;
+  }
+
+  .submit-row .button {
+    justify-content: center;
+  }
+}
+
+/* Select2 is themed in select2.css, loaded after the library's own
+   stylesheet so its rules win. */

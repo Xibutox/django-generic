@@ -1,0 +1,46 @@
+/*
+ * Material Symbols Outlined, the icon font.
+ *
+ * An icon is its name written as text inside the element, which the
+ * font turns into the glyph through a ligature:
+ *
+ *   <span class="icon material-symbols-outlined">edit</span>
+ *
+ * That is what lets Python code name an icon - `icon = "inventory_2"`
+ * on a resource - without shipping a sprite or an SVG per icon.
+ */
+
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url("Material-Symbols-Outlined.woff2") format("woff2");
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.25em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  /* Reserve the glyph box before the font loads, so the ligature text
+     never flashes as a word and nothing shifts. */
+  width: 1em;
+  overflow: hidden;
+  user-select: none;
+}
+
+.material-symbols-outlined.is-filled {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}

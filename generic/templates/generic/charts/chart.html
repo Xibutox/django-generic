@@ -1,0 +1,101 @@
+{% load i18n generic_ui %}
+{# One chart: `chart` is {config_id, config}, from chart_entries().      #}
+{# The data comes from config.url; the card draws it, shows it as a     #}
+{# table on request, and follows config.table when it names one.        #}
+{% if chart %}
+  {{ chart.config|json_script:chart.config_id }}
+  <section class="card chart-card"
+           x-data="genericChart('{{ chart.config_id|escapejs }}')"
+           :class="{ 'is-loading': loading }"
+           aria-labelledby="{{ chart.config_id }}-title">
+    <header class="chart-card__header">
+      <h2 class="chart-card__title" id="{{ chart.config_id }}-title">
+        {% if chart.config.icon %}{% icon chart.config.icon "icon--sm" %}{% endif %}
+        <span>{{ chart.config.title }}</span>
+      </h2>
+
+      <div class="chart-card__tools">
+        <template x-if="config.periods.length">
+          <select class="input input--sm chart-card__period"
+                  x-model="period"
+                  @change="load()"
+                  aria-label="{% translate 'Period' %}">
+            <template x-for="option in config.periods" :key="option.value">
+              <option :value="option.value" :selected="option.value === period" x-text="option.label"></option>
+            </template>
+          </select>
+        </template>
+
+        <button type="button"
+                class="icon-button icon-button--sm"
+                @click="toggleView()"
+                :aria-pressed="(view === 'table').toString()"
+                :title="view === 'table' ? '{{ _('Show the chart')|escapejs }}' : '{{ _('Show the figures')|escapejs }}'">
+          <span class="icon material-symbols-outlined icon--sm" aria-hidden="true"
+                x-text="view === 'table' ? 'bar_chart' : 'table_rows'">table_rows</span>
+          <span class="sr-only">{% translate "Show the figures" %}</span>
+        </button>
+
+        <button type="button"
+                class="icon-button icon-button--sm"
+                @click="download()"
+                :disabled="!payload || payload.empty || view !== 'chart'"
+                title="{% translate 'Download as an image' %}">
+          {% translate "Download as an image" as download_label %}
+          {% icon "download" "icon--sm" download_label %}
+        </button>
+      </div>
+    </header>
+
+    {% if chart.config.description %}
+      <p class="chart-card__description">{{ chart.config.description }}</p>
+    {% endif %}
+
+    <div class="chart-card__body" :style="{ height: config.height }">
+      <div class="chart-card__canvas" x-ref="canvas" x-show="view === 'chart'"></div>
+
+      <div class="chart-card__table" x-show="view === 'table'">
+        <template x-if="payload && !payload.empty">
+          <table class="object-table chart-table">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <template x-for="(series, column) in payload.series" :key="column">
+                  <th scope="col" x-text="series.name"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(category, row) in payload.categories" :key="row">
+                <tr>
+                  <th scope="row" x-text="category"></th>
+                  <template x-for="(series, column) in payload.series" :key="column">
+                    <td x-text="format(series.data[row])"></td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+      </div>
+
+      <div class="chart-card__state" x-show="loading && !payload">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>{% translate "Loading" %}&hellip;</span>
+      </div>
+      <div class="chart-card__state chart-card__state--error" role="alert" x-show="!loading && error">
+        {% icon "error" "icon--sm" %}
+        <span x-text="error"></span>
+      </div>
+      <div class="chart-card__state" x-show="!error && payload && payload.empty">
+        {% icon "bar_chart" %}
+        <span>{% translate "Nothing to show for these filters." %}</span>
+      </div>
+    </div>
+
+    <p class="chart-card__hint" x-show="linked && payload && !payload.empty && view === 'chart'">
+      {% icon "touch_app" "icon--sm" %}
+      {% translate "Click a bar or a slice to filter the table." %}
+    </p>
+  </section>
+{% endif %}

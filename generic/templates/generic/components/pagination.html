@@ -1,0 +1,34 @@
+{% load i18n generic_tags %}
+{% if is_paginated %}
+  <nav class="pagination" aria-label="{% translate 'Pagination' %}">
+    <p class="pagination__summary">
+      {% blocktranslate with start=page_obj.start_index end=page_obj.end_index total=paginator.count %}
+        {{ start }}–{{ end }} of {{ total }}
+      {% endblocktranslate %}
+    </p>
+
+    <ul class="pagination__pages">
+      {% if page_obj.has_previous %}
+        <li>
+          <a href="?{% query_replace page=page_obj.previous_page_number %}"
+             rel="prev">{% translate "Previous" %}</a>
+        </li>
+      {% endif %}
+
+      {% for number in paginator.page_range %}
+        {% if number == page_obj.number %}
+          <li><span class="is-current" aria-current="page">{{ number }}</span></li>
+        {% elif number > page_obj.number|add:"-3" and number < page_obj.number|add:"3" %}
+          <li><a href="?{% query_replace page=number %}">{{ number }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li>
+          <a href="?{% query_replace page=page_obj.next_page_number %}"
+             rel="next">{% translate "Next" %}</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}

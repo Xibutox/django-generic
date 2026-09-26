@@ -1,0 +1,38 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+.venv/
+venv/
+env/
+
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+*.sqlite3
+demo.sqlite3
+*.log
+# Celery Beat's own state file, written where it is started.
+celerybeat-schedule*
+staticfiles/
+.env
+# The production stack's secrets: docker/prod.env.example is the one to
+# commit.
+docker/prod.env
+
+.idea/
+# Claude Code's own per-machine settings (the preview server's command
+# names this machine's venv). CLAUDE.md and ai/ are the shared part.
+.claude/
+# The shared VS Code setup is committed (debugging: debug.py); the rest
+# of the folder is each developer's own.
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/extensions.json
+.DS_Store

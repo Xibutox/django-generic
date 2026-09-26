@@ -1,0 +1,34 @@
+{% load i18n static generic_ui %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+{% generic_chrome as chrome %}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}{{ page_title }}{% endblock %}{% if chrome.title %} &middot; {{ chrome.title }}{% endif %}</title>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem("generic.theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch (error) {
+        /* Private mode: follow the system. */
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'generic/vendor/material-symbols/material-symbols.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/forms.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/auth.css' %}">
+  {% if chrome.theme_css %}<style>{{ chrome.theme_css }}</style>{% endif %}
+  {% block extrahead %}{% endblock %}
+</head>
+<body class="auth-page {% block bodyclass %}{% endblock %}">
+  {% block content %}{% endblock %}
+</body>
+</html>

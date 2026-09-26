@@ -1,0 +1,92 @@
+{% load i18n generic_ui %}
+{# The History tab of a record's summary page.                          #}
+{#                                                                      #}
+{# Nested inside the page's recordSummary, so `active` below is the     #}
+{# tab bar's: the entries are fetched the first time the tab is shown   #}
+{# and not before, like the related tables beside it.                   #}
+<div class="summary-related__panel"
+     role="tabpanel"
+     id="related-__history"
+     aria-labelledby="related-tab-__history"
+     x-show="active === historyTab"
+     x-data="recordHistory('{{ summary.history.url|escapejs }}')"
+     x-effect="if (active === historyTab) load()">
+  <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+    <span x-text="error"></span>
+  </div>
+
+  <template x-if="loading && !entries.length">
+    <div class="loading"><span class="spinner"></span></div>
+  </template>
+
+  <template x-if="loaded && !loading && !entries.length">
+    <div class="empty-state">
+      {% icon "history" %}
+      <span>{% translate "Nothing has been recorded about this record yet." %}</span>
+    </div>
+  </template>
+
+  <ol class="history">
+    <template x-for="entry in entries" :key="entry.id">
+      <li class="history-entry" :class="'history-entry--' + entry.action">
+        <div class="history-entry__mark" aria-hidden="true">
+          <span class="icon material-symbols-outlined icon--sm" x-text="icon(entry)"></span>
+        </div>
+
+        <div class="history-entry__body">
+          <p class="history-entry__head">
+            <span class="history-entry__action" x-text="entry.actionLabel"></span>
+            <span class="history-entry__who" x-text="entry.who"></span>
+            <span class="history-entry__when" :title="entry.at" x-text="entry.when"></span>
+            <span class="history-entry__version"
+                  x-text="versionLabel(entry)"></span>
+          </p>
+
+          <template x-if="entry.changes.length">
+            <ul class="history-changes">
+              <template x-for="change in entry.changes" :key="change.name">
+                <li class="history-change">
+                  <span class="history-change__field" x-text="change.label"></span>
+                  <span class="history-change__from"
+                        :class="{ 'is-empty': change.fromEmpty }"
+                        x-text="change.fromEmpty ? emptyLabel : change.from"></span>
+                  <span class="history-change__arrow" aria-hidden="true">&rarr;</span>
+                  <span class="history-change__to"
+                        :class="{ 'is-empty': change.toEmpty }"
+                        x-text="change.toEmpty ? emptyLabel : change.to"></span>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <button type="button"
+                  class="button button--link button--sm history-entry__toggle"
+                  :aria-expanded="Boolean(expanded[entry.id]).toString()"
+                  @click="toggle(entry)">
+            <span x-text="expanded[entry.id] ? '{{ _('Hide this version')|escapejs }}' : '{{ _('Show this version in full')|escapejs }}'">
+              {% translate "Show this version in full" %}
+            </span>
+          </button>
+
+          <template x-if="expanded[entry.id]">
+            <dl class="history-values">
+              <template x-for="field in entry.values" :key="field.name">
+                <div class="history-value">
+                  <dt x-text="field.label"></dt>
+                  <dd :class="{ 'is-empty': field.empty }"
+                      x-text="field.empty ? emptyLabel : field.display"></dd>
+                </div>
+              </template>
+            </dl>
+          </template>
+        </div>
+      </li>
+    </template>
+  </ol>
+
+  <div class="history__more" x-show="hasMore" x-cloak>
+    <button type="button" class="button button--sm" :disabled="loading" @click="more()">
+      {% translate "Show older" %}
+    </button>
+  </div>
+</div>

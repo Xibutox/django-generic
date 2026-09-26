@@ -1,0 +1,68 @@
+{% extends "generic/base.html" %}
+{% load i18n %}
+
+{% block bodyclass %}page-delete{% endblock %}
+
+{% block content %}
+  <div class="module">
+    {% if deletion.can_delete %}
+      <p class="lead">
+        {% blocktranslate with name=object %}
+          Are you sure you want to delete “{{ name }}”?
+        {% endblocktranslate %}
+      </p>
+
+      {% if deletion.nested %}
+        <h2>{% translate "This will also delete" %}</h2>
+        {% include "generic/components/deletion_tree.html" with nodes=deletion.nested %}
+      {% endif %}
+
+      {% if deletion.counts %}
+        <ul class="deletion-counts">
+          {% for entry in deletion.counts %}
+            <li>{{ entry.label }}: {{ entry.count }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        {% if is_popup %}
+          <input type="hidden" name="{{ popup_param }}" value="1">
+        {% endif %}
+        <div class="submit-row">
+          <div class="submit-row__start"></div>
+          <div class="submit-row__end">
+            <a class="button button--ghost" href="{{ cancel_url }}">
+              {% translate "Cancel" %}
+            </a>
+            <button type="submit" class="button button--danger">
+              {% translate "Yes, delete" %}
+            </button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="callout callout--danger" role="alert">
+        <p>
+          {% blocktranslate with name=object %}
+            “{{ name }}” cannot be deleted. The following records depend
+            on it and are protected.
+          {% endblocktranslate %}
+        </p>
+        <ul>
+          {% for item in deletion.protected %}
+            <li>{{ item.model }}: {{ item.label }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="submit-row">
+        <div class="submit-row__start"></div>
+        <div class="submit-row__end">
+          <a class="button" href="{{ cancel_url }}">{% translate "Back" %}</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

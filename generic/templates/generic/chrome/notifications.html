@@ -1,0 +1,67 @@
+{% load i18n generic_ui %}
+{% if chrome.api.notifications %}
+  {# The badge follows the WebSocket stream; the list itself is only #}
+  {# fetched from the API when the menu is opened.                  #}
+  <div class="dropdown"
+       x-data="notificationBell()"
+       @keydown.escape.window="open = false"
+       @click.outside="open = false">
+    <button type="button"
+            class="icon-button"
+            @click="toggle()"
+            :aria-expanded="open.toString()"
+            aria-haspopup="true"
+            title="{% translate 'Notifications' %}">
+      {% translate "Notifications" as notifications_label %}
+      {% icon "notifications" "" notifications_label %}
+      <span class="badge-count" x-show="unread > 0" x-text="unread > 99 ? '99+' : unread" x-cloak></span>
+    </button>
+
+    <div class="dropdown__menu dropdown__menu--wide" x-show="open" x-transition.origin.top.right x-cloak>
+      <div class="dropdown__header cluster" style="justify-content: space-between;">
+        <strong>{% translate "Notifications" %}</strong>
+        <button type="button" class="button button--link" x-show="unread > 0" @click="markAllRead()">
+          {% translate "Mark all as read" %}
+        </button>
+      </div>
+
+      <div class="notification-list">
+        <template x-if="loading">
+          <div class="loading"><span class="spinner"></span></div>
+        </template>
+
+        <template x-if="!loading && items.length === 0">
+          <div class="empty-state">
+            {% icon "notifications_off" %}
+            <span>{% translate "You are all caught up." %}</span>
+          </div>
+        </template>
+
+        <template x-for="item in items" :key="item.id">
+          <a class="notification-item"
+             :class="{ 'is-unread': !item.isRead }"
+             :href="item.url || '#'"
+             @click="openItem(item, $event)">
+            <span class="icon material-symbols-outlined notification-item__icon"
+                  :class="'notification-item__icon--' + item.level"
+                  aria-hidden="true"
+                  x-text="levelIcon(item.level)"></span>
+            <span class="notification-item__text">
+              <span class="notification-item__title" x-text="item.title"></span>
+              <span class="notification-item__body" x-show="item.body" x-text="item.body"></span>
+              <span class="notification-item__time" x-text="item.timeLabel"></span>
+            </span>
+          </a>
+        </template>
+      </div>
+
+      {% if chrome.urls.notifications %}
+        <div class="dropdown__divider"></div>
+        <a class="menu-item" href="{{ chrome.urls.notifications }}">
+          {% icon "list" %}
+          <span class="menu-item__label">{% translate "See all notifications" %}</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

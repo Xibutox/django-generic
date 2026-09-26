@@ -1,0 +1,319 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# What the connection behind every page carries, each frame explained. #}
+{# The page listens on the framework's own socket - the one the bell and #}
+{# the tables use - so what arrives here is what arrives everywhere.     #}
+
+{% block title %}{% translate "Live updates" %}{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'example/demo.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="callout callout--info events-intro">
+    <p>
+      {% blocktranslate trimmed %}
+        Every page keeps a connection open to the server, and what comes
+        down it is addressed to no one: it is what keeps the pages you
+        have open up to date - a table refreshing when a row changes, the
+        bell counting a notification, the banner of a planned restart.
+        The log below shows each of them as it arrives, and what it made
+        happen.
+      {% endblocktranslate %}
+    </p>
+    <p>
+      {% blocktranslate trimmed %}
+        People are told things by notification - in the bell, on the
+        notifications page, by e-mail if they asked for it - whether it
+        comes from a record they watch, a task they ran, or a message an
+        administrator wrote.
+      {% endblocktranslate %}
+      {% if write_url %}
+        <a href="{{ write_url }}">{% translate "Write a message" %}</a>
+      {% else %}
+        <a href="{% url 'site:notifications' %}">{% translate "Your notifications" %}</a>
+      {% endif %}
+    </p>
+  </div>
+
+  {# Posted through fetch so the page does not reload: a reload would #}
+  {# clear the log and hide the very frame the button just caused.    #}
+  {# Without JavaScript it posts normally and the page comes back.    #}
+  <form method="post" id="events-form" class="js-trigger-form">
+    {% csrf_token %}
+
+    <div class="events-choices">
+      <section class="card events-choice">
+        <h2 class="card__title">
+          {% icon "notifications" %} {% translate "Send myself a notification" %}
+        </h2>
+        <p class="card__description">
+          {% blocktranslate trimmed %}
+            It is stored, so it stays in the bell and on the notifications
+            page after a reload. The log shows the frame that told the
+            bell - and every other window you have open.
+          {% endblocktranslate %}
+        </p>
+        <button class="button button--primary" name="action" value="notify">
+          {% translate "Send it" %}
+        </button>
+      </section>
+
+      <section class="card events-choice">
+        <h2 class="card__title">
+          {% icon "sync" %} {% translate "Change a record elsewhere" %}
+        </h2>
+        <p class="card__description">
+          {% blocktranslate trimmed %}
+            Open the tickets in a second window and edit one. The log shows
+            the frame every open table, summary page and chart of tickets
+            refreshed on - nobody pressed reload.
+          {% endblocktranslate %}
+        </p>
+        <a class="button" href="{{ tickets_url }}" target="_blank" rel="noopener">
+          {% icon "open_in_new" %} {% translate "Open the tickets" %}
+        </a>
+      </section>
+    </div>
+  </form>
+
+  {% if queue_team %}
+    {# A channel of the example's own: example/events.py declares it, #}
+    {# publishes on it when a ticket changes, and this card follows it. #}
+    <section class="card events-queue"
+             data-topic="{{ queue_topic }}"
+             data-team="{{ queue_team.pk }}"
+             data-listening="{% translate 'listening' %}"
+             data-refused="{% translate 'refused' %}">
+      <div class="card__header">
+        <h2 class="card__title">
+          {% icon "groups" %}
+          {% blocktranslate trimmed with team=queue_team %}
+            {{ team }}: the queue, live
+          {% endblocktranslate %}
+        </h2>
+        <span class="badge js-queue-state">{% translate "connecting" %}</span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          What a channel is for. The tables follow one per model by
+          themselves; a page of the project's own follows one the project
+          declares, and the project says who may join it - here, one per
+          team, for its agents. While this page is open, the count below
+          follows the team's queue: close or reopen one of its tickets in
+          another window and watch it move. No reload, and nobody is
+          notified: it keeps this page true, and tells no one anything.
+        {% endblocktranslate %}
+      </p>
+
+      <p class="events-queue__figure">
+        <span class="events-queue__count js-queue-count">{{ queue_size }}</span>
+        <span class="muted">{% translate "tickets open or pending" %}</span>
+      </p>
+
+      <p class="callout callout--warning js-queue-refused" hidden>
+        {% blocktranslate trimmed %}
+          The channel refused this page: only the team's agents may follow
+          its queue. The count above stays as it was when the page opened.
+        {% endblocktranslate %}
+      </p>
+
+      <a class="button" href="{{ queue_url }}" target="_blank" rel="noopener">
+        {% icon "open_in_new" %} {% translate "Open the team's tickets" %}
+      </a>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="card__header">
+      <h2 class="card__title">
+        {% icon "inbox" %} {% translate "What arrived" %}
+      </h2>
+      <span class="badge js-connection-state">{% translate "connecting" %}</span>
+    </div>
+
+    <div class="table-wrapper events-log">
+      <table class="object-table">
+        <thead>
+          <tr>
+            <th scope="col">{% translate "Time" %}</th>
+            <th scope="col">{% translate "Type" %}</th>
+            <th scope="col">{% translate "What it does" %}</th>
+          </tr>
+        </thead>
+        <tbody class="js-event-log">
+          <tr class="object-table__empty">
+            <td colspan="3">
+              {% translate "Nothing yet. Press the button above, or change a ticket in another window." %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {{ state_labels|json_script:"events-state-labels" }}
+  {{ meanings|json_script:"events-meanings" }}
+  <script>
+    // The page listens on the framework's own socket - the one the bell
+    // and the tables use - rather than opening a second one. Run on
+    // DOMContentLoaded: the framework's scripts are deferred.
+    document.addEventListener("DOMContentLoaded", function () {
+      "use strict";
+
+      var Generic = window.Generic;
+      var log = document.querySelector(".js-event-log");
+      var state = document.querySelector(".js-connection-state");
+      var labels = JSON.parse(
+        document.getElementById("events-state-labels").textContent
+      );
+      var meanings = JSON.parse(
+        document.getElementById("events-meanings").textContent
+      );
+
+      /** What a frame made happen: the longest prefix that matches. */
+      function meaning(type) {
+        var best = "";
+
+        Object.keys(meanings).forEach(function (prefix) {
+          var matches =
+            prefix === type ||
+            (prefix.slice(-1) === "." && type.indexOf(prefix) === 0);
+
+          if (matches && prefix.length > best.length) {
+            best = prefix;
+          }
+        });
+
+        return meanings[best];
+      }
+
+      function append(type, payload) {
+        var empty = log.querySelector(".object-table__empty");
+
+        if (empty) {
+          empty.remove();
+        }
+
+        var row = log.insertRow(0);
+        row.insertCell().textContent = new Date().toLocaleTimeString();
+
+        var kind = row.insertCell();
+        var code = document.createElement("code");
+
+        // A line may break after each dot, and nowhere else: a narrow
+        // screen reads "notification. created", not "notifi cation".
+        type.split(".").forEach(function (part, index) {
+          if (index) {
+            code.appendChild(document.createTextNode("."));
+            code.appendChild(document.createElement("wbr"));
+          }
+
+          code.appendChild(document.createTextNode(part));
+        });
+        kind.appendChild(code);
+
+        var does = row.insertCell();
+        does.textContent = meaning(type);
+        // What it carried, for whoever wants to see the wire.
+        does.title = JSON.stringify(payload);
+      }
+
+      function showState(value) {
+        state.textContent = labels[value] || value;
+        state.className =
+          "badge js-connection-state" +
+          (value === "open" ? " badge--success" : "");
+      }
+
+      Generic.events.on("*", function (payload, frame) {
+        // The socket's own keep-alive says nothing worth a line.
+        if (frame.type !== "pong") {
+          append(frame.type, payload);
+        }
+      });
+
+      document.addEventListener("generic:socket", function (event) {
+        showState(event.detail.state);
+      });
+
+      showState(Generic.events.state);
+
+      var form = document.querySelector(".js-trigger-form");
+      var pressed = "";
+
+      // FormData(form) never includes the submit button that sent the
+      // form, and event.submitter is not set by a programmatic click.
+      // Recording the button is the only reliable way to know which
+      // one was used.
+      document.querySelectorAll("button[name='action']").forEach(
+        function (button) {
+          button.addEventListener("click", function () {
+            pressed = button.value;
+          });
+        }
+      );
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var action = (event.submitter && event.submitter.value) || pressed;
+        var body = new FormData(form);
+        body.set("action", action);
+
+        // getAttribute, not form.action: the buttons are named
+        // "action", and a named control shadows the form property, so
+        // form.action returns a RadioNodeList rather than the URL.
+        fetch(form.getAttribute("action") || location.pathname, {
+          method: "POST",
+          body: body,
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        }).catch(function (error) {
+          Generic.toast(String(error), "error");
+        });
+      });
+
+      // The team's queue: step 3 of example/events.py - subscribe to
+      // the channel, and redraw what it says.
+      var queue = document.querySelector(".events-queue");
+
+      if (queue) {
+        var topic = queue.dataset.topic;
+        var count = queue.querySelector(".js-queue-count");
+        var badge = queue.querySelector(".js-queue-state");
+
+        var mark = function (label, variant) {
+          badge.textContent = label;
+          badge.className = "badge js-queue-state badge--" + variant;
+        };
+
+        Generic.events.on("subscription.accepted", function (payload) {
+          if (payload.topic === topic) {
+            mark(queue.dataset.listening, "success");
+          }
+        });
+
+        Generic.events.on("subscription.denied", function (payload) {
+          if (payload.topic === topic) {
+            mark(queue.dataset.refused, "danger");
+            queue.querySelector(".js-queue-refused").hidden = false;
+          }
+        });
+
+        Generic.events.on("team.queue", function (payload) {
+          if (String(payload.team) === queue.dataset.team) {
+            count.textContent = payload.open;
+          }
+        });
+
+        Generic.events.subscribe(topic);
+      }
+    });
+  </script>
+{% endblock %}

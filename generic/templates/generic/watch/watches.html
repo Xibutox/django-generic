@@ -1,0 +1,99 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# What this user is told about. The rows come from the endpoint as    #}
+{# JSON and are written back the same way: a tick is a PATCH, so       #}
+{# nothing here is a form to remember to submit.                       #}
+
+{% block bodyclass %}page-watches{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'generic/css/watch.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/watch.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <div x-data="watchList('{{ chrome.api.watches|escapejs }}')">
+    <div class="callout callout--info" x-show="error" x-cloak>
+      <span x-text="error"></span>
+    </div>
+
+    <template x-if="!loading && rows.length === 0">
+      <div class="empty-state">
+        {% icon "notifications" %}
+        <p>{% translate "You are not watching anything yet." %}</p>
+        <p class="muted">
+          {% blocktranslate trimmed %}
+            Open a record and press Watch to be told when it changes, or
+            press it on a list to be told about every record.
+          {% endblocktranslate %}
+        </p>
+      </div>
+    </template>
+
+    <div class="watch-list">
+      <template x-for="row in rows" :key="row.id">
+        <section class="card watch">
+          <div class="card__header">
+            <h2 class="card__title">
+              <span class="icon material-symbols-outlined" aria-hidden="true"
+                    x-text="row.wholeModel ? 'dataset' : 'description'"></span>
+              <a :href="row.url" x-show="row.url" x-text="row.label"></a>
+              <span x-show="!row.url" x-text="row.label"></span>
+            </h2>
+            <span class="badge" x-show="row.wholeModel">
+              {% translate "Every record" %}
+            </span>
+          </div>
+
+          <p class="card__description muted" x-text="row.model"></p>
+
+          <div class="watch__choices">
+            <fieldset class="watch__group">
+              <legend>{% translate "Tell me when it is" %}</legend>
+              {% for event in events %}
+                <label class="watch__option"
+                       x-show="row.wholeModel || '{{ event.name }}' !== 'created'">
+                  <input type="checkbox"
+                         value="{{ event.name }}"
+                         :checked="row.events.includes('{{ event.name }}')"
+                         @change="toggleEvent(row, '{{ event.name }}')">
+                  <span>{{ event.label }}</span>
+                </label>
+              {% endfor %}
+            </fieldset>
+
+            <fieldset class="watch__group">
+              <legend>{% translate "How" %}</legend>
+              {% for channel in channels %}
+                <label class="watch__option">
+                  <input type="checkbox"
+                         value="{{ channel.name }}"
+                         :checked="row.channels.includes('{{ channel.name }}')"
+                         @change="toggleChannel(row, '{{ channel.name }}')">
+                  <span>{{ channel.label }}</span>
+                </label>
+              {% endfor %}
+              <p class="watch__hint muted" x-show="!row.channels.length">
+                {% translate "Following your notification preference." %}
+              </p>
+            </fieldset>
+          </div>
+
+          <div class="watch__actions">
+            <button type="button"
+                    class="button button--sm button--danger-ghost"
+                    :disabled="row.busy"
+                    @click="remove(row)">
+              {% icon "notifications_off" "icon--sm" %}
+              {% translate "Stop watching" %}
+            </button>
+          </div>
+        </section>
+      </template>
+    </div>
+  </div>
+{% endblock %}

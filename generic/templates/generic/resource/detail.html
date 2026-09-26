@@ -1,0 +1,221 @@
+{% extends "generic/datatable.html" %}
+{% load i18n static generic_ui %}
+
+{# A record's summary page: figures, sections of values, and a tab per #}
+{# related table. Override per project with                           #}
+{# generic/resource/<app>/detail.html or .../<app>/<model>/detail.html. #}
+
+{% block bodyclass %}page-summary page-resource-detail app-{{ opts.app_label }} model-{{ opts.model_name }}{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/summary.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/history.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/summary.js' %}" defer></script>
+  <script src="{% static 'generic/js/history.js' %}" defer></script>
+{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% icon resource.get_icon "icon--sm" %}
+    <span>{{ resource.get_label }}</span>
+  </div>
+{% endblock %}
+
+{% block object_tools %}
+  {% include "generic/components/watch_button.html" with watch_object_id=object.pk %}
+{% endblock %}
+
+{% block content %}
+  {# The same JSON the summary endpoint returns: the first paint needs  #}
+  {# no request, and a live refresh replaces it wholesale.              #}
+  {{ summary|json_script:"record-summary" }}
+
+  <div class="summary" x-data="recordSummary('record-summary')">
+    <div id="datatable-error" class="callout callout--danger" role="alert" hidden></div>
+
+    <template x-if="data.actions.length">
+      <div class="summary__actions" role="group" aria-label="{% translate 'Actions' %}">
+        <template x-for="action in data.actions" :key="action.name">
+          <button type="button"
+                  class="button button--sm"
+                  :class="{ 'button--danger-ghost': action.variant === 'danger' }"
+                  :disabled="busy"
+                  @click="run(action)">
+            <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="action.icon" x-text="action.icon"></span>
+            <span x-text="action.label"></span>
+          </button>
+        </template>
+      </div>
+    </template>
+
+    {# Who touched this last, from the history the record keeps. The   #}
+    {# tab below has the rest of the story.                            #}
+    <template x-if="data.history && data.history.last">
+      <p class="summary__last">
+        {% icon "history" "icon--sm" %}
+        <span x-text="lastChange()"></span>
+        <button type="button" class="button button--link" @click="openHistory()">
+          {% translate "See the history" %}
+        </button>
+      </p>
+    </template>
+
+    <template x-if="data.stats.length">
+      <div class="summary__stats">
+        <template x-for="field in data.stats" :key="field.name">
+          <div class="stat">
+            <div class="stat__label" x-text="field.label"></div>
+            <div class="stat__value">
+              {% include "generic/resource/includes/summary_value.html" %}
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    {# detail_charts: the record's related rows, as charts. #}
+    {% if charts %}
+      <div class="summary__charts">
+        {% include "generic/charts/grid.html" %}
+      </div>
+    {% endif %}
+
+    <div class="summary__sections">
+      <template x-for="section in data.sections" :key="section.name">
+        <section class="card summary-section" :class="{ 'is-collapsed': collapsed[section.name] }">
+          <template x-if="section.title">
+            <button type="button"
+                    class="summary-section__header"
+                    :aria-expanded="(!collapsed[section.name]).toString()"
+                    @click="toggle(section)">
+              <h2 class="card__title" x-text="section.title"></h2>
+              <span class="icon material-symbols-outlined" aria-hidden="true"
+                    x-text="collapsed[section.name] ? 'expand_more' : 'expand_less'"></span>
+            </button>
+          </template>
+
+          <div x-show="!collapsed[section.name]">
+            <p class="card__description" x-show="section.description" x-text="section.description"></p>
+            <dl class="summary-fields">
+              <template x-for="field in section.fields" :key="field.name">
+                <div class="summary-field" :class="{ 'summary-field--wide': field.wide }">
+                  <dt x-text="field.label"></dt>
+                  <dd>{% include "generic/resource/includes/summary_value.html" %}</dd>
+                </div>
+              </template>
+            </dl>
+          </div>
+        </section>
+      </template>
+    </div>
+
+    {% if related_tables or summary.history %}
+      <section class="card summary-related"
+               :class="{ 'is-menu-open': overflow }"
+               aria-label="{% translate 'Related records' %}">
+        {# One list, whatever a tab leads to: the related tables, then #}
+        {# the history. As many are drawn as fit; the rest wait behind #}
+        {# the button at the end, so twenty of them stay usable.       #}
+        <div class="summary-tabs-bar">
+        <div class="summary-tabs" role="tablist">
+          <template x-for="(entry, index) in tabs" :key="entry.name">
+            <button type="button"
+                    class="summary-tab"
+                    role="tab"
+                    x-show="index < visible"
+                    :id="'related-tab-' + entry.name"
+                    :aria-controls="'related-' + entry.name"
+                    :aria-selected="(active === entry.name).toString()"
+                    :class="{ 'is-active': active === entry.name }"
+                    @click="show(entry.name)">
+              <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-text="entry.icon"></span>
+              <span x-text="entry.title"></span>
+              <span class="summary-tab__count" x-show="entry.count" x-text="entry.count"></span>
+            </button>
+          </template>
+        </div>
+
+        {# Outside the strip that scrolls, or its menu would be cut  #}
+        {# off by the very overflow it exists to replace.            #}
+          <div class="dropdown summary-tabs__overflow"
+               x-show="visible < tabs.length"
+               x-cloak
+               @keydown.escape.window="overflow = false"
+               @click.outside="overflow = false">
+            <button type="button"
+                    class="summary-tab summary-tabs__more"
+                    :class="{ 'is-active': hiddenActive }"
+                    :aria-expanded="overflow.toString()"
+                    aria-haspopup="menu"
+                    @click="overflow = !overflow">
+              {% icon "more_horiz" "icon--sm" %}
+              <span x-text="'+' + hidden.length"></span>
+              <span class="sr-only">{% translate "More tabs" %}</span>
+            </button>
+
+            {# Right-aligned: the button sits at the end of the bar,  #}
+            {# so a menu hanging leftwards is one that stays on screen. #}
+            <div class="dropdown__menu summary-tabs__menu"
+                 role="menu"
+                 x-show="overflow"
+                 x-transition.origin.top.right
+                 x-cloak>
+              <template x-for="entry in hidden" :key="entry.name">
+                <button type="button"
+                        class="menu-item"
+                        role="menuitem"
+                        :aria-checked="(active === entry.name).toString()"
+                        @click="show(entry.name); overflow = false">
+                  <span class="icon material-symbols-outlined" aria-hidden="true" x-text="entry.icon"></span>
+                  <span class="menu-item__label" x-text="entry.title"></span>
+                  <span class="menu-item__hint" x-show="entry.count" x-text="entry.count"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        {# One panel per table, rendered by the server; the table starts  #}
+        {# the first time its tab is shown, so a record with many related #}
+        {# tables costs one request, not one per table.                    #}
+        {% for table in related_tables %}
+          {{ table.config|json_script:table.config_id }}
+          <div class="summary-related__panel"
+               role="tabpanel"
+               id="related-{{ table.name }}"
+               aria-labelledby="related-tab-{{ table.name }}"
+               x-show="active === '{{ table.name|escapejs }}'">
+            <div class="summary-related__bar"
+                 x-show="related('{{ table.name|escapejs }}').description || related('{{ table.name|escapejs }}').addUrl">
+              <p class="summary-related__description" x-text="related('{{ table.name|escapejs }}').description"></p>
+              <a class="button button--sm"
+                 x-show="related('{{ table.name|escapejs }}').addUrl"
+                 :href="safeUrl(related('{{ table.name|escapejs }}').addUrl)">
+                {% icon "add" "icon--sm" %}
+                {% translate "Add" %}
+              </a>
+            </div>
+            {# Charts of this table: they follow its filters. #}
+            {% if table.charts %}
+              {% include "generic/charts/grid.html" with charts=table.charts %}
+            {% endif %}
+            <table class="js-related-datatable display"
+                   data-config="{{ table.config_id }}"
+                   data-related="{{ table.name }}">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        {% endfor %}
+
+        {% if summary.history %}
+          {% include "generic/resource/includes/history_panel.html" %}
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

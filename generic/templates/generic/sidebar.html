@@ -1,0 +1,44 @@
+{% load i18n generic_ui %}
+<aside class="sidebar" id="sidebar" aria-label="{% translate 'Navigation' %}">
+  {# The application's name and the pin both live in the top bar: the #}
+  {# name so it shows on every page, the pin because the navigation   #}
+  {# is exactly what is missing when the pin is wanted.               #}
+  {% if chrome.navigation or sidebar_sections %}
+    <div class="sidebar__search">
+      <label class="input-with-icon">
+        {% icon "search" "icon--sm" %}
+        <input type="search"
+               class="input input--sm js-nav-filter"
+               placeholder="{% translate 'Filter navigation' %}"
+               aria-label="{% translate 'Filter navigation' %}"
+               aria-controls="sidebar-nav">
+      </label>
+    </div>
+  {% endif %}
+
+  <nav class="sidebar__nav" id="sidebar-nav">
+    {% block sidebar_content %}
+      {# Groups built from the registered resources and any extra     #}
+      {# links, already filtered on the user's permissions.           #}
+      {% for group in chrome.navigation %}
+        {% include "generic/chrome/nav_group.html" with group=group %}
+      {% endfor %}
+
+      {# The former way to fill the sidebar, still honoured: a list   #}
+      {# of {label, items} placed in the context by the project.      #}
+      {% for group in sidebar_sections %}
+        {% include "generic/chrome/nav_group.html" with group=group %}
+      {% endfor %}
+
+      {% if not chrome.navigation and not sidebar_sections %}
+        <p class="sidebar__empty">{% translate "Nothing to show here yet." %}</p>
+      {% endif %}
+    {% endblock %}
+  </nav>
+
+  {% block sidebar_footer %}
+    {% if chrome.version %}
+      <div class="sidebar__footer">{{ chrome.version }}</div>
+    {% endif %}
+  {% endblock %}
+</aside>

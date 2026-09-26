@@ -1,0 +1,75 @@
+{% load i18n %}
+{# One value of a summary page, drawn by its type. `field` comes from  #}
+{# the enclosing x-for. Every value goes through x-text, never x-html, #}
+{# and every URL through safeUrl().                                    #}
+<span class="summary-value" :class="'summary-value--' + field.type">
+  <template x-if="field.empty">
+    <span class="summary-value__empty">&mdash;</span>
+  </template>
+
+  <template x-if="!field.empty && field.type === 'boolean'">
+    <span class="dt-boolean" :class="field.value ? 'dt-boolean--yes' : 'dt-boolean--no'">
+      <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-text="field.value ? 'check_circle' : 'cancel'"></span>
+      <span x-text="field.value ? '{{ _('Yes')|escapejs }}' : '{{ _('No')|escapejs }}'"></span>
+    </span>
+  </template>
+
+  <template x-if="!field.empty && field.type === 'choice'">
+    <span class="badge" x-text="field.display"></span>
+  </template>
+
+  <template x-if="!field.empty && (field.type === 'link' || field.type === 'url')">
+    <span>
+      <template x-if="safeUrl(field.url)">
+        <a :href="safeUrl(field.url)"
+           :target="field.type === 'url' ? '_blank' : null"
+           :rel="field.type === 'url' ? 'noopener noreferrer' : null"
+           x-text="field.display"></a>
+      </template>
+      <template x-if="!safeUrl(field.url)">
+        <span x-text="field.display"></span>
+      </template>
+    </span>
+  </template>
+
+  <template x-if="!field.empty && field.type === 'email'">
+    <a :href="'mailto:' + field.display" x-text="field.display"></a>
+  </template>
+
+  <template x-if="!field.empty && field.type === 'links'">
+    <span class="summary-links">
+      <template x-for="(item, index) in field.items" :key="index">
+        <span class="chip">
+          <template x-if="safeUrl(item.url)">
+            <a :href="safeUrl(item.url)" x-text="item.label"></a>
+          </template>
+          <template x-if="!safeUrl(item.url)">
+            <span x-text="item.label"></span>
+          </template>
+        </span>
+      </template>
+      <span class="summary-links__more" x-show="field.more" x-text="moreLabel(field.more)"></span>
+    </span>
+  </template>
+
+  <template x-if="!field.empty && field.type === 'tags'">
+    <span class="summary-links">
+      <template x-for="(tag, index) in field.items" :key="index">
+        <span class="tag-list">
+          <template x-if="safeUrl(tag.url)">
+            <a :href="safeUrl(tag.url)" :class="tagClass(tag)" :style="tagStyle(tag)" :title="tag.title || null" x-text="tag.label"></a>
+          </template>
+          <template x-if="!safeUrl(tag.url)">
+            <span :class="tagClass(tag)" :style="tagStyle(tag)" :title="tag.title || null" x-text="tag.label"></span>
+          </template>
+        </span>
+      </template>
+      <span class="summary-links__more" x-show="field.more" x-text="moreLabel(field.more)"></span>
+    </span>
+  </template>
+
+  <template x-if="!field.empty && ['text', 'number', 'date', 'datetime'].indexOf(field.type) !== -1">
+    <span :class="{ 'summary-value__text--multiline': field.multiline, 'summary-value__text--code': field.code }"
+          x-text="field.display"></span>
+  </template>
+</span>

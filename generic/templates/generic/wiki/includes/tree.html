@@ -1,0 +1,14 @@
+{# One level of the wiki menu; subpages come from the same template. #}
+{% for entry in entries %}
+  <li class="wiki-tree__item{% if entry.is_current %} is-current{% endif %}"
+      data-search="{{ entry.search }}"
+      x-show="matches($el.dataset.search)">
+    <a class="wiki-tree__link"
+       href="{{ entry.url }}"{% if entry.is_current %} aria-current="page"{% endif %}>{{ entry.title }}</a>
+    {% if entry.children %}
+      <ul class="wiki-tree">
+        {% include "generic/wiki/includes/tree.html" with entries=entry.children %}
+      </ul>
+    {% endif %}
+  </li>
+{% endfor %}

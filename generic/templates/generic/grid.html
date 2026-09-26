@@ -1,0 +1,14 @@
+{% extends "generic/datatable.html" %}
+
+{# A declared grid, on a page of its own (generic.sites.views.GridView). #}
+{# The table is the framework's; override the `grid_intro` block, or    #}
+{# this whole template as generic/grid/<app>/<model>/<grid>.html, to    #}
+{# say more about the work it is for. Wrap what the block says in a     #}
+{# <div class="grid-intro">: it spaces it from the table.               #}
+
+{% block bodyclass %}page-datatable page-grid{% endblock %}
+
+{% block content %}
+  {% block grid_intro %}{% endblock %}
+  {{ block.super }}
+{% endblock %}

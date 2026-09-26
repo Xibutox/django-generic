@@ -1,0 +1,84 @@
+{% load i18n generic_ui %}
+{# Ctrl+K anywhere, or the search button in the top bar. The results  #}
+{# come from the site's search endpoint as JSON and are drawn here.   #}
+<div x-data="commandPalette()"
+     @generic-palette-open.window="show()"
+     @keydown.window="shortcut($event)">
+  <div class="palette"
+       x-show="open"
+       x-transition.opacity
+       x-cloak
+       @click.self="close()"
+       @keydown.escape.prevent="close()">
+    <div class="palette__panel"
+         role="dialog"
+         aria-modal="true"
+         aria-label="{% translate 'Search' %}"
+         x-trap.noscroll="open">
+      <div class="palette__search">
+        {% icon "search" %}
+        <input x-ref="input"
+               class="palette__input"
+               type="search"
+               autocomplete="off"
+               spellcheck="false"
+               placeholder="{% translate 'Search pages and records' %}&hellip;"
+               aria-label="{% translate 'Search pages and records' %}"
+               x-model="term"
+               @input.debounce.250ms="search()"
+               @keydown.down.prevent="move(1)"
+               @keydown.up.prevent="move(-1)"
+               @keydown.enter.prevent="go()">
+        <kbd>Esc</kbd>
+      </div>
+
+      <div class="palette__results" x-ref="results">
+        <template x-if="loading">
+          <div class="loading"><span class="spinner"></span></div>
+        </template>
+
+        <template x-if="!loading && term.trim() && flat.length === 0">
+          <div class="palette__empty">
+            {% translate "No results." %}
+          </div>
+        </template>
+
+        <template x-if="!loading && !term.trim() && flat.length === 0">
+          <div class="palette__empty">
+            {% translate "Type to search every page and record you can see." %}
+          </div>
+        </template>
+
+        <template x-for="group in groups" :key="group.label">
+          <div class="palette__group">
+            <div class="palette__group-title" x-text="group.label"></div>
+            <template x-for="item in group.items" :key="item._index">
+              <a class="palette__item"
+                 :href="item.url"
+                 :class="{ 'is-highlighted': item._index === highlighted }"
+                 :data-index="item._index"
+                 @mouseenter="highlighted = item._index"
+                 @click="remember(item)">
+                <span class="icon material-symbols-outlined"
+                      aria-hidden="true"
+                      x-text="item.icon || group.icon || 'arrow_forward'"></span>
+                <span class="palette__item-text">
+                  <span class="palette__item-label" x-text="item.label"></span>
+                  <span class="palette__item-description"
+                        x-show="item.description"
+                        x-text="item.description"></span>
+                </span>
+              </a>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <div class="palette__footer">
+        <span><kbd>&uarr;</kbd> <kbd>&darr;</kbd> {% translate "to move" %}</span>
+        <span><kbd>Enter</kbd> {% translate "to open" %}</span>
+        <span><kbd>Esc</kbd> {% translate "to close" %}</span>
+      </div>
+    </div>
+  </div>
+</div>

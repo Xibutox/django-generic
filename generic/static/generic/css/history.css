@@ -1,0 +1,178 @@
+/**
+ * The History tab of a record's page.
+ *
+ * A column of entries against a rule, newest at the top. Tokens only,
+ * and rem throughout, so it follows the browser's text size like the rest.
+ */
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0 0;
+}
+
+.history-entry {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding: 0 0 var(--space-4);
+}
+
+/* The rule joining one entry to the next, stopping at the last. */
+.history-entry::before {
+  content: "";
+  position: absolute;
+  top: 1.6rem;
+  bottom: 0;
+  left: 0.85rem;
+  width: 1px;
+  background: var(--border-color);
+}
+
+.history-entry:last-child::before {
+  display: none;
+}
+
+.history-entry__mark {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-pill);
+}
+
+.history-entry--created .history-entry__mark {
+  color: var(--color-success);
+}
+
+.history-entry--deleted .history-entry__mark {
+  color: var(--color-danger);
+}
+
+.history-entry__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.history-entry__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  margin: 0.25rem 0 0;
+}
+
+.history-entry__action {
+  font-weight: 600;
+}
+
+.history-entry__who {
+  color: var(--text-primary);
+}
+
+.history-entry__when,
+.history-entry__version {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.history-entry__toggle {
+  padding-left: 0;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+/* -- What one version changed ------------------------------------------ */
+
+.history-changes {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.history-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.history-change:nth-child(odd) {
+  background: var(--surface-sunken);
+}
+
+.history-change__field {
+  flex: 0 0 auto;
+  min-width: 7rem;
+  color: var(--text-secondary);
+}
+
+.history-change__from,
+.history-change__to {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-change__from {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.history-change__to {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.history-change__arrow {
+  color: var(--text-muted);
+}
+
+.history-change .is-empty,
+.history-value dd.is-empty {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+/* -- The whole version ------------------------------------------------- */
+
+.history-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+  gap: 0 var(--space-4);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2);
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.history-value {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-value dt {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.history-value dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.history__more {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0 var(--space-3);
+}

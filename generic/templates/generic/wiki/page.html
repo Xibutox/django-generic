@@ -1,0 +1,166 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# A wiki page: the menu of pages, the page, and its editor. Override  #}
+{# per project with a template of the same name.                      #}
+
+{% block bodyclass %}page-wiki{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/vendor/quill/quill.snow.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/wiki.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/vendor/quill/quill.js' %}" defer></script>
+  <script src="{% static 'generic/js/wiki.js' %}" defer></script>
+{% endblock %}
+
+{# The page draws its own header: in the editor, the title is a field. #}
+{% block page_header %}{% endblock %}
+
+{% block content %}
+  {{ wiki_config|json_script:"wiki-config" }}
+
+  <div class="wiki" x-data="wikiPage('wiki-config')">
+    <aside class="card wiki__menu" aria-label="{% translate 'Wiki pages' %}">
+      <div class="wiki__menu-head">
+        <label class="input-with-icon">
+          {% icon "search" "icon--sm" %}
+          <input type="search"
+                 class="input input--sm"
+                 x-model="filter"
+                 placeholder="{% translate 'Filter pages' %}"
+                 aria-label="{% translate 'Filter pages' %}">
+        </label>
+        {% if can.add %}
+          <button type="button"
+                  class="icon-button"
+                  title="{% translate 'New page' %}"
+                  @click="create(null)">
+            {% translate "New page" as new_label %}
+            {% icon "add" "" new_label %}
+          </button>
+        {% endif %}
+      </div>
+
+      {% if menu %}
+        <ul class="wiki-tree">
+          {% include "generic/wiki/includes/tree.html" with entries=menu %}
+        </ul>
+      {% else %}
+        <p class="wiki__menu-empty">{% translate "No page yet." %}</p>
+      {% endif %}
+    </aside>
+
+    <article class="card wiki__page">
+      {% if page %}
+        <div x-show="!editing">
+          <header class="wiki__header">
+            <div>
+              <h1 class="wiki__title">{{ page.title }}</h1>
+              <p class="wiki__meta">
+                {% icon "history" "icon--sm" %}
+                {% if page.updated_by %}
+                  {% blocktranslate with date=page.updated_at|date:"DATETIME_FORMAT" name=page.updated_by.get_full_name|default:page.updated_by.get_username %}Changed {{ date }} by {{ name }}{% endblocktranslate %}
+                {% else %}
+                  {% blocktranslate with date=page.updated_at|date:"DATETIME_FORMAT" %}Changed {{ date }}{% endblocktranslate %}
+                {% endif %}
+                {% if page.show_on_dashboard %}
+                  <span class="badge badge--accent">{% icon "push_pin" "icon--sm" %} {% translate "On the dashboard" %}</span>
+                {% endif %}
+              </p>
+            </div>
+
+            <div class="wiki__actions">
+              <button type="button" class="button button--ghost button--sm" @click="history()">
+                {% icon "history" "icon--sm" %} {% translate "History" %}
+              </button>
+              {% if can.add %}
+                <button type="button" class="button button--sm" @click="create(page.id)">
+                  {% icon "note_add" "icon--sm" %} {% translate "Subpage" %}
+                </button>
+              {% endif %}
+              {% if can.delete %}
+                <button type="button" class="button button--danger-ghost button--sm" @click="remove()">
+                  {% icon "delete" "icon--sm" %} {% translate "Delete" %}
+                </button>
+              {% endif %}
+              {% if can.change %}
+                <button type="button" class="button button--primary button--sm" @click="edit()">
+                  {% icon "edit" "icon--sm" %} {% translate "Edit" %}
+                </button>
+              {% endif %}
+            </div>
+          </header>
+
+          {# Cleaned by the server, and left alone by Alpine: whatever the #}
+          {# page holds, it is never read as a directive.                  #}
+          <div class="wiki-content" x-ignore>
+            {% if content %}
+              {{ content }}
+            {% else %}
+              <p class="wiki__blank">{% translate "This page is still empty." %}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if can.change %}
+          <div class="wiki__editor" x-show="editing" x-cloak>
+            <div class="wiki__editor-fields">
+              <label class="field wiki__field-title">
+                <span class="field__label">{% translate "Title" %}</span>
+                <input type="text" class="input" maxlength="200" required x-model="form.title">
+              </label>
+              <label class="field">
+                <span class="field__label">{% translate "Parent page" %}</span>
+                <select class="input" x-model="form.parent">
+                  <option value="">&mdash; {% translate "None: at the top of the menu" %}</option>
+                  <template x-for="option in config.parents" :key="option.id">
+                    <option :value="String(option.id)" x-text="option.title"></option>
+                  </template>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">{% translate "Position in the menu" %}</span>
+                <input type="number" class="input" min="0" x-model.number="form.position">
+              </label>
+              <label class="field">
+                <span class="field__label">{% translate "Address" %}</span>
+                <input type="text" class="input" maxlength="120" x-model="form.slug">
+              </label>
+              <label class="checkbox wiki__field-pin">
+                <input type="checkbox" x-model="form.show_on_dashboard">
+                <span>{% translate "Show on the dashboard" %}</span>
+              </label>
+            </div>
+
+            <div class="wiki__quill">
+              <div id="wiki-editor"></div>
+            </div>
+
+            <div class="wiki__editor-actions">
+              <button type="button" class="button button--ghost" @click="cancel()">
+                {% translate "Cancel" %}
+              </button>
+              <button type="button" class="button button--primary" :disabled="saving" @click="save()">
+                {% icon "check" %} {% translate "Save" %}
+              </button>
+            </div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state wiki__empty">
+          {% icon "auto_stories" %}
+          <p>{% translate "The wiki has no page yet." %}</p>
+          {% if can.add %}
+            <button type="button" class="button button--primary" @click="create(null)">
+              {% icon "add" %} {% translate "Write the first page" %}
+            </button>
+          {% endif %}
+        </div>
+      {% endif %}
+    </article>
+  </div>
+{% endblock %}

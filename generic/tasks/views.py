@@ -1,0 +1,154 @@
+"""The catalogue: what this application knows how to run.
+
+A page rather than a table, because what it lists is declarations in
+code, not rows: every task, what it does, who it tells, and how its
+last few runs went. The button starts one, which is a form post and a
+redirect - the work itself goes to a worker, or happens here when there
+is none.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from django.contrib import messages
+from django.http import Http404, HttpResponseRedirect
+from django.urls import reverse
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
+from django.views.generic import TemplateView
+
+from generic.conf import generic_settings
+from generic.sites.views import SiteViewMixin
+from generic.tasks.models import TaskRun
+from generic.tasks.registry import registry
+from generic.tasks.resources import beat_installed, tasks_are_offered
+from generic.tasks.runner import launch
+from generic.views.toolbar import Breadcrumb, ToolbarItem
+
+
+class TasksPage(SiteViewMixin, TemplateView):
+    """Every declared task, with a button and its recent runs."""
+
+    template_name = "generic/tasks/catalogue.html"
+    page_title = _("Tasks")
+    page_subtitle = _("What this application knows how to run.")
+
+    def has_permission(self) -> bool:
+        if not tasks_are_offered():
+            return False
+
+        return bool(self.request.user.has_perm("generic.run_task"))
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [Breadcrumb(label=gettext("Tasks"))]
+
+    def get_toolbar_items(self) -> list[ToolbarItem]:
+        items = [
+            ToolbarItem(
+                url=reverse("site:generic_taskrun_list"),
+                label=gettext("Runs"),
+                icon="history",
+                variant="ghost",
+            )
+        ]
+
+        if beat_installed():
+            items.append(
+                ToolbarItem(
+                    url=reverse("site:django_celery_beat_periodictask_list"),
+                    label=gettext("Schedules"),
+                    icon="schedule",
+                    variant="ghost",
+                )
+            )
+
+        return items
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["tasks"] = self.get_tasks()
+        context["beat_installed"] = beat_installed()
+
+        return context
+
+    def get_tasks(self) -> list[dict[str, Any]]:
+        """Each declared task, with how its last runs went."""
+        limit = int(generic_settings.TASK_RECENT_RUNS or 0)
+        entries = []
+
+        for definition in registry.all():
+            runs = list(TaskRun.objects.of(definition.name)[:limit])
+            entries.append(
+                {
+                    "definition": definition,
+                    "name": definition.name,
+                    "label": definition.title,
+                    "description": definition.description,
+                    "icon": definition.icon,
+                    "announce": definition.announce,
+                    "report": definition.report,
+                    "queued": definition.celery_task is not None,
+                    "runs": runs,
+                    "last": runs[0] if runs else None,
+                    "schedules": self.schedules_for(definition.name),
+                }
+            )
+
+        return entries
+
+    def schedules_for(self, name: str) -> list[Any]:
+        """The scheduler's rows pointing at this task, if it is installed."""
+        if not beat_installed():
+            return []
+
+        from django.apps import apps
+
+        model = apps.get_model("django_celery_beat", "PeriodicTask")
+
+        return list(model.objects.filter(task=name))
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """Run one task, then come back and say what happened."""
+        name = (request.POST.get("task") or "").strip()
+        definition = registry.get(name)
+
+        if definition is None:
+            raise Http404(f"No task is called {name!r}.")
+
+        if definition.permission and not request.user.has_perm(
+            definition.permission
+        ):
+            messages.error(
+                request,
+                gettext("You may not run %(task)s.")
+                % {"task": definition.title},
+            )
+
+            return HttpResponseRedirect(request.path)
+
+        run = launch(
+            name,
+            user=request.user,
+            trigger=TaskRun.Trigger.MANUAL,
+        )
+
+        if run.status == TaskRun.Status.FAILURE:
+            messages.error(
+                request,
+                gettext("%(task)s failed: %(error)s")
+                % {"task": run.label, "error": run.summary or run.error},
+            )
+        elif run.is_finished:
+            messages.success(
+                request,
+                gettext("%(task)s finished. %(summary)s")
+                % {"task": run.label, "summary": run.summary},
+            )
+        else:
+            messages.info(
+                request,
+                gettext("%(task)s is running.") % {"task": run.label},
+            )
+
+        return HttpResponseRedirect(run.get_absolute_url() or request.path)

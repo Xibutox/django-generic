@@ -1,0 +1,160 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-generic"
+# One version, written once: generic/__init__.py.
+dynamic = ["version"]
+description = "An admin-like application framework for Django: declare a model once, get its tables, forms, summary pages, charts, filters, exports and live updates, all driven by the REST API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+keywords = [
+    "django",
+    "django-rest-framework",
+    "admin",
+    "datatables",
+    "crud",
+    "forms",
+    "dashboard",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Natural Language :: French",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    # 5.2 is the long-term support release; 4.2 left support in April
+    # 2026, and a 1.0 does not start on a version with no security fixes.
+    "Django>=5.2",
+    "djangorestframework>=3.16",
+]
+
+[project.urls]
+Homepage = "https://github.com/Xibutox/django-generic"
+Documentation = "https://github.com/Xibutox/django-generic/tree/main/docs"
+Repository = "https://github.com/Xibutox/django-generic.git"
+Issues = "https://github.com/Xibutox/django-generic/issues"
+Changelog = "https://github.com/Xibutox/django-generic/blob/main/generic/CHANGELOG.md"
+
+[project.optional-dependencies]
+# Excel export (generic.api.exports).
+export = ["openpyxl>=3.1"]
+
+# Real-time events (generic.events).
+events = ["channels>=4.0", "channels-redis>=4.2", "daphne>=4.1"]
+
+# Background work and caching.
+tasks = ["celery>=5.3", "redis>=5.0"]
+
+# Schedules kept in the database and managed from the Tasks pages.
+# Its own metadata still pins Django < 6.1, which is why it is an extra
+# of its own rather than part of "tasks": install it with --no-deps on
+# a newer Django.
+beat = ["django-celery-beat>=2.6"]
+
+postgres = ["psycopg[binary]>=3.1"]
+
+# The wiki (generic.wiki): cleaning the HTML its editor produces.
+wiki = ["nh3>=0.2.17"]
+
+dev = [
+    "nh3>=0.2.17",
+    # The example project turns it on by itself when it is installed.
+    "django-debug-toolbar>=6.0",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.23",
+    "factory-boy>=3.3",
+    "faker>=25.0",
+    "freezegun>=1.5",
+    "black>=24.3",
+    "isort>=5.13",
+    "flake8>=7.0",
+    "mypy>=1.10",
+    "django-stubs>=5.0",
+    "djangorestframework-stubs>=3.15",
+    "bandit>=1.7",
+    # debug.py --listen: a debugger attaching to a server in Docker.
+    "debugpy>=1.8",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "generic.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["generic*"]
+
+# Everything that is not Python and still makes the application: the
+# templates, the static files (vendored libraries included), the
+# compiled translations, and the changelog the Help page reads. Without
+# this, a wheel holds the code and nothing it draws with.
+[tool.setuptools.package-data]
+generic = [
+    "templates/**/*",
+    "static/**/*",
+    "locale/**/*",
+    "CHANGELOG.md",
+    "py.typed",
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_first_party = ["generic"]
+
+[tool.mypy]
+python_version = "3.10"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+exclude = ["tests/testapp/migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*", "channels.*", "factory.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "tests.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py"]
+addopts = "--strict-markers --cov=generic --cov-report=term-missing"
+asyncio_mode = "auto"
+filterwarnings = ["error::DeprecationWarning:generic.*"]
+
+[tool.coverage.run]
+source = ["generic"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

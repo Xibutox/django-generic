@@ -1,0 +1,18 @@
+{% load i18n %}
+{% if is_searchable %}
+  {% translate "Search" as default_placeholder %}
+  <form class="search-form" method="get" role="search">
+    <label class="sr-only" for="search-input">{% translate "Search" %}</label>
+    <input id="search-input"
+           type="search"
+           name="{{ search_param }}"
+           value="{{ search_term }}"
+           placeholder="{{ search_placeholder|default:default_placeholder }}">
+    <button type="submit" class="button">{% translate "Search" %}</button>
+    {% if search_term %}
+      <a class="button button--ghost" href="{{ request.path }}">
+        {% translate "Clear" %}
+      </a>
+    {% endif %}
+  </form>
+{% endif %}

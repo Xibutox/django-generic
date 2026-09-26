@@ -1,0 +1,51 @@
+{% extends "generic/auth/base.html" %}
+{% load i18n generic_ui %}
+
+{# The far side of the sign-in page's provider button. A real project  #}
+{# would be at its identity provider by now; this demo declares no     #}
+{# provider library, so the page says what would happen and sends the  #}
+{# reader back. Nothing here signs anybody in.                          #}
+
+{% block bodyclass %}page-login{% endblock %}
+
+{% block content %}
+  <main class="auth-card">
+    <div class="auth-card__brand">
+      <span class="sidebar__logo">{% icon "shield_person" %}</span>
+      <span>{% translate "Single sign-on" %}</span>
+    </div>
+
+    <h1>{% translate "This is where your provider would take over" %}</h1>
+
+    <p class="auth-card__lead">
+      {% blocktranslate trimmed %}
+        The button you pressed is the whole of what the framework
+        offers: a declared provider, shown first on the sign-in page.
+        What happens next belongs to the library a project chooses -
+        mozilla-django-oidc, django-allauth, djangosaml2 - which would
+        send you to your organisation, bring you back, and sign you in.
+      {% endblocktranslate %}
+    </p>
+
+    {% if destination %}
+      <p class="auth-card__note">
+        {% blocktranslate trimmed %}
+          The address you were heading for travelled with the link, so
+          the provider could return you to it:
+        {% endblocktranslate %}
+        <code>{{ destination }}</code>
+      </p>
+    {% endif %}
+
+    <a class="button button--primary auth-form__submit" href="{{ login_url }}">
+      {% icon "arrow_back" %}
+      {% translate "Back to the sign-in page" %}
+    </a>
+
+    <p class="auth-card__footer">
+      {% blocktranslate trimmed %}
+        The password form is still there, folded under the button.
+      {% endblocktranslate %}
+    </p>
+  </main>
+{% endblock %}

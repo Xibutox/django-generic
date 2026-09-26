@@ -1,0 +1,28 @@
+{% extends "generic/datatable.html" %}
+{% load i18n generic_ui %}
+
+{# The listing of a registered resource. Override per project with     #}
+{# generic/resource/<app>/list.html or .../<app>/<model>/list.html.     #}
+
+{% block bodyclass %}page-datatable page-resource-list app-{{ opts.app_label }} model-{{ opts.model_name }}{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% icon resource.get_icon "icon--sm" %}
+    <span>{{ resource.get_group }}</span>
+  </div>
+{% endblock %}
+
+{% block object_tools %}
+  {# Watching the model: every record created, changed or deleted. #}
+  {% include "generic/components/watch_button.html" %}
+{% endblock %}
+
+{% block content %}
+  {# The resource's list_charts: they follow the table's filters, and a #}
+  {# click on a bar or a slice filters the table.                        #}
+  {% if charts %}
+    {% include "generic/charts/grid.html" %}
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

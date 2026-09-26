@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, catalogs and type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[export,events,tasks,wiki,dev]"
+      - name: black
+        run: black --check .
+      - name: isort
+        run: isort --check-only .
+      - name: flake8
+        run: flake8 generic tests example example_project scripts debug.py
+      - name: message catalogs
+        # A .po edited without recompiling translates nothing.
+        run: python scripts/compile_messages.py --check
+      - name: bandit
+        # B101 (assert) is noise in a codebase that uses asserts as
+        # internal invariants rather than as input validation.
+        run: bandit -r generic -ll --skip B101
+      - name: mypy
+        # Reported, not blocking: django-stubs trails the Django this
+        # runs on, and most of what it says is that.
+        continue-on-error: true
+        run: mypy generic
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }}, Django ${{ matrix.django }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The oldest versions the package accepts...
+          - python-version: "3.10"
+            django: "5.2.*"
+            drf: "3.16.*"
+          - python-version: "3.11"
+            django: "5.2.*"
+            drf: ""
+          # ...and the newest.
+          - python-version: "3.12"
+            django: ""
+            drf: ""
+          - python-version: "3.13"
+            django: ""
+            drf: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: |
+          pip install -e ".[export,events,tasks,wiki,dev]"
+          if [ -n "${{ matrix.django }}" ]; then pip install "Django==${{ matrix.django }}"; fi
+          if [ -n "${{ matrix.drf }}" ]; then pip install "djangorestframework==${{ matrix.drf }}"; fi
+          python -c "import django, rest_framework; print('Django', django.get_version(), 'DRF', rest_framework.VERSION)"
+      - run: pytest --cov=generic --cov-report=xml --cov-fail-under=80
+
+  integration:
+    name: Tests against Postgres and Redis
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: generic
+          POSTGRES_USER: generic
+          POSTGRES_PASSWORD: generic
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgres://generic:generic@localhost:5432/generic
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[export,events,tasks,postgres,wiki,dev]"
+      - run: pytest -q --no-cov
+
+  package:
+    name: Package, installed as a user installs it
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the wheel and the source archive
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*
+      - name: The core alone, in a clean environment
+        # Nothing from the checkout on the path: whatever the pages
+        # need, the wheel must carry.
+        run: |
+          python -m venv /tmp/core
+          /tmp/core/bin/pip install dist/*.whl
+          cd /tmp && /tmp/core/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py"
+          cd /tmp && /tmp/core/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py" --prefix app/
+      - name: Every extra, on the oldest Django accepted
+        run: |
+          python -m venv /tmp/full
+          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*"
+          cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

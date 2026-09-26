@@ -1,0 +1,234 @@
+{% extends "generic/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Support desk example" %}{% endblock %}
+
+{% block page_header %}
+  <div class="page-header">
+    <div class="page-header__text">
+      <h1>{% translate "Support desk example" %}</h1>
+      <p class="page-header__subtitle">
+        {% blocktranslate %}
+          Every feature of the framework, wired to a small set of models.
+          Each entry says what it demonstrates and what to try.
+        {% endblocktranslate %}
+      </p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="module">
+    <h2>{% translate "Server-rendered pages" %}</h2>
+    <p class="fieldset__description">
+      {% translate "No JavaScript required. These work with scripting disabled." %}
+    </p>
+
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:ticket-list' %}">{% translate "Ticket list" %}</a></dt>
+        <dd>
+          {% blocktranslate %}
+            GenericListView. Try the search box, click a column header to
+            sort, tick some rows and apply a bulk action, then page
+            through. The Add button only appears for users holding the
+            add permission.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:team-list' %}">{% translate "Team list" %}</a></dt>
+        <dd>
+          {% blocktranslate %}
+            A second listing, with a count column computed from an
+            annotation.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:agent-list' %}">{% translate "Agent list" %}</a></dt>
+        <dd>{% translate "A listing whose columns come from a related model." %}</dd>
+      </div>
+
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:ticket-create' %}">{% translate "Create a ticket" %}</a></dt>
+        <dd>
+          {% blocktranslate %}
+            GenericCreateView with fieldsets: two fields on one row, a
+            collapsed section, and Save / Save and continue / Save and
+            add another.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+
+      {% if first_ticket %}
+        <div class="detail-list__row">
+          <dt><a href="{% url 'example:ticket-detail' first_ticket.pk %}">{% translate "Ticket detail" %}</a></dt>
+          <dd>
+            {% blocktranslate %}
+              GenericDetailView. Choice fields show their label, the
+              many-to-many is joined, and the toolbar offers Change and
+              Delete.
+            {% endblocktranslate %}
+          </dd>
+        </div>
+
+        <div class="detail-list__row">
+          <dt><a href="{% url 'example:ticket-update' first_ticket.pk %}">{% translate "Edit a ticket" %}</a></dt>
+          <dd>
+            {% blocktranslate %}
+              GenericUpdateView. The History section is read-only and
+              computed on the view, not stored on the model.
+            {% endblocktranslate %}
+          </dd>
+        </div>
+
+        <div class="detail-list__row">
+          <dt><a href="{% url 'example:ticket-delete' first_ticket.pk %}">{% translate "Delete a ticket" %}</a></dt>
+          <dd>
+            {% blocktranslate %}
+              The confirmation lists the comments that would go with it,
+              using Django's own cascade collector.
+            {% endblocktranslate %}
+          </dd>
+        </div>
+      {% endif %}
+
+      {% if busy_team %}
+        <div class="detail-list__row">
+          <dt>
+            <a href="{% url 'example:team-delete' busy_team.pk %}">
+              {% translate "Delete a protected team" %}
+            </a>
+          </dt>
+          <dd>
+            {% blocktranslate %}
+              This team still has tickets and its relation is PROTECT.
+              The page refuses, names the culprits, and offers no
+              confirm button. Posting anyway is refused too.
+            {% endblocktranslate %}
+          </dd>
+        </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <div class="module">
+    <h2>{% translate "Interactive tables" %}</h2>
+    <p class="fieldset__description">
+      {% translate "DataTables, fed by the REST API. Filtering, ordering and paging all happen on the server." %}
+    </p>
+
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:ticket-table' %}">{% translate "Ticket table" %}</a></dt>
+        <dd>
+          {% blocktranslate %}
+            Every column type at once: text, integer, decimal, float,
+            boolean, date, timestamp, a link column, a computed column,
+            a fixed-choice multiselect (Priority, Status) and one backed
+            by an autocomplete route (Assignee). Try the operator button
+            beside each filter, the date popover, the Columns selector,
+            and the Excel and CSV exports - they export every filtered
+            row, not just the page.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:agent-table' %}">{% translate "Agent table" %}</a></dt>
+        <dd>{% translate "A second table on the same site, with its own saved column state." %}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="module">
+    <h2>{% translate "Real-time events" %}</h2>
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example:events' %}">{% translate "Live updates" %}</a></dt>
+        <dd>
+          {% blocktranslate trimmed %}
+            Shows what the connection behind every page carries, and what
+            each frame makes happen: a notification reaching the bell, a
+            table refreshing on a change made in another window. Try
+            listening to a channel you may not read and watch it be
+            refused.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="module">
+    <h2>{% translate "Permissions" %}</h2>
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt>
+          <a href="{% url 'example:ticket-list-protected' %}">
+            {% translate "Permission-gated list" %}
+          </a>
+        </dt>
+        <dd>
+          {% blocktranslate %}
+            The same listing, requiring example.view_ticket. Signed in as
+            admin or viewer it renders; as guest it returns 403. Sign out
+            and it redirects to the login page.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="module">
+    <h2>{% translate "REST API" %}</h2>
+    <p class="fieldset__description">
+      {% blocktranslate %}
+        The same declarations that drive the pages. Filtering is resolved
+        through the serializer, so a column it does not expose cannot be
+        filtered whatever the query string asks for.
+      {% endblocktranslate %}
+    </p>
+
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example_api:ticket-list' %}">{% translate "Ticket endpoint" %}</a></dt>
+        <dd><code>/api/tickets/</code> &mdash; {% translate "the table data" %}</dd>
+      </div>
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example_api:ticket-form-form-schema' %}">{% translate "Form schema" %}</a></dt>
+        <dd>
+          {% blocktranslate %}
+            The JSON a frontend renders a form from, including the
+            tabular inline for comments.
+          {% endblocktranslate %}
+        </dd>
+      </div>
+      <div class="detail-list__row">
+        <dt><a href="{% url 'example_api:agent-autocomplete' %}">{% translate "Autocomplete" %}</a></dt>
+        <dd>{% translate "Select2-shaped results feeding the assignee filter." %}</dd>
+      </div>
+      <div class="detail-list__row">
+        <dt><a href="/api/generic/notifications/">{% translate "Notifications" %}</a></dt>
+        <dd>{% translate "History, unread count, and the read transitions." %}</dd>
+      </div>
+    </dl>
+
+    <p class="fieldset__description">
+      {% translate "Things worth trying by hand:" %}
+    </p>
+    <ul class="deletion-counts">
+      <li><code>/api/tickets/?ordering=-estimated_hours</code></li>
+      <li><code>/api/tickets/export-csv/?columns=reference,title,status</code></li>
+      <li>
+        <code>/api/tickets/?advanced_filters={"status":{"operator":"include","value":["open"]}}</code>
+      </li>
+      <li>
+        <code>/api/tickets/?advanced_filters={"password":{"operator":"exact","value":"x"}}</code>
+        &mdash; {% translate "refused: not a declared column" %}
+      </li>
+    </ul>
+  </div>
+{% endblock %}

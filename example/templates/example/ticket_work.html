@@ -1,0 +1,31 @@
+{% extends "generic/datatable.html" %}
+{% load i18n generic_ui %}
+
+{# A page about one record, whose table is meant to be written in.    #}
+{# Everything below is the framework's: this template only says what  #}
+{# the page is for and where to go back to.                           #}
+
+{% block content %}
+  <div class="callout callout--info">
+    {% icon "edit_note" %}
+    <div>
+      {% blocktranslate trimmed %}
+        Every cell you may correct is already its field: type, tick or
+        pick, and it is saved as soon as you leave it or press Enter.
+        The last column is the ticket's own status, which closes the
+        ticket from here and asks for the ticket's permission rather
+        than the timesheet's. Adding a row logs more time on this
+        ticket.
+      {% endblocktranslate %}
+    </div>
+  </div>
+
+  {{ block.super }}
+{% endblock %}
+
+{% block object_tools %}
+  <a class="button" href="{% url 'site:example_ticket_detail' ticket.pk %}">
+    {% icon "arrow_back" %}
+    {% translate "Back to the ticket" %}
+  </a>
+{% endblock %}

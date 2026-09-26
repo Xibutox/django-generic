@@ -1,0 +1,333 @@
+/* The summary page of a record: figures, sections, related tables. */
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.summary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* One line of history at the top: who touched this last, and a way to
+   the rest of the story. */
+
+.summary__last {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.summary__last .icon {
+  color: var(--text-muted);
+}
+
+.summary__last .button--link {
+  padding: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* -- Figures ---------------------------------------------------------- */
+
+.summary__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat__label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stat__value {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* -- Sections ------------------------------------------------------------ */
+
+.summary__sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.summary-section__header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.summary-section.is-collapsed .summary-section__header {
+  margin-bottom: 0;
+}
+
+.summary-section__header:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Values and their labels, in as many columns as the card is wide.
+   The count changes with the width, which is why the eye is helped by
+   a rule under every field rather than by banding alternate rows: the
+   rules of one row line up whatever the count, and a band would have
+   to know it. Each field carries its own tint on hover, so following
+   one across a wide card is a matter of looking at it. */
+.summary-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+  gap: 0 var(--space-4);
+  margin: 0;
+}
+
+.summary-field {
+  min-width: 0;
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.summary-field:hover {
+  background: var(--surface-hover);
+}
+
+.summary-field--wide {
+  grid-column: 1 / -1;
+}
+
+.summary-field dt {
+  margin-bottom: 0.15rem;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.summary-field dd {
+  margin: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.summary-value__empty {
+  color: var(--text-muted);
+}
+
+.summary-value__text--multiline {
+  white-space: pre-line;
+}
+
+.summary-value__text--code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  white-space: pre-wrap;
+}
+
+.summary-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.55rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--border-radius-pill);
+}
+
+.chip a {
+  color: inherit;
+}
+
+.summary-links__more {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* -- Related tables, one tab each --------------------------------------- */
+
+.summary-related {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* The strip of tabs, and the button holding the ones that did not fit.
+   The button sits outside the strip: the strip scrolls - which is what
+   a browser with no JavaScript is left with - and an absolutely placed
+   menu inside a scroller is a menu with its bottom cut off. */
+.summary-tabs-bar {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.summary-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  overflow-x: auto;
+  /* The active tab's border overlaps the bar by a pixel: without this
+     the bar grows a vertical scrollbar for it. */
+  overflow-y: hidden;
+}
+
+.summary-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: -1px;
+  padding: var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.summary-tab:hover {
+  color: var(--text-primary);
+}
+
+.summary-tab.is-active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.summary-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* -- More tabs than fit ------------------------------------------------
+ *
+ * The bar draws what it has room for and hides the rest behind a
+ * button. Measuring needs every tab laid out for a moment, which is
+ * what the class below is for: nothing is painted while it is on.
+ */
+
+.summary-tabs-bar.is-measuring .summary-tab {
+  display: inline-flex !important;
+}
+
+.summary-tabs-bar.is-measuring .summary-tabs__overflow {
+  display: flex !important;
+}
+
+.summary-tabs__overflow {
+  /* Stays at the end of the bar, never squeezed by the tabs. */
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  padding-right: var(--space-3);
+}
+
+/* The card clips its corners; while the menu is open it must not. */
+.summary-related.is-menu-open {
+  overflow: visible;
+}
+
+.summary-tabs__more {
+  gap: var(--space-1);
+}
+
+.summary-tabs__more .icon {
+  color: inherit;
+}
+
+/* The open tab is one of the hidden ones: the button says so. */
+.summary-tabs__more.is-active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.summary-tabs__menu {
+  top: calc(100% - 0.35rem);
+  /* A record with thirty related tables scrolls its menu rather than
+     running off the bottom of the page. */
+  max-height: min(24rem, 60vh);
+  overflow-y: auto;
+}
+
+.summary-tab__count {
+  min-width: 1.6rem;
+  padding: 0 0.4rem;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-pill);
+}
+
+.summary-tab.is-active .summary-tab__count {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
+}
+
+.summary-related__panel {
+  padding: var(--space-4);
+}
+
+.summary-related__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.summary-related__description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}

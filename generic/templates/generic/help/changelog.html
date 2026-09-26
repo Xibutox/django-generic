@@ -1,0 +1,56 @@
+{% extends "generic/base.html" %}
+{% load i18n generic_ui %}
+
+{% block bodyclass %}page-changelog{% endblock %}
+
+{% block content %}
+  {# Read from the CHANGELOG files the developers already keep, so a  #}
+  {# release written there is a release shown here.                    #}
+  {% for source in sources %}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "history" %} {{ source.label }}</h2>
+      </div>
+
+      <ol class="changelog">
+        {% for release in source.releases %}
+          <li class="changelog__release">
+            <div class="changelog__head">
+              <h3 class="changelog__version">{{ release.version }}</h3>
+              {% if release.date %}
+                <span class="changelog__date">{{ release.date }}</span>
+              {% endif %}
+              {% if release.isUnreleased %}
+                <span class="badge badge--warning">{% translate "Not released yet" %}</span>
+              {% endif %}
+            </div>
+
+            {% for note in release.notes %}
+              <p class="changelog__note">{{ note|inline_code }}</p>
+            {% endfor %}
+
+            {% for section in release.sections %}
+              {% if section.name %}
+                <h4 class="changelog__section">{{ section.name|inline_code }}</h4>
+              {% endif %}
+              <ul class="changelog__items">
+                {% for item in section.items %}<li>{{ item|inline_code }}</li>{% endfor %}
+              </ul>
+            {% endfor %}
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% empty %}
+    <div class="empty-state">
+      {% icon "history" %}
+      <p>{% translate "This application records no changes yet." %}</p>
+      <p class="muted">
+        {% blocktranslate trimmed %}
+          Write a CHANGELOG.md at the root of the project and its releases
+          appear here.
+        {% endblocktranslate %}
+      </p>
+    </div>
+  {% endfor %}
+{% endblock %}

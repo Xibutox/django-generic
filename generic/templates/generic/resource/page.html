@@ -1,0 +1,25 @@
+{% extends "generic/datatable.html" %}
+{% load i18n generic_ui %}
+
+{# A page a resource declares (generic.sites.pages): the frame, the     #}
+{# title, the breadcrumbs - list, record, page - and nothing else. A     #}
+{# page's template extends this one and fills page_content with what it #}
+{# shows: a map, a gallery, a timeline, a chart, a text, a table.       #}
+{#                                                                       #}
+{# It extends the table page, so a table can be dropped in anywhere:     #}
+{#   {% include "generic/components/table.html" with config=... id=... %} #}
+{# Its own styles and scripts go in extrastyle and extrajs.              #}
+
+{% block bodyclass %}page-resource-page page-{{ page.name }}{% if opts %} app-{{ opts.app_label }} model-{{ opts.model_name }}{% endif %}{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% icon resource.get_icon "icon--sm" %}
+    <span>{% if object %}{{ resource.get_label }}{% else %}{{ resource.get_label_plural }}{% endif %}</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="datatable-error" class="callout callout--danger" role="alert" hidden></div>
+  {% block page_content %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# TicketTimelineView: a record's page with a view of its own. The       #}
+{# ticket is `object` (and `ticket`); `events` is what the view put      #}
+{# together. The frame, the title and the breadcrumbs are the framework's. #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'example/pages.css' %}">
+{% endblock %}
+
+{% block page_content %}
+  <section class="card">
+    {% if events %}
+      <ol class="timeline">
+        {% for event in events %}
+          <li class="timeline__event timeline__event--{{ event.kind }}{% if event.upcoming %} is-upcoming{% endif %}">
+            <span class="timeline__icon">{% icon event.icon "icon--sm" %}</span>
+            <div class="timeline__body">
+              <div class="timeline__head">
+                <strong>{{ event.title }}</strong>
+                {% if event.who %}<span class="timeline__who">{{ event.who }}</span>{% endif %}
+                <time class="timeline__when" datetime="{{ event.at|date:'c' }}">
+                  {% if event.day_only %}{{ event.at|date:"DATE_FORMAT" }}{% else %}{{ event.at|date:"DATETIME_FORMAT" }}{% endif %}
+                </time>
+              </div>
+
+              {% if event.text %}
+                <p class="timeline__text">{{ event.text }}</p>
+              {% endif %}
+
+              {% if event.changes %}
+                <ul class="timeline__changes">
+                  {% for change in event.changes %}
+                    <li>
+                      <span class="timeline__field">{{ change.label }}</span>
+                      <span class="timeline__from">{% if change.fromEmpty %}&mdash;{% else %}{{ change.from }}{% endif %}</span>
+                      {% icon "arrow_forward" "icon--sm" %}
+                      <span>{% if change.toEmpty %}&mdash;{% else %}{{ change.to }}{% endif %}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="card__description">{% translate "Nothing has happened to this ticket yet." %}</p>
+    {% endif %}
+  </section>
+{% endblock %}

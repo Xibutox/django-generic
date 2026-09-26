@@ -1,0 +1,686 @@
+"""One DRF endpoint per resource.
+
+Every generated screen talks to it, and so can anything else:
+
+==========================  ======================================
+``GET    api/<app>/<model>/``            rows, in the DataTables protocol
+``POST   api/<app>/<model>/``            create, with ``_inlines``
+``GET    api/<app>/<model>/<pk>/``       one record, with its inlines
+``PATCH  api/<app>/<model>/<pk>/``       update, with ``_inlines``
+``DELETE api/<app>/<model>/<pk>/``       delete, refused when protected
+``GET    .../<pk>/summary/``             the record's summary, as JSON
+``GET    .../<pk>/history/``             its versions, newest first
+``PATCH  .../<pk>/cells/``               cells edited in the table itself
+``POST   api/<app>/<model>/rows/``       a row added in a grid
+``GET    .../form-schema/``              the form, as JSON
+``GET    .../<pk>/deletion-preview/``    what a delete would take with it
+``GET    .../export/``, ``export-csv/``  every filtered row
+``POST   .../actions/``                  run a bulk action
+``GET    .../autocomplete/``             Select2 results
+``GET    .../charts/<name>/``            one declared chart's data
+==========================  ======================================
+
+The table endpoints - and the charts - also take ``_related``, which
+narrows the rows to one record's, for a table on that record's summary
+page, and ``_grid``, which narrows them to a declared grid's. The grid
+writes - ``cells`` and ``rows`` - take them too, and read from them
+what the grid allows.
+
+The resource decides everything: the queryset, both serializers, the
+permissions, the actions.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.translation import gettext
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import (
+    NotFound,
+    PermissionDenied,
+    ValidationError,
+)
+from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+
+from generic.api.exports import ExportMixin
+from generic.api.facets import FacetMixin
+from generic.api.filters import DATATABLE_FILTER_BACKENDS, apply_search
+from generic.api.pagination import DataTablesPagination
+from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
+from generic.api.viewsets import FormSchemaViewSetMixin
+from generic.conf import generic_settings
+from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
+from generic.sites.related import RELATED_PARAM
+from generic.views.delete import collect_deletion_summary
+
+#: Upper bound on the primary keys one bulk action request may name.
+MAX_SELECTED = 5000
+
+#: Actions reading the table: they get the table serializer, the
+#: filter backends and the list queryset.
+TABLE_ACTIONS = frozenset(
+    {"list", "export", "export_csv", "run_action", "chart", "facets"}
+)
+
+
+class ResourcePermission(BasePermission):
+    """Map each endpoint action onto the resource's permission methods."""
+
+    def has_permission(self, request: Any, view: Any) -> bool:
+        user = request.user
+
+        if not (user and user.is_authenticated):
+            return False
+
+        resource = view.resource
+        name = view.action
+
+        if name in ("create", "rows"):
+            return resource.has_add_permission(request)
+
+        if name in ("update", "partial_update", "cells"):
+            return resource.has_change_permission(request)
+
+        if name == "destroy":
+            return resource.has_delete_permission(request)
+
+        if name == "form_schema":
+            return resource.has_view_permission(request) or (
+                resource.has_add_permission(request)
+            )
+
+        # Reading, and bulk actions, which check their own permission.
+        return resource.has_view_permission(request)
+
+    def has_object_permission(
+        self,
+        request: Any,
+        view: Any,
+        obj: Any,
+    ) -> bool:
+        resource = view.resource
+        name = view.action
+
+        if name in ("update", "partial_update", "cells"):
+            return resource.has_change_permission(request, obj)
+
+        if name == "destroy":
+            return resource.has_delete_permission(request, obj)
+
+        return resource.has_view_permission(request, obj)
+
+
+class ResourceViewSet(
+    ExportMixin,
+    FacetMixin,
+    FormSchemaViewSetMixin,
+    viewsets.ModelViewSet,
+):
+    """The endpoint behind a registered resource.
+
+    ``resource`` is filled in per model by
+    :meth:`ModelResource.get_viewset_class`.
+    """
+
+    resource: Any = None
+
+    filter_backends = DATATABLE_FILTER_BACKENDS
+    pagination_class = DataTablesPagination
+    renderer_classes = (GenericJSONRenderer, DataTablesRenderer)
+    permission_classes = (ResourcePermission,)
+    lookup_value_regex = "[^/]+"
+
+    @property
+    def table_total_count(self) -> bool:  # type: ignore[override]
+        return bool(self.resource.show_full_result_count)
+
+    @property
+    def export_file_name(self) -> str:  # type: ignore[override]
+        return str(self.resource.model_name)
+
+    # -- data -----------------------------------------------------------
+
+    def get_queryset(self) -> Any:
+        if self.action in TABLE_ACTIONS:
+            return self.resource.get_list_queryset(self.request)
+
+        return self.resource.get_queryset(self.request)
+
+    def filter_queryset(self, queryset: Any) -> Any:
+        # The table filters only ever apply to the table. Retrieving or
+        # updating one record must not depend on a stray query string.
+        if self.action not in TABLE_ACTIONS:
+            return queryset
+
+        # Before the count: a related table's total is the record's rows,
+        # a grid's the rows it was declared over.
+        queryset = self.filter_related(queryset)
+        queryset = self.filter_grid(queryset)
+
+        if self.action == "list" and self.table_total_count:
+            self._table_total_count = queryset.count()
+
+        return super().filter_queryset(queryset)
+
+    def get_related(self) -> tuple[Any, Any] | None:
+        """The related table ``_related`` names, and the record's key.
+
+        The parameter names a relation declared on that record's
+        resource - never an ORM path - and the record must be one the
+        user may see.
+        """
+        raw = self.request.query_params.get(RELATED_PARAM)
+
+        if not raw:
+            return None
+
+        key, _, parent_pk = raw.rpartition(":")
+        related = self.resource.site.get_related_table(key)
+
+        if related is None or related.model is not self.resource.model:
+            raise NotFound(gettext("There is no such related table."))
+
+        parent = related.parent
+
+        if not parent.has_view_permission(self.request):
+            raise PermissionDenied
+
+        try:
+            exists = (
+                parent.get_queryset(self.request).filter(pk=parent_pk).exists()
+            )
+        except (TypeError, ValueError, DjangoValidationError):
+            exists = False
+
+        if not exists:
+            raise NotFound
+
+        return related, parent_pk
+
+    def filter_related(self, queryset: Any) -> Any:
+        """Narrow the rows to one record's, for its summary page."""
+        found = self.get_related()
+
+        if found is None:
+            return queryset
+
+        related, parent_pk = found
+
+        return related.filter(queryset, parent_pk)
+
+    def get_grid(self) -> tuple[Any, str] | None:
+        """The grid ``_grid`` names, and its argument.
+
+        A name the resource declares - never a path - and the argument
+        as the browser sent it, which the grid's own scope checks.
+        """
+        raw = self.request.query_params.get(GRID_PARAM)
+
+        if not raw:
+            return None
+
+        key, _, argument = raw.partition(":")
+        grid = self.resource.site.get_grid(key)
+
+        if grid is None or grid.resource is not self.resource:
+            raise NotFound(gettext("There is no such grid."))
+
+        return grid, argument
+
+    def filter_grid(self, queryset: Any) -> Any:
+        """Narrow the rows to a declared grid's."""
+        found = self.get_grid()
+
+        if found is None:
+            return queryset
+
+        grid, argument = found
+
+        try:
+            return grid.filter(self.request, queryset, argument)
+        except ARGUMENT_ERRORS:
+            # An argument the scope cannot read names nothing.
+            raise NotFound
+
+    def get_row_context(self) -> Any:
+        """What the grid behind this request allows it to write."""
+        from generic.sites.editable import default_context
+
+        found = self.get_grid()
+
+        if found is not None:
+            grid, argument = found
+
+            try:
+                grid.check(self.request, argument)
+
+                return grid.context(self.request, argument)
+            except ARGUMENT_ERRORS:
+                raise NotFound
+
+        related = self.get_related()
+
+        if related is not None:
+            table, parent_pk = related
+
+            return table.context(parent_pk)
+
+        return default_context(self.resource)
+
+    def get_serializer_class(self) -> Any:
+        if self.action in TABLE_ACTIONS:
+            return self.resource.get_table_serializer_class()
+
+        return self.resource.get_form_serializer_class()
+
+    def get_table_search_fields(self) -> list[str]:
+        """The resource's own search fields, when it declares any."""
+        fields = self.resource.get_search_fields(self.request)
+
+        if fields:
+            return list(fields)
+
+        return self.resource.get_table_serializer_class().get_search_fields()
+
+    def get_inline_form_definitions(self) -> Any:
+        return self.resource.get_inline_definitions(self.request)
+
+    # -- writes ----------------------------------------------------------
+
+    def perform_create(self, serializer: Any) -> None:
+        self.resource.save_model(self.request, serializer, change=False)
+
+    def perform_update(self, serializer: Any) -> None:
+        self.resource.save_model(self.request, serializer, change=True)
+
+    def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        instance = self.get_object()
+        summary = collect_deletion_summary(instance)
+
+        # Refused with the reason rather than failing with a 500 on the
+        # database's protected-foreign-key error.
+        if not summary["can_delete"]:
+            return Response(
+                {
+                    "detail": gettext(
+                        "%(name)s cannot be deleted because other "
+                        "records depend on it."
+                    )
+                    % {"name": instance},
+                    "protected": summary["protected"],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        self.resource.delete_model(request, instance)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -- summary -----------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="summary",
+        url_name="summary",
+    )
+    def summary(self, request: Any, pk: Any = None) -> Response:
+        """What the record's summary page shows, as JSON."""
+        from generic.sites.summary import build_summary
+
+        record = self.get_object()
+
+        return Response(build_summary(self.resource, request, record))
+
+    # -- cells edited in the table ------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="cells",
+        url_name="cells",
+    )
+    def cells(self, request: Any, pk: Any = None) -> Response:
+        """Write the cells a reader edited in the table itself.
+
+        The body is keyed by public column name, so one row may carry
+        fields of several models; the resource resolves each one. The
+        answer is the row as the table would draw it now, because a
+        change often moves more than the cell it was typed in.
+        """
+        resource = self.resource
+
+        if not resource.editable_fields:
+            raise NotFound(gettext("This table has no editable columns."))
+
+        record = self.get_object()
+        changes = request.data
+
+        if not isinstance(changes, dict) or not changes:
+            raise ValidationError(
+                gettext("Send the columns to change, and their values.")
+            )
+
+        # A grid may write fewer columns than the resource offers. Its
+        # scope is not checked: it says which rows are shown, and a row
+        # corrected out of it - a ticket just closed - stays writable
+        # for whoever may change it.
+        found = self.get_grid()
+        allowed = found[0].editable_names() if found else None
+
+        if allowed is not None:
+            refused = [name for name in changes if name not in allowed]
+
+            if refused:
+                raise ValidationError(
+                    {
+                        name: [gettext("This grid does not edit this column.")]
+                        for name in refused
+                    }
+                )
+
+        resource.save_editable(request, record, changes)
+
+        # Read back through the list queryset: a computed column is an
+        # annotation, and the row has just changed underneath it.
+        row = resource.get_list_queryset(request).filter(pk=record.pk).first()
+
+        if row is None:  # pragma: no cover - the row left its own table
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = resource.get_table_serializer_class()(
+            row,
+            context=self.get_serializer_context(),
+        )
+
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="rows",
+        url_name="rows",
+    )
+    def rows(self, request: Any) -> Response:
+        """Create the record of a row added in a grid.
+
+        The body is the row's cells, by public column name. Which
+        columns a new row may write, and what it gets without asking -
+        the record it belongs to - come from the grid named in the
+        query string, never from the body. The answer is the new row,
+        as the table draws it.
+        """
+        resource = self.resource
+        context = self.get_row_context()
+        values = request.data
+
+        if not context.allow_add:
+            raise PermissionDenied(
+                gettext("Rows cannot be added to this table.")
+            )
+
+        # Empty is a row like another: the validation says, under each
+        # cell, what it still needs.
+        if not isinstance(values, dict):
+            raise ValidationError(gettext("Send the new row's columns."))
+
+        writable = {
+            name
+            for name in context.creatable
+            if resource.can_edit_column(request, name, None)
+        }
+        refused = [name for name in values if name not in writable]
+
+        if refused:
+            raise ValidationError(
+                {
+                    name: [gettext("A new row cannot set this column.")]
+                    for name in refused
+                }
+            )
+
+        try:
+            record = resource.create_editable(
+                request,
+                dict(values),
+                dict(context.values),
+            )
+        except ValidationError as error:
+            from generic.sites.editable import row_errors
+
+            # Under the cell that shows each field - left empty, it was
+            # not sent - and the rest for the whole row.
+            raise ValidationError(
+                row_errors(resource, error.detail, writable)
+            ) from error
+        row = resource.get_list_queryset(request).filter(pk=record.pk).first()
+        data = (
+            resource.get_table_serializer_class()(
+                row,
+                context=self.get_serializer_context(),
+            ).data
+            if row is not None
+            else {}
+        )
+
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    # -- history -----------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="history",
+        url_name="history",
+    )
+    def history(self, request: Any, pk: Any = None) -> Response:
+        """What happened to this record, newest first.
+
+        Whoever may read the record may read its history: it says what
+        its own fields were, and nothing else.
+        """
+        from generic.history.reading import build_history
+        from generic.history.recording import is_recorded
+
+        if not is_recorded(self.resource):
+            raise NotFound(gettext("This model keeps no history."))
+
+        record = self.get_object()
+
+        return Response(
+            build_history(
+                self.resource,
+                request,
+                record,
+                limit=request.query_params.get("limit"),
+                offset=request.query_params.get("offset", 0),
+            )
+        )
+
+    # -- charts ------------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"charts/(?P<chart>[A-Za-z0-9_-]+)",
+        url_name="chart",
+    )
+    def chart(self, request: Any, chart: str = "") -> Response:
+        """One declared chart, over the rows the table would show.
+
+        The table's own parameters apply - ``advanced_filters``,
+        ``search``, ``_related`` - plus ``period`` for a date dimension.
+        """
+        definition = self.resource.get_chart(chart)
+
+        if definition is None or not definition.is_visible(
+            request, self.resource
+        ):
+            raise NotFound(gettext("There is no such chart."))
+
+        period = request.query_params.get("period") or None
+
+        if period is not None and period not in definition.get_periods():
+            raise ValidationError(
+                {"period": [gettext("This period is not offered.")]}
+            )
+
+        # Aggregated over the plain queryset, selected by key: the
+        # table's annotations and joins would count rows twice.
+        matching = self.filter_queryset(self.get_queryset())
+        queryset = self.resource.get_queryset(request).filter(
+            pk__in=matching.values("pk")
+        )
+
+        return Response(
+            definition.get_payload(self.resource, request, queryset, period)
+        )
+
+    # -- bulk actions ------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="actions",
+        url_name="actions",
+    )
+    def run_action(self, request: Any) -> Response:
+        """Run one bulk action.
+
+        The selection is either explicit - ``{"ids": [...]}`` - or every
+        row the table currently shows: ``{"all": true}``, with the
+        table's own filter parameters in the query string.
+        """
+        name = request.data.get("action")
+        entry = self.resource.get_actions(request).get(name)
+
+        if entry is None:
+            return Response(
+                {"detail": gettext("This action is not available.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if request.data.get("all"):
+            # Re-selected by primary key from the plain queryset: the
+            # table's annotations and joins are there to display rows,
+            # and an update() must not have to carry them.
+            matching = self.filter_queryset(self.get_queryset())
+            queryset = self.resource.get_queryset(request).filter(
+                pk__in=matching.values("pk")
+            )
+        else:
+            ids = request.data.get("ids")
+
+            if not isinstance(ids, list) or len(ids) > MAX_SELECTED:
+                return Response(
+                    {"detail": gettext("Invalid selection.")},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            queryset = self.resource.get_queryset(request).filter(
+                pk__in=[str(value) for value in ids]
+            )
+
+        count = queryset.count()
+
+        if not count:
+            return Response(
+                {"detail": gettext("Nothing was selected.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = entry.function(request, queryset)
+
+        if isinstance(result, Response):
+            return result
+
+        return Response(self.describe_result(result, count, entry))
+
+    @staticmethod
+    def describe_result(result: Any, count: int, entry: Any) -> dict:
+        if isinstance(result, dict):
+            return {
+                "message": str(result.get("message", "")),
+                "level": result.get("level", "success"),
+                "count": count,
+            }
+
+        message = (
+            str(result)
+            if result
+            else gettext("%(action)s: %(count)s row(s) processed.")
+            % {"action": entry.description, "count": count}
+        )
+
+        return {"message": message, "level": "success", "count": count}
+
+    # -- autocomplete ------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="autocomplete",
+        url_name="autocomplete",
+    )
+    def autocomplete(self, request: Any) -> Response:
+        """Select2 results: ``?q=`` to search, ``?ids=1,2`` to label.
+
+        The second form is how a form labels values it already holds
+        without embedding the related table.
+        """
+        resource = self.resource
+        queryset = resource.get_autocomplete_queryset(request)
+
+        raw_ids = request.query_params.get("ids")
+
+        if raw_ids is not None:
+            values = [value for value in raw_ids.split(",") if value][:100]
+            rows = list(queryset.filter(pk__in=values)) if values else []
+
+            return Response(
+                {
+                    "results": [self.serialize_option(row) for row in rows],
+                    "pagination": {"more": False},
+                }
+            )
+
+        term = (
+            request.query_params.get("q")
+            or request.query_params.get("term")
+            or ""
+        ).strip()
+
+        if len(term) < generic_settings.AUTOCOMPLETE_MIN_INPUT_LENGTH:
+            return Response({"results": [], "pagination": {"more": False}})
+
+        queryset = apply_search(
+            queryset,
+            resource.get_search_fields(request),
+            term,
+        )
+
+        try:
+            page = max(1, int(request.query_params.get("page", 1)))
+        except (TypeError, ValueError):
+            page = 1
+
+        size = generic_settings.AUTOCOMPLETE_PAGE_SIZE
+        offset = (page - 1) * size
+
+        # One extra row tells Select2 whether to keep scrolling, without
+        # paying for a COUNT.
+        rows = list(queryset[offset : offset + size + 1])
+
+        return Response(
+            {
+                "results": [self.serialize_option(row) for row in rows[:size]],
+                "pagination": {"more": len(rows) > size},
+            }
+        )
+
+    def serialize_option(self, row: Any) -> dict[str, Any]:
+        return {"id": row.pk, "text": self.resource.get_object_label(row)}

@@ -1,0 +1,21 @@
+{% load generic_ui %}
+{# One toolbar button. `slot` pairs it with its copy in the More menu. #}
+{% if item.disabled %}
+  <span class="{{ item.css_classes }}"
+        {% if slot %}data-toolbar-slot="{{ slot.index }}"{% if not item.pinned %} data-foldable{% endif %}{% endif %}
+        title="{{ item.title }}"
+        aria-disabled="true">
+    {% if item.icon %}{% icon item.icon %}{% endif %}
+    {{ item.label }}
+  </span>
+{% else %}
+  <a class="{{ item.css_classes }}"
+     href="{{ item.url }}"
+     target="{{ item.target }}"
+     {% if slot %}data-toolbar-slot="{{ slot.index }}"{% if not item.pinned %} data-foldable{% endif %}{% endif %}
+     {% if item.title %}title="{{ item.title }}"{% endif %}
+     {% if item.target == "_blank" %}rel="noopener"{% endif %}>
+    {% if item.icon %}{% icon item.icon %}{% endif %}
+    {{ item.label }}
+  </a>
+{% endif %}

@@ -1,0 +1,19 @@
+{% load i18n generic_ui %}
+{# The banner of a planned restart. Empty until something is planned:  #}
+{# the component fills it from the socket or from Generic.config().    #}
+<div class="restart-banner"
+     x-data="restartBanner"
+     x-show="visible"
+     x-cloak
+     :class="{ 'restart-banner--urgent': urgent }"
+     role="status"
+     aria-live="polite">
+  <span class="restart-banner__icon" aria-hidden="true">
+    {% icon "restart_alt" %}
+  </span>
+  <div class="restart-banner__text">
+    <strong x-text="title"></strong>
+    <span class="restart-banner__detail" x-text="detail"></span>
+    <p class="restart-banner__comment" x-text="comment" x-show="comment"></p>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+{% load i18n static %}<!DOCTYPE html>
+<html>
+<head><title>{% translate "Done" %}</title></head>
+<body>
+  {# Read by popup.js in the opener, which then updates the field   #}
+  {# and closes this window.                                        #}
+  {{ popup_response_data|json_script:"popup-response-data" }}
+  <script src="{% static 'generic/js/popup_response.js' %}"></script>
+</body>
+</html>

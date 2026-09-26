@@ -1,0 +1,23 @@
+{% extends "generic/base.html" %}
+{% load i18n %}
+
+{% block bodyclass %}page-detail{% endblock %}
+
+{% block content %}
+  {% block detail %}
+    <div class="module">
+      <dl class="detail-list">
+        {% for row in detail_rows %}
+          <div class="detail-list__row field-{{ row.name }}">
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        {% empty %}
+          <p class="empty-state">{% translate "Nothing to display." %}</p>
+        {% endfor %}
+      </dl>
+    </div>
+  {% endblock %}
+
+  {% block related %}{% endblock %}
+{% endblock %}

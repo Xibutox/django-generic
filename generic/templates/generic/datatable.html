@@ -1,0 +1,70 @@
+{% extends "generic/base.html" %}
+{% load i18n static %}
+
+{% block bodyclass %}page-datatable{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% block datatable_styles %}
+    {# Select2's stylesheet comes with generic/base.html, before the  #}
+    {# theme: linking it again here would put it back on top.         #}
+    <link rel="stylesheet" href="{% static 'generic/vendor/datatables/dataTables.dataTables.min.css' %}">
+  {% endblock %}
+  <link rel="stylesheet" href="{% static 'generic/css/datatables.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="module module--table">
+    <div id="datatable-error" class="callout callout--danger"
+         role="alert" hidden></div>
+
+    {# The table is populated by the API; the configuration travels as #}
+    {# JSON rather than inline script, so no page data is interpolated #}
+    {# into executable code.                                           #}
+    {{ table_config|json_script:"datatable-config" }}
+
+    <table id="datatable"
+           class="js-generic-datatable display"
+           data-config="datatable-config">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+
+  {% block datatable_vendor %}
+    {# Shipped with the framework; override to use another build, or to #}
+    {# add a DataTables extension. jQuery is only there for Select2.     #}
+    <script src="{% static 'generic/vendor/jquery/jquery.min.js' %}" defer></script>
+    <script src="{% static 'generic/vendor/datatables/dataTables.min.js' %}" defer></script>
+    <script src="{% static 'generic/vendor/select2/select2.min.js' %}" defer></script>
+  {% endblock %}
+
+  {% block datatable_i18n %}
+    {# The JavaScript catalog is loaded by generic/base.html. #}
+  {% endblock %}
+
+  {% block datatable_scripts %}
+    <script src="{% static 'generic/js/select2.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/core.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/columns.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/query.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/toolbar.js' %}" defer></script>
+    {# After the toolbar: the filter bar sits right under it. #}
+    <script src="{% static 'generic/js/datatables/filterbar.js' %}" defer></script>
+    {# After the filter bar, whose editor its fields open. #}
+    <script src="{% static 'generic/js/datatables/filterrow.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/selection.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/rowactions.js' %}" defer></script>
+    {# Editing a cell borrows the form renderer's controls, so the     #}
+    {# widgets come along; they need nothing but select2.js above.     #}
+    <script src="{% static 'generic/js/forms/widgets.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/editable.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/realtime.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/table.js' %}" defer></script>
+    <script src="{% static 'generic/js/datatables/init.js' %}" defer></script>
+  {% endblock %}
+{% endblock %}

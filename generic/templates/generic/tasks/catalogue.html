@@ -1,0 +1,128 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# The catalogue: one card per declared task. What it lists comes from #}
+{# code, not from a table, which is why this is a page.                #}
+
+{% block bodyclass %}page-tasks{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'generic/css/tasks.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% if not tasks %}
+    <div class="empty-state">
+      {% icon "playlist_play" %}
+      <p>{% translate "No task is declared yet." %}</p>
+      <p class="muted">
+        {% blocktranslate trimmed %}
+          A task is a function in an app's tasks.py, declared with
+          @managed_task. Declaring one puts it here.
+        {% endblocktranslate %}
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="task-grid">
+    {% for entry in tasks %}
+      <section class="card task-card">
+        <div class="card__header">
+          <h2 class="card__title">
+            {% icon entry.icon %} {{ entry.label }}
+          </h2>
+          {% if entry.queued %}
+            <span class="badge badge--info" title="{% translate 'Handed to a Celery worker' %}">
+              {% translate "Queued" %}
+            </span>
+          {% else %}
+            <span class="badge" title="{% translate 'Runs in the process that asks for it' %}">
+              {% translate "In process" %}
+            </span>
+          {% endif %}
+        </div>
+
+        {% if entry.description %}
+          <p class="card__description">{{ entry.description }}</p>
+        {% endif %}
+
+        <dl class="task-card__facts">
+          <div>
+            <dt>{% translate "Name" %}</dt>
+            <dd><code>{{ entry.name }}</code></dd>
+          </div>
+          <div>
+            <dt>{% translate "On starting" %}</dt>
+            <dd>{{ entry.announce|join:", "|default:"-" }}</dd>
+          </div>
+          <div>
+            <dt>{% translate "On finishing" %}</dt>
+            <dd>{{ entry.report|join:", "|default:"-" }}</dd>
+          </div>
+          {% if beat_installed %}
+            <div>
+              <dt>{% translate "Scheduled" %}</dt>
+              <dd>
+                {% for schedule in entry.schedules %}
+                  <a href="{% url 'site:django_celery_beat_periodictask_detail' schedule.pk %}">
+                    {{ schedule.name }}</a>{% if not schedule.enabled %}
+                    <span class="muted">({% translate "off" %})</span>
+                  {% endif %}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                  <span class="muted">{% translate "Not on a schedule" %}</span>
+                {% endfor %}
+              </dd>
+            </div>
+          {% endif %}
+        </dl>
+
+        {% if entry.runs %}
+          <table class="object-table task-card__runs">
+            <thead>
+              <tr>
+                <th scope="col">{% translate "Started" %}</th>
+                <th scope="col">{% translate "Status" %}</th>
+                <th scope="col">{% translate "Summary" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for run in entry.runs %}
+                <tr>
+                  <td>
+                    {# Short: the card is narrow, and the run's own page #}
+                    {# carries the full date.                            #}
+                    <a href="{{ run.get_absolute_url }}"
+                       title="{{ run.started_at|default:run.queued_at }}">
+                      {{ run.started_at|default:run.queued_at|date:"SHORT_DATETIME_FORMAT" }}
+                    </a>
+                  </td>
+                  <td>
+                    {% if run.status == "failure" %}
+                      <span class="badge badge--danger">{{ run.get_status_display }}</span>
+                    {% elif run.status == "success" %}
+                      <span class="badge badge--success">{{ run.get_status_display }}</span>
+                    {% else %}
+                      <span class="badge badge--info">{{ run.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="muted">{{ run.summary|default:"" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="muted">{% translate "It has never run." %}</p>
+        {% endif %}
+
+        <form method="post" class="task-card__run">
+          {% csrf_token %}
+          <input type="hidden" name="task" value="{{ entry.name }}">
+          <button type="submit" class="button button--primary button--sm">
+            {% icon "play_arrow" "icon--sm" %}
+            {% translate "Run now" %}
+          </button>
+        </form>
+      </section>
+    {% endfor %}
+  </div>
+{% endblock %}

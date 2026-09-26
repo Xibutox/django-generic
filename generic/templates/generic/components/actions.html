@@ -1,0 +1,26 @@
+{% load i18n %}
+{% if bulk_actions %}
+  <div class="actions-bar" data-total-count="{{ total_count }}">
+    <label class="sr-only" for="bulk-action">{% translate "Action" %}</label>
+    <select id="bulk-action" name="{{ action_param }}">
+      <option value="">{% translate "-- Choose an action --" %}</option>
+      {% for value, label in bulk_actions %}
+        <option value="{{ value }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="button">{% translate "Apply" %}</button>
+
+    <input type="hidden" name="{{ select_all_param }}" value="0"
+           class="js-select-across">
+
+    <span class="actions-bar__counter js-selection-counter" hidden>
+      <span class="js-selection-count">0</span>
+      {% translate "selected" %}
+    </span>
+
+    <button type="button" class="button--link js-select-across-toggle" hidden>
+      {% blocktranslate %}Select all {{ total_count }} records{% endblocktranslate %}
+    </button>
+  </div>
+{% endif %}

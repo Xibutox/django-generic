@@ -1,0 +1,263 @@
+{% load i18n static generic_ui %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% generic_chrome as chrome %}
+{# The user's appearance parameters ride on <html>, so the colours are #}
+{# right from the first paint. Numbers only: see appearance_style().   #}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}"
+      dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr' }}"
+      data-theme-preference="{{ chrome.theme_preference }}"
+      data-navigation-preference="{{ chrome.navigation_preference }}"{% if chrome.appearance_style %}
+      style="{{ chrome.appearance_style }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title }}{% endblock %}{% if chrome.title %} &middot; {{ chrome.title }}{% endif %}</title>
+  {% block favicon %}
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h9' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  {% endblock %}
+
+  {# Applied before first paint, so the page never flashes the wrong  #}
+  {# theme or an unshifted sidebar before the scripts have run. A    #}
+  {# choice made in this browser wins; otherwise the preference the  #}
+  {# user saved on their account applies.                            #}
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var theme = null;
+      try {
+        theme = localStorage.getItem("generic.theme");
+      } catch (error) {
+        /* Private mode: fall back to the defaults. */
+      }
+      theme = theme || root.dataset.themePreference;
+      if (theme === "light" || theme === "dark") {
+        root.dataset.theme = theme;
+      }
+      var pinned = null;
+      try {
+        pinned = localStorage.getItem("generic.sidebar-pinned");
+      } catch (error) {
+        /* Private mode: the sidebar starts pinned, as it does by default. */
+      }
+      if (pinned === null) {
+        // Never told in this browser: follow the account's preference,
+        // so the choice reaches a machine this user has not used yet.
+        pinned = root.dataset.navigationPreference === "floating"
+          ? "false"
+          : "true";
+      }
+      if (pinned === "false") {
+        root.classList.add("sidebar-unpinned");
+      }
+      try {
+        // Open or closed is the wide layout's question: below the
+        // breakpoint the navigation is a menu, opened each time, and a
+        // choice carried over from a wide window would open it on top
+        // of the page.
+        var wide = window.matchMedia("(min-width: 1025px)").matches;
+        var sidebar = wide && localStorage.getItem("generic.sidebar");
+        if (sidebar === "closed" || sidebar === "open") {
+          root.classList.add("sidebar-" + sidebar);
+        }
+      } catch (error) {
+        /* Same. */
+      }
+    })();
+  </script>
+
+  {% block styles %}
+    <link rel="stylesheet" href="{% static 'generic/vendor/material-symbols/material-symbols.css' %}">
+    {# Select2's own stylesheet before the framework's: select2.css  #}
+    {# repeats its selectors and wins by coming second.               #}
+    <link rel="stylesheet" href="{% static 'generic/vendor/select2/select2.min.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/select2.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/tables.css' %}">
+    <link rel="stylesheet" href="{% static 'generic/css/charts.css' %}">
+  {% endblock %}
+
+  {% if chrome.theme_css %}
+    <style>{{ chrome.theme_css }}</style>
+  {% endif %}
+
+  {% block extrastyle %}{% endblock %}
+  {% block extrahead %}{% endblock %}
+</head>
+
+<body class="{% block bodyclass %}{% endblock %}{% if is_popup %} is-popup{% endif %}">
+<a class="skip-link" href="#content">{% translate "Skip to content" %}</a>
+
+{# Endpoints and user details for the scripts, as data rather than   #}
+{# inline code, so nothing from the server is ever executed.         #}
+{{ chrome.client|json_script:"generic-config" }}
+
+<div class="app">
+  {% if not is_popup and show_sidebar is not False %}
+    {% block sidebar %}
+      {% include "generic/sidebar.html" %}
+    {% endblock %}
+    <div class="sidebar-backdrop js-sidebar-toggle" aria-hidden="true"></div>
+    {# Unpinned, the navigation is a panel: this strip along the left  #}
+    {# edge is what brings it back, on hover or on a click.            #}
+    <button type="button"
+            class="sidebar-edge js-sidebar-edge"
+            aria-controls="sidebar"
+            aria-label="{% translate 'Show the navigation' %}"></button>
+  {% endif %}
+
+  <div class="app__main">
+    {% if not is_popup %}
+      {% block header %}
+        <header class="topbar">
+          <div class="topbar__start">
+            {% if show_sidebar is not False %}
+              <button type="button"
+                      class="icon-button js-sidebar-toggle"
+                      aria-controls="sidebar"
+                      aria-expanded="true"
+                      title="{% translate 'Toggle navigation' %}">
+                {% translate "Toggle navigation" as toggle_label %}
+                {% icon "menu" "" toggle_label %}
+              </button>
+              {# The pin belongs here rather than inside the navigation: #}
+              {# floating, the navigation is off screen, and a pin that  #}
+              {# travels with it is a pin nobody can reach.              #}
+              {% translate "Keep the navigation open" as pin_label %}
+              {% translate "Let the navigation float over the page" as unpin_label %}
+              <button type="button"
+                      class="icon-button js-sidebar-pin"
+                      aria-controls="sidebar"
+                      aria-pressed="true"
+                      data-label-pin="{{ pin_label }}"
+                      data-label-unpin="{{ unpin_label }}"
+                      title="{{ unpin_label }}"
+                      aria-label="{{ unpin_label }}">
+                {% icon "keep" "js-sidebar-pin-icon" %}
+              </button>
+            {% endif %}
+            {% block topbar_brand %}
+              {# The application's own name, where a header puts it.  #}
+              <a class="topbar__brand" href="{{ chrome.home_url }}">
+                <span class="topbar__logo">{% icon chrome.icon %}</span>
+                <span class="topbar__title">{{ chrome.header }}</span>
+              </a>
+            {% endblock %}
+            {% block breadcrumbs %}
+              {% include "generic/components/breadcrumbs.html" %}
+            {% endblock %}
+          </div>
+
+          <div class="topbar__end">
+            {% block usertools %}
+              {% if user.is_authenticated and chrome.urls.search %}
+                <button type="button"
+                        class="search-trigger"
+                        x-data
+                        @click="$dispatch('generic-palette-open')">
+                  {% icon "search" %}
+                  <span class="search-trigger__label">{% translate "Search" %}&hellip;</span>
+                  <kbd>Ctrl K</kbd>
+                </button>
+              {% endif %}
+
+              {% if user.is_authenticated %}
+                {% include "generic/chrome/notifications.html" %}
+              {% endif %}
+
+              {% block theme_toggle %}
+                {% include "generic/components/theme_toggle.html" %}
+              {% endblock %}
+
+              {% if user.is_authenticated %}
+                {% include "generic/chrome/user_menu.html" %}
+              {% elif chrome.urls.login %}
+                <a class="button button--sm" href="{{ chrome.urls.login }}">
+                  {% translate "Log in" %}
+                </a>
+              {% endif %}
+
+              {% block userlinks %}{% endblock %}
+            {% endblock %}
+          </div>
+        </header>
+      {% endblock %}
+    {% endif %}
+
+    <main class="content" id="content">
+      {% block maintenance_banner %}
+        {% if user.is_authenticated %}
+          {# A planned restart, from the socket or from this page's own #}
+          {# configuration when it was announced before the page opened. #}
+          {% include "generic/chrome/restart_banner.html" %}
+        {% endif %}
+      {% endblock %}
+
+      {% block messages %}
+        {% include "generic/components/messages.html" %}
+      {% endblock %}
+
+      {% block page_header %}
+        <div class="page-header">
+          <div class="page-header__text">
+            {% block page_eyebrow %}{% endblock %}
+            {% block page_title %}
+              {% if page_title %}
+                <h1 class="page-header__title">{{ page_title }}</h1>
+              {% endif %}
+            {% endblock %}
+            {% block page_subtitle %}
+              {% if page_subtitle %}
+                <p class="page-header__subtitle">{{ page_subtitle }}</p>
+              {% endif %}
+            {% endblock %}
+          </div>
+          <div class="page-header__tools">
+            {% block object_tools %}{% endblock %}
+            {% block toolbar %}
+              {% include "generic/components/toolbar.html" %}
+            {% endblock %}
+          </div>
+        </div>
+      {% endblock %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+      {% if not is_popup %}
+        <footer class="site-footer">{% block footer_content %}{% endblock %}</footer>
+      {% endif %}
+    {% endblock %}
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+{% if user.is_authenticated and not is_popup and chrome.urls.search %}
+  {% include "generic/chrome/command_palette.html" %}
+{% endif %}
+
+{% block scripts %}
+  {% js_catalog_url as catalog_url %}
+  {% if catalog_url %}<script src="{{ catalog_url }}"></script>{% endif %}
+  <script src="{% static 'generic/js/core.js' %}" defer></script>
+  <script src="{% static 'generic/js/events.js' %}" defer></script>
+  <script src="{% static 'generic/js/dialogs.js' %}" defer></script>
+  <script src="{% static 'generic/js/ui.js' %}" defer></script>
+  <script src="{% static 'generic/js/maintenance.js' %}" defer></script>
+  {# Small: ECharts itself is only fetched when a chart is shown.    #}
+  <script src="{% static 'generic/js/charts.js' %}" defer></script>
+  {# A page's own Alpine components: they must load before Alpine.   #}
+  {% block components %}{% endblock %}
+  {# Alpine last: its plugins and the components above register on   #}
+  {# alpine:init, which fires when the core starts.                  #}
+  <script src="{% static 'generic/vendor/alpine/alpine.focus.js' %}" defer></script>
+  <script src="{% static 'generic/vendor/alpine/alpine.js' %}" defer></script>
+{% endblock %}
+{% block extrajs %}{% endblock %}
+</body>
+</html>

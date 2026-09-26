@@ -1,0 +1,181 @@
+"""Settings for the test project.
+
+Two modes, one file. By default everything is in-process - SQLite and an
+in-memory channel layer - so the suite runs anywhere with no services to
+start. Set ``DATABASE_URL`` and ``REDIS_URL`` (the Docker compose stack
+does) and the same suite runs against Postgres and Redis instead.
+"""
+
+import os
+from urllib.parse import urlparse
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "test-only-not-a-secret",
+)
+DEBUG = os.environ.get("DJANGO_DEBUG", "").lower() in {"1", "true"}
+ALLOWED_HOSTS = ["*"]
+
+INSTALLED_APPS = [
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "generic",
+    "generic.wiki",
+    "tests.testapp",
+    # Covered by the suite too: the example is a deliverable, and a
+    # broken example is a broken promise.
+    "example",
+]
+
+# The scheduler is optional, and the framework has to work either way.
+# Where it is installed the suite covers its screens as well; where it
+# is not, those tests skip and the rest is unaffected.
+try:  # pragma: no cover - a property of the environment, not the code
+    import django_celery_beat  # noqa: F401
+
+    INSTALLED_APPS.append("django_celery_beat")
+except ImportError:
+    pass
+
+MIDDLEWARE = [
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "generic.middleware.UserLanguageMiddleware",
+    "generic.middleware.CurrentUserMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+]
+
+ROOT_URLCONF = "tests.urls"
+
+# The classic views' tests follow Django's default LOGIN_URL on purpose,
+# and the suite serves no WebSocket: both are what the framework's own
+# checks rightly say about a project - this one is a test bench.
+SILENCED_SYSTEM_CHECKS = ["generic.W004", "generic.W005"]
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ]
+        },
+    }
+]
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    _database = urlparse(DATABASE_URL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": _database.path.lstrip("/"),
+            "USER": _database.username or "",
+            "PASSWORD": _database.password or "",
+            "HOST": _database.hostname or "",
+            "PORT": str(_database.port or ""),
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LANGUAGE_CODE = "en-us"
+# What the framework ships translations for, which is what the language
+# menu and the preference offer.
+LANGUAGES = [
+    ("en", "English"),
+    ("fr", "French"),
+]
+TIME_ZONE = "Europe/Paris"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "/static/"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
+}
+
+REDIS_URL = os.environ.get("REDIS_URL")
+
+if REDIS_URL:
+    # The in-memory layer is per process: with more than one worker,
+    # only the worker holding the socket would see the event.
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }
+
+CELERY_BROKER_URL = os.environ.get(
+    "CELERY_BROKER_URL",
+    "memory://",
+)
+CELERY_TASK_ALWAYS_EAGER = not os.environ.get("CELERY_BROKER_URL")
+
+# Framework configuration under test.
+GENERIC = {
+    "TABLE_PAGE_SIZE": 10,
+    "TABLE_MAX_PAGE_SIZE": 100,
+}
+
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.MD5PasswordHasher",
+]
+
+# The People screens check a password against the project's own
+# validators; the suite covers that, so the suite declares some.
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "MinimumLengthValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "NumericPasswordValidator"
+    },
+]
+
+LOGGING_CONFIG = None

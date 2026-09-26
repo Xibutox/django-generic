@@ -1,0 +1,154 @@
+/* The signed-out pages: one card in the middle of the screen. */
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-5);
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      var(--color-accent-subtle),
+      transparent 45%
+    ),
+    var(--surface-page);
+}
+
+.auth-card {
+  width: min(26rem, 100%);
+  padding: var(--space-6);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-card__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.auth-card h1 {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-xl);
+}
+
+.auth-card__lead {
+  margin-bottom: var(--space-5);
+  color: var(--text-secondary);
+}
+
+.auth-form {
+  gap: var(--space-4);
+}
+
+.auth-form .field-box {
+  flex: none;
+}
+
+.auth-form__submit {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+/* -- Signing in through somebody else ---------------------------------
+ *
+ * The provider leads and the password form waits underneath, folded
+ * away: most people press the button, and the few who cannot should
+ * not have to read past a form to find out.
+ */
+
+.auth-sso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.auth-sso__button {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-md);
+}
+
+.auth-sso__hint {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* A rule with "or" across it, drawn from the summary rather than added
+   as an element: the fold is the only thing between the two ways in. */
+.auth-password {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+}
+
+.auth-password__summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.auth-password__summary::-webkit-details-marker {
+  display: none;
+}
+
+.auth-password__summary:hover {
+  color: var(--text-primary);
+}
+
+.auth-password__summary:focus-visible {
+  outline: none;
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--focus-ring);
+}
+
+.auth-password[open] .auth-password__summary {
+  margin-bottom: var(--space-3);
+}
+
+.auth-card__note {
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.auth-card__footer {
+  margin-top: var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.auth-card .form-errors {
+  margin-bottom: var(--space-4);
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  /* minmax(0, ...), as above: a bare 1fr is never narrower than its
+     widest content, and one row of sliders made the page 700px wide
+     on a phone. */
+  .account-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

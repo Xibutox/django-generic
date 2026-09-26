@@ -1,0 +1,123 @@
+{% load i18n generic_ui %}
+<div class="dropdown"
+     x-data="{ open: false }"
+     @keydown.escape.window="open = false"
+     @click.outside="open = false">
+  <button type="button"
+          class="user-button"
+          @click="open = !open"
+          :aria-expanded="open.toString()"
+          aria-haspopup="menu"
+          title="{{ chrome.user.display_name }}">
+    <span class="avatar" aria-hidden="true">{{ chrome.user.initials }}</span>
+    <span class="sr-only">{% translate "Account menu" %}</span>
+  </button>
+
+  <div class="dropdown__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak>
+    <div class="dropdown__header">
+      <strong>{{ chrome.user.display_name }}</strong>
+      {% if user.email %}<span>{{ user.email }}</span>{% endif %}
+    </div>
+
+    {% if chrome.urls.account %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.account }}">
+        {% icon "manage_accounts" %}
+        <span class="menu-item__label">{% translate "Account settings" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.notifications %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.notifications }}">
+        {% icon "notifications" %}
+        <span class="menu-item__label">{% translate "Notifications" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.watches %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.watches }}">
+        {% icon "visibility" %}
+        <span class="menu-item__label">{% translate "Watching" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.help %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.help }}">
+        {% icon "help" %}
+        <span class="menu-item__label">{% translate "Help" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.changelog %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.changelog }}">
+        {% icon "history" %}
+        <span class="menu-item__label">{% translate "What changed" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.can_announce_restart and chrome.urls.restart %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.restart }}">
+        {% icon "restart_alt" %}
+        <span class="menu-item__label">{% translate "Plan a restart" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.password_change and chrome.user.can_change_password %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.password_change }}">
+        {% icon "key" %}
+        <span class="menu-item__label">{% translate "Change password" %}</span>
+      </a>
+    {% endif %}
+
+    {% if chrome.languages and chrome.urls.set_language %}
+      <div class="dropdown__divider"></div>
+      <div class="dropdown__label">{% translate "Language" %}</div>
+      {# A form, not a script: the choice is made before Alpine runs. #}
+      <form method="post" action="{{ chrome.urls.set_language }}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% for language in chrome.languages %}
+          <button type="submit"
+                  name="language"
+                  value="{{ language.code }}"
+                  class="menu-item{% if language.is_current %} is-selected{% endif %}"
+                  role="menuitemradio"
+                  aria-checked="{{ language.is_current|yesno:'true,false' }}"
+                  lang="{{ language.code }}">
+            {% icon "translate" %}
+            <span class="menu-item__label">{{ language.label }}</span>
+            {% if language.is_current %}{% icon "check" "icon--sm" %}{% endif %}
+          </button>
+        {% endfor %}
+      </form>
+    {% endif %}
+
+    {% for link in chrome.account_links %}
+      <a class="menu-item" role="menuitem" href="{{ link.url }}">
+        {% icon link.icon|default:"link" %}
+        <span class="menu-item__label">{{ link.label }}</span>
+      </a>
+    {% endfor %}
+
+    {% if chrome.urls.admin %}
+      <div class="dropdown__divider"></div>
+      <a class="menu-item" role="menuitem" href="{{ chrome.urls.admin }}" target="_blank" rel="noopener">
+        {% icon "admin_panel_settings" %}
+        <span class="menu-item__label">{% translate "Django administration" %}</span>
+        {% icon "open_in_new" "icon--sm" %}
+      </a>
+    {% endif %}
+
+    {% if chrome.urls.logout %}
+      <div class="dropdown__divider"></div>
+      {# Logging out changes state, so it is a POST: a link could be  #}
+      {# followed by a prefetching browser or a malicious image tag.   #}
+      <form method="post" action="{{ chrome.urls.logout }}">
+        {% csrf_token %}
+        <button type="submit" class="menu-item menu-item--danger" role="menuitem">
+          {% icon "logout" %}
+          <span class="menu-item__label">{% translate "Log out" %}</span>
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>

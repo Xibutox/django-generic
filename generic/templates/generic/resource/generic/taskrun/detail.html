@@ -1,0 +1,74 @@
+{% extends "generic/resource/detail.html" %}
+{% load i18n static generic_ui %}
+
+{# A run's own page: the summary the resource generates, and under it #}
+{# what this run produced - the result it concatenated, and the steps #}
+{# it wrote as it went. Both are plain text from the row, never HTML. #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/tasks.css' %}">
+{% endblock %}
+
+{% block content %}
+  {{ block.super }}
+
+  <div class="run-detail">
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "summarize" %} {% translate "Result" %}</h2>
+        {% if object.duration_display %}
+          <span class="badge">{{ object.duration_display }}</span>
+        {% endif %}
+      </div>
+
+      {% if object.summary %}
+        <p class="card__description">{{ object.summary }}</p>
+      {% endif %}
+
+      {% if object.results %}
+        <table class="object-table">
+          <thead>
+            <tr>
+              <th scope="col">{% translate "Label" %}</th>
+              <th scope="col">{% translate "Value" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in object.results %}
+              <tr>
+                <td>{{ item.label|default:item }}</td>
+                <td>{{ item.value|default:"" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% elif not object.summary %}
+        <p class="muted">{% translate "This run produced nothing to show." %}</p>
+      {% endif %}
+
+      {% if object.error %}
+        <div class="callout callout--danger">
+          <pre class="run-error">{{ object.error }}</pre>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "list" %} {% translate "Steps" %}</h2>
+      </div>
+
+      <ol class="run-steps">
+        {% for step in object.log %}
+          <li>
+            <time class="run-steps__at">{{ step.at }}</time>
+            <span class="run-steps__message">{{ step.message }}</span>
+          </li>
+        {% empty %}
+          <li class="muted">{% translate "It recorded no step." %}</li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+{% endblock %}

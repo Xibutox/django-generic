@@ -1,0 +1,37 @@
+{% load i18n generic_ui %}
+{# The dashboard's hub. One block per declared group; the ungrouped   #}
+{# ones come first and have no heading of their own.                  #}
+<section class="shortcuts" aria-label="{% translate 'Shortcuts' %}">
+  {% for block in shortcuts %}
+    {% if block.title %}
+      <h2 class="shortcuts__title">{{ block.title }}</h2>
+    {% endif %}
+
+    <div class="shortcuts__grid">
+      {% for item in block.items %}
+        <a class="shortcut"
+           href="{{ item.url }}"
+           {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+          <span class="shortcut__icon">{% icon item.icon %}</span>
+
+          <span class="shortcut__body">
+            <span class="shortcut__label">
+              {{ item.label }}
+              {% if item.external %}
+                {% translate "Opens in a new tab" as away %}
+                {% icon "open_in_new" "icon--sm shortcut__away" away %}
+              {% endif %}
+            </span>
+            {% if item.description %}
+              <span class="shortcut__description">{{ item.description }}</span>
+            {% endif %}
+          </span>
+
+          {% if item.count %}
+            <span class="badge shortcut__count">{{ item.count }}</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</section>

@@ -1,0 +1,19 @@
+# What the source distribution carries besides the package: the files a
+# reader of the archive expects, and the documentation. The package's
+# own templates, static files, translations and changelog are declared
+# in pyproject.toml ([tool.setuptools.package-data]).
+include README.md
+include CHANGELOG.md
+include LICENSE
+recursive-include docs *.md
+
+# The suite and the example need the repository around them - the
+# example project, its app, the test app: they are run from a checkout,
+# not from this archive.
+prune tests
+prune example
+prune example_project
+prune docker
+prune ai
+
+global-exclude *.py[cod] __pycache__ *.sqlite3 .DS_Store

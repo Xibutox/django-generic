@@ -1,0 +1,31 @@
+# What never goes into an image: local environments, caches, databases,
+# collected files, and above all the production secrets.
+
+.git
+.venv
+venv
+env
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+build
+dist
+
+.pytest_cache
+.mypy_cache
+.coverage
+coverage.xml
+htmlcov
+report.xml
+
+**/*.sqlite3
+**/*.log
+staticfiles
+
+.idea
+.vscode
+.claude
+.DS_Store
+
+.env
+docker/prod.env

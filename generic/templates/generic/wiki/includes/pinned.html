@@ -1,0 +1,18 @@
+{% load i18n static generic_ui %}
+{# Wiki pages pinned to the dashboard: announcements, how-tos. Their  #}
+{# HTML was cleaned when saved and again when read.                   #}
+<link rel="stylesheet" href="{% static 'generic/css/wiki.css' %}">
+<div class="wiki-pinned">
+  {% for page in wiki_pinned %}
+    <section class="card wiki-pinned__card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "push_pin" %} {{ page.title }}</h2>
+        <a class="icon-button icon-button--sm" href="{{ page.url }}" title="{% translate 'Open in the wiki' %}">
+          {% translate "Open in the wiki" as open_label %}
+          {% icon "open_in_new" "icon--sm" open_label %}
+        </a>
+      </div>
+      <div class="wiki-content">{{ page.content }}</div>
+    </section>
+  {% endfor %}
+</div>

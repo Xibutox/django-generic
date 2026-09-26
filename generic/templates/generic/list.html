@@ -1,0 +1,35 @@
+{% extends "generic/base.html" %}
+{% load i18n static %}
+
+{% block bodyclass %}page-list{% endblock %}
+
+{% block content %}
+  <div class="module">
+    {% block search %}
+      {% include "generic/components/search_form.html" %}
+    {% endblock %}
+
+    <form method="post" class="changelist-form">
+      {% csrf_token %}
+
+      {% block actions %}
+        {% include "generic/components/actions.html" %}
+      {% endblock %}
+
+      {% block table %}
+        {% include "generic/components/object_table.html" %}
+      {% endblock %}
+    </form>
+
+    {% block pagination %}
+      {% include "generic/components/pagination.html" %}
+    {% endblock %}
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {% if bulk_actions %}
+    <script src="{% static 'generic/js/actions.js' %}" defer></script>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# Add, change or view one record. The form itself is drawn in the     #}
+{# browser from the resource's form schema, and saved through its API. #}
+
+{% block bodyclass %}page-form page-resource-form app-{{ opts.app_label }} model-{{ opts.model_name }}{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% icon resource.get_icon "icon--sm" %}
+    <span>{{ resource.get_label }}</span>
+    {% if object and not can_change %}
+      <span class="badge">{% translate "Read only" %}</span>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block object_tools %}
+  {% if object %}
+    {% include "generic/components/watch_button.html" with watch_object_id=object.pk %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ form_config|json_script:"resource-form-config" }}
+  <div class="js-schema-form" data-config="resource-form-config">
+    <div class="loading"><span class="spinner"></span> {% translate "Loading" %}&hellip;</div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {% include "generic/includes/form_scripts.html" %}
+{% endblock %}

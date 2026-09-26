@@ -1,0 +1,241 @@
+/*
+ * Select2, drawn with the tokens.
+ *
+ * Loaded after the library's own stylesheet (see generic/base.html).
+ * Most selectors below repeat the library's exactly and win by coming
+ * second - which is why this lives in its own file, placed on purpose,
+ * rather than in forms.css. Every colour the library sets is redrawn
+ * here, so nothing stays white in the dark scheme.
+ */
+
+.select2-container {
+  max-width: 100%;
+}
+
+/* -- The control ------------------------------------------------------ */
+
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  min-height: var(--control-height);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.select2-container--default .select2-selection--single {
+  display: flex;
+  align-items: center;
+  height: var(--control-height);
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
+  flex: 1 1 auto;
+  padding-left: var(--space-3);
+  padding-right: 2rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
+  height: 100%;
+  top: 0;
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
+  border-color: var(--text-muted) transparent transparent transparent;
+}
+
+.select2-container--default.select2-container--open
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
+  border-color: transparent transparent var(--text-muted) transparent;
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__placeholder,
+.select2-container--default
+  .select2-search--inline
+  .select2-search__field::placeholder {
+  color: var(--text-muted);
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__clear {
+  margin-right: 0.25rem;
+  color: var(--text-muted);
+}
+
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__clear:hover {
+  color: var(--color-danger);
+}
+
+/* -- Several values: chips ------------------------------------------- */
+
+/* The chips, then the search field, on lines that wrap: Select2 puts
+   the field after the list rather than in it, inline, below the list's
+   own padding and above five pixels of its own - 41px when empty, next
+   to 36px for every other control. One flex row instead, one control
+   tall until the chips need a second line. */
+.select2-container--default .select2-selection--multiple {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  padding: 0.2rem var(--space-2);
+}
+
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__rendered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__rendered:empty {
+  display: none;
+}
+
+/* Room to type a few letters: more, and two chips on a phone sent it
+   to a second line of its own, empty but for the cursor. */
+.select2-container--default .select2-selection--multiple .select2-search--inline {
+  display: flex;
+  flex: 1 1 3rem;
+  min-width: 3rem;
+}
+
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__choice {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 0.4rem 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--border-radius-sm);
+}
+
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__choice__remove {
+  position: static;
+  margin-right: 0.3rem;
+  padding: 0 0.3rem;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--color-accent-border);
+}
+
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__choice__remove:hover,
+.select2-container--default
+  .select2-selection--multiple
+  .select2-selection__choice__remove:focus {
+  color: var(--color-danger);
+  background: transparent;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+  margin: 0;
+  height: 1.6rem;
+  font: inherit;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+/* -- States ------------------------------------------------------------ */
+
+.select2-container--default.select2-container--focus
+  .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.select2-container--default.select2-container--disabled
+  .select2-selection--single,
+.select2-container--default.select2-container--disabled
+  .select2-selection--multiple {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  cursor: not-allowed;
+}
+
+/* -- The dropdown ------------------------------------------------------ */
+/* Appended to <body>: it takes nothing from the field it belongs to. */
+
+.select2-dropdown {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 1060;
+}
+
+.select2-container--default
+  .select2-search--dropdown
+  .select2-search__field {
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-page);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius-sm);
+}
+
+.select2-results__option {
+  padding: var(--space-2) var(--space-3);
+}
+
+.select2-container--default .select2-results__group {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.select2-container--default .select2-results__option--selected,
+.select2-container--default .select2-results__option[aria-selected="true"] {
+  color: var(--text-primary);
+  background: var(--surface-selected);
+}
+
+.select2-container--default
+  .select2-results__option--highlighted.select2-results__option--selectable,
+.select2-container--default
+  .select2-results__option--highlighted[aria-selected] {
+  color: var(--color-accent-contrast) !important;
+  background: var(--color-accent) !important;
+}
+
+.select2-container--default .select2-results__option--disabled,
+.select2-container--default .select2-results__message {
+  color: var(--text-muted);
+}

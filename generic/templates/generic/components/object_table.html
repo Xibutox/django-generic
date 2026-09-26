@@ -1,0 +1,64 @@
+{% load i18n generic_tags %}
+<div class="table-wrapper">
+  <table class="object-table">
+    <thead>
+      <tr>
+        {% if bulk_actions %}
+          <th class="object-table__select">
+            <input type="checkbox"
+                   class="js-select-all"
+                   aria-label="{% translate 'Select all rows' %}">
+          </th>
+        {% endif %}
+
+        {% for column in table.columns %}
+          <th class="{{ column.css_class }}"
+              {% if column.is_sortable %}aria-sort="{% if ordering_state|field_value:column.name == 'asc' %}ascending{% elif ordering_state|field_value:column.name == 'desc' %}descending{% else %}none{% endif %}"{% endif %}>
+            {% if column.is_sortable %}
+              <a href="?{% ordering_url column.name order_param %}">
+                {{ column.label }}{% ordering_indicator column.name %}
+              </a>
+            {% else %}
+              {{ column.label }}
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for row in table %}
+        <tr>
+          {% if bulk_actions %}
+            <td class="object-table__select">
+              <input type="checkbox"
+                     name="{{ selection_param }}"
+                     value="{{ row.pk }}"
+                     class="js-select-row"
+                     aria-label="{% translate 'Select row' %}">
+            </td>
+          {% endif %}
+
+          {% for cell in row %}
+            <td class="{{ cell.column.css_class }}">
+              {% if cell.is_link %}
+                <a href="{{ row.url }}">{{ cell.value }}</a>
+              {% else %}
+                {{ cell.value }}
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% empty %}
+        {# A block here would be inert: this template is included,   #}
+        {# not extended, so the message comes from the context.      #}
+        {% translate "No results." as default_empty_message %}
+        <tr class="object-table__empty">
+          <td colspan="{{ table.columns|length|add:1 }}">
+            {{ empty_message|default:default_empty_message }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

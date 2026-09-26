@@ -1,0 +1,33 @@
+{% load i18n %}
+<div class="submit-row">
+  <div class="submit-row__start">
+    {% if delete_url %}
+      <a class="button button--danger-ghost" href="{{ delete_url }}">
+        {% translate "Delete" %}
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="submit-row__end">
+    {% if cancel_url %}
+      <a class="button button--ghost" href="{{ cancel_url }}">
+        {% translate "Cancel" %}
+      </a>
+    {% endif %}
+    {% if show_save_and_add_another %}
+      <button type="submit" class="button" name="{{ save_and_add_another_name }}">
+        {% translate "Save and add another" %}
+      </button>
+    {% endif %}
+    {% if show_save_and_continue %}
+      <button type="submit" class="button" name="{{ save_and_continue_name }}">
+        {% translate "Save and continue editing" %}
+      </button>
+    {% endif %}
+    {% if show_save %}
+      <button type="submit" class="button button--primary" name="{{ save_name }}">
+        {% translate "Save" %}
+      </button>
+    {% endif %}
+  </div>
+</div>

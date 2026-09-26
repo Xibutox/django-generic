@@ -1,0 +1,48 @@
+{
+  // The interpreter: the Python extension finds .venv at the root by
+  // itself (Python: Select Interpreter otherwise).
+
+  // The test explorer: the suite's own settings (tests/settings.py,
+  // from pyproject.toml). Coverage off: under the debugger its tracer
+  // would skip the breakpoints; `pytest` in a terminal still measures.
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests", "--no-cov"],
+
+  // black + isort at 79, flake8: the checks CI runs, each reading its
+  // settings from pyproject.toml and .flake8.
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    },
+    "editor.rulers": [79]
+  },
+
+  // JavaScript is ASCII only, in IIFEs, with no build step.
+  "[javascript]": {
+    "editor.rulers": [79]
+  },
+  "files.associations": {
+    "**/templates/**/*.html": "django-html",
+    "**/templates/**/*.txt": "django-txt"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.egg-info": true,
+    ".pytest_cache": true,
+    ".mypy_cache": true
+  },
+  "search.exclude": {
+    "**/static/generic/vendor/**": true,
+    "staticfiles/**": true,
+    "htmlcov/**": true,
+    "build/**": true,
+    "dist/**": true
+  }
+}

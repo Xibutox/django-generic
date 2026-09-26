@@ -1,0 +1,68 @@
+{% load i18n generic_ui %}
+{# The page's buttons, on one line. What does not fit folds into the   #}
+{# More menu, from the end of the list backwards - the primary button  #}
+{# excepted: see ToolbarItem.placement. Which buttons fold is measured #}
+{# in the browser (pageToolbar, in ui.js); until then, and without     #}
+{# script, the bar wraps as it always did.                             #}
+{% if toolbar_items %}
+  {% toolbar_layout toolbar_items as toolbar %}
+  <div class="toolbar{% if toolbar.folds %} toolbar--folds{% endif %}"
+       {% if toolbar.folds %}x-data="pageToolbar"
+       @keydown.escape.window="open = false"{% endif %}>
+    {% for slot in toolbar.lead %}
+      {% include "generic/components/toolbar_item.html" with item=slot.item slot=slot only %}
+    {% endfor %}
+
+    {% if toolbar.folds %}
+      <div class="dropdown toolbar__more"
+           data-toolbar-more
+           {% if not toolbar.menu_only %}hidden{% endif %}
+           @click.outside="open = false">
+        <button type="button"
+                class="toolbar-item toolbar-item--default toolbar__more-button"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                :aria-expanded="open.toString()"
+                title="{% translate 'More actions' %}"
+                @click="open = !open">
+          {% icon "more_horiz" "" _("More actions") %}
+        </button>
+
+        <div class="dropdown__menu toolbar__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak>
+          {% for slot in toolbar.menu %}
+            {% with item=slot.item %}
+              {% if item.disabled %}
+                <span class="menu-item is-disabled{% if item.is_danger %} menu-item--danger{% endif %}"
+                      role="menuitem"
+                      aria-disabled="true"
+                      data-toolbar-copy="{{ slot.index }}"
+                      {% if item.placement == "menu" %}data-menu-only{% else %}hidden{% endif %}
+                      {% if item.title %}title="{{ item.title }}"{% endif %}>
+                  {% if item.icon %}{% icon item.icon %}{% endif %}
+                  <span class="menu-item__label">{{ item.label }}</span>
+                </span>
+              {% else %}
+                <a class="menu-item{% if item.is_danger %} menu-item--danger{% endif %}"
+                   role="menuitem"
+                   href="{{ item.url }}"
+                   target="{{ item.target }}"
+                   data-toolbar-copy="{{ slot.index }}"
+                   {% if item.placement == "menu" %}data-menu-only{% else %}hidden{% endif %}
+                   {% if item.title %}title="{{ item.title }}"{% endif %}
+                   {% if item.target == "_blank" %}rel="noopener"{% endif %}>
+                  {% if item.icon %}{% icon item.icon %}{% endif %}
+                  <span class="menu-item__label">{{ item.label }}</span>
+                  {% if item.target == "_blank" %}{% icon "open_in_new" "icon--sm menu-item__hint" %}{% endif %}
+                </a>
+              {% endif %}
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% for slot in toolbar.trail %}
+      {% include "generic/components/toolbar_item.html" with item=slot.item slot=slot only %}
+    {% endfor %}
+  </div>
+{% endif %}

@@ -1,0 +1,102 @@
+# Development stack: Postgres and Redis in containers, Django and
+# Celery from the dev image, the working copy mounted over /app so
+# runserver reloads on every change - and the Debug Toolbar on every
+# page.
+#
+#   docker compose -f docker/docker-compose.dev.yml up --build
+#   docker compose -f docker/docker-compose.dev.yml exec web python manage.py seed_example
+#   docker compose -f docker/docker-compose.dev.yml run --rm web pytest
+#
+# Under a debugger - VS Code's "Docker: attach to the web container",
+# or any debugpy client on port 5678 - the server started by debug.py
+# instead, in one process, waiting for the debugger to attach:
+#
+#   docker compose -f docker/docker-compose.dev.yml stop web
+#   docker compose -f docker/docker-compose.dev.yml run --rm --service-ports web python -Xfrozen_modules=off debug.py --listen 0.0.0.0:5678 --wait 0.0.0.0:8000
+#
+# The settings are example_project.settings.dev, as for manage.py on the
+# host: the same code, on the backends production runs. The suite reads
+# tests/settings.py and runs against this Postgres and Redis too.
+#
+# Nothing here is a secret: fixed passwords, published ports. Never
+# expose this stack beyond your machine; docker-compose.prod.yml is the
+# one for a server.
+
+name: django-generic
+
+x-app: &app
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+    target: dev
+  image: django-generic:dev
+  environment:
+    DATABASE_URL: postgres://generic:generic@db:5432/generic
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+  volumes:
+    - ..:/app
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: generic
+      POSTGRES_USER: generic
+      POSTGRES_PASSWORD: generic
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U generic -d generic"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Published, for a database client on the host.
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    image: redis:7-alpine
+    # Nothing worth keeping between two runs of a development stack.
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  web:
+    <<: *app
+    # Migrations first, on every start: pulling a branch that adds one
+    # is then a restart, not a step to remember.
+    command: >
+      sh -c "python manage.py migrate --noinput
+      && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+      # debugpy, when debug.py --listen runs the server (see above).
+      - "${DEBUGPY_PORT:-5678}:5678"
+
+  # Celery does not reload: after changing a task, restart it -
+  # docker compose -f docker/docker-compose.dev.yml restart worker
+  worker:
+    <<: *app
+    command: celery -A example_project.celery worker --loglevel=info
+
+  # The database scheduler, so beat runs what the Schedules pages hold
+  # rather than a list frozen into the settings.
+  beat:
+    <<: *app
+    command: >
+      celery -A example_project.celery beat --loglevel=info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+volumes:
+  postgres-data:

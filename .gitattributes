@@ -1,0 +1,13 @@
+# Text is stored with LF, whatever the machine it was written on: a
+# checkout on Windows and one on Linux then show the same diff.
+* text=auto eol=lf
+
+# Compiled catalogs, databases, images and fonts are bytes.
+*.mo binary
+*.sqlite3 binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary

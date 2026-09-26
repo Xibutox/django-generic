@@ -1,0 +1,17 @@
+{% load i18n generic_tags generic_ui %}
+{% if messages %}
+  <ul class="messages" role="status" aria-live="polite">
+    {% for message in messages %}
+      {% message_icon message.tags as level %}
+      <li class="message message--{{ level }}" data-message-level="{{ level }}">
+        {% icon level %}
+        <span class="message__text">{{ message }}</span>
+        <button type="button"
+                class="icon-button icon-button--sm message__dismiss js-dismiss-message">
+          {% translate "Dismiss" as dismiss_label %}
+          {% icon "close" "icon--sm" dismiss_label %}
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

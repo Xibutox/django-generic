@@ -1,0 +1,35 @@
+{% load i18n generic_ui %}
+{# Three states rather than two: a user who has not chosen follows the #}
+{# operating system, and can always go back to doing so.              #}
+<div class="dropdown"
+     x-data="themeMenu()"
+     @keydown.escape.window="open = false"
+     @click.outside="open = false">
+  <button type="button"
+          class="icon-button js-theme-toggle"
+          @click="open = !open"
+          :aria-expanded="open.toString()"
+          aria-haspopup="menu"
+          title="{% translate 'Switch theme' %}">
+    <span class="icon material-symbols-outlined" aria-hidden="true" x-text="icon">contrast</span>
+    <span class="sr-only">{% translate "Switch theme" %}</span>
+  </button>
+
+  <div class="dropdown__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak style="min-width: 11rem;">
+    <button type="button" class="menu-item" role="menuitemradio"
+            :aria-checked="(theme === 'system').toString()" @click="choose('system')">
+      {% icon "contrast" %}
+      <span class="menu-item__label">{% translate "System" %}</span>
+    </button>
+    <button type="button" class="menu-item" role="menuitemradio"
+            :aria-checked="(theme === 'light').toString()" @click="choose('light')">
+      {% icon "light_mode" %}
+      <span class="menu-item__label">{% translate "Light" %}</span>
+    </button>
+    <button type="button" class="menu-item" role="menuitemradio"
+            :aria-checked="(theme === 'dark').toString()" @click="choose('dark')">
+      {% icon "dark_mode" %}
+      <span class="menu-item__label">{% translate "Dark" %}</span>
+    </button>
+  </div>
+</div>

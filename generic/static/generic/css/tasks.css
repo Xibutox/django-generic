@@ -1,0 +1,112 @@
+/**
+ * The task pages: the catalogue of what can be run, and a run's own
+ * result page. Tokens only - no colour is named here.
+ */
+
+/* -- The catalogue ----------------------------------------------------- */
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.task-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.task-card__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.task-card__facts dt {
+  color: var(--text-muted);
+}
+
+.task-card__facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The card decides the width, not the table. `.object-table` keeps its
+   cells on one line, which a table in a 22rem card cannot afford: laid
+   out fixed, the three columns share what there is and a long summary
+   ends in an ellipsis instead of pushing the table out of the card. */
+.task-card__runs {
+  table-layout: fixed;
+  font-size: var(--font-size-sm);
+}
+
+.task-card__runs th,
+.task-card__runs td {
+  padding: var(--space-2) var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-card__runs th:first-child,
+.task-card__runs td:first-child {
+  width: 40%;
+}
+
+.task-card__runs th:nth-child(2),
+.task-card__runs td:nth-child(2) {
+  width: 26%;
+}
+
+.task-card__run {
+  margin-top: auto;
+}
+
+/* -- A run's page ------------------------------------------------------ */
+
+.run-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  align-items: start;
+}
+
+.run-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.run-steps li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-size: var(--font-size-sm);
+}
+
+.run-steps__at {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.run-steps__message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The traceback line, as the text it is. */
+.run-error {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-sm);
+}

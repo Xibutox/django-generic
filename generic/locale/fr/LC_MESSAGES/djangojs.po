@@ -1,0 +1,1361 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-18 09:00+0200\n"
+"PO-Revision-Date: 2026-09-18 09:00+0200\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: generic/static/generic/js/summary.js:105
+msgid "%(action)s by %(who)s, %(when)s"
+msgstr "%(action)s par %(who)s, %(when)s"
+
+#: generic/static/generic/js/datatables/filterbar.js:1461
+msgid "%(column)s has no value “%(value)s”."
+msgstr "%(column)s n'a aucune valeur « %(value)s »."
+
+#: generic/static/generic/js/datatables/query.js:557
+msgid "%(count)s days"
+msgstr "%(count)s jours"
+
+#: generic/static/generic/js/datatables/query.js:556
+msgid "%(count)s days ago"
+msgstr "il y a %(count)s jours"
+
+#: generic/static/generic/js/datatables/filterbar.js:609
+msgid "%(count)s empty."
+msgstr "%(count)s vide(s)."
+
+#: generic/static/generic/js/datatables/filterrow.js:112
+msgid "%(count)s filters"
+msgstr "%(count)s filtres"
+
+#: generic/static/generic/js/forms/inlines.js:616
+msgid "%(count)s of %(maximum)s at most"
+msgstr "%(count)s sur %(maximum)s au maximum"
+
+#: generic/static/generic/js/datatables/table.js:823
+msgid "%(count)s row(s) copied."
+msgstr "%(count)s ligne(s) copiée(s)."
+
+#: generic/static/generic/js/datatables/selection.js:233
+msgid "%(count)s selected"
+msgstr "%(count)s sélectionnée(s)"
+
+#: generic/static/generic/js/wiki.js:363
+msgid "%(date)s, by %(name)s - %(size)s characters"
+msgstr "%(date)s, par %(name)s - %(size)s caractères"
+
+#: generic/static/generic/js/datatables/selection.js:52
+msgid "(%(count)s row(s))"
+msgstr "(%(count)s ligne(s))"
+
+#: generic/static/generic/js/datatables/core.js:202
+msgid "(filtered from _MAX_ rows)"
+msgstr "(filtré à partir de _MAX_ lignes)"
+
+#: generic/static/generic/js/datatables/core.js:110
+msgid "< less than"
+msgstr "< inférieur à"
+
+#: generic/static/generic/js/datatables/core.js:106
+msgid "= equals"
+msgstr "= égal à"
+
+#: generic/static/generic/js/datatables/core.js:108
+msgid "> greater than"
+msgstr "> supérieur à"
+
+#: generic/static/generic/js/datatables/core.js:199
+msgid "_MENU_ rows"
+msgstr "_MENU_ lignes"
+
+#: generic/static/generic/js/datatables/core.js:200
+msgid "_START_ to _END_ of _TOTAL_ rows"
+msgstr "_START_ à _END_ sur _TOTAL_ lignes"
+
+#: generic/static/generic/js/datatables/table.js:38
+msgid "A data source URL is required."
+msgstr "Une URL de source de données est requise."
+
+#: generic/static/generic/js/datatables/filterrow.js:249
+msgid "A date: 2026-01-01, >=2026-01-01, 2026-01-01..2026-03-31, 30d for the last 30 days, this-month, empty for no value."
+msgstr "Une date : 2026-01-01, >=2026-01-01, 2026-01-01..2026-03-31, 30d pour les 30 derniers jours, this-month, empty pour les valeurs vides."
+
+#: generic/static/generic/js/datatables/filterbar.js:423
+msgid "A group matches when any of its conditions does. Its first condition:"
+msgstr "Un groupe correspond dès qu'une de ses conditions correspond. Sa première condition :"
+
+#: generic/static/generic/js/datatables/filterrow.js:246
+msgid "A number: 5, >10, <=2.5, 2..8, !5 to exclude, empty for no value."
+msgstr "Un nombre : 5, >10, <=2.5, 2..8, !5 pour exclure, empty pour les valeurs vides."
+
+#: generic/static/generic/js/datatables/filterbar.js:1669
+msgid "A number: 5, >10, <=2.5, 2..8, empty"
+msgstr "Un nombre : 5, >10, <=2.5, 2..8, empty"
+
+#: generic/static/generic/js/wiki.js:249
+msgid "A page needs a title."
+msgstr "Une page a besoin d'un titre."
+
+#: generic/static/generic/js/datatables/filterbar.js:469
+msgid "A word or a phrase"
+msgstr "Un mot ou une expression"
+
+#: generic/static/generic/js/datatables/filterbar.js:1674
+msgid "A word, several with commas, =exact, empty"
+msgstr "Un mot, plusieurs séparés par des virgules, =exact, empty"
+
+#: generic/static/generic/js/datatables/selection.js:178
+msgid "Action"
+msgstr "Action"
+
+#: generic/static/generic/js/datatables/rowactions.js:180
+msgid "Actions"
+msgstr "Actions"
+
+#: generic/static/generic/js/datatables/filterbar.js:2038
+msgid "Active filters"
+msgstr "Filtres actifs"
+
+#: generic/static/generic/js/datatables/filterbar.js:1259
+msgid "Add"
+msgstr "Ajouter"
+
+#: generic/static/generic/js/datatables/filterbar.js:1124
+msgid "Add a condition"
+msgstr "Ajouter une condition"
+
+#: generic/static/generic/js/datatables/filterbar.js:446
+#: generic/static/generic/js/datatables/filterbar.js:1262
+#: generic/static/generic/js/datatables/filterbar.js:1360
+msgid "Add a filter"
+msgstr "Ajouter un filtre"
+
+#: generic/static/generic/js/datatables/filterbar.js:412
+msgid "Add a group: any of several"
+msgstr "Ajouter un groupe : au moins une condition"
+
+#: generic/static/generic/js/datatables/editable.js
+msgid "Add a row"
+msgstr "Ajouter une ligne"
+
+#: generic/static/generic/js/forms/form.js:408
+#: generic/static/generic/js/forms/inlines.js:156
+msgid "Add another %(name)s"
+msgstr "Ajouter un autre %(name)s"
+
+#: generic/static/generic/js/datatables/filterbar.js:898
+msgid "Add filter"
+msgstr "Ajouter le filtre"
+
+#: generic/static/generic/js/datatables/editable.js
+msgid "Add this row"
+msgstr "Ajouter cette ligne"
+
+#: generic/static/generic/js/ui.js:889
+msgid "Added to your favorites."
+msgstr "Ajouté à vos favoris."
+
+#: generic/static/generic/js/wiki.js:177
+msgid "Address of the image"
+msgstr "Adresse de l'image"
+
+#: generic/static/generic/js/datatables/filterrow.js:220
+#: generic/static/generic/js/datatables/filterrow.js:383
+msgid "All"
+msgstr "Toutes"
+
+#: generic/static/generic/js/datatables/selection.js:232
+msgid "All %(count)s matching rows are selected."
+msgstr "Les %(count)s lignes correspondantes sont sélectionnées."
+
+#: generic/static/generic/js/datatables/filterbar.js:1201
+#: generic/static/generic/js/datatables/filterbar.js:1240
+msgid "All of"
+msgstr "Toutes les conditions"
+
+#: generic/static/generic/js/datatables/filterbar.js:1086
+msgid "All of these"
+msgstr "Toutes ces conditions"
+
+#: generic/static/generic/js/ui.js:342
+msgid "Amber"
+msgstr "Ambre"
+
+#: generic/static/generic/js/datatables/filterbar.js:1198
+msgid "and"
+msgstr "et"
+
+#: generic/static/generic/js/datatables/query.js:505
+#: generic/static/generic/js/summary.js:160
+msgid "and %(count)s more"
+msgstr "et %(count)s de plus"
+
+#: generic/static/generic/js/datatables/filterbar.js:1201
+#: generic/static/generic/js/datatables/filterbar.js:1241
+msgid "Any of"
+msgstr "Au moins une condition"
+
+#: generic/static/generic/js/datatables/filterbar.js:1085
+msgid "Any of these"
+msgstr "Au moins une de ces conditions"
+
+#: generic/static/generic/js/ui.js:471
+msgid "Appearance saved."
+msgstr "Apparence enregistrée."
+
+#: generic/static/generic/js/datatables/filterbar.js:898
+#: generic/static/generic/js/datatables/selection.js:185
+msgid "Apply"
+msgstr "Appliquer"
+
+#: generic/static/generic/js/dialogs.js:121
+msgid "Are you sure?"
+msgstr "Êtes-vous sûr ?"
+
+#: generic/static/generic/js/datatables/toolbar.js:299
+msgid "Back to the default layout"
+msgstr "Revenir à la disposition par défaut"
+
+#: generic/static/generic/js/forms/form.js:438
+msgid "Back to the list"
+msgstr "Retour à la liste"
+
+#: generic/static/generic/js/maintenance.js:200
+msgid "Call it off"
+msgstr "Annuler"
+
+#: generic/static/generic/js/maintenance.js:198
+msgid "Call off the restart?"
+msgstr "Annuler le redémarrage ?"
+
+#: generic/static/generic/js/datatables/filterbar.js:888
+#: generic/static/generic/js/dialogs.js:129
+#: generic/static/generic/js/dialogs.js:189
+#: generic/static/generic/js/dialogs.js:289
+msgid "Cancel"
+msgstr "Annuler"
+
+#: generic/static/generic/js/dialogs.js:283
+msgid "Checking what depends on it…"
+msgstr "Vérification de ce qui en dépend…"
+
+#: generic/static/generic/js/datatables/selection.js:179
+msgid "Choose an action"
+msgstr "Choisir une action"
+
+#: generic/static/generic/js/datatables/selection.js:39
+msgid "Choose an action first."
+msgstr "Choisissez d'abord une action."
+
+#: generic/static/generic/js/select2.js:182
+msgid "Choose…"
+msgstr "Choisir…"
+
+#: generic/static/generic/js/datatables/filterbar.js:1260
+msgid "Clear all"
+msgstr "Tout effacer"
+
+#: generic/static/generic/js/datatables/filterbar.js:1366
+#: generic/static/generic/js/datatables/filterbar.js:1367
+msgid "Clear every filter"
+msgstr "Effacer tous les filtres"
+
+#: generic/static/generic/js/datatables/selection.js:168
+msgid "Clear selection"
+msgstr "Effacer la sélection"
+
+#: generic/static/generic/js/dialogs.js:68
+#: generic/static/generic/js/dialogs.js:351
+#: generic/static/generic/js/wiki.js:389
+msgid "Close"
+msgstr "Fermer"
+
+#: generic/static/generic/js/datatables/filterbar.js:895
+msgid "Column"
+msgstr "Colonne"
+
+#: generic/static/generic/js/datatables/toolbar.js:457
+msgid "Columns"
+msgstr "Colonnes"
+
+#: generic/static/generic/js/datatables/filterbar.js:896
+msgid "Condition"
+msgstr "Condition"
+
+#: generic/static/generic/js/datatables/core.js:270
+msgid "Configuration script #%(id)s was not found."
+msgstr "Le script de configuration #%(id)s est introuvable."
+
+#: generic/static/generic/js/dialogs.js:131
+msgid "Confirm"
+msgstr "Confirmer"
+
+#: generic/static/generic/js/datatables/core.js:142
+msgid "contains"
+msgstr "contient"
+
+#: generic/static/generic/js/datatables/filterrow.js:231
+msgid "Contains"
+msgstr "Contient"
+
+#: generic/static/generic/js/datatables/toolbar.js:588
+msgid "Copy to the clipboard"
+msgstr "Copier dans le presse-papiers"
+
+#: generic/static/generic/js/wiki.js:286
+msgid "Create"
+msgstr "Créer"
+
+#: generic/static/generic/js/datatables/toolbar.js:574
+msgid "CSV"
+msgstr "CSV"
+
+#: generic/static/generic/js/ui.js:364
+msgid "Dark"
+msgstr "Sombre"
+
+#: generic/static/generic/js/datatables/init.js:61
+msgid "DataTables is not loaded. Add it to the datatable_vendor block."
+msgstr "DataTables n'est pas chargé. Ajoutez-le au bloc datatable_vendor."
+
+#: generic/static/generic/js/datatables/filterbar.js:676
+msgid "days"
+msgstr "jours"
+
+#: generic/static/generic/js/datatables/filterbar.js:676
+msgid "days ago"
+msgstr "jours"
+
+#: generic/static/generic/js/datatables/toolbar.js:495
+msgid "Default"
+msgstr "Par défaut"
+
+#: generic/static/generic/js/datatables/toolbar.js:354
+#: generic/static/generic/js/forms/form.js:445
+#: generic/static/generic/js/wiki.js:320
+msgid "Delete"
+msgstr "Supprimer"
+
+#: generic/static/generic/js/wiki.js:312
+msgid "Delete this page?"
+msgstr "Supprimer cette page ?"
+
+#: generic/static/generic/js/dialogs.js:277
+msgid "Delete this record?"
+msgstr "Supprimer cet enregistrement ?"
+
+#: generic/static/generic/js/datatables/toolbar.js:347
+msgid "Delete this view"
+msgstr "Supprimer cette vue"
+
+#: generic/static/generic/js/datatables/toolbar.js:352
+msgid "Delete this view?"
+msgstr "Supprimer cette vue ?"
+
+#: generic/static/generic/js/wiki.js:233
+msgid "Discard"
+msgstr "Abandonner"
+
+#: generic/static/generic/js/datatables/editable.js
+msgid "Discard this row"
+msgstr "Abandonner cette ligne"
+
+#: generic/static/generic/js/wiki.js:232
+msgid "Discard your changes?"
+msgstr "Abandonner vos modifications ?"
+
+#: generic/static/generic/js/core.js:424
+msgid "Dismiss"
+msgstr "Fermer"
+
+#: generic/static/generic/js/datatables/core.js:143
+msgid "does not contain"
+msgstr "ne contient pas"
+
+#: generic/static/generic/js/datatables/filterbar.js:1126
+msgid "Done"
+msgstr "Terminé"
+
+#: generic/static/generic/js/datatables/selection.js:82
+#: generic/static/generic/js/summary.js:252
+msgid "Done."
+msgstr "Terminé."
+
+#: generic/static/generic/js/datatables/filterrow.js:237
+msgid "e.g. 30d"
+msgstr "ex. 30d"
+
+#: generic/static/generic/js/datatables/filterrow.js:234
+msgid "e.g. >10"
+msgstr "ex. >10"
+
+#: generic/static/generic/js/forms/form.js:394
+msgid "Edit the selected %(name)s"
+msgstr "Modifier le %(name)s sélectionné"
+
+#: generic/static/generic/js/datatables/filterbar.js:767
+#: generic/static/generic/js/datatables/filterbar.js:1646
+#: generic/static/generic/js/datatables/filterbar.js:1660
+#: generic/static/generic/js/datatables/filterrow.js:386
+msgid "Empty"
+msgstr "Vide"
+
+#: generic/static/generic/js/datatables/core.js:147
+msgid "ends with"
+msgstr "se termine par"
+
+#: generic/static/generic/js/forms/widgets.js:335
+msgid "Enter a colour, such as #2563eb."
+msgstr "Saisissez une couleur, par exemple #2563eb."
+
+#: generic/static/generic/js/datatables/toolbar.js:564
+msgid "Every matching row"
+msgstr "Toutes les lignes correspondantes"
+
+#: generic/static/generic/js/datatables/toolbar.js:137
+msgid "Every word must match. Put ! before a word to exclude it, and quotes around a phrase."
+msgstr "Chaque mot doit correspondre. Placez ! devant un mot pour l'exclure, et des guillemets autour d'une expression."
+
+#: generic/static/generic/js/maintenance.js:199
+msgid "Everyone connected is told it is not happening."
+msgstr "Toutes les personnes connectées sont averties qu'il n'aura pas lieu."
+
+#: generic/static/generic/js/datatables/toolbar.js:568
+msgid "Excel"
+msgstr "Excel"
+
+#: generic/static/generic/js/maintenance.js:178
+msgid "Expected to last about %(count)s minutes."
+msgstr "Durée prévue : environ %(count)s minutes."
+
+#: generic/static/generic/js/datatables/toolbar.js:550
+msgid "Export"
+msgstr "Exporter"
+
+#: generic/static/generic/js/datatables/filterbar.js:1363
+msgid "Filter"
+msgstr "Filtrer"
+
+#: generic/static/generic/js/datatables/filterbar.js:1058
+#: generic/static/generic/js/datatables/filterbar.js:1318
+#: generic/static/generic/js/datatables/filterrow.js:202
+msgid "Filter %(column)s"
+msgstr "Filtrer %(column)s"
+
+#: generic/static/generic/js/datatables/filterbar.js:325
+msgid "Filter by"
+msgstr "Filtrer par"
+
+#: generic/static/generic/js/datatables/rowactions.js:70
+msgid "Filter on this value"
+msgstr "Filtrer sur cette valeur"
+
+#: generic/static/generic/js/datatables/filterbar.js:326
+#: generic/static/generic/js/datatables/toolbar.js:465
+#: generic/static/generic/js/datatables/toolbar.js:466
+msgid "Find a column"
+msgstr "Trouver une colonne"
+
+#: generic/static/generic/js/datatables/core.js:206
+msgid "First"
+msgstr "Première"
+
+#: generic/static/generic/js/ui.js:341
+msgid "Forest"
+msgstr "Forêt"
+
+#: generic/static/generic/js/datatables/filterbar.js:641
+msgid "From"
+msgstr "De"
+
+#: generic/static/generic/js/forms/form.js:214
+msgid "General"
+msgstr "Général"
+
+#: generic/static/generic/js/wiki.js:188
+msgid "Give an address starting with https:// or /."
+msgstr "Indiquez une adresse commençant par https:// ou /."
+
+#: generic/static/generic/js/datatables/filterbar.js:978
+msgid "Give this filter a value first."
+msgstr "Donnez d'abord une valeur à ce filtre."
+
+#: generic/static/generic/js/datatables/filterbar.js:1141
+msgid "Group of conditions"
+msgstr "Groupe de conditions"
+
+#: generic/static/generic/js/datatables/core.js:160
+msgid "has all of"
+msgstr "possède toutes les valeurs"
+
+#: generic/static/generic/js/ui.js:335
+msgid "High contrast"
+msgstr "Contraste élevé"
+
+#: generic/static/generic/js/wiki.js:347
+msgid "History"
+msgstr "Historique"
+
+#: generic/static/generic/js/maintenance.js:45
+msgid "in %(count)s minutes"
+msgstr "dans %(count)s minutes"
+
+#: generic/static/generic/js/maintenance.js:40
+msgid "in %(count)s seconds"
+msgstr "dans %(count)s secondes"
+
+#: generic/static/generic/js/wiki.js:176
+msgid "Insert an image"
+msgstr "Insérer une image"
+
+#: generic/static/generic/js/datatables/core.js:144
+msgid "is"
+msgstr "est"
+
+#: generic/static/generic/js/datatables/core.js:118
+msgid "is after"
+msgstr "est après le"
+
+#: generic/static/generic/js/datatables/core.js:158
+msgid "is any of"
+msgstr "est l'une de"
+
+#: generic/static/generic/js/datatables/core.js:117
+msgid "is before"
+msgstr "est avant le"
+
+#: generic/static/generic/js/datatables/core.js:112
+#: generic/static/generic/js/datatables/core.js:121
+msgid "is between"
+msgstr "est entre"
+
+#: generic/static/generic/js/datatables/core.js:96
+msgid "is empty"
+msgstr "est vide"
+
+#: generic/static/generic/js/datatables/core.js:135
+msgid "is in the last"
+msgstr "est dans les derniers"
+
+#: generic/static/generic/js/datatables/core.js:136
+msgid "is in the next"
+msgstr "est dans les prochains"
+
+#: generic/static/generic/js/datatables/core.js:129
+msgid "is last month"
+msgstr "est le mois dernier"
+
+#: generic/static/generic/js/datatables/core.js:132
+msgid "is last quarter"
+msgstr "est le trimestre dernier"
+
+#: generic/static/generic/js/datatables/core.js:126
+msgid "is last week"
+msgstr "est la semaine dernière"
+
+#: generic/static/generic/js/datatables/core.js:134
+msgid "is last year"
+msgstr "est l'an dernier"
+
+#: generic/static/generic/js/datatables/core.js:137
+msgid "is more than"
+msgstr "est il y a plus de"
+
+#: generic/static/generic/js/datatables/core.js:130
+msgid "is next month"
+msgstr "est le mois prochain"
+
+#: generic/static/generic/js/datatables/core.js:127
+msgid "is next week"
+msgstr "est la semaine prochaine"
+
+#: generic/static/generic/js/datatables/core.js:155
+msgid "is no"
+msgstr "est non"
+
+#: generic/static/generic/js/datatables/core.js:159
+msgid "is none of"
+msgstr "n'est aucune de"
+
+#: generic/static/generic/js/datatables/core.js:145
+msgid "is not"
+msgstr "n'est pas"
+
+#: generic/static/generic/js/datatables/core.js:96
+msgid "is not empty"
+msgstr "n'est pas vide"
+
+#: generic/static/generic/js/datatables/core.js:116
+msgid "is not on"
+msgstr "n'est pas le"
+
+#: generic/static/generic/js/datatables/core.js:115
+msgid "is on"
+msgstr "est le"
+
+#: generic/static/generic/js/datatables/core.js:120
+msgid "is on or after"
+msgstr "est le ou après le"
+
+#: generic/static/generic/js/datatables/core.js:119
+msgid "is on or before"
+msgstr "est le ou avant le"
+
+#: generic/static/generic/js/datatables/core.js:128
+msgid "is this month"
+msgstr "est ce mois-ci"
+
+#: generic/static/generic/js/datatables/core.js:131
+msgid "is this quarter"
+msgstr "est ce trimestre"
+
+#: generic/static/generic/js/datatables/core.js:125
+msgid "is this week"
+msgstr "est cette semaine"
+
+#: generic/static/generic/js/datatables/core.js:133
+msgid "is this year"
+msgstr "est cette année"
+
+#: generic/static/generic/js/datatables/core.js:122
+msgid "is today"
+msgstr "est aujourd'hui"
+
+#: generic/static/generic/js/datatables/core.js:124
+msgid "is tomorrow"
+msgstr "est demain"
+
+#: generic/static/generic/js/datatables/core.js:154
+msgid "is yes"
+msgstr "est oui"
+
+#: generic/static/generic/js/datatables/core.js:123
+msgid "is yesterday"
+msgstr "est hier"
+
+#: generic/static/generic/js/datatables/core.js:209
+msgid "Last"
+msgstr "Dernière"
+
+#: generic/static/generic/js/datatables/filterbar.js:1656
+msgid "Last month"
+msgstr "Le mois dernier"
+
+#: generic/static/generic/js/datatables/filterbar.js:655
+msgid "Leave one side empty for an open range."
+msgstr "Laissez un côté vide pour un intervalle ouvert."
+
+#: generic/static/generic/js/ui.js:363
+msgid "Light"
+msgstr "Clair"
+
+#: generic/static/generic/js/datatables/filterbar.js:793
+#: generic/static/generic/js/datatables/toolbar.js:263
+msgid "Loading"
+msgstr "Chargement"
+
+#: generic/static/generic/js/select2.js:46
+msgid "Loading more results…"
+msgstr "Chargement d'autres résultats…"
+
+#: generic/static/generic/js/datatables/core.js:196
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: generic/static/generic/js/datatables/filterbar.js:780
+msgid "More values exist: refine the search."
+msgstr "D'autres valeurs existent : affinez la recherche."
+
+#: generic/static/generic/js/datatables/toolbar.js:260
+msgid "My views"
+msgstr "Mes vues"
+
+#: generic/static/generic/js/datatables/toolbar.js:389
+msgid "Name"
+msgstr "Nom"
+
+#: generic/static/generic/js/ui.js:339
+msgid "Neutral"
+msgstr "Neutre"
+
+#: generic/static/generic/js/wiki.js:284
+msgid "New page"
+msgstr "Nouvelle page"
+
+#: generic/static/generic/js/wiki.js:284
+msgid "New subpage"
+msgstr "Nouvelle sous-page"
+
+#: generic/static/generic/js/datatables/core.js:208
+msgid "Next"
+msgstr "Suivante"
+
+#: generic/static/generic/js/datatables/columns.js:305
+#: generic/static/generic/js/datatables/filterbar.js:1646
+#: generic/static/generic/js/datatables/filterrow.js:385
+#: generic/static/generic/js/datatables/table.js:773
+msgid "No"
+msgstr "Non"
+
+#: generic/static/generic/js/datatables/filterbar.js:365
+msgid "No column matches."
+msgstr "Aucune colonne ne correspond."
+
+#: generic/static/generic/js/datatables/table.js:63
+msgid "No columns were configured."
+msgstr "Aucune colonne n'a été configurée."
+
+#: generic/static/generic/js/datatables/core.js:204
+msgid "No data available"
+msgstr "Aucune donnée disponible"
+
+#: generic/static/generic/js/wiki.js:350
+msgid "No earlier version yet."
+msgstr "Aucune version antérieure pour l'instant."
+
+#: generic/static/generic/js/datatables/core.js:203
+msgid "No matching rows"
+msgstr "Aucune ligne correspondante"
+
+#: generic/static/generic/js/select2.js:54
+msgid "No results."
+msgstr "Aucun résultat."
+
+#: generic/static/generic/js/datatables/core.js:201
+msgid "No rows"
+msgstr "Aucune ligne"
+
+#: generic/static/generic/js/datatables/filterbar.js:778
+msgid "No value found."
+msgstr "Aucune valeur trouvée."
+
+#: generic/static/generic/js/datatables/filterrow.js:273
+msgid "Not understood: %(text)s"
+msgstr "Non compris : %(text)s"
+
+#: generic/static/generic/js/forms/inlines.js:144
+msgid "Nothing here yet."
+msgstr "Rien ici pour l'instant."
+
+#: generic/static/generic/js/datatables/toolbar.js:274
+msgid "Nothing saved yet."
+msgstr "Rien d'enregistré pour l'instant."
+
+#: generic/static/generic/js/maintenance.js:36
+msgid "now"
+msgstr "maintenant"
+
+#: generic/static/generic/js/datatables/filterbar.js:669
+msgid "Number of days"
+msgstr "Nombre de jours"
+
+#: generic/static/generic/js/ui.js:340
+msgid "Ocean"
+msgstr "Océan"
+
+#: generic/static/generic/js/forms/form.js:355
+msgid "Only the first options are listed here."
+msgstr "Seules les premières options sont listées ici."
+
+#: generic/static/generic/js/datatables/rowactions.js:257
+msgid "Open the link in a new tab"
+msgstr "Ouvrir le lien dans un nouvel onglet"
+
+#: generic/static/generic/js/datatables/toolbar.js:331
+#: generic/static/generic/js/datatables/toolbar.js:393
+msgid "Open the table with this view"
+msgstr "Ouvrir le tableau avec cette vue"
+
+#: generic/static/generic/js/datatables/toolbar.js:391
+msgid "Open tickets this week"
+msgstr "Tickets ouverts cette semaine"
+
+#: generic/static/generic/js/datatables/toolbar.js:330
+msgid "Opens with this view"
+msgstr "S'ouvre avec cette vue"
+
+#: generic/static/generic/js/datatables/filterbar.js:1198
+#: generic/static/generic/js/datatables/query.js:536
+msgid "or"
+msgstr "ou"
+
+#: generic/static/generic/js/datatables/filterbar.js:1663
+msgid "Or a date: >=2026-01-01, 2026-01-01..2026-03-31"
+msgstr "Ou une date : >=2026-01-01, 2026-01-01..2026-03-31"
+
+#: generic/static/generic/js/forms/widgets.js:291
+msgid "Pick a colour"
+msgstr "Choisir une couleur"
+
+#: generic/static/generic/js/datatables/filterrow.js:332
+msgid "Pick dates or a period"
+msgstr "Choisir des dates ou une période"
+
+#: generic/static/generic/js/datatables/filterrow.js:335
+msgid "Pick dates or a period for %(column)s"
+msgstr "Choisir des dates ou une période pour %(column)s"
+
+#: generic/static/generic/js/forms/form.js:783
+#: generic/static/generic/js/forms/form.js:908
+msgid "Please correct the errors below."
+msgstr "Veuillez corriger les erreurs ci-dessous."
+
+#: generic/static/generic/js/select2.js:36
+msgid "Please delete %(count)s character(s)."
+msgstr "Veuillez supprimer %(count)s caractère(s)."
+
+#: generic/static/generic/js/select2.js:41
+msgid "Please enter %(count)s more character(s)."
+msgstr "Veuillez saisir %(count)s caractère(s) de plus."
+
+#: generic/static/generic/js/datatables/core.js:207
+msgid "Previous"
+msgstr "Précédente"
+
+#: generic/static/generic/js/datatables/toolbar.js:594
+msgid "Print"
+msgstr "Imprimer"
+
+#: generic/static/generic/js/ui.js:733
+msgid "Recent"
+msgstr "Récent"
+
+#: generic/static/generic/js/datatables/core.js:104
+msgid "Relative"
+msgstr "Relatif"
+
+#: generic/static/generic/js/datatables/toolbar.js:632
+msgid "Reload the rows"
+msgstr "Recharger les lignes"
+
+#: generic/static/generic/js/datatables/filterbar.js:1039
+#: generic/static/generic/js/forms/inlines.js:384
+msgid "Remove"
+msgstr "Retirer"
+
+#: generic/static/generic/js/datatables/filterbar.js:480
+msgid "Remove %(value)s"
+msgstr "Retirer %(value)s"
+
+#: generic/static/generic/js/select2.js:57
+msgid "Remove all items"
+msgstr "Retirer tous les éléments"
+
+#: generic/static/generic/js/select2.js:60
+msgid "Remove item"
+msgstr "Retirer l'élément"
+
+#: generic/static/generic/js/datatables/filterbar.js:1175
+msgid "Remove the filter %(filter)s"
+msgstr "Retirer le filtre %(filter)s"
+
+#: generic/static/generic/js/datatables/filterbar.js:1125
+#: generic/static/generic/js/datatables/filterbar.js:1208
+msgid "Remove the group"
+msgstr "Retirer le groupe"
+
+#: generic/static/generic/js/datatables/filterbar.js:1111
+msgid "Remove this condition"
+msgstr "Retirer cette condition"
+
+#: generic/static/generic/js/ui.js:890
+msgid "Removed from your favorites."
+msgstr "Retiré de vos favoris."
+
+#: generic/static/generic/js/wiki.js:373
+#: generic/static/generic/js/wiki.js:409
+msgid "Restore"
+msgstr "Restaurer"
+
+#: generic/static/generic/js/wiki.js:407
+msgid "Restore this version?"
+msgstr "Restaurer cette version ?"
+
+#: generic/static/generic/js/ui.js:343
+msgid "Rose"
+msgstr "Rose"
+
+#: generic/static/generic/js/forms/inlines.js:576
+msgid "Row %(number)s: %(message)s"
+msgstr "Ligne %(number)s : %(message)s"
+
+#: generic/static/generic/js/datatables/filterbar.js:1238
+msgid "Rows must match"
+msgstr "Les lignes doivent correspondre à"
+
+#: generic/static/generic/js/datatables/filterbar.js:770
+msgid "Rows without a value"
+msgstr "Lignes sans valeur"
+
+#: generic/static/generic/js/datatables/toolbar.js:392
+#: generic/static/generic/js/dialogs.js:190
+#: generic/static/generic/js/forms/form.js:481
+msgid "Save"
+msgstr "Enregistrer"
+
+#: generic/static/generic/js/forms/form.js:464
+msgid "Save and add another"
+msgstr "Enregistrer et ajouter un autre"
+
+#: generic/static/generic/js/forms/form.js:473
+msgid "Save and continue editing"
+msgstr "Enregistrer et continuer les modifications"
+
+#: generic/static/generic/js/datatables/toolbar.js:290
+#: generic/static/generic/js/datatables/toolbar.js:387
+msgid "Save this view"
+msgstr "Enregistrer cette vue"
+
+#: generic/static/generic/js/forms/form.js:858
+msgid "Saved."
+msgstr "Enregistré."
+
+#: generic/static/generic/js/forms/form.js:746
+msgid "Saving…"
+msgstr "Enregistrement…"
+
+#: generic/static/generic/js/datatables/toolbar.js:135
+#: generic/static/generic/js/select2.js:63
+msgid "Search"
+msgstr "Rechercher"
+
+#: generic/static/generic/js/datatables/core.js:198
+msgid "Search all columns…"
+msgstr "Rechercher dans toutes les colonnes…"
+
+#: generic/static/generic/js/datatables/filterrow.js:510
+msgid "Search by column"
+msgstr "Rechercher par colonne"
+
+#: generic/static/generic/js/datatables/toolbar.js:136
+msgid "Search every column"
+msgstr "Rechercher dans toutes les colonnes"
+
+#: generic/static/generic/js/datatables/filterbar.js:1502
+msgid "Search or filter"
+msgstr "Rechercher ou filtrer"
+
+#: generic/static/generic/js/datatables/filterbar.js:697
+#: generic/static/generic/js/datatables/filterbar.js:699
+msgid "Search the values"
+msgstr "Rechercher parmi les valeurs"
+
+#: generic/static/generic/js/select2.js:66
+msgid "Searching…"
+msgstr "Recherche…"
+
+#: generic/static/generic/js/datatables/columns.js:351
+msgid "Select"
+msgstr "Sélectionner"
+
+#: generic/static/generic/js/forms/form.js:1069
+msgid "Select a record first."
+msgstr "Sélectionnez d'abord un enregistrement."
+
+#: generic/static/generic/js/datatables/selection.js:243
+msgid "Select all %(count)s matching rows"
+msgstr "Sélectionner les %(count)s lignes correspondantes"
+
+#: generic/static/generic/js/datatables/selection.js:117
+msgid "Select every row on this page"
+msgstr "Sélectionner toutes les lignes de cette page"
+
+#: generic/static/generic/js/datatables/selection.js:148
+msgid "Select this row"
+msgstr "Sélectionner cette ligne"
+
+#: generic/static/generic/js/datatables/selection.js:172
+msgid "Selected rows"
+msgstr "Lignes sélectionnées"
+
+#: generic/static/generic/js/select2.js:182
+msgid "Select…"
+msgstr "Sélectionner…"
+
+#: generic/static/generic/js/datatables/filterbar.js:558
+msgid "Separate several values with a comma: any of them may match."
+msgstr "Séparez plusieurs valeurs par une virgule : l'une d'elles suffit."
+
+#: generic/static/generic/js/maintenance.js:167
+msgid "Server restart at %(time)s, %(when)s."
+msgstr "Redémarrage du serveur à %(time)s, %(when)s."
+
+#: generic/static/generic/js/maintenance.js:147
+msgid "Server restart at %(time)s."
+msgstr "Redémarrage du serveur à %(time)s."
+
+#: generic/static/generic/js/datatables/toolbar.js:494
+msgid "Show all"
+msgstr "Tout afficher"
+
+#: generic/static/generic/js/ui.js:330
+msgid "Soft"
+msgstr "Doux"
+
+#: generic/static/generic/js/wiki.js:365
+msgid "someone"
+msgstr "quelqu'un"
+
+#: generic/static/generic/js/ui.js:327
+msgid "Standard"
+msgstr "Standard"
+
+#: generic/static/generic/js/datatables/core.js:146
+msgid "starts with"
+msgstr "commence par"
+
+#: generic/static/generic/js/ui.js:1055
+msgid "Stop watching"
+msgstr "Ne plus suivre"
+
+#: generic/static/generic/js/datatables/toolbar.js:244
+msgid "Suggested"
+msgstr "Suggérées"
+
+#: generic/static/generic/js/ui.js:362
+msgid "System"
+msgstr "Système"
+
+#: generic/static/generic/js/summary.js:259
+msgid "The action could not be run."
+msgstr "L'action n'a pas pu être exécutée."
+
+#: generic/static/generic/js/ui.js:474
+msgid "The appearance could not be saved."
+msgstr "L'apparence n'a pas pu être enregistrée."
+
+#: generic/static/generic/js/forms/form.js:1095
+msgid "The browser blocked the popup window."
+msgstr "Le navigateur a bloqué la fenêtre surgissante."
+
+#: generic/static/generic/js/charts.js:1054
+msgid "The chart could not be loaded."
+msgstr "Le graphique n'a pas pu être chargé."
+
+#: generic/static/generic/js/charts.js:41
+msgid "The chart library could not be loaded."
+msgstr "La bibliothèque de graphiques n'a pas pu être chargée."
+
+#: generic/static/generic/js/charts.js:63
+msgid "The chart library is not available."
+msgstr "La bibliothèque de graphiques n'est pas disponible."
+
+#: generic/static/generic/js/datatables/table.js:824
+msgid "The clipboard is not available here."
+msgstr "Le presse-papiers n'est pas disponible ici."
+
+#: generic/static/generic/js/wiki.js:408
+msgid "The current text goes to the history, so this can be undone."
+msgstr "Le texte actuel part dans l'historique : cette action peut être annulée."
+
+#: generic/static/generic/js/wiki.js:131
+msgid "The editor could not be loaded."
+msgstr "L'éditeur n'a pas pu être chargé."
+
+#: generic/static/generic/js/forms/form.js:1193
+msgid "The form configuration is missing."
+msgstr "La configuration du formulaire est absente."
+
+#: generic/static/generic/js/forms/form.js:148
+msgid "The form could not be loaded."
+msgstr "Le formulaire n'a pas pu être chargé."
+
+#: generic/static/generic/js/datatables/filterbar.js:1083
+msgid "The group matches"
+msgstr "Le groupe correspond à"
+
+#: generic/static/generic/js/wiki.js:398
+msgid "The history could not be loaded."
+msgstr "L'historique n'a pas pu être chargé."
+
+#: generic/static/generic/js/history.js:76
+msgid "The history could not be read."
+msgstr "L'historique n'a pas pu être lu."
+
+#: generic/static/generic/js/datatables/filterbar.js:1658
+msgid "The last 30 days"
+msgstr "Les 30 derniers jours"
+
+#: generic/static/generic/js/datatables/filterbar.js:1657
+msgid "The last 7 days"
+msgstr "Les 7 derniers jours"
+
+#: generic/static/generic/js/wiki.js:301
+msgid "The page could not be created."
+msgstr "La page n'a pas pu être créée."
+
+#: generic/static/generic/js/wiki.js:335
+msgid "The page could not be deleted."
+msgstr "La page n'a pas pu être supprimée."
+
+#: generic/static/generic/js/wiki.js:274
+msgid "The page could not be saved."
+msgstr "La page n'a pas pu être enregistrée."
+
+#: generic/static/generic/js/wiki.js:331
+msgid "The page was deleted."
+msgstr "La page a été supprimée."
+
+#: generic/static/generic/js/wiki.js:270
+msgid "The page was saved."
+msgstr "La page a été enregistrée."
+
+#: generic/static/generic/js/forms/form.js:836
+msgid "The record"
+msgstr "L'enregistrement"
+
+#: generic/static/generic/js/dialogs.js:300
+msgid "The record could not be deleted."
+msgstr "L'enregistrement n'a pas pu être supprimé."
+
+#: generic/static/generic/js/forms/form.js:912
+msgid "The record could not be saved."
+msgstr "L'enregistrement n'a pas pu être enregistré."
+
+#: generic/static/generic/js/core.js:293
+msgid "The request failed (%(status)s)."
+msgstr "La requête a échoué (%(status)s)."
+
+#: generic/static/generic/js/maintenance.js:93
+#: generic/static/generic/js/maintenance.js:211
+msgid "The restart was called off."
+msgstr "Le redémarrage a été annulé."
+
+#: generic/static/generic/js/select2.js:33
+msgid "The results could not be loaded."
+msgstr "Les résultats n'ont pas pu être chargés."
+
+#: generic/static/generic/js/datatables/editable.js
+msgid "The row was added."
+msgstr "La ligne a été ajoutée."
+
+#: generic/static/generic/js/maintenance.js:143
+msgid "The server is being restarted now."
+msgstr "Le serveur est en cours de redémarrage."
+
+#: generic/static/generic/js/maintenance.js:144
+msgid "The server is restarting now."
+msgstr "Le serveur redémarre maintenant."
+
+#: generic/static/generic/js/maintenance.js:164
+msgid "The server is restarting."
+msgstr "Le serveur redémarre."
+
+#: generic/static/generic/js/core.js:290
+msgid "The server ran into a problem. Please try again."
+msgstr "Le serveur a rencontré un problème. Veuillez réessayer."
+
+#: generic/static/generic/js/datatables/init.js:78
+msgid "The table could not be initialised."
+msgstr "Le tableau n'a pas pu être initialisé."
+
+#: generic/static/generic/js/datatables/table.js:361
+msgid "The table could not be loaded."
+msgstr "Le tableau n'a pas pu être chargé."
+
+#: generic/static/generic/js/datatables/filterbar.js:804
+msgid "The values could not be loaded."
+msgstr "Les valeurs n'ont pas pu être chargées."
+
+#: generic/static/generic/js/wiki.js:423
+msgid "The version could not be restored."
+msgstr "La version n'a pas pu être restaurée."
+
+#: generic/static/generic/js/wiki.js:419
+msgid "The version was restored."
+msgstr "La version a été restaurée."
+
+#: generic/static/generic/js/forms/form.js:811
+msgid "There is nothing to save."
+msgstr "Il n'y a rien à enregistrer."
+
+#: generic/static/generic/js/forms/widgets.js:381
+msgid "This is not valid JSON."
+msgstr "Ce JSON n'est pas valide."
+
+#: generic/static/generic/js/datatables/filterbar.js:1655
+msgid "This month"
+msgstr "Ce mois-ci"
+
+#: generic/static/generic/js/datatables/toolbar.js:584
+msgid "This page"
+msgstr "Cette page"
+
+#: generic/static/generic/js/summary.js:216
+msgid "This record has just been deleted."
+msgstr "Cet enregistrement vient d'être supprimé."
+
+#: generic/static/generic/js/core.js:286
+msgid "This record no longer exists."
+msgstr "Cet enregistrement n'existe plus."
+
+#: generic/static/generic/js/datatables/editable.js
+msgid "This row could not be added."
+msgstr "Cette ligne n'a pas pu être ajoutée."
+
+#: generic/static/generic/js/datatables/filterbar.js:1654
+msgid "This week"
+msgstr "Cette semaine"
+
+#: generic/static/generic/js/datatables/filterbar.js:1659
+msgid "This year"
+msgstr "Cette année"
+
+#: generic/static/generic/js/datatables/filterbar.js:438
+msgid "Tip: type %(example)s in the search box."
+msgstr "Astuce : tapez %(example)s dans la zone de recherche."
+
+#: generic/static/generic/js/wiki.js:285
+msgid "Title"
+msgstr "Titre"
+
+#: generic/static/generic/js/datatables/filterbar.js:642
+msgid "To"
+msgstr "À"
+
+#: generic/static/generic/js/datatables/filterbar.js:1653
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: generic/static/generic/js/forms/inlines.js:384
+msgid "Undo"
+msgstr "Annuler"
+
+#: generic/static/generic/js/forms/form.js:682
+#: generic/static/generic/js/forms/form.js:748
+msgid "Unsaved changes"
+msgstr "Modifications non enregistrées"
+
+#: generic/static/generic/js/datatables/filterbar.js:471
+#: generic/static/generic/js/datatables/filterbar.js:623
+msgid "Value"
+msgstr "Valeur"
+
+#: generic/static/generic/js/datatables/filterbar.js:602
+msgid "Values from %(min)s to %(max)s."
+msgstr "Valeurs de %(min)s à %(max)s."
+
+#: generic/static/generic/js/history.js:88
+msgid "version %(number)s"
+msgstr "version %(number)s"
+
+#: generic/static/generic/js/datatables/toolbar.js:410
+msgid "View “%(name)s” saved."
+msgstr "Vue « %(name)s » enregistrée."
+
+#: generic/static/generic/js/datatables/toolbar.js:217
+#: generic/static/generic/js/datatables/toolbar.js:223
+msgid "Views"
+msgstr "Vues"
+
+#: generic/static/generic/js/ui.js:344
+msgid "Violet"
+msgstr "Violet"
+
+#: generic/static/generic/js/ui.js:338
+msgid "Vivid"
+msgstr "Vif"
+
+#: generic/static/generic/js/ui.js:1058
+msgid "Watch"
+msgstr "Suivre"
+
+#: generic/static/generic/js/ui.js:1058
+msgid "Watch every record"
+msgstr "Suivre tous les enregistrements"
+
+#: generic/static/generic/js/ui.js:1039
+msgid "Watching"
+msgstr "Suivi"
+
+#: generic/static/generic/js/datatables/filterbar.js:1503
+msgid "Words search every column; put ! before one to exclude it. name:value filters a column: status:open, hours:>2, opened:30d, due:2026-01-01..2026-03-31, -tags:billing, assignee:empty."
+msgstr "Les mots cherchent dans toutes les colonnes ; placez ! devant l'un d'eux pour l'exclure. nom:valeur filtre une colonne : status:open, hours:>2, opened:30d, due:2026-01-01..2026-03-31, -tags:billing, assignee:empty."
+
+#: generic/static/generic/js/datatables/filterrow.js:243
+msgid "Words the column contains. =word for the exact value, ^word for its start, commas for any of several, !word to exclude, empty for no value."
+msgstr "Les mots que la colonne contient. =mot pour la valeur exacte, ^mot pour son début, des virgules pour plusieurs valeurs, !mot pour exclure, empty pour les valeurs vides."
+
+#: generic/static/generic/js/wiki.js:148
+msgid "Write here…"
+msgstr "Écrivez ici…"
+
+#: generic/static/generic/js/datatables/columns.js:305
+#: generic/static/generic/js/datatables/filterbar.js:1646
+#: generic/static/generic/js/datatables/filterrow.js:384
+#: generic/static/generic/js/datatables/table.js:773
+msgid "Yes"
+msgstr "Oui"
+
+#: generic/static/generic/js/dialogs.js:290
+msgid "Yes, delete"
+msgstr "Oui, supprimer"
+
+#: generic/static/generic/js/ui.js:1064
+msgid "You are watching every record of this model."
+msgstr "Vous suivez tous les enregistrements de ce modèle."
+
+#: generic/static/generic/js/select2.js:49
+msgid "You can only select %(count)s item(s)."
+msgstr "Vous ne pouvez sélectionner que %(count)s élément(s)."
+
+#: generic/static/generic/js/core.js:282
+msgid "You do not have permission to do that."
+msgstr "Vous n'avez pas la permission de faire cela."
+
+#: generic/static/generic/js/ui.js:1088
+msgid "You will be told about changes."
+msgstr "Vous serez informé des changements."
+
+#: generic/static/generic/js/ui.js:1090
+msgid "You will not be told any more."
+msgstr "Vous ne serez plus informé."
+
+#: generic/static/generic/js/dialogs.js:318
+msgid "“%(name)s” and everything below will be deleted."
+msgstr "« %(name)s » et tout ce qui se trouve en dessous seront supprimés."
+
+#: generic/static/generic/js/dialogs.js:343
+msgid "“%(name)s” cannot be deleted: these records depend on it and are protected."
+msgstr "« %(name)s » ne peut pas être supprimé : ces enregistrements en dépendent et sont protégés."
+
+#: generic/static/generic/js/forms/form.js:1140
+msgid "“%(name)s” is selected."
+msgstr "« %(name)s » est sélectionné."
+
+#: generic/static/generic/js/forms/form.js:838
+msgid "“%(name)s” was added."
+msgstr "« %(name)s » a été ajouté."
+
+#: generic/static/generic/js/datatables/rowactions.js:51
+#: generic/static/generic/js/forms/form.js:1056
+msgid "“%(name)s” was deleted."
+msgstr "« %(name)s » a été supprimé."
+
+#: generic/static/generic/js/forms/form.js:838
+msgid "“%(name)s” was saved."
+msgstr "« %(name)s » a été enregistré."
+
+#: generic/static/generic/js/wiki.js:314
+msgid "“%(title)s” and its history will be deleted. Its subpages move up a level."
+msgstr "« %(title)s » et son historique seront supprimés. Ses sous-pages remontent d'un niveau."
+
+#: generic/static/generic/js/datatables/core.js:107
+msgid "≠ does not equal"
+msgstr "≠ différent de"
+
+#: generic/static/generic/js/datatables/core.js:111
+msgid "≤ at most"
+msgstr "≤ au plus"
+
+#: generic/static/generic/js/datatables/core.js:109
+msgid "≥ at least"
+msgstr "≥ au moins"

@@ -1,0 +1,6 @@
+{# Charts side by side: `charts` is a list of {config_id, config}. #}
+<div class="chart-grid">
+  {% for chart in charts %}
+    {% include "generic/charts/chart.html" %}
+  {% endfor %}
+</div>

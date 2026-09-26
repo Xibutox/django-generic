@@ -1,0 +1,72 @@
+{% extends "generic/auth/base.html" %}
+{% load i18n generic_ui %}
+
+{# Where a provider is declared, it leads: most people sign in through #}
+{# it, and the password form waits underneath for whoever cannot.      #}
+
+{% block bodyclass %}page-login{% endblock %}
+
+{% block content %}
+  <main class="auth-card">
+    <div class="auth-card__brand">
+      <span class="sidebar__logo">{% icon chrome.icon %}</span>
+      <span>{{ chrome.header }}</span>
+    </div>
+
+    <h1>{% translate "Sign in" %}</h1>
+
+    <p class="auth-card__lead">
+      {% if sso_providers %}
+        {% translate "Continue with your organisation's account." %}
+      {% else %}
+        {% translate "Welcome back. Enter your credentials to continue." %}
+      {% endif %}
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% elif form.errors %}
+      <div class="form-errors" role="alert">
+        <p>{% translate "Please correct the errors below." %}</p>
+      </div>
+    {% endif %}
+
+    {% if sso_providers %}
+      <div class="auth-sso">
+        {% for provider in sso_providers %}
+          <a class="button button--primary auth-sso__button" href="{{ provider.url }}">
+            {% icon provider.icon %}
+            <span>{{ provider.label }}</span>
+          </a>
+          {% if provider.description %}
+            <p class="auth-sso__hint">{{ provider.description }}</p>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if password_login %}
+      {% if sso_providers %}
+        {# Open on its own when a password has just been refused, or   #}
+        {# the error above would point at a form nobody can see.       #}
+        <details class="auth-password"{% if form.errors %} open{% endif %}>
+          <summary class="auth-password__summary">
+            {% icon "password" "icon--sm" %}
+            <span>{% translate "Sign in with a password instead" %}</span>
+          </summary>
+          {% include "generic/auth/includes/password_form.html" %}
+        </details>
+      {% else %}
+        {% include "generic/auth/includes/password_form.html" %}
+      {% endif %}
+    {% else %}
+      <p class="auth-card__note">
+        {% translate "This application does not keep passwords of its own." %}
+      </p>
+    {% endif %}
+
+    {% block login_footer %}{% endblock %}
+  </main>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n l10n static generic_ui %}
+
+{# CustomerResource.map: a page the resource declares, whose content is  #}
+{# the project's - an SVG drawn from what the method returned, then the #}
+{# customers' own table, dropped in with the framework's include.       #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'example/pages.css' %}">
+{% endblock %}
+
+{% block page_content %}
+  <div class="customer-map">
+    <section class="card customer-map__drawing">
+      {# Coordinates are numbers for the SVG, not for a reader: 359.6,  #}
+      {# never the French 359,6.                                        #}
+      {% localize off %}
+      <svg class="customer-map__svg"
+           viewBox="0 0 {{ map.width }} {{ map.height }}"
+           role="img"
+           aria-labelledby="customer-map-title">
+        <title id="customer-map-title">{% translate "Where the customers are" %}</title>
+        <polygon class="customer-map__land" points="{{ map.outline }}"></polygon>
+
+        {% for marker in map.markers %}
+          <a href="{{ marker.url }}" class="customer-map__marker customer-map__marker--{{ marker.segment }}">
+            <title>{{ marker.name }}, {{ marker.city }} &middot; {% blocktranslate count counter=marker.open trimmed %}{{ counter }} open ticket{% plural %}{{ counter }} open tickets{% endblocktranslate %}</title>
+            <circle cx="{{ marker.x }}" cy="{{ marker.y }}" r="{{ marker.r }}"></circle>
+            <text x="{{ marker.label_x }}" y="{{ marker.y }}" text-anchor="{{ marker.anchor }}" dominant-baseline="middle">{{ marker.name }}</text>
+          </a>
+        {% endfor %}
+      </svg>
+      {% endlocalize %}
+    </section>
+
+    <aside class="card customer-map__legend">
+      <h2 class="card__title">{% translate "Reading the map" %}</h2>
+      <ul class="customer-map__keys">
+        {% for segment in map.segments %}
+          <li>
+            <span class="customer-map__key customer-map__marker--{{ segment.value }}" aria-hidden="true"></span>
+            <span>{{ segment.label }}</span>
+            <span class="customer-map__count">{{ segment.count }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="card__description">
+        {% translate "The larger the bubble, the more tickets are open. A bubble opens its customer." %}
+      </p>
+
+      {% if map.unplaced %}
+        <p class="card__description">
+          {% translate "Not on the map - their city is unknown:" %}
+          {% for customer in map.unplaced %}{{ customer.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+      {% endif %}
+
+      <a class="button button--sm" href="{% url 'site:example_customer_geojson' %}" download="customers.geojson">
+        {% icon "download" "icon--sm" %}
+        {% translate "Download as GeoJSON" %}
+      </a>
+    </aside>
+  </div>
+
+  <section class="card customer-map__table">
+    <h2 class="card__title">{% translate "Every customer" %}</h2>
+    {% include "generic/components/table.html" with config=table id="customer-map-table" %}
+  </section>
+{% endblock %}

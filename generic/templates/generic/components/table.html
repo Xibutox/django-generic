@@ -1,0 +1,14 @@
+{# A resource's table, anywhere on a page that extends                  #}
+{# generic/datatable.html - generic/resource/page.html does:            #}
+{#                                                                       #}
+{#   {% include "generic/components/table.html" with config=customers id="customers-table" %} #}
+{#                                                                       #}
+{# `config` is a table configuration - resource.get_page_table_config(   #}
+{# request, "map") gives the resource's own, with a layout of its own    #}
+{# and the address left alone - and `id` names it on the page. It starts #}
+{# by itself, like every table of the framework.                         #}
+{{ config|json_script:id }}
+<table class="js-generic-datatable display" data-config="{{ id }}">
+  <thead></thead>
+  <tbody></tbody>
+</table>

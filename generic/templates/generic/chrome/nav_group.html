@@ -1,0 +1,14 @@
+{% load generic_ui %}
+{# One navigation group. Collapsible when it has a title, using a     #}
+{# native <details>: keyboard accessible and working before any       #}
+{# script has loaded.                                                 #}
+{% if group.label %}
+  <details class="nav-group" open data-nav-group>
+    <summary class="nav-group__title">{{ group.label }}</summary>
+    {% include "generic/chrome/nav_items.html" with items=group.items label=group.label %}
+  </details>
+{% else %}
+  <div class="nav-group" data-nav-group>
+    {% include "generic/chrome/nav_items.html" with items=group.items label="" %}
+  </div>
+{% endif %}

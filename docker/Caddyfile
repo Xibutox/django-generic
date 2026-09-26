@@ -1,0 +1,31 @@
+# The production front: HTTPS, the static files, and everything else
+# handed to Daphne - the WebSocket events included, which reverse_proxy
+# passes through as they are.
+#
+# SITE_ADDRESS is the site's name - desk.example.com - and Caddy then
+# obtains and renews its certificate by itself, redirecting HTTP to
+# HTTPS; ports 80 and 443 must reach this machine. The default, ":80",
+# serves plain HTTP, to try the stack on localhost with DJANGO_HTTPS=0.
+#
+# Caddy replaces any X-Forwarded-For and X-Forwarded-Proto a client
+# sends with its own, so what Django reads as the scheme and the client
+# address is what Caddy saw.
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	handle_path /static/* {
+		root * /srv/static
+		# A hashed name changes with its content: kept for a year. The
+		# few files asked for by their plain name are kept for an hour.
+		@hashed path_regexp \.[0-9a-f]{12}\.[A-Za-z0-9]+$
+		@plain not path_regexp \.[0-9a-f]{12}\.[A-Za-z0-9]+$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header @plain Cache-Control "public, max-age=3600"
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:8000
+	}
+}

@@ -1,0 +1,12 @@
+{# Recursive: the collector's nesting mirrors the cascade itself. #}
+<ul class="deletion-tree">
+  {% for node in nodes %}
+    <li>
+      <span class="deletion-tree__model">{{ node.model }}</span>
+      <span class="deletion-tree__label">{{ node.label }}</span>
+      {% if node.children %}
+        {% include "generic/components/deletion_tree.html" with nodes=node.children %}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>

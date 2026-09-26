@@ -1,0 +1,88 @@
+/**
+ * The example's own stylesheet, for the two pages that are not a
+ * generated screen. A project adds one exactly like this: its own file,
+ * linked from the template's `extrastyle` block, written in the
+ * framework's tokens so it follows the theme, the colours and the
+ * browser's text size without knowing anything about them.
+ */
+
+/* -- Live updates ------------------------------------------------------ */
+
+.events-intro p + p {
+  margin-top: var(--space-2);
+}
+
+.events-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  align-items: stretch;
+}
+
+/* The buttons line up across the cards whatever the text above them
+   does, which is what makes three choices read as three choices. */
+.events-choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Side by side in the grid, not stacked: the space a card keeps above
+   the one before it would push the second one down. */
+.events-choices > .card {
+  margin: 0;
+}
+
+.events-choice .card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.events-choice .button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.events-log {
+  margin-top: var(--space-3);
+}
+
+/* The time and the type stay on one line; what it does wraps, rather
+   than making the log scroll sideways. */
+.events-log td:last-child {
+  white-space: normal;
+}
+
+/* On a phone the newest line is on top anyway: the time goes, and a
+   long type breaks at its dots (the page puts a <wbr> after each)
+   rather than widening the table. */
+@media (max-width: 40rem) {
+  .events-log th:first-child,
+  .events-log td:first-child {
+    display: none;
+  }
+
+  .events-log td:nth-child(2) {
+    white-space: normal;
+  }
+}
+
+.events-queue__figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.events-queue__count {
+  font-size: calc(var(--font-size-xl) * 1.5);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.events-queue .callout {
+  margin-bottom: var(--space-3);
+}

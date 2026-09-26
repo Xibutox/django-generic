@@ -1,0 +1,141 @@
+{
+  // Debugging the project from VS Code: F5, or Run and Debug.
+  // Needs the "Python Debugger" extension (ms-python.debugpy) and the
+  // project's .venv selected as the interpreter. See docs/deployment.md,
+  // "Debugging".
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // The server in one process, so every breakpoint is hit: views,
+      // resources, serializers, tasks (no broker: they run in the
+      // request) and templates ("django": true).
+      "name": "Django: debug.py (runserver)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug.py",
+      "args": [],
+      "django": true,
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      // The same, stepping into Django, DRF and every library too.
+      "name": "Django: debug.py, into the libraries",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug.py",
+      "args": [],
+      "django": true,
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+    {
+      // With the reloader: the server restarts on every save, and the
+      // debugger follows it into the child process that serves.
+      "name": "Django: debug.py with reload",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug.py",
+      "args": ["--reload"],
+      "django": true,
+      "justMyCode": true,
+      "subProcess": true,
+      "console": "integratedTerminal"
+    },
+    {
+      // Any manage.py command under the debugger: seed_example,
+      // migrate, a command of the project's own...
+      "name": "Django: a manage.py command",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug.py",
+      "args": ["${input:command}"],
+      "django": true,
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      // The test file open in the editor. Without coverage: its tracer
+      // and the debugger's cannot both hold the process, and the
+      // breakpoints would be skipped.
+      "name": "Pytest: this file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "--no-cov", "-p", "no:cacheprovider"],
+      "django": true,
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Pytest: tests matching...",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-k", "${input:tests}", "--no-cov", "-p", "no:cacheprovider"],
+      "django": true,
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+    {
+      // A Celery worker. Only with a broker: without one, the server
+      // runs each task in the request that sends it, and the first
+      // configuration stops in it already. For a broker, the dev
+      // stack's Redis and a line in .env, which VS Code passes to
+      // every configuration here - server and worker alike:
+      //   CELERY_BROKER_URL=redis://localhost:6379/1
+      // The solo pool keeps the tasks in this process, where the
+      // breakpoints are.
+      "name": "Celery: worker",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "celery",
+      "args": [
+        "-A",
+        "example_project.celery",
+        "worker",
+        "--loglevel=info",
+        "--pool=solo"
+      ],
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      // The dev stack's web server, started to wait for this - see
+      // docker/docker-compose.dev.yml:
+      //   docker compose -f docker/docker-compose.dev.yml run --rm
+      //     --service-ports web python -Xfrozen_modules=off debug.py
+      //     --listen 0.0.0.0:5678 --wait 0.0.0.0:8000
+      "name": "Docker: attach to the web container",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "localhost", "port": 5678 },
+      "pathMappings": [
+        { "localRoot": "${workspaceFolder}", "remoteRoot": "/app" }
+      ],
+      "django": true,
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "command",
+      "type": "promptString",
+      "description": "manage.py command and its arguments",
+      "default": "seed_example"
+    },
+    {
+      "id": "tests",
+      "type": "promptString",
+      "description": "pytest -k expression: part of a test's name"
+    }
+  ],
+  "compounds": [
+    {
+      // Server and worker together, one stop button for both.
+      "name": "Django + Celery worker",
+      "configurations": ["Django: debug.py (runserver)", "Celery: worker"],
+      "stopAll": true
+    }
+  ]
+}

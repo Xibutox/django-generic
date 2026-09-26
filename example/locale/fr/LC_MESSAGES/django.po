@@ -1,0 +1,1862 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic example\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-18 11:00+0200\n"
+"PO-Revision-Date: 2026-09-18 11:00+0200\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: example/tasks.py:57
+msgid "%(count)s found, over %(teams)s team(s)"
+msgstr "%(count)s trouvé(s), sur %(teams)s équipe(s)"
+
+#: example/tasks.py:65
+msgid "%(count)s overdue ticket(s)"
+msgstr "%(count)s ticket(s) en retard"
+
+#: example/resources.py:408
+msgid "%(days)s day"
+msgid_plural "%(days)s days"
+msgstr[0] "%(days)s jour"
+msgstr[1] "%(days)s jours"
+
+#: example/resources.py:425
+msgid "%(count)s ticket closed."
+msgid_plural "%(count)s tickets closed."
+msgstr[0] "%(count)s ticket fermé."
+msgstr[1] "%(count)s tickets fermés."
+
+#: example/resources.py:436
+msgid "%(count)s ticket marked billable."
+msgid_plural "%(count)s tickets marked billable."
+msgstr[0] "%(count)s ticket marqué facturable."
+msgstr[1] "%(count)s tickets marqués facturables."
+
+#: example/resources.py:512
+msgid "%(count)s entry marked billable."
+msgid_plural "%(count)s entries marked billable."
+msgstr[0] "%(count)s saisie marquée facturable."
+msgstr[1] "%(count)s saisies marquées facturables."
+
+#: example/views.py:142
+msgid "%(count)s ticket(s) closed."
+msgstr "%(count)s ticket(s) fermé(s)."
+
+#: example/views.py:153
+msgid "%(count)s ticket(s) marked billable."
+msgstr "%(count)s ticket(s) marqué(s) facturable(s)."
+
+#: example/views.py:262
+msgid "%(days)s day(s)"
+msgstr "%(days)s jour(s)"
+
+#: example/templates/example/events.html
+msgid "%(team)s: the queue, live"
+msgstr "%(team)s : la file, en direct"
+
+#: example/templates/example/events.html:42
+msgid ""
+"A client may only join a topic the project declared, and each one\n"
+"        carries the rule saying who may listen. \"audit.log\" is staff\n"
+"        only; \"generic.user.1\" is not a topic at all, so naming a group\n"
+"        directly is refused. Every registered resource has a topic too:\n"
+"        \"resource.example.ticket\" is what the ticket table follows."
+msgstr ""
+"Un client ne peut rejoindre qu'un canal déclaré par le projet, et\n"
+"        chacun porte la règle qui dit qui peut écouter. « audit.log » est\n"
+"        réservé au personnel ; « generic.user.1 » n'est pas un canal, si\n"
+"        bien que nommer un groupe directement est refusé. Chaque ressource\n"
+"        enregistrée a aussi son canal : « resource.example.ticket » est\n"
+"        celui que suit le tableau des tickets."
+
+#: example/resources.py:864
+msgid "A customer is on the telephone right now."
+msgstr "Un client est au téléphone en ce moment."
+
+#: example/templates/example/home.html:52
+msgid "A listing whose columns come from a related model."
+msgstr "Une liste dont les colonnes viennent d'un modèle lié."
+
+#: example/views.py
+msgid "A notification was stored for you: the bell counts it and a toast shows it, on every page you have open."
+msgstr "Une notification a été enregistrée pour vous : la cloche la compte et un message éphémère l'affiche, sur chaque page que vous avez ouverte."
+
+#: example/views.py:455
+msgid "A passing message, for you alone."
+msgstr "Un message de passage, pour vous seul."
+
+#: example/views.py
+msgid "A planned restart: the banner at the top of every page follows."
+msgstr "Un redémarrage planifié : le bandeau en haut de chaque page suit."
+
+#: example/templates/example/dashboard.html:45
+msgid ""
+"A record opens on its summary: figures, its values with links\n"
+"            to the related records, and a tab per related table - each\n"
+"            with its own filters, exports and live updates. The largest\n"
+"            customer has close to a hundred tickets and hundreds of hours."
+msgstr ""
+"Un enregistrement s'ouvre sur son résumé : des chiffres, ses\n"
+"            valeurs avec des liens vers les enregistrements liés, et un\n"
+"            onglet par tableau lié - chacun avec ses filtres, ses exports\n"
+"            et ses mises à jour en direct. Le plus gros client compte près\n"
+"            de cent tickets et des centaines d'heures."
+
+#: example/templates/example/home.html:43
+msgid ""
+"A second listing, with a count column computed from an\n"
+"            annotation."
+msgstr ""
+"Une seconde liste, avec une colonne de comptage calculée par une\n"
+"            annotation."
+
+#: example/templates/example/home.html:142
+msgid "A second table on the same site, with its own saved column state."
+msgstr "Un second tableau sur le même site, avec son propre état de colonnes enregistré."
+
+#: example/views.py:443
+msgid "A ticket needs your attention"
+msgstr "Un ticket demande votre attention"
+
+#: example/views.py
+msgid "A ticket of the team changed: the queue count below follows. Only the team's agents hear it."
+msgstr "Un ticket de l'équipe a changé : le compteur de la file ci-dessous suit. Seuls les agents de l'équipe le reçoivent."
+
+#: example/models.py:95
+msgid "account manager"
+msgstr "responsable de compte"
+
+#: example/templates/example/dashboard.html:155
+msgid "Account settings"
+msgstr "Paramètres du compte"
+
+#: example/resources.py
+msgid "Accounting"
+msgstr "Comptabilité"
+
+#: example/resources.py:722
+msgid "Accounts managed"
+msgstr "Comptes gérés"
+
+#: example/models.py:30
+#: example/models.py:53
+#: example/models.py:101
+msgid "active"
+msgstr "actif"
+
+#: example/resources.py:406
+#: example/views.py:264
+msgid "Age"
+msgstr "Ancienneté"
+
+#: example/models.py:65
+#: example/models.py:286
+msgid "agent"
+msgstr "agent"
+
+#: example/templates/example/home.html:51
+msgid "Agent list"
+msgstr "Liste des agents"
+
+#: example/templates/example/home.html:141
+msgid "Agent table"
+msgstr "Tableau des agents"
+
+#: example/models.py:66
+msgid "agents"
+msgstr "agents"
+
+#: example/resources.py:680
+#: example/resources.py:692
+msgid "Agents"
+msgstr "Agents"
+
+#: example/views.py:389
+msgid "Agents (interactive table)"
+msgstr "Agents (tableau interactif)"
+
+#: example/resources.py:606
+msgid "Agents involved"
+msgstr "Agents intervenus"
+
+#: example/models.py:127
+msgid "Alone, the colour the tag is tinted with."
+msgstr "Seule, la couleur dont l'étiquette est teintée."
+
+#: example/resources.py:895
+msgid "An address a shortcut may point at, like any link."
+msgstr "Une adresse qu'un raccourci peut viser, comme n'importe quel lien."
+
+#: example/views.py
+msgid "An event of the project's own, for its own pages."
+msgstr "Un événement propre au projet, pour ses propres pages."
+
+#: example/resources.py:720
+msgid "Assigned tickets"
+msgstr "Tickets attribués"
+
+#: example/models.py
+msgid "assigned to"
+msgstr "attribué à"
+
+#: example/models.py:175
+msgid "assignee"
+msgstr "responsable"
+
+#: example/views.py:129
+msgid "Assignee"
+msgstr "Responsable"
+
+#: example/resources.py:263
+msgid "Assignment"
+msgstr "Attribution"
+
+#: example/models.py:251
+msgid "author"
+msgstr "auteur"
+
+#: example/templates/example/home.html:210
+msgid "Autocomplete"
+msgstr "Autocomplétion"
+
+#: example/templates/example/sso.html:42
+msgid "Back to the sign-in page"
+msgstr "Retour à la page de connexion"
+
+#: example/templates/example/ticket_work.html:24
+msgid "Back to the ticket"
+msgstr "Retour au ticket"
+
+#: example/models.py:130
+msgid "background"
+msgstr "fond"
+
+#: example/models.py
+msgid "Being repaired"
+msgstr "En réparation"
+
+#: example/models.py:209
+#: example/models.py:292
+msgid "billable"
+msgstr "facturable"
+
+#: example/resources.py:235
+msgid "Billing"
+msgstr "Facturation"
+
+#: example/resources.py:274
+#: example/resources.py:315
+msgid "Billing and outcome"
+msgstr "Facturation et résultat"
+
+#: example/templates/example/events.html:30
+msgid "Broadcast (to everyone)"
+msgstr "Diffusion (à tout le monde)"
+
+#: example/resources.py
+msgid "Category"
+msgstr "Catégorie"
+
+#: example/resources.py
+msgid "Central Europe"
+msgstr "Europe centrale"
+
+#: example/templates/example/events.html
+msgid "Change a record elsewhere"
+msgstr "Modifier un enregistrement ailleurs"
+
+#: example/templates/example/dashboard.html:67
+msgid "Charts"
+msgstr "Graphiques"
+
+#: example/resources.py
+msgid "Chat"
+msgstr "Discussion"
+
+#: example/resources.py
+msgid "Checked"
+msgstr "Vérifié le"
+
+#: example/models.py:91
+msgid "city"
+msgstr "ville"
+
+#: example/resources.py:788
+#: example/templates/example/dashboard.html:165
+msgid "Classic views"
+msgstr "Vues classiques"
+
+#: example/templates/example/ticket_work.html:11
+msgid "Click a cell to correct it: the hours, the day, the note, who logged it. The last column is the ticket's own status, which closes the ticket from here and asks for the ticket's permission rather than the timesheet's."
+msgstr "Cliquez sur une cellule pour la corriger : les heures, le jour, la note, qui les a saisies. La dernière colonne est le statut du ticket lui-même : elle ferme le ticket d'ici, et demande la permission du ticket plutôt que celle de la feuille de temps."
+
+#: example/resources.py:415
+msgid "Close"
+msgstr "Fermer"
+
+#: example/resources.py:417
+msgid "Close the selected tickets?"
+msgstr "Fermer les tickets sélectionnés ?"
+
+#: example/models.py:29
+#: example/models.py:84
+msgid "code"
+msgstr "code"
+
+#: example/resources.py
+msgid "Code"
+msgstr "Code"
+
+#: example/models.py:123
+msgid "colour"
+msgstr "couleur"
+
+#: example/models.py:252
+#: example/models.py:258
+msgid "comment"
+msgstr "commentaire"
+
+#: example/models.py:259
+msgid "comments"
+msgstr "commentaires"
+
+#: example/resources.py:394
+#: example/resources.py:398
+#: example/views.py:134
+#: example/views.py:186
+msgid "Comments"
+msgstr "Commentaires"
+
+#: example/views.py:432
+msgid "connected"
+msgstr "connecté"
+
+#: example/templates/example/events.html:63
+msgid "connecting"
+msgstr "connexion"
+
+#: example/resources.py:900
+msgid "Continue with Example SSO"
+msgstr "Continuer avec Example SSO"
+
+#: example/resources.py:588
+msgid "Conversation"
+msgstr "Conversation"
+
+#: example/views.py:431
+msgid "Correct the hours without leaving the page"
+msgstr "Corriger les heures sans quitter la page"
+
+#: example/models.py
+msgid "cost"
+msgstr "coût"
+
+#: example/models.py
+msgid "country"
+msgstr "pays"
+
+#: example/tasks.py:27
+msgid "Counts the tickets that are past their date and says which team each one belongs to."
+msgstr "Compte les tickets qui ont dépassé leur date et indique l'équipe de chacun."
+
+#: example/resources.py
+msgid "Coverage"
+msgstr "Couverture"
+
+#: example/templates/example/home.html:56
+msgid "Create a ticket"
+msgstr "Créer un ticket"
+
+#: example/models.py:254
+msgid "created at"
+msgstr "créé le"
+
+#: example/resources.py
+msgid "Critical"
+msgstr "Critique"
+
+#: example/resources.py
+msgid "Critical for the desk"
+msgstr "Critique pour le support"
+
+#: example/models.py:109
+#: example/models.py:183
+msgid "customer"
+msgstr "client"
+
+#: example/resources.py
+msgid "Customer map"
+msgstr "Carte des clients"
+
+#: example/resources.py:449
+msgid "Customer portal"
+msgstr "Portail client"
+
+#: example/models.py:103
+msgid "customer since"
+msgstr "client depuis"
+
+#: example/models.py:110
+msgid "customers"
+msgstr "clients"
+
+#: example/templates/example/home.html:121
+msgid "DataTables, fed by the REST API. Filtering, ordering and paging all happen on the server."
+msgstr "DataTables, alimenté par l'API REST. Le filtrage, le tri et la pagination se font tous sur le serveur."
+
+#: example/models.py:290
+msgid "date"
+msgstr "date"
+
+#: example/templates/example/dashboard.html:69
+msgid ""
+"Declared on the resources and computed by the database. Above a\n"
+"            list they follow its filters, and a click on a bar or a slice\n"
+"            filters the table. On a summary page they cover the record's\n"
+"            related rows. Switch the period, show the figures, or download\n"
+"            the image."
+msgstr ""
+"Déclarés sur les ressources et calculés par la base de données.\n"
+"            Au-dessus d'une liste ils suivent ses filtres, et un clic sur\n"
+"            une barre ou une part filtre le tableau. Sur une page de résumé\n"
+"            ils couvrent les enregistrements liés. Changez la période,\n"
+"            affichez les chiffres, ou téléchargez l'image."
+
+#: example/resources.py
+msgid "Degraded performance"
+msgstr "Performances dégradées"
+
+#: example/templates/example/home.html:103
+msgid "Delete a protected team"
+msgstr "Supprimer une équipe protégée"
+
+#: example/templates/example/home.html:89
+msgid "Delete a ticket"
+msgstr "Supprimer un ticket"
+
+#: example/models.py:164
+msgid "description"
+msgstr "description"
+
+#: example/resources.py:313
+msgid "Description"
+msgstr "Description"
+
+#: example/resources.py:885
+msgid "Django documentation"
+msgstr "Documentation de Django"
+
+#: example/resources.py
+msgid "Documents"
+msgstr "Documents"
+
+#: example/models.py
+msgid "done"
+msgstr "faite"
+
+#: example/templates/example/pages
+msgid "Download as GeoJSON"
+msgstr "Télécharger en GeoJSON"
+
+#: example/models.py:134
+msgid "Draws the tag on this colour, the text in 'colour'."
+msgstr "Dessine l'étiquette sur cette couleur, le texte dans « couleur »."
+
+#: example/models.py:224
+msgid "due on"
+msgstr "échéance"
+
+#: example/resources.py
+msgid "Duration (min)"
+msgstr "Durée (min)"
+
+#: example/resources.py
+msgid "E-mail"
+msgstr "E-mail"
+
+#: example/resources.py
+msgid "Eastern US"
+msgstr "Est des États-Unis"
+
+#: example/templates/example/home.html:79
+msgid "Edit a ticket"
+msgstr "Modifier un ticket"
+
+#: example/resources.py:888
+msgid "Elsewhere"
+msgstr "Ailleurs"
+
+#: example/models.py:46
+msgid "email"
+msgstr "e-mail"
+
+#: example/models.py:79
+msgid "Enterprise"
+msgstr "Grand compte"
+
+#: example/models.py
+msgid "equipment"
+msgstr "matériel"
+
+#: example/resources.py
+msgid "Equipment"
+msgstr "Matériel"
+
+#: example/resources.py:110
+msgid "Estimated"
+msgstr "Estimé"
+
+#: example/resources.py:377
+msgid "Estimated and logged hours"
+msgstr "Heures estimées et saisies"
+
+#: example/models.py:211
+msgid "estimated hours"
+msgstr "heures estimées"
+
+#: example/resources.py:826
+#: example/views.py:422
+#: example/templates/example/dashboard.html:140
+#: example/templates/example/events.html:4
+msgid "Events demo"
+msgstr "Démo des événements"
+
+#: example/templates/example/ticket_work.html:11
+msgid "Every cell you may correct is already its field: type, tick or pick, and it is saved as soon as you leave it or press Enter. The last column is the ticket's own status, which closes the ticket from here and asks for the ticket's permission rather than the timesheet's. Adding a row logs more time on this ticket."
+msgstr "Chaque cellule que vous pouvez corriger est déjà son champ : tapez, cochez ou choisissez, et c'est enregistré dès que vous la quittez ou appuyez sur Entrée. La dernière colonne est le statut du ticket lui-même : elle ferme le ticket d'ici, et demande la permission du ticket plutôt que celle de la feuille de temps. Ajouter une ligne enregistre du temps de plus sur ce ticket."
+
+#: example/templates/example/home.html:128
+msgid ""
+"Every column type at once: text, integer, decimal, float,\n"
+"            boolean, date, timestamp, a link column, a computed column,\n"
+"            a fixed-choice multiselect (Priority, Status) and one backed\n"
+"            by an autocomplete route (Assignee). Try the operator button\n"
+"            beside each filter, the date popover, the Columns selector,\n"
+"            and the Excel and CSV exports - they export every filtered\n"
+"            row, not just the page."
+msgstr ""
+"Tous les types de colonnes à la fois : texte, entier, décimal,\n"
+"            flottant, booléen, date, horodatage, une colonne lien, une\n"
+"            colonne calculée, un choix multiple figé (Priorité, Statut) et\n"
+"            un autre servi par une route d'autocomplétion (Responsable).\n"
+"            Essayez le bouton d'opérateur à côté de chaque filtre, la\n"
+"            fenêtre de dates, le sélecteur de colonnes, et les exports\n"
+"            Excel et CSV - ils exportent toutes les lignes filtrées, pas\n"
+"            seulement la page."
+
+#: example/resources.py:589
+msgid "Every comment written on their tickets."
+msgstr "Tous les commentaires écrits sur leurs tickets."
+
+#: example/templates/example/pages
+msgid "Every customer"
+msgstr "Tous les clients"
+
+#: example/templates/example/home.html:11
+msgid ""
+"Every feature of the framework, wired to a small set of models.\n"
+"          Each entry says what it demonstrates and what to try."
+msgstr ""
+"Toutes les fonctionnalités du framework, branchées sur quelques\n"
+"          modèles. Chaque entrée dit ce qu'elle démontre et quoi essayer."
+
+#: example/resources.py
+msgid "Every open ticket: assign it, set its priority and its due date, and log a new one without leaving the list."
+msgstr "Chaque ticket ouvert : attribuez-le, fixez sa priorité et son échéance, et enregistrez-en un nouveau sans quitter la liste."
+
+#: example/templates/example/events.html
+msgid "Every page keeps a connection open to the server, and what comes down it is addressed to no one: it is what keeps the pages you have open up to date - a table refreshing when a row changes, the bell counting a notification, the banner of a planned restart. The log below shows each of them as it arrives, and what it made happen."
+msgstr "Chaque page garde une connexion ouverte avec le serveur, et ce qui y passe ne s'adresse à personne : c'est ce qui tient à jour les pages que vous avez ouvertes - un tableau qui se rafraîchit quand une ligne change, la cloche qui compte une notification, le bandeau d'un redémarrage planifié. Le journal ci-dessous montre chacun d'eux à son arrivée, et ce qu'il a déclenché."
+
+#: example/resources.py:149
+msgid "Every request the desk is working on."
+msgstr "Toutes les demandes sur lesquelles le support travaille."
+
+#: example/templates/example/events.html:140
+msgid "Every table follows a channel of its own, named after its model, which is how a row edited in another window appears in yours."
+msgstr "Chaque tableau suit son propre canal, nommé d'après son modèle : c'est ainsi qu'une ligne modifiée dans une autre fenêtre apparaît dans la vôtre."
+
+#: example/templates/generic/grid/example/ticket/triage.html
+msgid "Every team"
+msgstr "Toutes les équipes"
+
+#: example/resources.py:570
+msgid "Every ticket raised for this customer."
+msgstr "Tous les tickets ouverts pour ce client."
+
+#: example/templates/generic/grid/example/ticket/triage.html
+msgid "Every ticket still open, several fields of each writable at once: pick an assignee, a priority, a due date - each is saved as soon as you leave it. Adding a row logs a new ticket here, with the next reference already filled in. A ticket you close stays on screen until the grid reloads: the grid shows the open ones, it does not stop you writing the others."
+msgstr "Chaque ticket encore ouvert, avec plusieurs de ses champs modifiables à la fois : choisissez un responsable, une priorité, une échéance - chacun est enregistré dès que vous le quittez. Ajouter une ligne enregistre un nouveau ticket ici, avec la référence suivante déjà remplie. Un ticket que vous fermez reste à l'écran jusqu'au rechargement de la grille : elle montre les tickets ouverts, elle ne vous empêche pas de modifier les autres."
+
+#: example/templates/example/events.html:114
+msgid "Everything above went either to you or to everybody. In between are channels: a page asks to listen to one, and the project decides who may. Join the team channel, then send to it - and note that the audit channel refuses anyone who is not staff."
+msgstr "Tout ce qui précède allait soit à vous, soit à tout le monde. Entre les deux, il y a les canaux : une page demande à en écouter un, et le projet décide qui en a le droit. Rejoignez le canal de l'équipe, puis envoyez-y quelque chose - et notez que le canal d'audit refuse quiconque n'est pas membre de l'équipe interne."
+
+#: example/templates/example/dashboard.html:21
+msgid "Everything below comes from example/resources.py"
+msgstr "Tout ce qui suit vient de example/resources.py"
+
+#: example/resources.py:855
+msgid "Everything the desk has not answered yet."
+msgstr "Tout ce à quoi le service n'a pas encore répondu."
+
+#: example/resources.py
+msgid "external service"
+msgstr "service externe"
+
+#: example/resources.py
+msgid "external services"
+msgstr "services externes"
+
+#: example/resources.py:791
+#: example/templates/example/dashboard.html:176
+msgid "Feature guide"
+msgstr "Guide des fonctionnalités"
+
+#: example/templates/example/dashboard.html:28
+msgid ""
+"Filter any column, search with several words (put ! before one\n"
+"            to exclude it), hide columns, pick a suggested view or save\n"
+"            your own, export every matching row, tick rows and run a bulk\n"
+"            action. Status, priority and tags are coloured tags, their\n"
+"            colours read from the records. Right-click a row for its menu;\n"
+"            double-click to open it."
+msgstr ""
+"Filtrez n'importe quelle colonne, cherchez avec plusieurs mots\n"
+"            (placez ! devant l'un d'eux pour l'exclure), masquez des\n"
+"            colonnes, prenez une vue suggérée ou enregistrez la vôtre,\n"
+"            exportez toutes les lignes correspondantes, cochez des lignes\n"
+"            et lancez une action groupée. Le statut, la priorité et les\n"
+"            étiquettes sont des étiquettes colorées, leurs couleurs venant\n"
+"            des enregistrements. Clic droit sur une ligne pour son menu ;\n"
+"            double-clic pour l'ouvrir."
+
+#: example/templates/example/home.html:201
+msgid "Form schema"
+msgstr "Schéma de formulaire"
+
+#: example/templates/example/dashboard.html:104
+msgid "Forms and inlines"
+msgstr "Formulaires et blocs liés"
+
+#: example/templates/example/home.html:58
+msgid ""
+"GenericCreateView with fieldsets: two fields on one row, a\n"
+"            collapsed section, and Save / Save and continue / Save and\n"
+"            add another."
+msgstr ""
+"GenericCreateView avec des groupes de champs : deux champs sur\n"
+"            une ligne, une section repliée, et Enregistrer / Enregistrer\n"
+"            et continuer / Enregistrer et ajouter un autre."
+
+#: example/templates/example/home.html:70
+msgid ""
+"GenericDetailView. Choice fields show their label, the\n"
+"              many-to-many is joined, and the toolbar offers Change and\n"
+"              Delete."
+msgstr ""
+"GenericDetailView. Les champs à choix affichent leur libellé, le\n"
+"              plusieurs-à-plusieurs est joint, et la barre d'outils offre\n"
+"              Modifier et Supprimer."
+
+#: example/templates/example/home.html:31
+msgid ""
+"GenericListView. Try the search box, click a column header to\n"
+"            sort, tick some rows and apply a bulk action, then page\n"
+"            through. The Add button only appears for users holding the\n"
+"            add permission."
+msgstr ""
+"GenericListView. Essayez la zone de recherche, cliquez un en-tête\n"
+"            de colonne pour trier, cochez des lignes et appliquez une\n"
+"            action groupée, puis parcourez les pages. Le bouton Ajouter\n"
+"            n'apparaît que pour les utilisateurs ayant la permission\n"
+"            d'ajout."
+
+#: example/templates/example/home.html:81
+msgid ""
+"GenericUpdateView. The History section is read-only and\n"
+"              computed on the view, not stored on the model."
+msgstr ""
+"GenericUpdateView. La section Historique est en lecture seule et\n"
+"              calculée dans la vue, pas stockée sur le modèle."
+
+#: example/resources.py
+msgid "GeoJSON"
+msgstr "GeoJSON"
+
+#: example/templates/example/events.html:110
+msgid "Going further: channels"
+msgstr "Pour aller plus loin : les canaux"
+
+#: example/models.py
+msgid "Headset"
+msgstr "Casque"
+
+#: example/resources.py
+msgid "Health"
+msgstr "État de santé"
+
+#: example/models.py:54
+msgid "hired on"
+msgstr "embauché le"
+
+#: example/resources.py:282
+msgid "History"
+msgstr "Historique"
+
+#: example/templates/example/home.html:215
+msgid "History, unread count, and the read transitions."
+msgstr "Historique, nombre de non-lues, et les passages en lu."
+
+#: example/resources.py
+msgid "Hosting"
+msgstr "Hébergement"
+
+#: example/models.py:291
+msgid "hours"
+msgstr "heures"
+
+#: example/resources.py:121
+#: example/resources.py:485
+#: example/resources.py:497
+msgid "Hours"
+msgstr "Heures"
+
+#: example/models.py:60
+msgid "Hours available per week."
+msgstr "Heures disponibles par semaine."
+
+#: example/resources.py:493
+msgid "Hours by agent"
+msgstr "Heures par agent"
+
+#: example/resources.py:729
+msgid "Hours in 30 days"
+msgstr "Heures sur 30 jours"
+
+#: example/resources.py:402
+#: example/resources.py:625
+#: example/resources.py:696
+#: example/resources.py:479
+msgid "Hours logged"
+msgstr "Heures saisies"
+
+#: example/resources.py:880
+msgid "How the desk works, written down."
+msgstr "Le fonctionnement du service, écrit noir sur blanc."
+
+#: example/resources.py
+msgid "Identified"
+msgstr "Cause identifiée"
+
+#: example/resources.py
+msgid "Identity"
+msgstr "Identité"
+
+#: example/models.py
+msgid "In use"
+msgstr "En service"
+
+#: example/resources.py
+msgid "incident"
+msgstr "incident"
+
+#: example/resources.py
+msgid "Incident"
+msgstr "Incident"
+
+#: example/resources.py
+msgid "incidents"
+msgstr "incidents"
+
+#: example/templates/example/home.html:119
+msgid "Interactive tables"
+msgstr "Tableaux interactifs"
+
+#: example/resources.py
+msgid "Investigating"
+msgstr "Analyse en cours"
+
+#: example/templates/example/events.html:50
+msgid "It appears in the log below and nowhere else. Nothing is stored, so reloading loses it - which is the point: this is what tables use to refresh themselves."
+msgstr "Il apparaît dans le journal ci-dessous et nulle part ailleurs. Rien n'est enregistré : recharger le perd, et c'est tout l'intérêt - c'est ainsi que les tableaux se rafraîchissent."
+
+#: example/templates/example/events.html
+msgid "It is stored, so it stays in the bell and on the notifications page after a reload. The log shows the frame that told the bell - and every other window you have open."
+msgstr "Elle est enregistrée, et reste donc dans la cloche et sur la page des notifications après un rechargement. Le journal montre la trame qui a prévenu la cloche - et toutes les autres fenêtres que vous avez ouvertes."
+
+#: example/templates/example/events.html:34
+msgid "It lands in the bell at the top of the page and stays there: a notification is a row in the database, so it survives a reload."
+msgstr "Elle arrive dans la cloche en haut de la page et y reste : une notification est une ligne en base, elle survit donc à un rechargement."
+
+#: example/templates/example/events.html:66
+msgid "It reaches every page that is open right now, for every signed-in user. Open this page in a second window first, and watch it arrive in both."
+msgstr "Il atteint toutes les pages ouvertes en ce moment, pour tous les utilisateurs connectés. Ouvrez d'abord cette page dans une seconde fenêtre et regardez-le arriver dans les deux."
+
+#: example/models.py
+msgid "kind"
+msgstr "type"
+
+#: example/resources.py:436
+msgid "Knowledge base"
+msgstr "Base de connaissances"
+
+#: example/models.py
+msgid "Laptop"
+msgstr "Ordinateur portable"
+
+#: example/resources.py
+msgid "Last incident"
+msgstr "Dernier incident"
+
+#: example/templates/example/events.html
+msgid "listening"
+msgstr "à l'écoute"
+
+#: example/views.py:423
+msgid "Live over WebSocket"
+msgstr "En direct par WebSocket"
+
+#: example/templates/example/dashboard.html:131
+msgid "Live updates"
+msgstr "Mises à jour en direct"
+
+#: example/resources.py:862
+msgid "Log a ticket"
+msgstr "Enregistrer un ticket"
+
+#: example/resources.py:114
+msgid "Logged"
+msgstr "Saisi"
+
+#: example/tasks.py:42
+msgid "Looking for tickets past their date"
+msgstr "Recherche des tickets ayant dépassé leur date"
+
+#: example/resources.py
+msgid "Maintenance"
+msgstr "Maintenance"
+
+#: example/models.py
+msgid "maintenance visit"
+msgstr "intervention"
+
+#: example/models.py
+msgid "maintenance visits"
+msgstr "interventions"
+
+#: example/resources.py
+msgid "Major"
+msgstr "Majeur"
+
+#: example/resources.py
+msgid "Major outage"
+msgstr "Panne majeure"
+
+#: example/resources.py
+msgid "Maps"
+msgstr "Cartes"
+
+#: example/resources.py:431
+#: example/resources.py:507
+#: example/views.py:108
+msgid "Mark as billable"
+msgstr "Marquer comme facturable"
+
+#: example/views.py:107
+msgid "Mark as closed"
+msgstr "Marquer comme fermé"
+
+#: example/resources.py
+msgid "Minor"
+msgstr "Mineur"
+
+#: example/resources.py
+msgid "Monitoring"
+msgstr "Supervision"
+
+#: example/models.py:28
+#: example/models.py:45
+#: example/models.py:83
+#: example/models.py:119
+msgid "name"
+msgstr "nom"
+
+#: example/resources.py:206
+msgid "Needs attention"
+msgstr "Demande attention"
+
+#: example/templates/example/dashboard.html:115
+msgid "New ticket"
+msgstr "Nouveau ticket"
+
+#: example/resources.py:812
+msgid "New ticket (Django form)"
+msgstr "Nouveau ticket (formulaire Django)"
+
+#: example/templates/example/home.html:24
+msgid "No JavaScript required. These work with scripting disabled."
+msgstr "Aucun JavaScript requis. Elles fonctionnent avec les scripts désactivés."
+
+#: example/tasks.py:52
+msgid "No team"
+msgstr "Sans équipe"
+
+#: example/templates/example/pages
+msgid "Not on the map - their city is unknown:"
+msgstr "Absents de la carte, leur ville est inconnue :"
+
+#: example/models.py:293
+msgid "note"
+msgstr "note"
+
+#: example/models.py:105
+msgid "notes"
+msgstr "notes"
+
+#: example/resources.py:558
+msgid "Notes"
+msgstr "Notes"
+
+#: example/templates/example/pages
+msgid "Nothing has happened to this ticket yet."
+msgstr "Il ne s'est encore rien passé sur ce ticket."
+
+#: example/templates/example/events.html:81
+msgid "Nothing yet."
+msgstr "Rien pour l'instant."
+
+#: example/templates/example/events.html:100
+msgid "Nothing yet. Press one of the buttons above."
+msgstr "Rien pour l'instant. Appuyez sur un des boutons ci-dessus."
+
+#: example/templates/example/events.html
+msgid "Nothing yet. Press the button above, or change a ticket in another window."
+msgstr "Rien pour l'instant. Appuyez sur le bouton ci-dessus, ou modifiez un ticket dans une autre fenêtre."
+
+#: example/resources.py:833
+#: example/templates/example/home.html:214
+msgid "Notifications"
+msgstr "Notifications"
+
+#: example/views.py:434
+msgid "offline"
+msgstr "hors ligne"
+
+#: example/templates/example/events.html
+msgid "Open the team's tickets"
+msgstr "Ouvrir les tickets de l'équipe"
+
+#: example/templates/example/dashboard.html
+msgid "Open the ticket list in two windows and edit a ticket in one: the other refreshes by itself. The bell counts notifications as they arrive - from what you watch, from tasks, from messages."
+msgstr "Ouvrez la liste des tickets dans deux fenêtres et modifiez un ticket dans l'une : l'autre se rafraîchit toute seule. La cloche compte les notifications à leur arrivée - de ce que vous suivez, des tâches, des messages."
+
+#: example/templates/example/dashboard.html:133
+msgid ""
+"Open the ticket list in two windows and edit a ticket in one:\n"
+"            the other refreshes by itself. The bell counts notifications as\n"
+"            they arrive; the events demo sends some."
+msgstr ""
+"Ouvrez la liste des tickets dans deux fenêtres et modifiez un\n"
+"            ticket dans l'une : l'autre se rafraîchit d'elle-même. La\n"
+"            cloche compte les notifications à leur arrivée ; la démo des\n"
+"            événements en envoie."
+
+#: example/templates/example/events.html
+msgid "Open the tickets"
+msgstr "Ouvrir les tickets"
+
+#: example/templates/example/events.html
+msgid "Open the tickets in a second window and edit one. The log shows the frame every open table, summary page and chart of tickets refreshed on - nobody pressed reload."
+msgstr "Ouvrez les tickets dans une deuxième fenêtre et modifiez-en un. Le journal montre la trame sur laquelle chaque tableau, page de synthèse et graphique de tickets ouvert s'est rafraîchi - sans que personne ne recharge."
+
+#: example/templates/example/dashboard.html:99
+msgid "Open the wiki"
+msgstr "Ouvrir le wiki"
+
+#: example/templates/example/events.html:10
+msgid ""
+"Open this page in a second window to watch a broadcast reach\n"
+"        both. A stored notification also lands in the bell and survives\n"
+"        a reload; a transient event does not."
+msgstr ""
+"Ouvrez cette page dans une seconde fenêtre pour voir une diffusion\n"
+"        atteindre les deux. Une notification stockée arrive aussi dans la\n"
+"        cloche et survit à un rechargement ; un événement transitoire non."
+
+#: example/resources.py:615
+#: example/resources.py:688
+#: example/resources.py:725
+#: example/resources.py:776
+msgid "Open tickets"
+msgstr "Tickets ouverts"
+
+#: example/resources.py:181
+msgid "Open work"
+msgstr "Travail en cours"
+
+#: example/models.py:223
+msgid "opened at"
+msgstr "ouvert le"
+
+#: example/views.py:259
+msgid "Opened at"
+msgstr "Ouvert le"
+
+#: example/resources.py:619
+msgid "Opened in 30 days"
+msgstr "Ouverts sur 30 jours"
+
+#: example/templates/example/home.html:153
+msgid ""
+"Opens a WebSocket and shows what arrives. Send yourself a\n"
+"            stored notification, a transient event, or a broadcast; try\n"
+"            subscribing to a topic you may not read and watch it be\n"
+"            refused. Open the page in two windows to see a broadcast\n"
+"            reach both."
+msgstr ""
+"Ouvre un WebSocket et montre ce qui arrive. Envoyez-vous une\n"
+"            notification stockée, un événement transitoire ou une\n"
+"            diffusion ; essayez de vous abonner à un canal que vous ne\n"
+"            pouvez pas lire et regardez le refus. Ouvrez la page dans deux\n"
+"            fenêtres pour voir une diffusion atteindre les deux."
+
+#: example/resources.py
+msgid "Operational"
+msgstr "Opérationnel"
+
+#: example/models.py:253
+msgid "order"
+msgstr "ordre"
+
+#: example/resources.py:652
+#: example/resources.py:704
+#: example/resources.py:739
+msgid "Organisation"
+msgstr "Organisation"
+
+#: example/models.py
+msgid "Other"
+msgstr "Autre"
+
+#: example/tasks.py:26
+msgid "Overdue ticket digest"
+msgstr "Récapitulatif des tickets en retard"
+
+#: example/templates/example/dashboard.html:92
+msgid ""
+"Pages in a menu, written with a rich-text editor by the people\n"
+"            allowed to - admins. Every version is kept and can be restored;\n"
+"            a page can be pinned to this dashboard, like the one above."
+msgstr ""
+"Des pages dans un menu, écrites avec un éditeur de texte enrichi\n"
+"            par ceux qui en ont le droit - les administrateurs. Chaque\n"
+"            version est conservée et peut être restaurée ; une page peut\n"
+"            être épinglée à ce tableau de bord, comme celle du dessus."
+
+#: example/resources.py
+msgid "Partial outage"
+msgstr "Panne partielle"
+
+#: example/templates/example/events.html:76
+msgid "Payload"
+msgstr "Contenu"
+
+#: example/resources.py
+msgid "Payments"
+msgstr "Paiements"
+
+#: example/templates/example/events.html
+msgid "People are told things by notification - in the bell, on the notifications page, by e-mail if they asked for it - whether it comes from a record they watch, a task they ran, or a message an administrator wrote."
+msgstr "Les personnes sont prévenues par notification - dans la cloche, sur la page des notifications, par e-mail si elles l'ont demandé - que cela vienne d'un enregistrement qu'elles suivent, d'une tâche qu'elles ont lancée ou d'un message écrit par un administrateur."
+
+#: example/models.py
+msgid "performed on"
+msgstr "réalisée le"
+
+#: example/resources.py:819
+#: example/templates/example/home.html:171
+msgid "Permission-gated list"
+msgstr "Liste soumise à permission"
+
+#: example/templates/example/home.html:166
+msgid "Permissions"
+msgstr "Permissions"
+
+#: example/models.py
+msgid "phone"
+msgstr "téléphone"
+
+#: example/models.py
+msgid "Phone"
+msgstr "Téléphone"
+
+#: example/models.py
+msgid "preferred"
+msgstr "privilégié"
+
+#: example/templates/example/dashboard.html:147
+msgid ""
+"Press Ctrl+K to search every page and record. Press Watch on a\n"
+"            record to be told when it changes, and open its History tab to\n"
+"            see who changed what. Your preferences - theme, rows per page,\n"
+"            whether tables remember their filters - are saved on your\n"
+"            account."
+msgstr ""
+"Appuyez sur Ctrl+K pour chercher dans toutes les pages et tous les\n"
+"            enregistrements. Appuyez sur Suivre pour être prévenu quand un\n"
+"            enregistrement change, et ouvrez son onglet Historique pour\n"
+"            voir qui a changé quoi. Vos préférences - thème, lignes par\n"
+"            page, mémorisation des filtres - sont enregistrées sur votre\n"
+"            compte."
+
+#: example/models.py
+msgid "price"
+msgstr "prix"
+
+#: example/models.py:197
+msgid "priority"
+msgstr "priorité"
+
+#: example/resources.py
+msgid "Provider"
+msgstr "Fournisseur"
+
+#: example/models.py:81
+msgid "Public sector"
+msgstr "Secteur public"
+
+#: example/models.py
+msgid "purchased on"
+msgstr "acheté le"
+
+#: example/views.py:444
+msgid "Raised from the events demo page."
+msgstr "Envoyé depuis la page de démo des événements."
+
+#: example/templates/example/pages
+msgid "Reading the map"
+msgstr "Lire la carte"
+
+#: example/resources.py:829
+#: example/resources.py:836
+msgid "Real time"
+msgstr "Temps réel"
+
+#: example/templates/example/home.html:148
+msgid "Real-time events"
+msgstr "Événements en temps réel"
+
+#: example/templates/example/events.html:62
+msgid "Received"
+msgstr "Reçu"
+
+#: example/views.py:433
+msgid "reconnecting"
+msgstr "reconnexion"
+
+#: example/views.py
+msgid "Records changed: every table, summary page and chart showing them refreshes."
+msgstr "Des enregistrements ont changé : chaque tableau, page de synthèse et graphique qui les montre se met à jour."
+
+#: example/models.py:162
+msgid "reference"
+msgstr "référence"
+
+#: example/views.py:101
+msgid "Reference, subject, team or assignee"
+msgstr "Référence, sujet, équipe ou responsable"
+
+#: example/templates/example/events.html
+msgid "refused"
+msgstr "refusé"
+
+#: example/templates/example/home.html:230
+msgid "refused: not a declared column"
+msgstr "refusé : ce n'est pas une colonne déclarée"
+
+#: example/resources.py
+msgid "Regions"
+msgstr "Régions"
+
+#: example/resources.py
+msgid "Response (ms)"
+msgstr "Réponse (ms)"
+
+#: example/templates/example/home.html:186
+msgid "REST API"
+msgstr "API REST"
+
+#: example/models.py
+msgid "Retired"
+msgstr "Retiré"
+
+#: example/models.py:217
+msgid "satisfaction"
+msgstr "satisfaction"
+
+#: example/resources.py:629
+msgid "Satisfaction"
+msgstr "Satisfaction"
+
+#: example/models.py:220
+msgid "Score out of 5, once the ticket is closed."
+msgstr "Note sur 5, une fois le ticket fermé."
+
+#: example/models.py
+msgid "Screen"
+msgstr "Écran"
+
+#: example/models.py:86
+msgid "segment"
+msgstr "segment"
+
+#: example/templates/example/home.html:211
+msgid "Select2-shaped results feeding the assignee filter."
+msgstr "Des résultats au format Select2 alimentant le filtre Responsable."
+
+#: example/templates/example/events.html:8
+msgid "Send an event"
+msgstr "Envoyer un événement"
+
+#: example/templates/example/events.html:40
+msgid "Send it"
+msgstr "Envoyer"
+
+#: example/templates/example/events.html:30
+msgid "Send myself a notification"
+msgstr "M'envoyer une notification"
+
+#: example/templates/example/events.html:46
+msgid "Send myself a passing message"
+msgstr "M'envoyer un message de passage"
+
+#: example/views.py
+msgid "Sent from the live updates page."
+msgstr "Envoyée depuis la page des mises à jour en direct."
+
+#: example/models.py
+msgid "serial number"
+msgstr "numéro de série"
+
+#: example/templates/example/home.html:22
+msgid "Server-rendered pages"
+msgstr "Pages rendues par le serveur"
+
+#: example/resources.py
+msgid "Service"
+msgstr "Service"
+
+#: example/resources.py:456
+msgid "Service status"
+msgstr "État du service"
+
+#: example/resources.py
+msgid "Severity"
+msgstr "Gravité"
+
+#: example/templates/example/home.html
+msgid "Shows what the connection behind every page carries, and what each frame makes happen: a notification reaching the bell, a table refreshing on a change made in another window. Try listening to a channel you may not read and watch it be refused."
+msgstr "Montre ce que transporte la connexion derrière chaque page, et ce que chaque trame déclenche : une notification qui arrive dans la cloche, un tableau qui se rafraîchit après une modification faite dans une autre fenêtre. Essayez d'écouter un canal que vous n'avez pas le droit de lire, et voyez-le refusé."
+
+#: example/views.py:435
+msgid "signed out"
+msgstr "déconnecté"
+
+#: example/templates/example/sso.html:16
+msgid "Single sign-on"
+msgstr "Authentification unique"
+
+#: example/models.py:80
+msgid "Small business"
+msgstr "PME"
+
+#: example/views.py:461
+msgid "Somebody pressed the button."
+msgstr "Quelqu'un a appuyé sur le bouton."
+
+#: example/resources.py
+msgid "South Asia"
+msgstr "Asie du Sud"
+
+#: example/models.py
+msgid "Spare"
+msgstr "En réserve"
+
+#: example/resources.py
+msgid "Started"
+msgstr "Début"
+
+#: example/views.py:430
+msgid "starting"
+msgstr "démarrage"
+
+#: example/models.py
+msgid "state"
+msgstr "état"
+
+#: example/models.py:203
+msgid "status"
+msgstr "statut"
+
+#: example/resources.py
+msgid "Status"
+msgstr "Statut"
+
+#: example/resources.py
+msgid "Status page"
+msgstr "Page de statut"
+
+#: example/templates/example/events.html:24
+msgid "Stored notification (to me)"
+msgstr "Notification stockée (pour moi)"
+
+#: example/resources.py:614
+msgid "Subjects"
+msgstr "Sujets"
+
+#: example/templates/example/events.html:40
+msgid "Subscribe to a topic"
+msgstr "S'abonner à un canal"
+
+#: example/resources.py
+msgid "Summary"
+msgstr "Résumé"
+
+#: example/templates/example/dashboard.html:43
+msgid "Summary pages"
+msgstr "Pages de résumé"
+
+#: example/models.py
+msgid "supplier"
+msgstr "fournisseur"
+
+#: example/models.py
+msgid "suppliers"
+msgstr "fournisseurs"
+
+#: example/resources.py:147
+#: example/resources.py:459
+#: example/resources.py:529
+msgid "Support"
+msgstr "Support"
+
+#: example/views.py:42
+#: example/templates/example/home.html:4
+#: example/templates/example/home.html:9
+msgid "Support desk example"
+msgstr "Exemple de support"
+
+#: example/templates/example/dashboard.html:26
+msgid "Tables"
+msgstr "Tableaux"
+
+#: example/models.py:139
+msgid "tag"
+msgstr "étiquette"
+
+#: example/resources.py:768
+msgid "Tag"
+msgstr "Étiquette"
+
+#: example/models.py:140
+#: example/models.py:191
+msgid "tags"
+msgstr "étiquettes"
+
+#: example/models.py:34
+#: example/models.py:49
+#: example/models.py:169
+msgid "team"
+msgstr "équipe"
+
+#: example/views.py:124
+#: example/views.py:349
+msgid "Team"
+msgstr "Équipe"
+
+#: example/templates/example/home.html:41
+msgid "Team list"
+msgstr "Liste des équipes"
+
+#: example/templates/example/dashboard.html:106
+msgid ""
+"Team, assignee and tags are Select2 fields searching the API as\n"
+"            you type; the pencil and plus beside them edit or create the\n"
+"            related record in a popup. Comments are edited as table rows,\n"
+"            a team's agents as cards. History is a tab."
+msgstr ""
+"Équipe, responsable et étiquettes sont des champs Select2 qui\n"
+"            interrogent l'API pendant la frappe ; le crayon et le plus à\n"
+"            côté modifient ou créent l'enregistrement lié dans une fenêtre.\n"
+"            Les commentaires se modifient en lignes de tableau, les agents\n"
+"            d'une équipe en cartes. L'historique est un onglet."
+
+#: example/models.py:35
+msgid "teams"
+msgstr "équipes"
+
+#: example/templates/generic/grid/example/ticket/triage.html
+msgid "Teams"
+msgstr "Équipes"
+
+#: example/resources.py:598
+msgid "Teams involved"
+msgstr "Équipes intervenues"
+
+#: example/resources.py
+msgid "Telephony"
+msgstr "Téléphonie"
+
+#: example/templates/example/events.html:62
+msgid "Tell everyone"
+msgstr "Prévenir tout le monde"
+
+#: example/templates/example/sso.html:32
+msgid "The address you were heading for travelled with the link, so the provider could return you to it:"
+msgstr "L'adresse vers laquelle vous alliez a voyagé avec le lien, pour que le fournisseur puisse vous y ramener :"
+
+#: example/templates/example/sso.html:22
+msgid "The button you pressed is the whole of what the framework offers: a declared provider, shown first on the sign-in page. What happens next belongs to the library a project chooses - mozilla-django-oidc, django-allauth, djangosaml2 - which would send you to your organisation, bring you back, and sign you in."
+msgstr "Le bouton sur lequel vous avez appuyé est tout ce que le framework propose : un fournisseur déclaré, présenté en premier sur la page de connexion. Ce qui suit appartient à la bibliothèque que le projet choisit - mozilla-django-oidc, django-allauth, djangosaml2 - qui vous enverrait vers votre organisation, vous ramènerait et vous connecterait."
+
+#: example/views.py
+msgid "The channel refused this page: it is not yours to listen to."
+msgstr "Le canal a refusé cette page : il ne vous revient pas de l'écouter."
+
+#: example/templates/example/events.html
+msgid "The channel refused this page: only the team's agents may follow its queue. The count above stays as it was when the page opened."
+msgstr "Le canal a refusé cette page : seuls les agents de l'équipe peuvent suivre sa file. Le compteur ci-dessus reste tel qu'il était à l'ouverture de la page."
+
+#: example/resources.py:531
+msgid "The companies the desk works for."
+msgstr "Les entreprises pour lesquelles le support travaille."
+
+#: example/templates/example/home.html:91
+msgid ""
+"The confirmation lists the comments that would go with it,\n"
+"              using Django's own cascade collector."
+msgstr ""
+"La confirmation liste les commentaires qui partiraient avec lui,\n"
+"              à l'aide du collecteur de cascade de Django."
+
+#: example/resources.py:887
+msgid "The framework underneath all of this."
+msgstr "Le framework sous tout ceci."
+
+#: example/resources.py:878
+msgid "The handbook"
+msgstr "Le manuel"
+
+#: example/templates/example/home.html:203
+msgid ""
+"The JSON a frontend renders a form from, including the\n"
+"            tabular inline for comments."
+msgstr ""
+"Le JSON à partir duquel un frontend dessine un formulaire, y\n"
+"            compris le bloc tabulaire des commentaires."
+
+#: example/templates/example/pages
+msgid "The larger the bubble, the more tickets are open. A bubble opens its customer."
+msgstr "Plus la bulle est grande, plus il y a de tickets ouverts. Une bulle ouvre son client."
+
+#: example/views.py
+msgid "The page connected, and the bell learned how many notifications are unread."
+msgstr "La page s'est connectée, et la cloche a appris combien de notifications ne sont pas lues."
+
+#: example/templates/example/sso.html:47
+msgid "The password form is still there, folded under the button."
+msgstr "Le formulaire de mot de passe est toujours là, replié sous le bouton."
+
+#: example/resources.py:607
+msgid "The people whose name is on their tickets."
+msgstr "Les personnes dont le nom figure sur leurs tickets."
+
+#: example/templates/example/home.html:188
+msgid ""
+"The same declarations that drive the pages. Filtering is resolved\n"
+"        through the serializer, so a column it does not expose cannot be\n"
+"        filtered whatever the query string asks for."
+msgstr ""
+"Les mêmes déclarations que celles qui pilotent les pages. Le\n"
+"        filtrage est résolu par le sérialiseur : une colonne qu'il\n"
+"        n'expose pas ne peut pas être filtrée, quoi que demande la chaîne\n"
+"        de requête."
+
+#: example/templates/example/home.html:175
+msgid ""
+"The same listing, requiring example.view_ticket. Signed in as\n"
+"            admin or viewer it renders; as guest it returns 403. Sign out\n"
+"            and it redirects to the login page."
+msgstr ""
+"La même liste, exigeant example.view_ticket. Connecté en admin ou\n"
+"            en viewer elle s'affiche ; en guest elle renvoie 403.\n"
+"            Déconnectez-vous et elle redirige vers la page de connexion."
+
+#: example/templates/example/dashboard.html:168
+msgid ""
+"The server-rendered generic views - list, detail, create with a\n"
+"        Django form, delete with the cascade preview - are kept under\n"
+"        /demo/ for comparison, with their own feature guide."
+msgstr ""
+"Les vues génériques rendues par le serveur - liste, détail,\n"
+"        création avec un formulaire Django, suppression avec l'aperçu de\n"
+"        la cascade - sont conservées sous /demo/ pour comparaison, avec\n"
+"        leur propre guide."
+
+#: example/resources.py
+msgid "The services the desk relies on, as their status API reports them."
+msgstr "Les services dont le support dépend, tels que leur API de statut les décrit."
+
+#: example/templates/example/home.html:198
+msgid "the table data"
+msgstr "les données du tableau"
+
+#: example/resources.py:615
+msgid "The tags their tickets carry."
+msgstr "Les étiquettes que portent leurs tickets."
+
+#: example/templates/example/home.html:220
+msgid "Things worth trying by hand:"
+msgstr "Ce qui vaut la peine d'être essayé à la main :"
+
+#: example/templates/example/sso.html:19
+msgid "This is where your provider would take over"
+msgstr "C'est ici que votre fournisseur prendrait le relais"
+
+#: example/templates/example/events.html:16
+msgid "This page is listening on the same connection as the bell in the top bar. Press a button below and watch what arrives, without reloading anything."
+msgstr "Cette page écoute la même connexion que la cloche de la barre du haut. Appuyez sur un bouton ci-dessous et regardez ce qui arrive, sans rien recharger."
+
+#: example/views.py
+msgid "This page now listens to the channel."
+msgstr "Cette page écoute désormais le canal."
+
+#: example/views.py
+msgid "This page stopped listening to the channel."
+msgstr "Cette page n'écoute plus le canal."
+
+#: example/templates/example/home.html:107
+msgid ""
+"This team still has tickets and its relation is PROTECT.\n"
+"              The page refuses, names the culprits, and offers no\n"
+"              confirm button. Posting anyway is refused too."
+msgstr ""
+"Cette équipe a encore des tickets et sa relation est PROTECT.\n"
+"              La page refuse, nomme les responsables, et n'offre aucun\n"
+"              bouton de confirmation. Poster quand même est refusé aussi."
+
+#: example/models.py:228
+#: example/models.py:247
+#: example/models.py:279
+msgid "ticket"
+msgstr "ticket"
+
+#: example/templates/example/home.html:68
+msgid "Ticket detail"
+msgstr "Détail du ticket"
+
+#: example/templates/example/home.html:197
+msgid "Ticket endpoint"
+msgstr "Point d'entrée des tickets"
+
+#: example/resources.py:798
+#: example/templates/example/home.html:29
+msgid "Ticket list"
+msgstr "Liste des tickets"
+
+#: example/models.py:153
+msgctxt "ticket priority"
+msgid "High"
+msgstr "Haute"
+
+#: example/models.py:151
+msgctxt "ticket priority"
+msgid "Low"
+msgstr "Basse"
+
+#: example/models.py:152
+msgctxt "ticket priority"
+msgid "Normal"
+msgstr "Normale"
+
+#: example/templates/example/events.html
+msgid "tickets open or pending"
+msgstr "tickets ouverts ou en attente"
+
+#: example/resources.py:870
+msgid "Time this week"
+msgstr "Le temps de la semaine"
+
+#: example/resources.py
+msgid "Timeline"
+msgstr "Chronologie"
+
+#: example/resources.py
+msgid "Triage"
+msgstr "Triage"
+
+#: example/resources.py
+msgid "Uptime, 90 days (%)"
+msgstr "Disponibilité sur 90 jours (%)"
+
+#: example/models.py:154
+msgctxt "ticket priority"
+msgid "Urgent"
+msgstr "Urgente"
+
+#: example/models.py:160
+msgctxt "ticket status"
+msgid "Closed"
+msgstr "Fermé"
+
+#: example/models.py:157
+#: example/resources.py:609
+msgctxt "ticket status"
+msgid "Open"
+msgstr "Ouvert"
+
+#: example/models.py:158
+msgctxt "ticket status"
+msgid "Pending"
+msgstr "En attente"
+
+#: example/models.py:159
+msgctxt "ticket status"
+msgid "Resolved"
+msgstr "Résolu"
+
+#: example/resources.py:805
+#: example/templates/example/home.html:126
+msgid "Ticket table"
+msgstr "Tableau des tickets"
+
+#: example/models.py:229
+msgid "tickets"
+msgstr "tickets"
+
+#: example/resources.py:602
+#: example/resources.py:684
+#: example/resources.py:772
+#: example/views.py:298
+msgid "Tickets"
+msgstr "Tickets"
+
+#: example/views.py:380
+msgid "Tickets (interactive table)"
+msgstr "Tickets (tableau interactif)"
+
+#: example/views.py:404
+msgid "Tickets (permission required)"
+msgstr "Tickets (permission requise)"
+
+#: example/resources.py:336
+msgid "Tickets by status"
+msgstr "Tickets par statut"
+
+#: example/resources.py:368
+msgid "Tickets by status and customer"
+msgstr "Tickets par statut et client"
+
+#: example/resources.py:353
+msgid "Tickets by tag"
+msgstr "Tickets par étiquette"
+
+#: example/resources.py:360
+msgid "Tickets by team and priority"
+msgstr "Tickets par équipe et priorité"
+
+#: example/resources.py:343
+msgid "Tickets opened"
+msgstr "Tickets ouverts"
+
+#: example/templates/example/events.html:74
+msgid "Time"
+msgstr "Temps"
+
+#: example/models.py:298
+msgid "time entries"
+msgstr "saisies de temps"
+
+#: example/templates/example/dashboard.html:79
+msgid "Time entries"
+msgstr "Saisies de temps"
+
+#: example/models.py:297
+msgid "time entry"
+msgstr "saisie de temps"
+
+#: example/resources.py:721
+msgid "Time logged"
+msgstr "Temps saisi"
+
+#: example/resources.py:581
+msgid "Time logged on this customer's tickets."
+msgstr "Temps saisi sur les tickets de ce client."
+
+#: example/resources.py:580
+msgid "Time spent"
+msgstr "Temps passé"
+
+#: example/resources.py:322
+msgid "Time the agents logged on this ticket."
+msgstr "Temps que les agents ont saisi sur ce ticket."
+
+#: example/resources.py:461
+msgid "Time the agents spent on the tickets."
+msgstr "Temps que les agents ont passé sur les tickets."
+
+#: example/models.py:163
+msgid "title"
+msgstr "titre"
+
+#: example/templates/example/events.html:33
+msgid "Topic: team 1"
+msgstr "Canal : équipe 1"
+
+#: example/templates/example/events.html:27
+msgid "Transient event (to me)"
+msgstr "Événement transitoire (pour moi)"
+
+#: example/templates/example/events.html:75
+msgid "Type"
+msgstr "Type"
+
+#: example/templates/example/events.html:66
+msgid "Unread notifications at page load:"
+msgstr "Notifications non lues au chargement de la page :"
+
+#: example/models.py:92
+msgid "website"
+msgstr "site web"
+
+#: example/models.py:56
+msgid "weekly capacity"
+msgstr "capacité hebdomadaire"
+
+#: example/resources.py
+msgid "Western Europe"
+msgstr "Europe de l'Ouest"
+
+#: example/resources.py
+msgid "Western US"
+msgstr "Ouest des États-Unis"
+
+#: example/templates/example/events.html
+msgid "What a channel is for. The tables follow one per model by themselves; a page of the project's own follows one the project declares, and the project says who may join it - here, one per team, for its agents. While this page is open, the count below follows the team's queue: close or reopen one of its tickets in another window and watch it move. No reload, and nobody is notified: it keeps this page true, and tells no one anything."
+msgstr "À quoi sert un canal. Les tableaux en suivent un par modèle d'eux-mêmes ; une page propre au projet suit un canal que le projet déclare, et le projet dit qui peut le rejoindre - ici, un par équipe, pour ses agents. Tant que cette page est ouverte, le compteur ci-dessous suit la file de l'équipe : fermez ou rouvrez l'un de ses tickets dans une autre fenêtre et regardez-le bouger. Aucun rechargement, et personne n'est notifié : cela garde cette page juste, sans rien dire à personne."
+
+#: example/resources.py:903
+msgid "What a project wires to its own OIDC or SAML library. Here it explains itself instead."
+msgstr "Ce qu'un projet branche sur sa propre bibliothèque OIDC ou SAML. Ici, elle s'explique à la place."
+
+#: example/templates/example/events.html:82
+msgid "What arrived"
+msgstr "Ce qui est arrivé"
+
+#: example/templates/example/events.html:94
+msgid "What it carried"
+msgstr "Ce qu'il transportait"
+
+#: example/templates/example/events.html
+msgid "What it does"
+msgstr "Ce que cela fait"
+
+#: example/views.py
+msgid "What keeps open pages up to date"
+msgstr "Ce qui tient les pages ouvertes à jour"
+
+#: example/resources.py:872
+msgid "What the desk has spent its hours on."
+msgstr "Ce à quoi le service a passé ses heures."
+
+#: example/templates/example/dashboard.html:20
+msgid "What to try"
+msgstr "Quoi essayer"
+
+#: example/templates/example/pages
+msgid "Where the customers are"
+msgstr "Où sont les clients"
+
+#: example/resources.py:599
+msgid "Who has worked for this customer."
+msgstr "Qui a travaillé pour ce client."
+
+#: example/resources.py:270
+msgid "Who is on it, and by when."
+msgstr "Qui s'en occupe, et pour quand."
+
+#: example/templates/example/dashboard.html:90
+msgid "Wiki"
+msgstr "Wiki"
+
+#: example/resources.py:398
+msgid "Work on the hours"
+msgstr "Travailler les heures"
+
+#: example/resources.py:893
+msgid "Write to the desk"
+msgstr "Écrire au service"
+
+#: example/templates/example/dashboard.html:145
+msgid "You"
+msgstr "Vous"
+
+#: example/resources.py
+msgctxt "incident status"
+msgid "Monitoring"
+msgstr "Sous surveillance"
+
+#: example/resources.py
+msgid "Resolved"
+msgstr "Résolu"
+
+#: example/resources.py
+msgid "Runbook"
+msgstr "Procédure"
+
+#: example/pages.py
+msgctxt "ticket timeline"
+msgid "Opened"
+msgstr "Ouvert"
+
+#: example/pages.py
+msgctxt "ticket timeline"
+msgid "Comment"
+msgstr "Commentaire"
+
+#: example/pages.py
+msgctxt "ticket timeline"
+msgid "%(hours)s h logged"
+msgstr "%(hours)s h saisies"
+
+#: example/pages.py
+msgctxt "ticket timeline"
+msgid "Changed"
+msgstr "Modifié"
+
+#: example/pages.py
+msgctxt "ticket timeline"
+msgid "Due"
+msgstr "Échéance"
+
+#: example/templates/example/pages/customer_map.html
+msgid "%(counter)s open ticket"
+msgid_plural "%(counter)s open tickets"
+msgstr[0] "%(counter)s ticket ouvert"
+msgstr[1] "%(counter)s tickets ouverts"
+
+
+#: example/templates/example/events.html
+msgid "Your notifications"
+msgstr "Vos notifications"
+
+#: example/views.py
+msgid "Your notifications changed: the bell follows, in every window."
+msgstr "Vos notifications ont changé : la cloche suit, dans chaque fenêtre."

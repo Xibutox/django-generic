@@ -1,0 +1,2377 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-18 09:00+0200\n"
+"PO-Revision-Date: 2026-09-18 09:00+0200\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: generic/sites/resources.py:947
+msgid "%(count)s %(name)s deleted."
+msgid_plural "%(count)s %(name_plural)s deleted."
+msgstr[0] "%(count)s %(name)s supprimé."
+msgstr[1] "%(count)s %(name_plural)s supprimés."
+
+#: generic/sites/viewsets.py:373
+msgid "%(action)s: %(count)s row(s) processed."
+msgstr "%(action)s : %(count)s ligne(s) traitée(s)."
+
+#: generic/api/filters.py:474
+msgid "%(column)s expects an object holding 'from' and/or 'to' dates."
+msgstr "%(column)s attend un objet contenant les dates « from » et/ou « to »."
+
+#: generic/api/filters.py:685
+msgid "%(column)s holds an invalid value."
+msgstr "%(column)s contient une valeur invalide."
+
+#: generic/api/filters.py:295
+#: generic/api/filters.py:676
+msgid "%(column)s holds too many values."
+msgstr "%(column)s contient trop de valeurs."
+
+#: generic/api/filters.py:495
+msgid "%(column)s is missing a required date bound."
+msgstr "Il manque une borne de date à %(column)s."
+
+#: generic/api/filters.py:340
+#: generic/api/filters.py:336
+msgid "%(column)s must be a number."
+msgstr "%(column)s doit être un nombre."
+
+#: generic/api/filters.py:344
+msgid "%(column)s must be a whole number."
+msgstr "%(column)s doit être un nombre entier."
+
+#: generic/api/filters.py:433
+msgid "%(column)s must be true or false."
+msgstr "%(column)s doit valoir vrai ou faux."
+
+#: generic/api/filters.py:672
+msgid "%(column)s must hold a list of values."
+msgstr "%(column)s doit contenir une liste de valeurs."
+
+#: generic/api/filters.py:142
+msgid "%(column)s must use the YYYY-MM-DD format."
+msgstr "%(column)s doit utiliser le format AAAA-MM-JJ."
+
+#: generic/api/filters.py:558
+#: generic/api/filters.py:553
+msgid "%(column)s needs a number of days."
+msgstr "%(column)s attend un nombre de jours."
+
+#: generic/api/filters.py:321
+msgid "%(column)s needs a value."
+msgstr "%(column)s attend une valeur."
+
+#: generic/api/filters.py:377
+msgid "%(column)s needs at least one bound."
+msgstr "%(column)s attend au moins une borne."
+
+#: generic/api/filters.py:501
+msgid "%(column)s: 'from' must not be after 'to'."
+msgstr "%(column)s : « from » ne doit pas être postérieur à « to »."
+
+#: generic/api/filters.py:382
+msgid "%(column)s: the lower bound is above the upper one."
+msgstr "%(column)s : la borne inférieure dépasse la borne supérieure."
+
+#: generic/tasks/resources.py:250
+msgid "%(count)s changed."
+msgstr "%(count)s modifiée(s)."
+
+#: generic/accounts/resources.py:249
+msgid "%(count)s changed. %(skipped)s left alone: your own account, or one you may not manage."
+msgstr "%(count)s modifié(s). %(skipped)s laissé(s) tel(s) quel(s) : votre propre compte, ou un compte que vous ne gérez pas."
+
+#: generic/tasks/resources.py:140
+msgid "%(count)s started."
+msgstr "%(count)s lancée(s)."
+
+#: generic/tasks/resources.py:136
+msgid "%(count)s started. %(missing)s is no longer declared."
+msgstr "%(count)s lancée(s). %(missing)s n'est plus déclarée."
+
+#: generic/tasks/resources.py:222
+msgid "%(count)s started. %(missing)s is not declared to the framework, so it can only run on its schedule."
+msgstr "%(count)s lancée(s). %(missing)s n'est pas déclarée au framework : elle ne peut s'exécuter que par sa planification."
+
+#: generic/watch/notify.py:59
+msgid "%(model)s changed: %(label)s"
+msgstr "%(model)s modifié : %(label)s"
+
+#: generic/watch/notify.py:48
+msgid "%(model)s created: %(label)s"
+msgstr "%(model)s créé : %(label)s"
+
+#: generic/watch/notify.py:54
+msgid "%(model)s deleted: %(label)s"
+msgstr "%(model)s supprimé : %(label)s"
+
+#: generic/sites/viewsets.py:232
+#: generic/views/delete.py:150
+msgid "%(name)s cannot be deleted because other records depend on it."
+msgstr "%(name)s ne peut pas être supprimé : d'autres enregistrements en dépendent."
+
+#: generic/wiki/serializers.py:154
+msgid "%(name)s changed this page since you opened it. Copy your text, reload the page and apply it again."
+msgstr "%(name)s a modifié cette page depuis son ouverture. Copiez votre texte, rechargez la page et appliquez-le de nouveau."
+
+#: generic/views/edit.py:221
+msgid "%(name)s was added successfully."
+msgstr "%(name)s a bien été ajouté."
+
+#: generic/views/delete.py:166
+msgid "%(name)s was deleted successfully."
+msgstr "%(name)s a bien été supprimé."
+
+#: generic/views/edit.py:240
+msgid "%(name)s was updated successfully."
+msgstr "%(name)s a bien été modifié."
+
+#: generic/sites/charts.py:188
+msgid "%(name)s: %(value)s"
+msgstr "%(name)s : %(value)s"
+
+#: generic/tasks/reporting.py:112
+msgid "%(summary)s (%(duration)s)"
+msgstr "%(summary)s (%(duration)s)"
+
+#: generic/tasks/reporting.py:105
+msgid "%(task)s failed"
+msgstr "%(task)s a échoué"
+
+#: generic/tasks/views.py:139
+msgid "%(task)s failed: %(error)s"
+msgstr "%(task)s a échoué : %(error)s"
+
+#: generic/tasks/views.py:145
+msgid "%(task)s finished. %(summary)s"
+msgstr "%(task)s est terminée. %(summary)s"
+
+#: generic/tasks/reporting.py:110
+msgid "%(task)s has finished"
+msgstr "%(task)s est terminée"
+
+#: generic/tasks/reporting.py:88
+msgid "%(task)s has started"
+msgstr "%(task)s a démarré"
+
+#: generic/tasks/views.py:151
+msgid "%(task)s is running."
+msgstr "%(task)s est en cours."
+
+#: generic/templates/generic/components/actions.html:6
+msgid "-- Choose an action --"
+msgstr "-- Choisir une action --"
+
+#: generic/accounts/models.py:117
+msgid "0 for greys only, 100 for the standard colours."
+msgstr "0 pour des gris seulement, 100 pour les couleurs standard."
+
+#: generic/api/filters.py:779
+msgid "A filter must be a JSON object."
+msgstr "Un filtre doit être un objet JSON."
+
+#: generic/api/filters.py:795
+msgid "A group holds a list of conditions."
+msgstr "Un groupe contient une liste de conditions."
+
+#: generic/api/filters.py:790
+msgid "A group matches 'all' or 'any' of its filters."
+msgstr "Un groupe correspond à « all » ou « any » de ses filtres."
+
+#: generic/accounts/serializers.py:189
+#: generic/api/filters.py:980
+#: generic/api/filters.py:991
+#: generic/api/inlines.py:374
+msgid "A JSON object is expected."
+msgstr "Un objet JSON est attendu."
+
+#: generic/templates/generic/account/settings.html:152
+msgid "A link"
+msgstr "Un lien"
+
+#: generic/api/inlines.py:320
+msgid "A list of rows is expected."
+msgstr "Une liste de lignes est attendue."
+
+#: generic/sites/viewsets.py
+msgid "A new row cannot set this column."
+msgstr "Une nouvelle ligne ne peut pas renseigner cette colonne."
+
+#: generic/wiki/serializers.py:133
+msgid "A page cannot be placed under itself."
+msgstr "Une page ne peut pas être placée sous elle-même."
+
+#: generic/accounts/models.py:86
+msgid "A table comes back with the filters, columns and sorting you left it with."
+msgstr "Un tableau revient avec les filtres, les colonnes et le tri que vous y avez laissés."
+
+#: generic/templates/generic/tasks/catalogue.html:20
+msgid "A task is a function in an app's tasks.py, declared with @managed_task. Declaring one puts it here."
+msgstr "Une tâche est une fonction du tasks.py d'une application, déclarée avec @managed_task. La déclarer la fait apparaître ici."
+
+#: generic/accounts/models.py:106
+msgid "accent colour"
+msgstr "couleur d'accentuation"
+
+#: generic/templates/generic/account/settings.html:68
+msgid "Accent colour"
+msgstr "Couleur d'accentuation"
+
+#: generic/accounts/resources.py:352
+msgid "Access"
+msgstr "Accès"
+
+#: generic/accounts/views.py:151
+msgid "Account"
+msgstr "Compte"
+
+#: generic/templates/generic/chrome/user_menu.html:13
+msgid "Account menu"
+msgstr "Menu du compte"
+
+#: generic/accounts/views.py:187
+#: generic/templates/generic/chrome/user_menu.html:25
+msgid "Account settings"
+msgstr "Paramètres du compte"
+
+#: generic/templates/generic/components/actions.html:4
+msgid "Action"
+msgstr "Action"
+
+#: generic/templates/generic/resource/detail.html:51
+msgid "Actions"
+msgstr "Actions"
+
+#: generic/accounts/resources.py:208
+msgid "Activate"
+msgstr "Activer"
+
+#: generic/views/datatable.py:165
+#: generic/templates/generic/resource/detail.html:150
+#: generic/templates/generic/site/index.html:31
+#: generic/templates/generic/site/index.html:32
+msgid "Add"
+msgstr "Ajouter"
+
+#: generic/sites/views.py:208
+#: generic/sites/views.py:154
+#: generic/views/datatable.py:163
+#: generic/views/list.py:313
+msgid "Add %(name)s"
+msgstr "Ajouter %(name)s"
+
+#: generic/templates/generic/help/help.html:88
+msgid "Add a filter to the table"
+msgstr "Ajouter un filtre au tableau"
+
+#: generic/api/inlines.py:122
+msgid "Add a row"
+msgstr "Ajouter une ligne"
+
+#: generic/sites/inlines.py:199
+msgid "Add another %(name)s"
+msgstr "Ajouter un autre %(name)s"
+
+#: generic/templates/generic/resource/detail.html:37
+#: generic/templates/generic/resource/form.html:30
+msgid "Add to favorites"
+msgstr "Ajouter aux favoris"
+
+#: generic/api/inlines.py:414
+msgid "Adding rows is not allowed."
+msgstr "L'ajout de lignes n'est pas autorisé."
+
+#: generic/wiki/models.py:20
+msgid "address"
+msgstr "adresse"
+
+#: generic/templates/generic/wiki/page.html:130
+msgid "Address"
+msgstr "Adresse"
+
+#: generic/templates/generic/components/watch_button.html:67
+msgid "All of them, including new ones"
+msgstr "Tous, y compris les nouveaux"
+
+#: generic/accounts/resources.py:356
+msgid "An inactive account cannot sign in at all, whatever else it is allowed."
+msgstr "Un compte inactif ne peut pas se connecter du tout, quoi qu'il ait par ailleurs le droit de faire."
+
+#: generic/templates/generic/maintenance/restart.html:16
+msgid "Announce a restart"
+msgstr "Annoncer un redémarrage"
+
+#: generic/maintenance/api.py:103
+msgid "Announce the restart"
+msgstr "Annoncer le redémarrage"
+
+#: generic/tasks/runner.py:155
+msgid "Announced to %(count)s person."
+msgid_plural "Announced to %(count)s people."
+msgstr[0] "Annoncée à %(count)s personne."
+msgstr[1] "Annoncée à %(count)s personnes."
+
+#: generic/templates/generic/maintenance/restart.html:87
+msgid "Announced"
+msgstr "Annoncé"
+
+#: generic/maintenance/models.py:82
+msgid "announced at"
+msgstr "annoncé le"
+
+#: generic/templates/generic/maintenance/restart.html:62
+msgid "Announced before"
+msgstr "Annoncés auparavant"
+
+#: generic/maintenance/models.py:76
+msgid "announced by"
+msgstr "annoncé par"
+
+#: generic/templates/generic/maintenance/restart.html:49
+#: generic/templates/generic/maintenance/restart.html:70
+msgid "Announced by"
+msgstr "Annoncé par"
+
+#: generic/templates/generic/account/settings.html:32
+msgid "Appearance"
+msgstr "Apparence"
+
+#: generic/accounts/models.py:256
+msgid "Applied when the table opens."
+msgstr "Appliquée à l'ouverture du tableau."
+
+#: generic/templates/generic/components/actions.html:12
+msgid "Apply"
+msgstr "Appliquer"
+
+#: generic/templates/generic/delete_confirmation.html:10
+msgid "Are you sure you want to delete “{{ name }}”?"
+msgstr "Voulez-vous vraiment supprimer « {{ name }} » ?"
+
+#: generic/tasks/models.py:77
+msgid "arguments"
+msgstr "arguments"
+
+#: generic/tasks/resources.py:183
+msgid "Arguments"
+msgstr "Arguments"
+
+#: generic/events/models.py
+msgid "As each person chose"
+msgstr "Comme chacun l'a choisi"
+
+#: generic/tasks/resources.py:269
+msgid "At a time of day, on the days you choose."
+msgstr "À une heure de la journée, les jours que vous choisissez."
+
+#: generic/api/inlines.py:469
+msgid "At least %(count)s row(s) are required."
+msgstr "Au moins %(count)s ligne(s) sont requises."
+
+#: generic/api/inlines.py:475
+msgid "At most %(count)s row(s) are allowed."
+msgstr "%(count)s ligne(s) au maximum sont autorisées."
+
+#: generic/wiki/models.py:111
+msgid "author"
+msgstr "auteur"
+
+#: generic/templates/generic/delete_confirmation.html:63
+msgid "Back"
+msgstr "Retour"
+
+#: generic/templates/generic/auth/password_change_done.html:11
+msgid "Back to your account"
+msgstr "Retour à votre compte"
+
+#: generic/events/models.py:110
+msgid "Body"
+msgstr "Contenu"
+
+#: generic/accounts/models.py:41
+msgid "Both"
+msgstr "Les deux"
+
+#: generic/templates/generic/components/breadcrumbs.html:2
+msgid "Breadcrumb"
+msgstr "Fil d'Ariane"
+
+#: generic/history/models.py:84
+msgid "by"
+msgstr "par"
+
+#: generic/history/resources.py:93
+msgid "By"
+msgstr "Par"
+
+#: generic/accounts/models.py:40
+msgid "By e-mail"
+msgstr "Par e-mail"
+
+#: generic/tasks/models.py:43
+msgid "By hand"
+msgstr "À la main"
+
+#: generic/tasks/models.py:45
+msgid "By the application"
+msgstr "Par l'application"
+
+#: generic/templates/generic/maintenance/restart.html:54
+msgid "Call it off"
+msgstr "Annuler"
+
+#: generic/tasks/models.py:97
+msgid "Can run a task by hand"
+msgstr "Peut lancer une tâche à la main"
+
+#: generic/templates/generic/account/settings.html:148
+#: generic/templates/generic/auth/password_change.html:37
+#: generic/templates/generic/components/submit_row.html:14
+#: generic/templates/generic/delete_confirmation.html:37
+msgid "Cancel"
+msgstr "Annuler"
+
+#: generic/templates/generic/maintenance/restart.html:83
+msgid "Cancelled"
+msgstr "Annulé"
+
+#: generic/maintenance/models.py:84
+msgid "cancelled at"
+msgstr "annulé le"
+
+#: generic/templates/generic/maintenance/restart.html:85
+msgid "Carried out"
+msgstr "Effectué"
+
+#: generic/tasks/models.py:91
+msgid "Celery id"
+msgstr "Identifiant Celery"
+
+#: generic/views/detail.py:139
+msgid "Change"
+msgstr "Modifier"
+
+#: generic/history/models.py:76
+msgid "change"
+msgstr "changement"
+
+#: generic/views/mixins.py:143
+msgid "Change %(name)s"
+msgstr "Modifier %(name)s"
+
+#: generic/templates/generic/auth/password_change.html:40
+msgid "Change my password"
+msgstr "Changer mon mot de passe"
+
+#: generic/accounts/views.py:146
+#: generic/templates/generic/account/settings.html:247
+#: generic/templates/generic/chrome/user_menu.html:67
+msgid "Change password"
+msgstr "Changer le mot de passe"
+
+#: generic/api/viewsets.py:357
+msgid "Change the information, then save."
+msgstr "Modifiez les informations, puis enregistrez."
+
+#: generic/watch/models.py:29
+msgid "Changed"
+msgstr "Modifié"
+
+#: generic/templates/generic/wiki/page.html:68
+msgid "Changed {{ date }}"
+msgstr "Modifiée le {{ date }}"
+
+#: generic/templates/generic/wiki/page.html:66
+msgid "Changed {{ date }} by {{ name }}"
+msgstr "Modifiée le {{ date }} par {{ name }}"
+
+#: generic/watch/models.py:87
+msgid "changes"
+msgstr "changements"
+
+#: generic/templates/generic/account/settings.html:243
+msgid "Choose a password you do not use anywhere else."
+msgstr "Choisissez un mot de passe que vous n'utilisez nulle part ailleurs."
+
+#: generic/maintenance/serializers.py:60
+msgid "Choose an hour that is still ahead."
+msgstr "Choisissez une heure encore à venir."
+
+#: generic/templates/generic/components/watch_button.html:75
+msgid "Choose how you are told"
+msgstr "Choisir comment vous êtes prévenu"
+
+#: generic/templates/generic/components/search_form.html:14
+msgid "Clear"
+msgstr "Effacer"
+
+#: generic/templates/generic/charts/chart.html:98
+msgid "Click a bar or a slice to filter the table."
+msgstr "Cliquez une barre ou une part pour filtrer le tableau."
+
+#: generic/tasks/resources.py:285
+msgid "Clocked"
+msgstr "Heure fixe"
+
+#: generic/tasks/resources.py:286
+msgid "Clocked times"
+msgstr "Heures fixes"
+
+#: generic/templates/generic/help/help.html:89
+msgid "Close the panel or the menu"
+msgstr "Fermer le panneau ou le menu"
+
+#: generic/accounts/models.py:113
+msgid "colourfulness"
+msgstr "intensité des couleurs"
+
+#: generic/templates/generic/account/settings.html:96
+msgid "Colourfulness"
+msgstr "Intensité des couleurs"
+
+#: generic/maintenance/models.py:64
+msgid "comment (English)"
+msgstr "commentaire (anglais)"
+
+#: generic/maintenance/models.py:69
+msgid "comment (French)"
+msgstr "commentaire (français)"
+
+#: generic/api/viewsets.py:365
+msgid "Confirm deletion"
+msgstr "Confirmer la suppression"
+
+#: generic/wiki/models.py:40
+#: generic/wiki/models.py:106
+msgid "content"
+msgstr "contenu"
+
+#: generic/templates/generic/auth/login.html:21
+msgid "Continue with your organisation's account."
+msgstr "Continuez avec le compte de votre organisation."
+
+#: generic/accounts/models.py:127
+msgid "contrast"
+msgstr "contraste"
+
+#: generic/templates/generic/account/settings.html:80
+msgid "Contrast"
+msgstr "Contraste"
+
+#: generic/api/viewsets.py:363
+msgid "Create"
+msgstr "Créer"
+
+#: generic/api/viewsets.py:351
+msgid "Create a record"
+msgstr "Créer un enregistrement"
+
+#: generic/watch/models.py:28
+msgid "Created"
+msgstr "Créé"
+
+#: generic/accounts/models.py:219
+#: generic/accounts/models.py:258
+#: generic/wiki/models.py:45
+msgid "created at"
+msgstr "créé le"
+
+#: generic/events/models.py:146
+msgid "Created at"
+msgstr "Créé le"
+
+#: generic/wiki/models.py:49
+msgid "created by"
+msgstr "créé par"
+
+#: generic/events/models.py:25
+msgid "Critical"
+msgstr "Critique"
+
+#: generic/tasks/resources.py:267
+msgid "Crontab"
+msgstr "Crontab"
+
+#: generic/tasks/resources.py:268
+msgid "Crontabs"
+msgstr "Crontabs"
+
+#: generic/accounts/models.py:36
+#: generic/templates/generic/components/theme_toggle.html:32
+msgid "Dark"
+msgstr "Sombre"
+
+#: generic/sites/site.py:415
+#: generic/sites/views.py:69
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: generic/accounts/resources.py:373
+msgid "Dates"
+msgstr "Dates"
+
+#: generic/sites/charts.py:69
+msgid "Day"
+msgstr "Jour"
+
+#: generic/accounts/resources.py:217
+msgid "Deactivate"
+msgstr "Désactiver"
+
+#: generic/accounts/resources.py:220
+msgid "Deactivate the selected accounts? They cannot sign in."
+msgstr "Désactiver les comptes sélectionnés ? Ils ne pourront plus se connecter."
+
+#: generic/accounts/models.py:254
+msgid "default"
+msgstr "par défaut"
+
+#: generic/sites/resources.py:557
+#: generic/sites/views.py:537
+#: generic/sites/views.py:444
+#: generic/views/detail.py:152
+msgid "Delete"
+msgstr "Supprimer"
+
+#: generic/views/mixins.py:144
+msgid "Delete %(name)s"
+msgstr "Supprimer %(name)s"
+
+#: generic/sites/resources.py:908
+msgid "Delete selected %(verbose_name_plural)s"
+msgstr "Supprimer les %(verbose_name_plural)s sélectionnés"
+
+#: generic/api/viewsets.py:353
+msgid "Delete the record"
+msgstr "Supprimer l'enregistrement"
+
+#: generic/sites/resources.py:910
+msgid "Delete the selected %(verbose_name_plural)s? This cannot be undone."
+msgstr "Supprimer les %(verbose_name_plural)s sélectionnés ? Cette action est irréversible."
+
+#: generic/watch/models.py:30
+msgid "Deleted"
+msgstr "Supprimé"
+
+#: generic/api/inlines.py:405
+msgid "Deletion is not allowed."
+msgstr "La suppression n'est pas autorisée."
+
+#: generic/events/models.py
+msgid "Delivered"
+msgstr "Distribution"
+
+#: generic/tasks/resources.py:233
+msgid "Disable"
+msgstr "Désactiver"
+
+#: generic/templates/generic/components/messages.html:11
+msgid "Dismiss"
+msgstr "Fermer"
+
+#: generic/templates/generic/chrome/user_menu.html:105
+msgid "Django administration"
+msgstr "Administration Django"
+
+#: generic/templates/generic/popup_response.html:3
+msgid "Done"
+msgstr "Terminé"
+
+#: generic/templates/generic/charts/chart.html:43
+#: generic/templates/generic/charts/chart.html:44
+msgid "Download as an image"
+msgstr "Télécharger en image"
+
+#: generic/tasks/resources.py:112
+msgid "Duration"
+msgstr "Durée"
+
+#: generic/watch/models.py:35
+msgid "E-mail"
+msgstr "E-mail"
+
+#: generic/maintenance/serializers.py:41
+msgid "Each person reads the comment of the language they use."
+msgstr "Chacun lit le commentaire de la langue qu'il utilise."
+
+#: generic/sites/resources.py:545
+#: generic/sites/views.py:454
+#: generic/sites/views.py:234
+#: generic/templates/generic/wiki/page.html:92
+msgid "Edit"
+msgstr "Modifier"
+
+#: generic/api/viewsets.py:352
+msgid "Edit the record"
+msgstr "Modifier l'enregistrement"
+
+#: generic/api/facets.py:352
+msgid "Empty"
+msgstr "Vide"
+
+#: generic/watch/models.py:96
+msgid "Empty to follow the choice made in your preferences."
+msgstr "Vide pour suivre le choix fait dans vos préférences."
+
+#: generic/watch/models.py:77
+msgid "Empty to watch every record of the model."
+msgstr "Vide pour suivre tous les enregistrements du modèle."
+
+#: generic/tasks/resources.py:229
+msgid "Enable"
+msgstr "Activer"
+
+#: generic/templates/generic/auth/password_change.html:19
+msgid "Enter your current password, then the new one twice so we can check you typed it correctly."
+msgstr "Saisissez votre mot de passe actuel, puis le nouveau deux fois afin de vérifier votre saisie."
+
+#: generic/tasks/models.py:89
+msgid "error"
+msgstr "erreur"
+
+#: generic/maintenance/models.py:49
+msgid "estimated duration"
+msgstr "durée estimée"
+
+#: generic/templates/generic/maintenance/restart.html:41
+#: generic/templates/generic/maintenance/restart.html:68
+msgid "Estimated duration"
+msgstr "Durée estimée"
+
+#: generic/events/models.py
+msgid "Every active account, whatever is chosen below."
+msgstr "Tous les comptes actifs, quoi qu'on choisisse ci-dessous."
+
+#: generic/events/models.py
+msgid "Every active member of these groups."
+msgstr "Tous les membres actifs de ces groupes."
+
+#: generic/templates/generic/help/help.html:63
+msgid "Every change"
+msgstr "Tous les changements"
+
+#: generic/history/resources.py:38
+msgid "Every change that was recorded, and who made it."
+msgstr "Chaque changement enregistré, et qui l'a fait."
+
+#: generic/accounts/resources.py:301
+msgid "Every permission the application declares."
+msgstr "Toutes les permissions que l'application déclare."
+
+#: generic/templates/generic/watch/watches.html:48
+msgid "Every record"
+msgstr "Tous les enregistrements"
+
+#: generic/tasks/resources.py:66
+msgid "Every run of every task, and what came of it."
+msgstr "Chaque exécution de chaque tâche, et ce qu'elle a produit."
+
+#: generic/tasks/resources.py:259
+msgid "Every so many seconds, minutes, hours or days."
+msgstr "Toutes les tant de secondes, minutes, heures ou jours."
+
+#: generic/events/models.py
+msgid "Everyone"
+msgstr "Tout le monde"
+
+#: generic/maintenance/serializers.py:32
+msgid "Everyone connected is warned now, a minute before, and seconds before."
+msgstr "Toutes les personnes connectées sont prévenues maintenant, une minute avant, puis quelques secondes avant."
+
+#: generic/templates/generic/maintenance/restart.html:19
+msgid ""
+"Everyone connected is warned three times: now, a minute before\n"
+"          the hour, and seconds before it. A manual operation only warns\n"
+"          them; otherwise the server restarts itself at that hour."
+msgstr ""
+"Toutes les personnes connectées sont prévenues trois fois :\n"
+"          maintenant, une minute avant l'heure, puis quelques secondes\n"
+"          avant. Une opération manuelle se contente de les prévenir ;\n"
+"          sinon le serveur redémarre de lui-même à cette heure-là."
+
+#: generic/accounts/resources.py:250
+msgid "Everyone in this group gets these, and loses them when they leave it."
+msgstr "Tous les membres du groupe les obtiennent, et les perdent en le quittant."
+
+#: generic/events/resources.py
+msgid "Everyone, or the people and groups chosen: a person in two of them hears it once."
+msgstr "Tout le monde, ou les personnes et les groupes choisis : une personne présente dans deux d'entre eux ne le reçoit qu'une fois."
+
+#: generic/api/inlines.py:421
+msgid "Existing rows cannot be changed."
+msgstr "Les lignes existantes ne peuvent pas être modifiées."
+
+#: generic/templates/generic/account/settings.html:167
+msgid "Export times out on large accounts"
+msgstr "L'export expire sur les gros comptes"
+
+#: generic/tasks/models.py:40
+msgid "Failed"
+msgstr "Échouée"
+
+#: generic/accounts/models.py:223
+msgid "favorite"
+msgstr "favori"
+
+#: generic/accounts/models.py:224
+msgid "favorites"
+msgstr "favoris"
+
+#: generic/templates/generic/account/settings.html:206
+#: generic/templates/generic/chrome/user_menu.html:32
+msgid "Favorites"
+msgstr "Favoris"
+
+#: generic/api/viewsets.py:356
+msgid "Fill in the information, then save."
+msgstr "Renseignez les informations, puis enregistrez."
+
+#: generic/api/filters.py:785
+msgid "Filter groups are nested too deeply."
+msgstr "Les groupes de filtres sont imbriqués trop profondément."
+
+#: generic/templates/generic/sidebar.html:29
+#: generic/templates/generic/sidebar.html:30
+msgid "Filter navigation"
+msgstr "Filtrer la navigation"
+
+#: generic/templates/generic/wiki/page.html:34
+#: generic/templates/generic/wiki/page.html:35
+msgid "Filter pages"
+msgstr "Filtrer les pages"
+
+#: generic/api/filters.py:826
+msgid "Filtering is not allowed on %(column)s."
+msgstr "Le filtrage n'est pas autorisé sur %(column)s."
+
+#: generic/tasks/models.py:39
+msgid "Finished"
+msgstr "Terminée"
+
+#: generic/tasks/models.py:81
+msgid "finished at"
+msgstr "terminée à"
+
+#: generic/accounts/models.py:45
+msgid "Floating over the page"
+msgstr "Flottante au-dessus de la page"
+
+#: generic/accounts/models.py:34
+msgid "Follow the system"
+msgstr "Suivre le système"
+
+#: generic/templates/generic/watch/watches.html:82
+msgid "Following your notification preference."
+msgstr "Selon votre préférence de notification."
+
+#: generic/accounts/models.py:131
+msgid "From -100, soft, to 100, strong."
+msgstr "De -100, doux, à 100, fort."
+
+#: generic/api/forms.py:64
+msgid "General information"
+msgstr "Informations générales"
+
+#: generic/apps.py:9
+msgid "Generic framework"
+msgstr "Framework Generic"
+
+#: generic/events/resources.py
+msgid "Give an address on this site, starting with /, or one starting with https://."
+msgstr "Donnez une adresse de ce site, commençant par /, ou une adresse commençant par https://."
+
+#: generic/templates/generic/account/settings.html:105
+msgid "Greys"
+msgstr "Gris"
+
+#: generic/events/models.py
+msgid "Groups"
+msgstr "Groupes"
+
+#: generic/accounts/resources.py:368
+msgid "Groups and permissions"
+msgstr "Groupes et permissions"
+
+#: generic/templates/generic/tasks/catalogue.html:35
+msgid "Handed to a Celery worker"
+msgstr "Confiée à un worker Celery"
+
+#: generic/help/views.py:22
+#: generic/help/views.py:58
+#: generic/templates/generic/chrome/user_menu.html:46
+msgid "Help"
+msgstr "Aide"
+
+#: generic/templates/generic/resource/includes/history_panel.html:69
+msgid "Hide this version"
+msgstr "Masquer cette version"
+
+#: generic/templates/generic/wiki/page.html:78
+msgid "History"
+msgstr "Historique"
+
+#: generic/history/models.py:58
+msgid "history"
+msgstr "historique"
+
+#: generic/history/models.py:57
+msgid "history entry"
+msgstr "entrée d'historique"
+
+#: generic/templates/generic/components/breadcrumbs.html:5
+#: generic/templates/generic/components/breadcrumbs.html:6
+msgid "Home"
+msgstr "Accueil"
+
+#: generic/templates/generic/account/settings.html:160
+msgid "Hours"
+msgstr "Heures"
+
+#: generic/watch/models.py:93
+msgid "how"
+msgstr "comment"
+
+#: generic/templates/generic/watch/watches.html:70
+msgid "How"
+msgstr "Comment"
+
+#: generic/maintenance/models.py:51
+msgid "How long it is expected to be unavailable, in minutes."
+msgstr "Durée d'indisponibilité prévue, en minutes."
+
+#: generic/accounts/models.py:78
+msgid "How many rows a table shows at first. Leave empty to use each table's own default."
+msgstr "Combien de lignes un tableau affiche au départ. Laissez vide pour utiliser la valeur propre à chaque tableau."
+
+#: generic/accounts/models.py:124
+msgid "How much of the accent the backgrounds carry."
+msgstr "La part d'accentuation que portent les fonds."
+
+#: generic/accounts/models.py:138
+msgid "How visible every other table row is."
+msgstr "La visibilité d'une ligne de tableau sur deux."
+
+#: generic/accounts/models.py:96
+msgid "How you want to hear about what needs you."
+msgstr "Comment vous souhaitez être informé de ce qui vous attend."
+
+#: generic/accounts/models.py:110
+msgid "Hue of the accent, in degrees."
+msgstr "Teinte de l'accentuation, en degrés."
+
+#: generic/templates/generic/tasks/catalogue.html:41
+msgid "In process"
+msgstr "Sur place"
+
+#: generic/accounts/models.py:39
+msgid "In the application"
+msgstr "Dans l'application"
+
+#: generic/events/models.py
+msgid "In the application: the bell, the notifications page, and a toast on every page open. Each person chooses in their preferences unless this says otherwise."
+msgstr "Dans l'application : la cloche, la page des notifications, et un message éphémère sur chaque page ouverte. Chacun choisit dans ses préférences, sauf si ce champ en décide autrement."
+
+#: generic/events/models.py:22
+msgid "Info"
+msgstr "Info"
+
+#: generic/tasks/resources.py:257
+msgid "Interval"
+msgstr "Intervalle"
+
+#: generic/tasks/resources.py:258
+msgid "Intervals"
+msgstr "Intervalles"
+
+#: generic/api/filters.py:438
+msgid "Invalid boolean operator '%(operator)s' for %(column)s."
+msgstr "Opérateur booléen « %(operator)s » invalide pour %(column)s."
+
+#: generic/api/filters.py:656
+msgid "Invalid date operator '%(operator)s' for %(column)s."
+msgstr "Opérateur de date « %(operator)s » invalide pour %(column)s."
+
+#: generic/api/filters.py:818
+msgid "Invalid filter condition for %(column)s."
+msgstr "Condition de filtre invalide pour %(column)s."
+
+#: generic/api/filters.py:888
+msgid "Invalid JSON filter payload."
+msgstr "Contenu JSON de filtre invalide."
+
+#: generic/api/viewsets.py:250
+msgid "Invalid JSON payload."
+msgstr "Contenu JSON invalide."
+
+#: generic/api/filters.py:705
+msgid "Invalid multiple choice operator '%(operator)s' for %(column)s."
+msgstr "Opérateur de choix multiple « %(operator)s » invalide pour %(column)s."
+
+#: generic/api/filters.py:400
+msgid "Invalid numeric operator '%(operator)s' for %(column)s."
+msgstr "Opérateur numérique « %(operator)s » invalide pour %(column)s."
+
+#: generic/api/filters.py:1136
+msgid "Invalid ordering column index."
+msgstr "Indice de colonne de tri invalide."
+
+#: generic/sites/viewsets.py:338
+msgid "Invalid selection."
+msgstr "Sélection invalide."
+
+#: generic/api/filters.py:313
+msgid "Invalid text operator '%(operator)s' for %(column)s."
+msgstr "Opérateur de texte « %(operator)s » invalide pour %(column)s."
+
+#: generic/templates/generic/account/settings.html:165
+msgid "Invoice PDF is blank"
+msgstr "Le PDF de facture est vide"
+
+#: generic/templates/generic/tasks/catalogue.html:104
+msgid "It has never run."
+msgstr "Elle n'a jamais été exécutée."
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:70
+msgid "It recorded no step."
+msgstr "Elle n'a enregistré aucune étape."
+
+#: generic/templates/generic/sidebar.html:16
+msgid "Keep the navigation open"
+msgstr "Garder la navigation ouverte"
+
+#: generic/accounts/models.py:218
+msgid "label"
+msgstr "libellé"
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:32
+msgid "Label"
+msgstr "Libellé"
+
+#: generic/accounts/models.py:67
+msgid "language"
+msgstr "langue"
+
+#: generic/templates/generic/chrome/user_menu.html:73
+msgid "Language"
+msgstr "Langue"
+
+#: generic/templates/generic/account/settings.html:262
+msgid "Last sign-in"
+msgstr "Dernière connexion"
+
+#: generic/accounts/models.py:71
+msgid "Leave empty to follow the browser's language."
+msgstr "Laissez vide pour suivre la langue du navigateur."
+
+#: generic/accounts/resources.py:90
+msgid "Leave it empty to keep the current one. On a new account, leave it empty for somebody who signs in through the directory."
+msgstr "Laissez vide pour conserver le mot de passe actuel. Sur un nouveau compte, laissez vide pour quelqu'un qui se connecte par l'annuaire."
+
+#: generic/templates/generic/sidebar.html:17
+msgid "Let the navigation float over the page"
+msgstr "Laisser la navigation flotter au-dessus de la page"
+
+#: generic/events/models.py:116
+msgid "Level"
+msgstr "Niveau"
+
+#: generic/templates/generic/help/help.html:74
+msgid "Licence"
+msgstr "Licence"
+
+#: generic/accounts/models.py:35
+#: generic/templates/generic/components/theme_toggle.html:27
+msgid "Light"
+msgstr "Clair"
+
+#: generic/events/models.py:123
+msgid "Link"
+msgstr "Lien"
+
+#: generic/templates/generic/charts/chart.html:84
+#: generic/templates/generic/resource/form.html:38
+msgid "Loading"
+msgstr "Chargement"
+
+#: generic/templates/generic/base.html:151
+msgid "Log in"
+msgstr "Se connecter"
+
+#: generic/templates/generic/chrome/user_menu.html:118
+msgid "Log out"
+msgstr "Se déconnecter"
+
+#: generic/templates/generic/account/settings.html:164
+msgid "Login fails after a password reset"
+msgstr "La connexion échoue après une réinitialisation de mot de passe"
+
+#: generic/templates/generic/account/settings.html:19
+msgid "Managed externally"
+msgstr "Géré à l'extérieur"
+
+#: generic/maintenance/models.py:55
+msgid "manual operation"
+msgstr "opération manuelle"
+
+#: generic/templates/generic/maintenance/restart.html:45
+#: generic/templates/generic/maintenance/restart.html:69
+msgid "Manual operation"
+msgstr "Opération manuelle"
+
+#: generic/templates/generic/account/notifications.html:13
+#: generic/templates/generic/chrome/notifications.html:24
+msgid "Mark all as read"
+msgstr "Tout marquer comme lu"
+
+#: generic/templates/generic/account/settings.html:268
+msgid "Member since"
+msgstr "Membre depuis"
+
+#: generic/accounts/resources.py:270
+msgid "Members"
+msgstr "Membres"
+
+#: generic/accounts/models.py:211
+msgid "model"
+msgstr "modèle"
+
+#: generic/events/models.py:133
+msgid "Model"
+msgstr "Modèle"
+
+#: generic/sites/charts.py:71
+msgid "Month"
+msgstr "Mois"
+
+#: generic/templates/generic/components/toolbar.html:27
+msgid "More actions"
+msgstr "Plus d'actions"
+
+#: generic/templates/generic/resource/detail.html:157
+msgid "More tabs"
+msgstr "Autres onglets"
+
+#: generic/accounts/models.py:251
+msgid "name"
+msgstr "nom"
+
+#: generic/accounts/resources.py:197
+msgid "Name"
+msgstr "Nom"
+
+#: generic/templates/generic/sidebar.html:2
+msgid "Navigation"
+msgstr "Navigation"
+
+#: generic/accounts/models.py:47
+msgid "navigation"
+msgstr "navigation"
+
+#: generic/templates/generic/account/settings.html:121
+msgid "Neutral"
+msgstr "Neutre"
+
+#: generic/templates/generic/wiki/page.html:40
+#: generic/templates/generic/wiki/page.html:42
+msgid "New page"
+msgstr "Nouvelle page"
+
+#: generic/accounts/resources.py:89
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+#: generic/templates/generic/components/pagination.html:29
+msgid "Next"
+msgstr "Suivant"
+
+#: generic/api/facets.py:358
+#: generic/forms/fieldsets.py:55
+#: generic/sites/charts.py:190
+msgid "No"
+msgstr "Non"
+
+#: generic/templates/generic/account/settings.html:216
+msgid "No favorites yet. Use the star on any record to keep it within reach."
+msgstr "Aucun favori pour l'instant. Utilisez l'étoile sur un enregistrement pour le garder à portée."
+
+#: generic/templates/generic/wiki/page.html:53
+msgid "No page yet."
+msgstr "Aucune page pour l'instant."
+
+#: generic/templates/generic/chrome/command_palette.html:42
+#: generic/templates/generic/components/object_table.html:55
+msgid "No results."
+msgstr "Aucun résultat."
+
+#: generic/templates/generic/tasks/catalogue.html:17
+msgid "No task is declared yet."
+msgstr "Aucune tâche n'est encore déclarée."
+
+#: generic/events/resources.py
+msgid "Nobody would receive it: choose people, groups with active members, or everyone."
+msgstr "Personne ne le recevrait : choisissez des personnes, des groupes ayant des membres actifs, ou tout le monde."
+
+#: generic/sites/charts.py:200
+#: generic/templates/generic/account/settings.html:137
+msgid "None"
+msgstr "Aucun"
+
+#: generic/templates/generic/wiki/page.html:119
+msgid "None: at the top of the menu"
+msgstr "Aucune : en haut du menu"
+
+#: generic/templates/generic/tasks/catalogue.html:72
+msgid "Not on a schedule"
+msgstr "Pas de planification"
+
+#: generic/templates/generic/help/changelog.html:24
+msgid "Not released yet"
+msgstr "Pas encore publié"
+
+#: generic/templates/generic/account/settings.html:33
+msgid "Not saved"
+msgstr "Non enregistré"
+
+#: generic/templates/generic/resource/includes/history_panel.html:26
+msgid "Nothing has been recorded about this record yet."
+msgstr "Rien n'a encore été enregistré ici."
+
+#: generic/maintenance/api.py:83
+msgid "Nothing is planned."
+msgstr "Rien n'est prévu."
+
+#: generic/templates/generic/detail.html:16
+msgid "Nothing to display."
+msgstr "Rien à afficher."
+
+#: generic/tasks/reporting.py:108
+msgid "Nothing to report."
+msgstr "Rien à signaler."
+
+#: generic/templates/generic/charts/chart.html:92
+msgid "Nothing to show for these filters."
+msgstr "Rien à afficher pour ces filtres."
+
+#: generic/templates/generic/sidebar.html:51
+msgid "Nothing to show here yet."
+msgstr "Rien à afficher ici pour l'instant."
+
+#: generic/sites/resources.py:931
+msgid "Nothing was deleted: other records depend on the selection (%(names)s)."
+msgstr "Rien n'a été supprimé : d'autres enregistrements dépendent de la sélection (%(names)s)."
+
+#: generic/sites/viewsets.py:350
+#: generic/views/list.py:92
+msgid "Nothing was selected."
+msgstr "Rien n'a été sélectionné."
+
+#: generic/templates/generic/account/settings.html:237
+msgid "Nothing yet. Press Watch on a record, or on a list, to be told when it changes."
+msgstr "Rien pour l'instant. Appuyez sur Suivre sur un enregistrement, ou sur une liste, pour être prévenu quand il change."
+
+#: generic/events/models.py:160
+msgid "Notification"
+msgstr "Notification"
+
+#: generic/accounts/models.py:92
+msgid "notifications"
+msgstr "notifications"
+
+#: generic/accounts/views.py:229
+#: generic/events/models.py:161
+#: generic/templates/generic/chrome/notifications.html:14
+#: generic/templates/generic/chrome/notifications.html:15
+msgid "Notifications"
+msgstr "Notifications"
+
+#: generic/accounts/models.py:215
+msgid "object id"
+msgstr "identifiant de l'objet"
+
+#: generic/events/models.py:139
+msgid "Object id"
+msgstr "Identifiant de l'objet"
+
+#: generic/templates/generic/tasks/catalogue.html:69
+msgid "off"
+msgstr "éteinte"
+
+#: generic/templates/generic/tasks/catalogue.html:56
+msgid "On finishing"
+msgstr "À la fin"
+
+#: generic/tasks/models.py:44
+msgid "On schedule"
+msgstr "Par la planification"
+
+#: generic/templates/generic/tasks/catalogue.html:52
+msgid "On starting"
+msgstr "Au démarrage"
+
+#: generic/templates/generic/wiki/page.html:71
+msgid "On the dashboard"
+msgstr "Sur le tableau de bord"
+
+#: generic/watch/models.py:36
+msgid "On the page"
+msgstr "Sur la page"
+
+#: generic/accounts/resources.py:97
+msgid "On top of what their groups already allow. Prefer a group: it is one place to change when the job changes."
+msgstr "En plus de ce que leurs groupes autorisent déjà. Préférez un groupe : c'est un seul endroit à changer quand le poste change."
+
+#: generic/tasks/resources.py:287
+msgid "Once, at one moment."
+msgstr "Une fois, à un instant donné."
+
+#: generic/tasks/resources.py:177
+msgid "One of interval, crontab or clocked. A clocked schedule runs once, so it goes with One off."
+msgstr "Un intervalle, un crontab ou une heure fixe. Une heure fixe ne s'exécute qu'une fois : cochez Une seule fois."
+
+#: generic/accounts/resources.py:130
+msgid "Only a superuser can delete a superuser."
+msgstr "Seul un superutilisateur peut supprimer un superutilisateur."
+
+#: generic/accounts/guard.py:109
+msgid "Only an account that has this itself can grant it."
+msgstr "Seul un compte qui le possède lui-meme peut l'accorder."
+
+#: generic/sites/resources.py:531
+#: generic/templates/generic/account/settings.html:149
+#: generic/templates/generic/site/index.html:37
+#: generic/templates/generic/site/index.html:38
+msgid "Open"
+msgstr "Ouvrir"
+
+#: generic/templates/generic/watch/watches.html:31
+msgid "Open a record and press Watch to be told when it changes, or press it on a list to be told about every record."
+msgstr "Ouvrez un enregistrement et appuyez sur Suivre pour être informé de ses modifications, ou appuyez dessus dans une liste pour être informé de tous les enregistrements."
+
+#: generic/templates/generic/wiki/includes/pinned.html:10
+#: generic/templates/generic/wiki/includes/pinned.html:11
+msgid "Open in the wiki"
+msgstr "Ouvrir dans le wiki"
+
+#: generic/templates/generic/site/includes/shortcuts.html:22
+msgid "Opens in a new tab"
+msgstr "S'ouvre dans un nouvel onglet"
+
+#: generic/wiki/models.py:37
+msgid "Order among its sibling pages in the menu."
+msgstr "Ordre parmi les pages de même niveau dans le menu."
+
+#: generic/api/filters.py:1180
+msgid "Ordering is not allowed on %(column)s."
+msgstr "Le tri n'est pas autorisé sur %(column)s."
+
+#: generic/sites/charts.py:579
+msgid "Other"
+msgstr "Autre"
+
+#: generic/wiki/models.py:101
+msgid "page"
+msgstr "page"
+
+#: generic/sites/site.py:582
+msgid "Pages"
+msgstr "Pages"
+
+#: generic/templates/generic/components/pagination.html:3
+msgid "Pagination"
+msgstr "Pagination"
+
+#: generic/wiki/models.py:28
+msgid "parent page"
+msgstr "page parente"
+
+#: generic/templates/generic/wiki/page.html:117
+msgid "Parent page"
+msgstr "Page parente"
+
+#: generic/accounts/views.py:168
+msgid "Password changed"
+msgstr "Mot de passe modifié"
+
+#: generic/templates/generic/account/settings.html:150
+msgid "Pending"
+msgstr "En attente"
+
+#: generic/accounts/resources.py:40
+msgid "People"
+msgstr "Personnes"
+
+#: generic/templates/generic/charts/chart.html:22
+msgid "Period"
+msgstr "Période"
+
+#: generic/accounts/resources.py:275
+msgid "Permissions"
+msgstr "Permissions"
+
+#: generic/accounts/models.py:44
+msgid "Pinned beside the page"
+msgstr "Fixée à côté de la page"
+
+#: generic/accounts/models.py:52
+msgid "Pinned, the navigation holds the page open beside it. Floating, the page takes the whole width and the navigation slides out from the left edge."
+msgstr "Fixée, la navigation tient la page ouverte à côté d'elle. Flottante, la page prend toute la largeur et la navigation sort du bord gauche."
+
+#: generic/maintenance/views.py:37
+#: generic/templates/generic/chrome/user_menu.html:60
+msgid "Plan a restart"
+msgstr "Planifier un redémarrage"
+
+#: generic/templates/generic/maintenance/restart.html:33
+msgid "Planned"
+msgstr "Prévu"
+
+#: generic/views/edit.py:146
+#: generic/templates/generic/auth/login.html:22
+msgid "Please correct the errors below."
+msgstr "Veuillez corriger les erreurs ci-dessous."
+
+#: generic/wiki/models.py:35
+msgid "position"
+msgstr "position"
+
+#: generic/templates/generic/wiki/page.html:126
+msgid "Position in the menu"
+msgstr "Position dans le menu"
+
+#: generic/accounts/models.py:144
+#: generic/accounts/models.py:145
+msgid "preferences"
+msgstr "préférences"
+
+#: generic/templates/generic/account/settings.html:194
+msgid "Preferences"
+msgstr "Préférences"
+
+#: generic/accounts/models.py:148
+msgid "Preferences of %(user)s"
+msgstr "Préférences de %(user)s"
+
+#: generic/templates/generic/components/pagination.html:14
+msgid "Previous"
+msgstr "Précédent"
+
+#: generic/templates/generic/account/settings.html:17
+msgid "Profile"
+msgstr "Profil"
+
+#: generic/templates/generic/account/settings.html:177
+msgid "Project defaults"
+msgstr "Valeurs par défaut du projet"
+
+#: generic/sites/charts.py:127
+msgid "Q%(quarter)s %(year)s"
+msgstr "T%(quarter)s %(year)s"
+
+#: generic/sites/charts.py:72
+msgid "Quarter"
+msgstr "Trimestre"
+
+#: generic/templates/generic/tasks/catalogue.html:37
+msgid "Queued"
+msgstr "En file"
+
+#: generic/tasks/models.py:79
+msgid "queued at"
+msgstr "mise en file à"
+
+#: generic/events/resources.py
+msgid "Read"
+msgstr "Lus"
+
+#: generic/events/models.py:152
+msgid "Read at"
+msgstr "Lu le"
+
+#: generic/templates/generic/resource/form.html:14
+msgid "Read only"
+msgstr "Lecture seule"
+
+#: generic/events/models.py:98
+msgid "Recipient of this notification."
+msgstr "Destinataire de cette notification."
+
+#: generic/events/models.py
+msgid "Recipients"
+msgstr "Destinataires"
+
+#: generic/watch/models.py:74
+msgid "record"
+msgstr "enregistrement"
+
+#: generic/templates/generic/account/settings.html:158
+msgid "Reference"
+msgstr "Référence"
+
+#: generic/templates/generic/resource/detail.html:115
+msgid "Related records"
+msgstr "Enregistrements liés"
+
+#: generic/accounts/models.py:84
+msgid "remember table layouts"
+msgstr "mémoriser la disposition des tableaux"
+
+#: generic/api/inlines.py:123
+msgid "Remove"
+msgstr "Retirer"
+
+#: generic/templates/generic/account/settings.html:226
+#: generic/templates/generic/account/settings.html:229
+msgid "Remove from favorites"
+msgstr "Retirer des favoris"
+
+#: generic/maintenance/models.py:98
+msgid "restart announcement"
+msgstr "annonce de redémarrage"
+
+#: generic/maintenance/models.py:99
+msgid "restart announcements"
+msgstr "annonces de redémarrage"
+
+#: generic/maintenance/models.py:45
+msgid "restart at"
+msgstr "redémarrage à"
+
+#: generic/templates/generic/maintenance/restart.html:37
+#: generic/templates/generic/maintenance/restart.html:67
+msgid "Restart at"
+msgstr "Redémarrage à"
+
+#: generic/maintenance/models.py:103
+msgid "Restart at %(time)s"
+msgstr "Redémarrage à %(time)s"
+
+#: generic/maintenance/models.py:91
+msgid "restarted at"
+msgstr "redémarré le"
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:18
+msgid "Result"
+msgstr "Résultat"
+
+#: generic/tasks/models.py:86
+msgid "results"
+msgstr "résultats"
+
+#: generic/api/viewsets.py:358
+msgid "Review the consequences below before confirming the deletion."
+msgstr "Examinez les conséquences ci-dessous avant de confirmer la suppression."
+
+#: generic/tasks/resources.py:187
+msgid "Routing"
+msgstr "Routage"
+
+#: generic/api/inlines.py:390
+msgid "Row not found, or not attached to this record."
+msgstr "Ligne introuvable, ou non rattachée à cet enregistrement."
+
+#: generic/sites/viewsets.py
+msgid "Rows cannot be added to this table."
+msgstr "On ne peut pas ajouter de lignes à ce tableau."
+
+#: generic/accounts/models.py:74
+msgid "rows per page"
+msgstr "lignes par page"
+
+#: generic/tasks/resources.py:64
+msgid "Run"
+msgstr "Exécution"
+
+#: generic/tasks/resources.py:117
+msgid "Run again"
+msgstr "Relancer"
+
+#: generic/tasks/resources.py:205
+msgid "Run now"
+msgstr "Lancer maintenant"
+
+#: generic/tasks/resources.py:120
+msgid "Run the selected tasks again?"
+msgstr "Relancer les tâches sélectionnées ?"
+
+#: generic/tasks/models.py:38
+msgid "Running"
+msgstr "En cours"
+
+#: generic/tasks/resources.py:65
+msgid "Runs"
+msgstr "Exécutions"
+
+#: generic/templates/generic/tasks/catalogue.html:40
+msgid "Runs in the process that asks for it"
+msgstr "S'exécute dans le processus qui la demande"
+
+#: generic/accounts/api.py:79
+#: generic/api/viewsets.py:364
+#: generic/templates/generic/account/settings.html:147
+#: generic/templates/generic/account/settings.html:187
+msgid "Save"
+msgstr "Enregistrer"
+
+#: generic/templates/generic/components/submit_row.html:19
+msgid "Save and add another"
+msgstr "Enregistrer et ajouter un autre"
+
+#: generic/templates/generic/components/submit_row.html:24
+msgid "Save and continue editing"
+msgstr "Enregistrer et continuer les modifications"
+
+#: generic/accounts/models.py:263
+msgid "saved view"
+msgstr "vue enregistrée"
+
+#: generic/accounts/models.py:264
+msgid "saved views"
+msgstr "vues enregistrées"
+
+#: generic/tasks/resources.py:151
+msgid "Schedule"
+msgstr "Planification"
+
+#: generic/templates/generic/tasks/catalogue.html:61
+msgid "Scheduled"
+msgstr "Planifiée"
+
+#: generic/tasks/resources.py:152
+msgid "Schedules"
+msgstr "Planifications"
+
+#: generic/templates/generic/base.html:134
+#: generic/templates/generic/chrome/command_palette.html:16
+#: generic/templates/generic/components/search_form.html:3
+#: generic/templates/generic/components/search_form.html:5
+msgid "Search"
+msgstr "Rechercher"
+
+#: generic/templates/generic/chrome/command_palette.html:25
+#: generic/templates/generic/chrome/command_palette.html:26
+#: generic/templates/generic/help/help.html:87
+msgid "Search pages and records"
+msgstr "Rechercher des pages et des enregistrements"
+
+#: generic/templates/generic/account/settings.html:171
+msgid "Secondary text, such as dates and hints, looks like this."
+msgstr "Le texte secondaire, comme les dates et les indications, ressemble à ceci."
+
+#: generic/templates/generic/account/settings.html:238
+msgid "Security"
+msgstr "Sécurité"
+
+#: generic/templates/generic/chrome/notifications.html:62
+msgid "See all notifications"
+msgstr "Voir toutes les notifications"
+
+#: generic/templates/generic/resource/detail.html:50
+msgid "See the history"
+msgstr "Voir l'historique"
+
+#: generic/templates/generic/components/object_table.html:10
+msgid "Select all rows"
+msgstr "Sélectionner toutes les lignes"
+
+#: generic/templates/generic/components/actions.html:23
+msgid "Select all {{ total_count }} records"
+msgstr "Sélectionner les {{ total_count }} enregistrements"
+
+#: generic/templates/generic/components/object_table.html:38
+msgid "Select row"
+msgstr "Sélectionner la ligne"
+
+#: generic/templates/generic/components/actions.html:19
+msgid "selected"
+msgstr "sélectionné"
+
+#: generic/sites/viewsets.py
+msgid "Send the new row's columns."
+msgstr "Envoyez les colonnes de la nouvelle ligne."
+
+#: generic/events/resources.py
+msgid "Sent"
+msgstr "Envoi"
+
+#: generic/events/models.py
+msgid "Sent at"
+msgstr "Envoyé le"
+
+#: generic/events/models.py
+msgid "Sent by"
+msgstr "Envoyé par"
+
+#: generic/templates/generic/help/help.html:84
+msgid "Shortcuts"
+msgstr "Raccourcis"
+
+#: generic/templates/generic/resource/includes/history_panel.html:93
+msgid "Show older"
+msgstr "Voir plus ancien"
+
+#: generic/wiki/models.py:42
+msgid "show on the dashboard"
+msgstr "afficher sur le tableau de bord"
+
+#: generic/templates/generic/wiki/page.html:135
+msgid "Show on the dashboard"
+msgstr "Afficher sur le tableau de bord"
+
+#: generic/templates/generic/charts/chart.html:36
+msgid "Show the figures"
+msgstr "Afficher les chiffres"
+
+#: generic/templates/generic/base.html:96
+msgid "Show the navigation"
+msgstr "Afficher la navigation"
+
+#: generic/templates/generic/resource/includes/history_panel.html:70
+msgid "Show this version in full"
+msgstr "Voir cette version en entier"
+
+#: generic/maintenance/models.py:66
+msgid "Shown to everyone reading the application in English."
+msgstr "Affiché à toutes les personnes qui lisent l'application en anglais."
+
+#: generic/maintenance/models.py:71
+msgid "Shown to everyone reading the application in French."
+msgstr "Affiché à toutes les personnes qui lisent l'application en français."
+
+#: generic/accounts/views.py:60
+#: generic/templates/generic/auth/login.html:13
+#: generic/templates/generic/auth/login.html:45
+msgid "Sign in"
+msgstr "Connexion"
+
+#: generic/templates/generic/auth/login.html:57
+msgid "Sign in with a password instead"
+msgstr "Se connecter plutôt avec un mot de passe"
+
+#: generic/templates/generic/account/settings.html:257
+msgid "Signed in as"
+msgstr "Connecté en tant que"
+
+#: generic/templates/generic/base.html:79
+msgid "Skip to content"
+msgstr "Aller au contenu"
+
+#: generic/templates/generic/account/settings.html:89
+msgid "Soft"
+msgstr "Doux"
+
+#: generic/wiki/serializers.py:160
+msgid "Someone"
+msgstr "Quelqu'un"
+
+#: generic/history/models.py:93
+msgid "source"
+msgstr "origine"
+
+#: generic/templates/generic/account/settings.html:54
+msgid "Start from"
+msgstr "Partir de"
+
+#: generic/tasks/models.py:64
+msgid "started"
+msgstr "démarrage"
+
+#: generic/templates/generic/tasks/catalogue.html:83
+msgid "Started"
+msgstr "Démarrée"
+
+#: generic/tasks/models.py:80
+msgid "started at"
+msgstr "démarrée à"
+
+#: generic/tasks/models.py:71
+msgid "started by"
+msgstr "démarrée par"
+
+#: generic/accounts/models.py:252
+msgid "state"
+msgstr "état"
+
+#: generic/templates/generic/maintenance/restart.html:71
+msgid "State"
+msgstr "État"
+
+#: generic/tasks/models.py:88
+msgid "steps"
+msgstr "étapes"
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:60
+msgid "Steps"
+msgstr "Étapes"
+
+#: generic/templates/generic/watch/watches.html:93
+msgid "Stop watching"
+msgstr "Ne plus suivre"
+
+#: generic/templates/generic/account/settings.html:90
+#: generic/templates/generic/account/settings.html:138
+msgid "Strong"
+msgstr "Fort"
+
+#: generic/templates/generic/wiki/page.html:82
+msgid "Subpage"
+msgstr "Sous-page"
+
+#: generic/events/models.py:23
+msgid "Success"
+msgstr "Succès"
+
+#: generic/sites/views.py:255
+msgid "Summary"
+msgstr "Résumé"
+
+#: generic/tasks/models.py:84
+msgid "summary"
+msgstr "résumé"
+
+#: generic/templates/generic/components/theme_toggle.html:13
+#: generic/templates/generic/components/theme_toggle.html:15
+msgid "Switch theme"
+msgstr "Changer de thème"
+
+#: generic/templates/generic/components/theme_toggle.html:22
+msgid "System"
+msgstr "Système"
+
+#: generic/accounts/models.py:250
+msgid "table"
+msgstr "tableau"
+
+#: generic/accounts/models.py:134
+msgid "table stripes"
+msgstr "rayures du tableau"
+
+#: generic/templates/generic/account/settings.html:128
+msgid "Table stripes"
+msgstr "Rayures du tableau"
+
+#: generic/tasks/models.py:47
+msgid "task"
+msgstr "tâche"
+
+#: generic/tasks/models.py:94
+msgid "task run"
+msgstr "exécution"
+
+#: generic/tasks/models.py:95
+msgid "task runs"
+msgstr "exécutions"
+
+#: generic/tasks/resources.py:62
+msgid "Tasks"
+msgstr "Tâches"
+
+#: generic/templates/generic/watch/watches.html:56
+msgid "Tell me when it is"
+msgstr "Prévenez-moi quand c'est"
+
+#: generic/events/resources.py
+msgid "Tell some people something, or everyone: each of them finds it among their notifications, or in their inbox, as they chose."
+msgstr "Dire quelque chose à certaines personnes, ou à tout le monde : chacune le trouve dans ses notifications, ou dans sa boîte de réception, comme elle l'a choisi."
+
+#: generic/history/models.py:131
+msgid "the application"
+msgstr "l'application"
+
+#: generic/tasks/models.py:51
+msgid "The declared name the schedule and Celery both use."
+msgstr "Le nom déclaré qu'utilisent la planification et Celery."
+
+#: generic/wiki/models.py:24
+msgid "The end of the page's URL."
+msgstr "La fin de l'URL de la page."
+
+#: generic/api/exports.py:110
+msgid "The export exceeds the %(limit)s row limit. Narrow the filters and try again."
+msgstr "L'export dépasse la limite de %(limit)s lignes. Affinez les filtres et réessayez."
+
+#: generic/api/renderers.py:68
+msgid "The request could not be processed."
+msgstr "La requête n'a pas pu être traitée."
+
+#: generic/templates/generic/wiki/page.html:156
+msgid "The wiki has no page yet."
+msgstr "Le wiki n'a encore aucune page."
+
+#: generic/accounts/models.py:58
+msgid "theme"
+msgstr "thème"
+
+#: generic/templates/generic/account/settings.html:37
+msgid "Theme"
+msgstr "Thème"
+
+#: generic/sites/viewsets.py:281
+msgid "There is no such chart."
+msgstr "Ce graphique n'existe pas."
+
+#: generic/sites/viewsets.py
+msgid "There is no such grid."
+msgstr "Cette grille n'existe pas."
+
+#: generic/sites/viewsets.py:178
+msgid "There is no such related table."
+msgstr "Ce tableau lié n'existe pas."
+
+#: generic/api/inlines.py:327
+msgid "These rows cannot be changed here."
+msgstr "Ces lignes ne peuvent pas être modifiées ici."
+
+#: generic/views/list.py:85
+msgid "This action is not available here."
+msgstr "Cette action n'est pas disponible ici."
+
+#: generic/sites/viewsets.py:321
+msgid "This action is not available."
+msgstr "Cette action n'est pas disponible."
+
+#: generic/wiki/serializers.py:123
+msgid "This address is reserved."
+msgstr "Cette adresse est réservée."
+
+#: generic/templates/generic/auth/login.html:65
+msgid "This application does not keep passwords of its own."
+msgstr "Cette application ne conserve pas de mots de passe propres."
+
+#: generic/templates/generic/help/changelog.html:47
+msgid "This application records no changes yet."
+msgstr "Cette application ne consigne encore aucun changement."
+
+#: generic/api/facets.py:181
+msgid "This column has no facets."
+msgstr "Cette colonne n'a pas de facettes."
+
+#: generic/sites/viewsets.py
+msgid "This grid does not edit this column."
+msgstr "Cette grille ne modifie pas cette colonne."
+
+#: generic/accounts/serializers.py:192
+msgid "This layout is too large."
+msgstr "Cette disposition est trop volumineuse."
+
+#: generic/sites/viewsets.py:287
+msgid "This model keeps no history."
+msgstr "Ce modèle ne conserve pas d'historique."
+
+#: generic/templates/generic/components/watch_button.html:55
+msgid "This one"
+msgstr "Celui-ci"
+
+#: generic/templates/generic/wiki/page.html:104
+msgid "This page is still empty."
+msgstr "Cette page est encore vide."
+
+#: generic/wiki/serializers.py:20
+msgid "This page was changed since you opened it."
+msgstr "Cette page a été modifiée depuis son ouverture."
+
+#: generic/sites/viewsets.py:287
+msgid "This period is not offered."
+msgstr "Cette période n'est pas proposée."
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:47
+msgid "This run produced nothing to show."
+msgstr "Cette exécution n'a rien produit à afficher."
+
+#: generic/api/facets.py:160
+msgid "This table offers no facets."
+msgstr "Ce tableau ne propose pas de facettes."
+
+#: generic/templates/generic/delete_confirmation.html:16
+msgid "This will also delete"
+msgstr "Cela supprimera également"
+
+#: generic/maintenance/models.py:57
+msgid "Tick it when you restart the server yourself: the application only warns people. Untick it and the server restarts itself at the hour announced."
+msgstr "Cochez-la quand vous redémarrez le serveur vous-même : l'application se contente de prévenir. Décochez-la et le serveur redémarre de lui-même à l'heure annoncée."
+
+#: generic/templates/generic/account/settings.html:112
+msgid "Tint of the backgrounds"
+msgstr "Teinte des fonds"
+
+#: generic/accounts/models.py:120
+msgid "tint of the greys"
+msgstr "teinte des gris"
+
+#: generic/templates/generic/account/settings.html:122
+msgid "Tinted"
+msgstr "Teinté"
+
+#: generic/events/models.py:105
+#: generic/templates/generic/account/settings.html:159
+#: generic/templates/generic/wiki/page.html:113
+msgid "Title"
+msgstr "Titre"
+
+#: generic/wiki/models.py:18
+#: generic/wiki/models.py:105
+msgid "title"
+msgstr "titre"
+
+#: generic/events/resources.py
+msgid "To"
+msgstr "À"
+
+#: generic/templates/generic/chrome/command_palette.html:80
+msgid "to close"
+msgstr "pour fermer"
+
+#: generic/templates/generic/chrome/command_palette.html:78
+msgid "to move"
+msgstr "pour se déplacer"
+
+#: generic/templates/generic/chrome/command_palette.html:79
+msgid "to open"
+msgstr "pour ouvrir"
+
+#: generic/templates/generic/base.html:109
+#: generic/templates/generic/base.html:110
+msgid "Toggle navigation"
+msgstr "Afficher ou masquer la navigation"
+
+#: generic/api/filters.py:812
+#: generic/api/filters.py:983
+msgid "Too many filters requested."
+msgstr "Trop de filtres demandés."
+
+#: generic/templates/generic/chrome/command_palette.html:48
+msgid "Type to search every page and record you can see."
+msgstr "Saisissez pour rechercher toutes les pages et tous les enregistrements que vous pouvez voir."
+
+#: generic/templates/generic/account/settings.html:180
+msgid "Undo changes"
+msgstr "Annuler les modifications"
+
+#: generic/views/list.py:77
+msgid "Unknown action."
+msgstr "Action inconnue."
+
+#: generic/api/inlines.py:310
+#: generic/api/inlines.py:246
+msgid "Unknown inline."
+msgstr "Bloc lié inconnu."
+
+#: generic/sites/data.py
+msgid "Unknown related table."
+msgstr "Table liée inconnue."
+
+#: generic/api/filters.py:843
+msgid "Unsupported filter type for %(column)s."
+msgstr "Type de filtre non pris en charge pour %(column)s."
+
+#: generic/accounts/models.py:141
+#: generic/accounts/models.py:259
+#: generic/wiki/models.py:46
+msgid "updated at"
+msgstr "modifié le"
+
+#: generic/wiki/models.py:57
+msgid "updated by"
+msgstr "modifié par"
+
+#: generic/templates/generic/account/settings.html:151
+msgid "Urgent"
+msgstr "Urgent"
+
+#: generic/accounts/models.py:53
+#: generic/accounts/models.py:205
+#: generic/accounts/models.py:245
+msgid "user"
+msgstr "utilisateur"
+
+#: generic/events/models.py:97
+msgid "User"
+msgstr "Utilisateur"
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html:33
+msgid "Value"
+msgstr "Valeur"
+
+#: generic/history/models.py:107
+msgid "values"
+msgstr "valeurs"
+
+#: generic/history/models.py:73
+msgid "version"
+msgstr "version"
+
+#: generic/sites/resources.py:545
+#: generic/sites/views.py:234
+#: generic/views/edit.py:259
+msgid "View"
+msgstr "Voir"
+
+#: generic/sites/views.py:267
+#: generic/sites/views.py:433
+msgid "View on site"
+msgstr "Voir sur le site"
+
+#: generic/templates/generic/account/settings.html:106
+msgid "Vivid"
+msgstr "Vif"
+
+#: generic/templates/generic/account/settings.html:166
+msgid "VPN drops every ten minutes"
+msgstr "Le VPN se coupe toutes les dix minutes"
+
+#: generic/tasks/models.py:37
+msgid "Waiting"
+msgstr "En attente"
+
+#: generic/events/models.py:24
+msgid "Warning"
+msgstr "Avertissement"
+
+#: generic/watch/models.py:104
+msgid "watch"
+msgstr "suivi"
+
+#: generic/templates/generic/components/watch_button.html:20
+msgid "Watch"
+msgstr "Suivre"
+
+#: generic/watch/models.py:99
+msgid "watched since"
+msgstr "suivi depuis"
+
+#: generic/watch/models.py:105
+msgid "watches"
+msgstr "suivis"
+
+#: generic/watch/views.py:31
+msgid "Watching"
+msgstr "Suivis"
+
+#: generic/templates/generic/components/watch_button.html:36
+msgid "Watching options"
+msgstr "Options de suivi"
+
+#: generic/sites/charts.py:70
+msgid "Week"
+msgstr "Semaine"
+
+#: generic/templates/generic/auth/login.html:14
+msgid "Welcome back. Enter your credentials to continue."
+msgstr "Content de vous revoir. Saisissez vos identifiants pour continuer."
+
+#: generic/accounts/resources.py:241
+msgid "What a job is allowed to do, in one place."
+msgstr "Ce qu'un poste a le droit de faire, en un seul endroit."
+
+#: generic/help/views.py:54
+#: generic/templates/generic/chrome/user_menu.html:53
+#: generic/templates/generic/help/help.html:48
+msgid "What changed"
+msgstr "Ce qui a changé"
+
+#: generic/maintenance/serializers.py:40
+msgid "What people are told"
+msgstr "Ce que les gens lisent"
+
+#: generic/tasks/resources.py:153
+msgid "What runs by itself, and when."
+msgstr "Ce qui s'exécute tout seul, et quand."
+
+#: generic/tasks/views.py:35
+msgid "What this application knows how to run."
+msgstr "Ce que cette application sait exécuter."
+
+#: generic/watch/views.py:32
+msgid "What you are told about, and how."
+msgstr "Ce dont vous êtes informé, et comment."
+
+#: generic/maintenance/serializers.py:31
+msgid "When"
+msgstr "Quand"
+
+#: generic/history/models.py:96
+msgid "when"
+msgstr "quand"
+
+#: generic/maintenance/models.py:46
+msgid "When the server goes down, in your own time zone."
+msgstr "Quand le serveur s'arrête, dans votre propre fuseau horaire."
+
+#: generic/events/models.py:124
+msgid "Where clicking the notification leads."
+msgstr "Où mène un clic sur la notification."
+
+#: generic/events/models.py
+msgid "Where clicking the notification leads: an address on this site, such as /tickets/, or a full one."
+msgstr "Où mène un clic sur la notification : une adresse de ce site, comme /tickets/, ou une adresse complète."
+
+#: generic/watch/models.py:90
+msgid "Which changes are worth a message."
+msgstr "Les changements qui méritent un message."
+
+#: generic/accounts/resources.py:63
+msgid "Who may sign in, and what each of them may do."
+msgstr "Qui peut se connecter, et ce que chacun a le droit de faire."
+
+#: generic/wiki/apps.py:8
+#: generic/wiki/integration.py:70
+#: generic/wiki/integration.py:65
+#: generic/wiki/views.py:101
+msgid "Wiki"
+msgstr "Wiki"
+
+#: generic/wiki/integration.py:57
+msgid "Wiki page"
+msgstr "Page de wiki"
+
+#: generic/wiki/models.py:66
+msgid "wiki page"
+msgstr "page de wiki"
+
+#: generic/wiki/models.py:67
+msgid "wiki pages"
+msgstr "pages de wiki"
+
+#: generic/templates/generic/wiki/page.html:27
+msgid "Wiki pages"
+msgstr "Pages de wiki"
+
+#: generic/wiki/models.py:120
+msgid "wiki revision"
+msgstr "révision de wiki"
+
+#: generic/wiki/models.py:121
+msgid "wiki revisions"
+msgstr "révisions de wiki"
+
+#: generic/templates/generic/help/changelog.html:49
+msgid ""
+"Write a CHANGELOG.md at the root of the project and its releases\n"
+"          appear here."
+msgstr ""
+"Écrivez un CHANGELOG.md à la racine du projet et ses versions\n"
+"          apparaissent ici."
+
+#: generic/templates/generic/account/notifications.html
+msgid "Write a message"
+msgstr "Écrire un message"
+
+#: generic/templates/generic/wiki/page.html:159
+msgid "Write the first page"
+msgstr "Écrire la première page"
+
+#: generic/wiki/models.py:108
+msgid "written at"
+msgstr "écrit le"
+
+#: generic/sites/charts.py:73
+msgid "Year"
+msgstr "Année"
+
+#: generic/api/facets.py:358
+#: generic/forms/fieldsets.py:55
+#: generic/sites/charts.py:190
+msgid "Yes"
+msgstr "Oui"
+
+#: generic/templates/generic/delete_confirmation.html:40
+msgid "Yes, delete"
+msgstr "Oui, supprimer"
+
+#: generic/accounts/serializers.py:214
+msgid "You already have a view with this name."
+msgstr "Vous avez déjà une vue portant ce nom."
+
+#: generic/templates/generic/chrome/notifications.html:36
+msgid "You are all caught up."
+msgstr "Vous êtes à jour."
+
+#: generic/templates/generic/watch/watches.html:28
+msgid "You are not watching anything yet."
+msgstr "Vous ne suivez rien pour l'instant."
+
+#: generic/watch/notify.py:158
+msgid "You are watching %(what)s."
+msgstr "Vous suivez %(what)s."
+
+#: generic/accounts/guard.py:144
+msgid "You cannot deactivate your own account."
+msgstr "Vous ne pouvez pas désactiver votre propre compte."
+
+#: generic/accounts/resources.py:125
+msgid "You cannot delete the account you are signed in as."
+msgstr "Vous ne pouvez pas supprimer le compte avec lequel vous êtes connecté."
+
+#: generic/accounts/guard.py:86
+msgid "You cannot grant %(permission)s, which you do not have yourself."
+msgstr "Vous ne pouvez pas accorder %(permission)s, que vous n'avez pas vous-même."
+
+#: generic/templates/generic/site/index.html:51
+msgid "You do not have permission to view or edit anything yet."
+msgstr "Vous n'avez encore la permission de voir ou de modifier quoi que ce soit."
+
+#: generic/maintenance/api.py:51
+#: generic/maintenance/api.py:75
+msgid "You may not announce a restart."
+msgstr "Vous n'avez pas le droit d'annoncer un redémarrage."
+
+#: generic/tasks/views.py:124
+msgid "You may not run %(task)s."
+msgstr "Vous ne pouvez pas lancer %(task)s."
+
+#: generic/accounts/views.py:131
+msgid "Your account is managed by an external provider (directory or single sign-on). Change your password there."
+msgstr "Votre compte est géré par un fournisseur externe (annuaire ou authentification unique). Changez votre mot de passe chez lui."
+
+#: generic/templates/generic/account/settings.html:251
+msgid "Your account is managed by an external provider (directory or single sign-on). Your name, address and password are changed there."
+msgstr "Votre compte est géré par un fournisseur externe (annuaire ou authentification unique). Votre nom, votre adresse et votre mot de passe se modifient chez lui."
+
+#: generic/templates/generic/auth/password_change.html:17
+msgid "Your password"
+msgstr "Votre mot de passe"
+
+#: generic/templates/generic/auth/password_change_done.html:7
+msgid "Your password was changed."
+msgstr "Votre mot de passe a été modifié."
+
+#: generic/templates/generic/maintenance/restart.html:42
+msgid "{{ minutes }} minutes"
+msgstr "{{ minutes }} minutes"
+
+#: generic/templates/generic/help/help.html:19
+msgid ""
+"{{ name }} runs on django-generic. What follows is what this\n"
+"              installation can tell you about itself."
+msgstr ""
+"{{ name }} fonctionne sur django-generic. Voici ce que cette\n"
+"              installation peut dire d'elle-même."
+
+#: generic/templates/generic/components/pagination.html:5
+msgid "{{ start }}–{{ end }} of {{ total }}"
+msgstr "{{ start }}–{{ end }} sur {{ total }}"
+
+#: generic/templates/generic/delete_confirmation.html:48
+msgid ""
+"“{{ name }}” cannot be deleted. The following records depend\n"
+"            on it and are protected."
+msgstr ""
+"« {{ name }} » ne peut pas être supprimé. Les enregistrements suivants\n"
+"            en dépendent et sont protégés."
+
+#: generic/history/resources.py:35
+msgctxt "a recorded change"
+msgid "Change"
+msgstr "Modification"
+
+#: generic/history/resources.py:36
+msgctxt "a recorded change"
+msgid "Changes"
+msgstr "Modifications"

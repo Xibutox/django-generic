@@ -1,0 +1,17 @@
+{% load generic_ui %}
+<ul>
+  {% for item in items %}
+    <li data-nav-item data-nav-text="{{ item.label|lower }} {{ label|lower }}">
+      <a class="nav-link"
+         href="{{ item.url }}"
+         {% if item.is_current %}aria-current="page"{% endif %}
+         {% if item.target %}target="{{ item.target }}"{% if item.target == "_blank" %} rel="noopener"{% endif %}{% endif %}>
+        {% icon item.icon|default:"chevron_right" %}
+        <span class="nav-link__label">{{ item.label }}</span>
+        {% if item.badge %}
+          <span class="nav-link__badge">{{ item.badge }}</span>
+        {% endif %}
+      </a>
+    </li>
+  {% endfor %}
+</ul>

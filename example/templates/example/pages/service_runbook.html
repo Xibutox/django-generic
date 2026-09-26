@@ -1,0 +1,26 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n generic_ui %}
+
+{# ServiceResource.runbook: a row of a data resource, `object`, and what #}
+{# the method fetched for it - the runbook, and what is going wrong now. #}
+
+{% block page_content %}
+  {% if ongoing %}
+    <div class="callout callout--warning">
+      {% icon "warning" %}
+      <div>
+        <strong>{{ status }}</strong>
+        {% for incident in ongoing %}
+          <div>
+            <a href="{% url 'site:data_incidents_detail' incident.id %}">{{ incident.title }}</a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <article class="card">
+    {# The API's text, escaped, its paragraphs kept. #}
+    <div class="prose">{{ runbook|linebreaks }}</div>
+  </article>
+{% endblock %}

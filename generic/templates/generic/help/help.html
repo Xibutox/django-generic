@@ -1,0 +1,94 @@
+{% extends "generic/base.html" %}
+{% load i18n generic_ui %}
+
+{% block bodyclass %}page-help{% endblock %}
+
+{% block content %}
+  <div class="help-grid">
+    <div class="stack">
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "info" %} {{ chrome.header }}</h2>
+          {% if version %}<span class="badge">{{ version }}</span>{% endif %}
+        </div>
+
+        {% if help_text %}
+          <p class="card__description">{{ help_text }}</p>
+        {% else %}
+          <p class="card__description">
+            {% blocktranslate trimmed with name=chrome.header %}
+              {{ name }} runs on django-generic. What follows is what this
+              installation can tell you about itself.
+            {% endblocktranslate %}
+          </p>
+        {% endif %}
+
+        {% if help_links %}
+          <ul class="help-links">
+            {% for link in help_links %}
+              <li>
+                <a href="{{ link.url }}"{% if link.external %} target="_blank" rel="noopener"{% endif %}>
+                  {% icon link.icon|default:"link" %}
+                  <span>
+                    <strong>{{ link.label }}</strong>
+                    {% if link.description %}
+                      <span class="muted">{{ link.description }}</span>
+                    {% endif %}
+                  </span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+
+      {% if latest_release %}
+        <section class="card">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "history" %} {% translate "What changed" %}</h2>
+            <span class="badge">
+              {{ latest_release.version }}{% if latest_release.date %} &middot; {{ latest_release.date }}{% endif %}
+            </span>
+          </div>
+
+          {% for section in latest_release.sections %}
+            {% if section.name %}<h3 class="help-change__title">{{ section.name }}</h3>{% endif %}
+            <ul class="help-change__items">
+              {% for item in section.items %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          {% endfor %}
+
+          {% if changelog_url %}
+            <a class="button button--sm" href="{{ changelog_url }}">
+              {% translate "Every change" %}
+            </a>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+
+    <div class="stack">
+      {% if licence.text %}
+        <section class="card">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "gavel" %} {% translate "Licence" %}</h2>
+            {% if licence.name %}<span class="badge">{{ licence.name }}</span>{% endif %}
+          </div>
+          {# Read from the project's own file, shown as the text it is. #}
+          <pre class="help-licence">{{ licence.text }}</pre>
+        </section>
+      {% endif %}
+
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "keyboard" %} {% translate "Shortcuts" %}</h2>
+        </div>
+        <dl class="help-shortcuts">
+          <div><dt><kbd>Ctrl</kbd> <kbd>K</kbd></dt><dd>{% translate "Search pages and records" %}</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd>{% translate "Add a filter to the table" %}</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>{% translate "Close the panel or the menu" %}</dd></div>
+        </dl>
+      </section>
+    </div>
+  </div>
+{% endblock %}

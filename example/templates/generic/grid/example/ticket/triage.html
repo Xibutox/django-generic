@@ -1,0 +1,33 @@
+{% extends "generic/grid.html" %}
+{% load i18n generic_ui %}
+
+{# The Triage grid's own page: generic/grid.html, with what the work  #}
+{# is and a way to narrow it to one team. Everything else - the rows, #}
+{# the columns, the new tickets - is TicketResource.grids.             #}
+
+{% block grid_intro %}
+<div class="grid-intro">
+  <div class="callout callout--info">
+    {% icon "assignment_ind" %}
+    <div>
+      {% blocktranslate trimmed %}
+        Every ticket still open, several fields of each writable at
+        once: pick an assignee, a priority, a due date - each is saved
+        as soon as you leave it. Adding a row logs a new ticket here,
+        with the next reference already filled in. A ticket you close
+        stays on screen until the grid reloads: the grid shows the open
+        ones, it does not stop you writing the others.
+      {% endblocktranslate %}
+    </div>
+  </div>
+
+  <nav class="cluster grid-teams" aria-label="{% translate 'Teams' %}">
+    <a class="button button--sm{% if not team %} is-active{% endif %}"
+       href="{% url 'example:triage' %}">{% translate "Every team" %}</a>
+    {% for each in teams %}
+      <a class="button button--sm{% if team and team.pk == each.pk %} is-active{% endif %}"
+         href="{% url 'example:team-triage' each.pk %}">{{ each.name }}</a>
+    {% endfor %}
+  </nav>
+</div>
+{% endblock %}

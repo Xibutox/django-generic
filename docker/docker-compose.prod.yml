@@ -1,0 +1,148 @@
+# Production stack: the application image run by Daphne, Celery's
+# worker and scheduler from the same image, Postgres, Redis, and Caddy
+# in front for HTTPS and the static files.
+#
+#   cp docker/prod.env.example docker/prod.env      # then fill it in
+#   docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env up -d --build
+#   docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec web python manage.py createsuperuser
+#
+# Every start runs the migrations first, once, before the web server
+# and the workers. Only Caddy is published; the database and Redis are
+# reached by the services of this stack alone.
+#
+# Every variable comes from docker/prod.env (--env-file), and a missing
+# required one stops `docker compose` before anything starts.
+
+name: django-generic-prod
+
+x-app: &app
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+    target: prod
+  image: ${APP_IMAGE:-django-generic:prod}
+  restart: unless-stopped
+  environment:
+    DJANGO_SETTINGS_MODULE: example_project.settings.prod
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set it in docker/prod.env}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set it in docker/prod.env}
+    DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+    DJANGO_SITE_URL: ${DJANGO_SITE_URL:-}
+    DJANGO_HTTPS: ${DJANGO_HTTPS:-1}
+    DJANGO_HSTS_SECONDS: ${DJANGO_HSTS_SECONDS:-}
+    DJANGO_HSTS_SUBDOMAINS: ${DJANGO_HSTS_SUBDOMAINS:-}
+    DJANGO_HSTS_PRELOAD: ${DJANGO_HSTS_PRELOAD:-}
+    DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+    DJANGO_DEFAULT_FROM_EMAIL: ${DJANGO_DEFAULT_FROM_EMAIL:-}
+    DATABASE_URL: postgres://${POSTGRES_USER:-generic}:${POSTGRES_PASSWORD:?set it in docker/prod.env}@db:5432/${POSTGRES_DB:-generic}
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    EMAIL_HOST: ${EMAIL_HOST:-}
+    EMAIL_PORT: ${EMAIL_PORT:-}
+    EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+    EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    EMAIL_USE_TLS: ${EMAIL_USE_TLS:-}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-generic}
+      POSTGRES_USER: ${POSTGRES_USER:-generic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in docker/prod.env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Kept on disk: the task queue lives here, and a restart must not
+    # lose what was waiting in it.
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Runs once per start and exits; the rest waits for it to succeed.
+  migrate:
+    <<: *app
+    restart: "no"
+    command: python manage.py migrate --noinput
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Is Daphne listening? A request would need a host name the
+      # settings accept; a connection needs nothing.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 8000), 2)"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  worker:
+    <<: *app
+    command: celery -A example_project.celery worker --loglevel=info
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # One scheduler, never two: each would send every task it schedules.
+  beat:
+    <<: *app
+    command: >
+      celery -A example_project.celery beat --loglevel=info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: proxy
+    image: ${PROXY_IMAGE:-django-generic:proxy}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      # The certificates Caddy obtained: kept, or every restart asks
+      # for new ones and soon hits the issuer's rate limit.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:
