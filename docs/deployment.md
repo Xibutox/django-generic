@@ -297,7 +297,7 @@ balances between its upstreams.
 | Target | From | Holds |
 | --- | --- | --- |
 | `dev` | `python:3.12-slim` | every extra, the test tools, the Debug Toolbar, the source; `runserver` |
-| `prod` (default) | `python:3.12-slim` | `export,events,tasks,postgres,wiki` and the scheduler, the source, the collected static files; Daphne, as user `app` |
+| `prod` (default) | `python:3.12-slim` | `export,import,events,tasks,postgres,wiki` and the scheduler, the source, the collected static files; Daphne, as user `app` |
 | `proxy` | `caddy:2-alpine` | `docker/Caddyfile` and the static files collected by the `prod` build |
 
 The dependencies are installed from `pyproject.toml` and a stub of the
@@ -314,7 +314,7 @@ CI builds all three: the suite runs in `dev`, `check --deploy` in
 
 The framework itself is a dependency, not something to copy: the new
 project's `pyproject.toml` lists
-`django-generic[export,events,tasks,postgres,wiki]`, which the
+`django-generic[export,import,events,tasks,postgres,wiki]`, which the
 Dockerfile's `pip install ".[...]"` then brings in with the rest (see
 [Installation](installation.md)).
 

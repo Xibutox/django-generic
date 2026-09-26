@@ -59,6 +59,7 @@ from generic.sites.charts import Chart, chart_payload
 from generic.sites.data import DataResource, RelatedRows, RowLink
 from generic.sites.decorators import action, display
 from generic.sites.grids import Grid
+from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
 from generic.sites.pages import ResourcePage, ResourcePageView, page
 from generic.sites.related import RelatedTable
@@ -80,6 +81,7 @@ __all__ = [
     "DataResource",
     "GenericSite",
     "Grid",
+    "Import",
     "InlineResource",
     "ModelResource",
     "RelatedRows",

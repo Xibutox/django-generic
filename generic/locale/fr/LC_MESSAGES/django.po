@@ -2375,3 +2375,138 @@ msgstr "Modification"
 msgctxt "a recorded change"
 msgid "Changes"
 msgstr "Modifications"
+
+msgid "Choose an Excel (.xlsx) or CSV (.csv) file."
+msgstr "Choisissez un fichier Excel (.xlsx) ou CSV (.csv)."
+
+msgid "The file is larger than %(size)s MB."
+msgstr "Le fichier dépasse %(size)s Mo."
+
+msgid "The file has more than %(count)s rows. Split it and import each part."
+msgstr "Le fichier a plus de %(count)s lignes. Découpez-le et importez chaque partie."
+
+msgid "The file is empty."
+msgstr "Le fichier est vide."
+
+msgid "Excel files cannot be read here. Save the sheet as CSV and import that."
+msgstr "Les fichiers Excel ne peuvent pas être lus ici. Enregistrez la feuille en CSV et importez-la."
+
+msgid "This is not an Excel file it can read."
+msgstr "Ce n'est pas un fichier Excel lisible."
+
+msgid "The columns chosen do not match the file."
+msgstr "Les colonnes choisies ne correspondent pas au fichier."
+
+msgid "%(column)s cannot be imported."
+msgstr "%(column)s ne peut pas être importé."
+
+msgid "Two columns of the file go to %(column)s."
+msgstr "Deux colonnes du fichier vont dans %(column)s."
+
+msgid "%(value)s is not one of the choices."
+msgstr "%(value)s ne fait pas partie des choix."
+
+msgid "%(value)s is neither yes nor no."
+msgstr "%(value)s n'est ni oui ni non."
+
+msgid "%(value)s is not a date this can read."
+msgstr "%(value)s n'est pas une date lisible."
+
+msgid "%(value)s is not a number."
+msgstr "%(value)s n'est pas un nombre."
+
+msgid "%(value)s is not a whole number."
+msgstr "%(value)s n'est pas un nombre entier."
+
+msgid "No %(model)s is called %(value)s."
+msgstr "Aucun %(model)s ne s'appelle %(value)s."
+
+msgid "Several %(model)s are called %(value)s."
+msgstr "Plusieurs %(model)s s'appellent %(value)s."
+
+msgid "No record has this %(key)s."
+msgstr "Aucun enregistrement n'a cette valeur de %(key)s."
+
+msgid "You may not add records."
+msgstr "Vous ne pouvez pas ajouter d'enregistrements."
+
+msgid "This record exists already."
+msgstr "Cet enregistrement existe déjà."
+
+msgid "You may not change this record."
+msgstr "Vous ne pouvez pas modifier cet enregistrement."
+
+msgid "The database refused this row."
+msgstr "La base de données a refusé cette ligne."
+
+msgid "Allowed values"
+msgstr "Valeurs autorisées"
+
+msgid "Import"
+msgstr "Importer"
+
+msgid "Import %(name)s"
+msgstr "Importer des %(name)s"
+
+msgid "This table has no editable columns."
+msgstr "Ce tableau n'a aucune colonne modifiable."
+
+msgid "Send the columns to change, and their values."
+msgstr "Envoyez les colonnes à modifier, et leurs valeurs."
+
+msgid "Excel files cannot be written here."
+msgstr "Les fichiers Excel ne peuvent pas être écrits ici."
+
+msgid "Choose a file to import."
+msgstr "Choisissez un fichier à importer."
+
+msgid "Choose a file"
+msgstr "Choisir un fichier"
+
+msgid "Download a template"
+msgstr "Télécharger un modèle"
+
+msgid "Drop an Excel or CSV file here, or choose one"
+msgstr "Déposez un fichier Excel ou CSV ici, ou choisissez-en un"
+
+msgid "Match the columns"
+msgstr "Faire correspondre les colonnes"
+
+msgid "Column of the file"
+msgstr "Colonne du fichier"
+
+msgid "First value"
+msgstr "Première valeur"
+
+msgid "Goes to"
+msgstr "Va dans"
+
+msgid "Ignore this column"
+msgstr "Ignorer cette colonne"
+
+msgid "To create"
+msgstr "À créer"
+
+msgid "To update"
+msgstr "À mettre à jour"
+
+msgid "Unchanged"
+msgstr "Inchangés"
+
+msgid "With errors"
+msgstr "En erreur"
+
+msgid "Row"
+msgstr "Ligne"
+
+msgid "Column"
+msgstr "Colonne"
+
+msgid "Problem"
+msgstr "Problème"
+
+msgid "Check again"
+msgstr "Vérifier à nouveau"
+
+msgid "Back to the list"
+msgstr "Retour à la liste"

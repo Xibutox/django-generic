@@ -116,6 +116,8 @@ generic/
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── charts.py           Chart: declared aggregates -> chart payload; chart_payload()
+│   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
+│   │                       validated by the form serializer, written all or nothing
 │   ├── inlines.py          TabularInline, StackedInline
 │   ├── decorators.py       @action, @display
 │   └── realtime.py         post_save/post_delete -> "resource.changed"; announce()
@@ -471,6 +473,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
 | `show_export`, `show_full_result_count` | True, True | export menu; count all rows each draw |
+| `imports` | None | `Import(fields=, key=, mode=, lookups=, defaults=, permission=, max_rows=, description=)`: an *Import* button and page (§5.15); None offers nothing and 404s the endpoint |
 | `filter_row` | `"open"` | search fields under the column headers: `"open"` from the start, `"toggle"` behind a toolbar button, `False` not offered; anything else raises `ImproperlyConfigured` (same attribute on `DataTableView`) |
 | `table_serializer`, `table_options` | None, `{}` | hand-written table serializer; client options |
 | `tag_fields` | `{}` | fields drawn as coloured tags (table + summary + chart colours) |
@@ -508,6 +511,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `get_object_label(obj)`, `get_object_description(obj)` | palette and autocomplete labels |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
+| `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
 | `create_editable(request, values, fixed)` | create the record of a row added in a grid; `values` by column, `fixed` by field (§5.10) |
 | `get_detail_fieldsets(request)`, `get_detail_stats(request)` | per-request summary sections and figures |
 | `get_actions(request)`, `get_row_actions(request)`, `get_table_options(request)` | per-request table behaviour |
@@ -976,6 +980,38 @@ Ticket.objects.filter(**{text_lookup("title"): term})   # title__unaccented__ico
   many-valued relation skipped); a no-op off PostgreSQL. See
   `docs/search.md`.
 
+### 5.15 Imports (`Import`)
+
+```python
+from generic.sites import Import
+
+class TicketResource(ModelResource):
+    imports = Import(fields=("reference", "title", "customer", "status", "tags"),
+                     key="reference",                 # found -> updated; None: create only
+                     lookups={"customer": "code"})    # default: related naming field
+```
+
+- Off by default. Page `site:<app>_<model>_import` (`ResourceImportView`,
+  `generic/resource/import.html`, Alpine `resourceImport` in
+  `js/imports.js`), button on the list for `resource.can_import(request)`
+  (declared + add or change as the mode needs + `permission`).
+- Endpoints: `GET import/schema/`, `GET import/template/` (xlsx),
+  `POST import/` multipart `file`, `mapping` (JSON list aligned with the
+  headers), `commit`. Answer: `headers mapping unmatched missing rows
+  counts errors preview committed`.
+- Headers match name / translated title / export title / verbose name,
+  accents and case aside (`simplify`). Cells: choices by value or label
+  in any `LANGUAGES`, yes/no words, Excel/ISO/localized dates, `3,5`,
+  relations by `text_lookup(lookup, "iexact")` **within the related
+  resource's `get_queryset(request)`**, M2M comma-separated. Rows:
+  resource form serializer (partial for updates; empty cell = keep),
+  `has_change_permission(request, obj)` per update.
+- One transaction; any error or `commit=false` rolls back (the preview
+  is a real dry run). `acting_as(user, source="Import <file>")`, live
+  events folded by `realtime.batch(resource)`. Declaration errors raise
+  at registration (`check_import`) or first use (form fields). See
+  `docs/imports.md`.
+
 ---
 
 ## 6. URLs and endpoints (generated)
@@ -1002,6 +1038,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/deletion-preview/` | cascade preview |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}` |
+| `GET .../import/schema/`, `.../import/template/`, `POST .../import/` | where `imports` is declared (§5.15) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 
@@ -1185,7 +1222,8 @@ write (also a *Write a message* button on the notifications page),
 strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
-`EXPORT_DATETIME_FORMAT`, `AUTOCOMPLETE_PAGE_SIZE`,
+`EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
+`IMPORT_PREVIEW_ROWS`, `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,

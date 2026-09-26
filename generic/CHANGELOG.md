@@ -22,6 +22,17 @@ version.
 - `generic.search.operations.CreateSearchIndex`: a GIN trigram index on
   exactly the expression a search compiles to, built on PostgreSQL and
   skipped elsewhere.
+- Imports: `imports = Import(fields=..., key=...)` on a resource gives
+  its list an *Import* button and a page to choose an Excel or CSV
+  file, match its columns, preview what would be created, updated or
+  refused - by row and column - and import, all or nothing. Headers,
+  choices, relations and dates are read as the exports write them, so
+  an export imports back unchanged. Endpoints `import/schema/`,
+  `import/template/` and `import/`; hooks `clean_import_row` and
+  `save_import_row`; settings `IMPORT_MAX_ROWS`,
+  `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- `generic.sites.realtime.batch(resource)`: every change made in a
+  block announced as one `bulk` event.
 - `ModelResource.search_rank`: the command palette and the
   autocompletes list the closest match first (`pg_trgm`); `generic.W007`
   when the app is missing.

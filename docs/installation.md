@@ -31,6 +31,7 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 | Extra | Adds | For |
 | --- | --- | --- |
 | `export` | openpyxl | the Excel export (CSV needs nothing) |
+| `import` | openpyxl, defusedxml | Excel imports, read safely (CSV needs nothing) |
 | `events` | Channels, channels-redis, Daphne | live updates, notifications, watches over WebSocket |
 | `tasks` | Celery, redis | declared tasks run in the background |
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |

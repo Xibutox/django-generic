@@ -1,0 +1,59 @@
+/**
+ * The import page. Tokens only, and rem throughout, so it follows the
+ * browser's text size like everything else.
+ */
+
+.import__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 8rem;
+  padding: var(--space-5);
+  margin-top: var(--space-3);
+  color: var(--text-secondary);
+  text-align: center;
+  background: var(--surface-sunken);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.import__drop:hover,
+.import__drop:focus-within,
+.import__drop--over {
+  color: var(--text-primary);
+  border-color: var(--color-accent);
+}
+
+.import__limits {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.import__mapping select {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.import__errors,
+.import__preview {
+  margin-top: var(--space-4);
+}
+
+.import__preview {
+  overflow-x: auto;
+}
+
+.import__stat--danger .stat__value {
+  color: var(--color-danger, var(--text-primary));
+}
+
+.import__line--error td {
+  color: var(--text-secondary);
+}
+
+.import__actions {
+  align-items: center;
+}

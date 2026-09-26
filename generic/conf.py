@@ -71,6 +71,13 @@ DEFAULTS: dict[str, Any] = {
     "EXPORT_MAX_ROWS": 250_000,
     "EXPORT_DATE_FORMAT": "DD/MM/YYYY",
     "EXPORT_DATETIME_FORMAT": "DD/MM/YYYY HH:MM",
+    # --- Imports (a resource's ``imports``) -----------------------------
+    # Rows one file may hold; a resource's Import(max_rows=...) wins.
+    "IMPORT_MAX_ROWS": 5000,
+    # Refused before it is read, in bytes.
+    "IMPORT_MAX_FILE_SIZE": 5 * 1024 * 1024,
+    # Rows shown by the preview, as they will be written.
+    "IMPORT_PREVIEW_ROWS": 20,
     # --- Autocomplete ------------------------------------------------
     "AUTOCOMPLETE_PAGE_SIZE": 25,
     "AUTOCOMPLETE_MIN_INPUT_LENGTH": 0,

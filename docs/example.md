@@ -265,6 +265,13 @@ allow, and the endpoint refuses the rest anyway. On a ticket's summary,
 the customer is named but not linked if the customer page is out of
 reach.
 
+**Importing.** On the ticket list, press **Import**, then *Download a
+template* - or export the list and drop the export back in: every row
+comes back *unchanged*. Change a title and a status (in English or
+French) in the file, add a row with a new reference, and drop it again:
+the preview says one to create, one to update, and names any cell it
+cannot read. As `viewer`, the button is not there.
+
 **Everywhere.** Ctrl+K searches every page, record and wiki page.
 Accents do not matter (`generic.search`): `region` finds *Région
 Occitanie*, and `lefevre` finds the agent *Norah Lefèvre*.

@@ -109,7 +109,8 @@ The core needs nothing else. Extras add the optional parts:
 pip install "django-generic[export,events,tasks,wiki,postgres]"
 ```
 
-`export` adds the Excel export (openpyxl), `events` live updates over
+`export` adds the Excel export (openpyxl), `import` Excel imports
+(openpyxl, defusedxml), `events` live updates over
 WebSocket (Channels, Daphne), `tasks` background tasks (Celery, Redis),
 `beat` schedules managed from the pages, `wiki` the wiki (nh3),
 `postgres` psycopg.
@@ -208,6 +209,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case
 - [Architecture](docs/architecture.md) — how the modules fit together, and why the UI is DRF-first
 - [Data tables](docs/tables.md) — columns, filters, ordering, exports
+- [Imports](docs/imports.md) — `Import(...)`: a spreadsheet read back into records, matched, previewed, all or nothing
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS

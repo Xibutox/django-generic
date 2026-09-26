@@ -32,9 +32,11 @@ permissions, the actions.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import Http404, HttpResponse
 from django.utils.translation import gettext
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -43,6 +45,7 @@ from rest_framework.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
@@ -81,6 +84,11 @@ class ResourcePermission(BasePermission):
 
         if name in ("create", "rows"):
             return resource.has_add_permission(request)
+
+        # Declared, and allowed to write what the declaration writes:
+        # the import itself checks each row again.
+        if name in ("import_rows", "import_schema", "import_template"):
+            return resource.can_import(request)
 
         if name in ("update", "partial_update", "cells"):
             return resource.has_change_permission(request)
@@ -617,6 +625,111 @@ class ResourceViewSet(
         )
 
         return {"message": message, "level": "success", "count": count}
+
+    # -- imports -----------------------------------------------------------
+
+    def get_importer(self) -> Any:
+        importer = self.resource.get_importer(self.request)
+
+        if importer is None:
+            raise Http404
+
+        return importer
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="import/schema",
+        url_name="import-schema",
+    )
+    def import_schema(self, request: Any) -> Response:
+        """What a file may fill, and how - before any file is chosen."""
+        return Response(self.get_importer().describe())
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="import/template",
+        url_name="import-template",
+    )
+    def import_template(self, request: Any) -> Any:
+        """An empty workbook with the right headers."""
+        importer = self.get_importer()
+
+        try:
+            content = importer.template()
+        except ImportError:
+            return Response(
+                {"detail": gettext("Excel files cannot be written here.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response = HttpResponse(
+            content,
+            content_type=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{self.resource.model_name}-import.xlsx"'
+        )
+
+        return response
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="import",
+        url_name="import-rows",
+        parser_classes=(MultiPartParser, FormParser),
+    )
+    def import_rows(self, request: Any) -> Response:
+        """Read a file: a preview, or - with ``commit`` - the import.
+
+        Multipart: ``file``, ``mapping`` (JSON list, one column name or
+        null per header of the file), ``commit`` (``true`` to write).
+        """
+        from generic.sites.imports import ImportRefused
+
+        importer = self.get_importer()
+        upload = request.FILES.get("file")
+
+        if upload is None:
+            return Response(
+                {"detail": gettext("Choose a file to import.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        raw_mapping = request.data.get("mapping")
+
+        try:
+            mapping = json.loads(raw_mapping) if raw_mapping else None
+        except ValueError:
+            return Response(
+                {
+                    "detail": gettext(
+                        "The columns chosen do not match the file."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        commit = str(request.data.get("commit", "")).lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+        try:
+            result = importer.run(upload, mapping, commit=commit)
+        except ImportRefused as refusal:
+            return Response(
+                {"detail": refusal.message},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(result)
 
     # -- autocomplete ------------------------------------------------------
 

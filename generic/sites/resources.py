@@ -150,6 +150,11 @@ class ModelResource(PagesMixin):
     #: ``(resource, request, queryset)``.
     actions: Sequence[Any] = ("delete_selected",)
     show_export: bool = True
+    #: Records loaded from a spreadsheet: ``Import(fields=..., key=...)``
+    #: gives the list page an *Import* button and its page. None - the
+    #: default - offers nothing and refuses the endpoint. See
+    #: ``generic.sites.imports``.
+    imports: Any = None
     #: The row of search fields under the column headers: ``"open"``
     #: from the start, ``"toggle"`` behind a toolbar button, ``False``
     #: not offered. Each user's own choice is remembered with the table.
@@ -394,6 +399,16 @@ class ModelResource(PagesMixin):
 
     def get_actions_url(self) -> str:
         return self._reverse(self.api_url_name("actions"))
+
+    def get_import_url(self) -> str:
+        return self._reverse(self.url_name("import"))
+
+    def get_import_api_urls(self) -> dict[str, str]:
+        return {
+            "run": self._reverse(self.api_url_name("import-rows")),
+            "schema": self._reverse(self.api_url_name("import-schema")),
+            "template": self._reverse(self.api_url_name("import-template")),
+        }
 
     def get_view_on_site_url(self, obj: Any) -> str:
         if not self.view_on_site or not hasattr(obj, "get_absolute_url"):
@@ -1265,6 +1280,55 @@ class ModelResource(PagesMixin):
 
     def delete_model(self, request: Any, obj: Any) -> None:
         obj.delete()
+
+    # -- imports ------------------------------------------------------------
+
+    def get_importer(self, request: Any) -> Any:
+        """The import of this resource for ``request``, or None."""
+        from generic.sites.imports import Importer, declaration_of
+
+        if declaration_of(self) is None:
+            return None
+
+        return Importer(self, request)
+
+    def can_import(self, request: Any) -> bool:
+        """Whether ``request``'s user may import into this resource."""
+        importer = self.get_importer(request)
+
+        return importer is not None and importer.is_allowed()
+
+    def clean_import_row(
+        self,
+        request: Any,
+        values: dict[str, Any],
+        row_number: int,
+    ) -> dict[str, Any]:
+        """One row's values, converted, before the form serializer sees
+        them. Return them, changed or not; raise ``ValidationError`` to
+        refuse the row with a message::
+
+            def clean_import_row(self, request, values, row_number):
+                values["reference"] = values["reference"].upper()
+
+                return values
+        """
+        return values
+
+    def save_import_row(
+        self,
+        request: Any,
+        serializer: Any,
+        instance: Any,
+    ) -> Any:
+        """Write one imported row. ``instance`` is None for a new one.
+
+        The default is the form's own step, ``save_model``, so a
+        resource stamping its author on save stamps imported rows too.
+        """
+        return self.save_model(
+            request, serializer, change=instance is not None
+        )
 
     def get_viewset_class(self) -> Any:
         from generic.sites.viewsets import ResourceViewSet

@@ -61,6 +61,16 @@ With it off, `-1` falls back to the default page size.
 | `EXPORT_DATE_FORMAT` | `DD/MM/YYYY` | Excel number format |
 | `EXPORT_DATETIME_FORMAT` | `DD/MM/YYYY HH:MM` | Excel number format |
 
+## Imports
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `IMPORT_MAX_ROWS` | `5000` | Rows one file may hold; `Import(max_rows=...)` wins |
+| `IMPORT_MAX_FILE_SIZE` | `5 * 1024 * 1024` | Bytes; a larger file is refused before it is read |
+| `IMPORT_PREVIEW_ROWS` | `20` | Rows the preview shows as they will be written |
+
+See [Imports](imports.md).
+
 ## Autocomplete
 
 | Setting | Default | Meaning |

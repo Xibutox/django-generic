@@ -51,6 +51,7 @@ from generic.sites import (
     Chart,
     DataResource,
     Grid,
+    Import,
     ModelResource,
     RelatedRows,
     RelatedTable,
@@ -323,6 +324,32 @@ class TicketResource(ModelResource):
     }
 
     actions = ("close", "mark_billable", "delete_selected")
+
+    # A spreadsheet of tickets read back: new references are created,
+    # known ones updated. An export of this list imports as it is -
+    # headers, labels, dates - and changes nothing.
+    imports = Import(
+        fields=(
+            "reference",
+            "title",
+            "customer",
+            "team",
+            "assignee",
+            "tags",
+            "priority",
+            "status",
+            "is_billable",
+            "estimated_hours",
+            "due_on",
+            "description",
+        ),
+        key="reference",
+        description=_(
+            "One row per ticket. A known reference updates that ticket, "
+            "and an empty cell keeps its value; a new one creates it. "
+            "Customers, teams and agents are named as the list shows them."
+        ),
+    )
 
     fieldsets = (
         (
@@ -763,6 +790,11 @@ class CustomerResource(ModelResource):
         "open_ticket_count",
     )
     search_fields = ("name", "code", "city")
+    # Customers kept in a spreadsheet elsewhere: matched on their code.
+    imports = Import(
+        fields=("code", "name", "segment", "city", "website", "is_active"),
+        key="code",
+    )
     ordering = ("name",)
     fieldsets = (
         (

@@ -76,7 +76,7 @@ FROM base AS app
 
 ARG BEAT_PACKAGES
 
-RUN pip install ".[export,events,tasks,postgres,wiki]" \
+RUN pip install ".[export,import,events,tasks,postgres,wiki]" \
     && pip install --no-deps "django-celery-beat>=2.6" \
     && pip install ${BEAT_PACKAGES}
 

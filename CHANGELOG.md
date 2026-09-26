@@ -17,6 +17,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   project installs `generic.search`, and tickets and customers have
   trigram indexes on PostgreSQL. Some seeded names carry their accents
   to show it.
+- Tickets and customers can be imported from a spreadsheet: *Import*
+  on their lists. A ticket's reference and a customer's code find the
+  record to update.
 
 ### Fixed
 - *Run now* hands the task to the Celery worker. The web server never

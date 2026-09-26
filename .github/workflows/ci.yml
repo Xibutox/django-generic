@@ -142,7 +142,7 @@ jobs:
       - name: Every extra, on the oldest Django accepted
         run: |
           python -m venv /tmp/full
-          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*"
+          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,import,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*"
           cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py"
       - uses: actions/upload-artifact@v4
         with:

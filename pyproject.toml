@@ -58,6 +58,11 @@ Changelog = "https://github.com/Xibutox/django-generic/blob/main/generic/CHANGEL
 # Excel export (generic.api.exports).
 export = ["openpyxl>=3.1"]
 
+# Imports (generic.sites.imports): Excel files read, and read safely -
+# defusedxml makes openpyxl refuse the XML tricks a file could carry.
+# CSV needs neither.
+import = ["openpyxl>=3.1", "defusedxml>=0.7"]
+
 # Real-time events (generic.events).
 events = ["channels>=4.0", "channels-redis>=4.2", "daphne>=4.1"]
 
@@ -77,6 +82,7 @@ wiki = ["nh3>=0.2.17"]
 
 dev = [
     "nh3>=0.2.17",
+    "defusedxml>=0.7",
     # The example project turns it on by itself when it is installed.
     "django-debug-toolbar>=6.0",
     "pytest>=8.0",

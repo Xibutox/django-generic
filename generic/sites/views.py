@@ -241,6 +241,16 @@ class ResourceListView(ResourceViewMixin, TemplateView):
         # The resource's own pages first: a map, a report of the lot.
         items = resource.get_page_buttons(self.request)
 
+        if resource.can_import(self.request):
+            items.append(
+                ToolbarItem(
+                    url=resource.get_import_url(),
+                    label=gettext("Import"),
+                    icon="upload_file",
+                    variant="ghost",
+                )
+            )
+
         if not resource.has_add_permission(self.request):
             return items
 
@@ -261,6 +271,40 @@ class ResourceListView(ResourceViewMixin, TemplateView):
         context["charts"] = chart_entries(
             self.resource.get_list_chart_configs(self.request)
         )
+
+        return context
+
+
+class ResourceImportView(ResourceViewMixin, TemplateView):
+    """A spreadsheet read into records: choose, match, check, import.
+
+    The page is a frame; every step is the resource's endpoint, which
+    checks the permission again and reads the file again on confirming.
+    """
+
+    template_name = "generic/resource/import.html"
+
+    def has_permission(self) -> bool:
+        return self.resource.can_import(self.request)
+
+    def get_page_title(self) -> str:
+        return self.page_title or gettext("Import %(name)s") % {
+            "name": self.resource.get_label_plural().lower()
+        }
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [self.list_breadcrumb(), Breadcrumb(label=gettext("Import"))]
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        importer = self.resource.get_importer(self.request)
+        context["import_config"] = {
+            "urls": {
+                **self.resource.get_import_api_urls(),
+                "list": self.resource.get_list_url(),
+            },
+            "schema": importer.describe(),
+        }
 
         return context
 
