@@ -272,6 +272,13 @@ French) in the file, add a row with a new reference, and drop it again:
 the preview says one to create, one to update, and names any cell it
 cannot read. As `viewer`, the button is not there.
 
+**A ticket's life.** Open an open ticket: the buttons at the top are
+what it can become - *Wait for the customer*, *Resolve* (which asks
+for the resolution), *Close*. Resolve it: the buttons change, and its
+History tab says *Transition: Resolve*. *Reopen* only appears to
+whoever holds `example.reopen_ticket`. On the list, select tickets and
+run *Close*: the ones already closed are counted as skipped.
+
 **Mailing a list.** Filter the ticket list, open **Views** and choose
 *Send by e-mail on a schedule…*: the form holds the list as you see
 it. *Scheduled mailings* (Tasks group) already has *Open urgent

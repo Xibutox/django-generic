@@ -55,6 +55,7 @@ generic/
 │   ├── related.py       RelatedTable: a summary page's related tables
 │   ├── charts.py        Chart: declared aggregates -> chart payloads
 │   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
+│   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint
 │   ├── summary.py       A record, typed and formatted for its summary
 │   └── realtime.py      Model changes -> resource.changed
 │

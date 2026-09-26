@@ -161,6 +161,7 @@ class GenericSite:
             # and so is an import naming what the model does not have.
             resource.check_pages()
             check_import(resource)
+            resource.get_transitions()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)

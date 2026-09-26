@@ -189,7 +189,7 @@ class TestRelatedRows:
         front = support_desk["front"]
         response = admin_client.post(
             f"{TICKETS}actions/?{RELATED_PARAM}=example.team.tickets:{front.pk}",
-            {"action": "close", "all": True},
+            {"action": "transition:close", "all": True},
             content_type="application/json",
         )
 
@@ -367,9 +367,15 @@ class TestSummary:
         login = support_desk["login"]
         body = self.summary(admin_client, f"{TICKETS}{login.pk}/summary/")
 
+        # Transitions are not among them: they have their own buttons,
+        # offered from the record's state.
         assert [entry["name"] for entry in body["actions"]] == [
-            "close",
             "mark_billable",
+        ]
+        assert [entry["name"] for entry in body["transitions"]] == [
+            "close",
+            "resolve",
+            "wait",
         ]
 
 

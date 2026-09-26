@@ -2770,3 +2770,18 @@ msgstr "Valable"
 
 msgid "A script sends one in an <code>Authorization: Token ...</code> header and acts as you, with your permissions."
 msgstr "Un script l'envoie dans un en-tête <code>Authorization: Token ...</code> et agit en votre nom, avec vos permissions."
+
+msgid "There is no such transition."
+msgstr "Cette transition n'existe pas."
+
+msgid "There is no such record."
+msgstr "Cet enregistrement n'existe pas."
+
+msgid "This record is no longer in a state it can be %(action)s from."
+msgstr "Cet enregistrement n'est plus dans un état qui permet de le %(action)s."
+
+msgid "You may not do this to this record."
+msgstr "Vous ne pouvez pas faire cela à cet enregistrement."
+
+msgid "%(action)s: %(done)s done, %(skipped)s skipped (not in a state that allows it, or not allowed)."
+msgstr "%(action)s : %(done)s fait(s), %(skipped)s ignoré(s) (pas dans un état qui le permet, ou non autorisé)."

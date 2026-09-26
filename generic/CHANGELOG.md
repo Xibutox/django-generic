@@ -31,6 +31,16 @@ version.
   `import/template/` and `import/`; hooks `clean_import_row` and
   `save_import_row`; settings `IMPORT_MAX_ROWS`,
   `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- State machines: `transitions = ("status",)` on a resource offers
+  each django-fsm-2 `@transition` of that field as a button on the
+  record's page - only from the states it leaves, only to a reader
+  allowed to take it - as a bulk action on the list
+  (`transition:<name>`, rows it cannot move skipped and counted), and
+  as `<pk>/transitions/<name>/` (403, 404, 409 when the record has
+  moved, 400). Label, icon, confirmation, variant and fields to ask
+  for come from the transition's own `custom`; the state is read only
+  in forms, grids and imports; the history names the transition.
+  `Generic.dialogs.fields()` asks a few values at once. The `fsm` extra.
 - The API for scripts. `generic.tokens` (on django-rest-knox,
   `KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"`): personal tokens made
   on the account page and shown once, read only or read and write, with

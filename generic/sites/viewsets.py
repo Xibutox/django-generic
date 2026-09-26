@@ -91,7 +91,7 @@ class ResourcePermission(BasePermission):
         if name in ("import_rows", "import_schema", "import_template"):
             return resource.can_import(request)
 
-        if name in ("update", "partial_update", "cells"):
+        if name in ("update", "partial_update", "cells", "take_transition"):
             return resource.has_change_permission(request)
 
         if name == "destroy":
@@ -630,6 +630,62 @@ class ResourceViewSet(
         )
 
         return {"message": message, "level": "success", "count": count}
+
+    # -- transitions -------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="transitions",
+        url_name="transitions",
+    )
+    def list_transitions(self, request: Any, pk: Any = None) -> Response:
+        """What this reader may do to this record's state, now."""
+        resource = self.resource
+
+        if not resource.get_transitions():
+            raise Http404
+
+        obj = self.get_object()
+
+        return Response(
+            [
+                info.describe(resource, obj)
+                for info in resource.get_available_transitions(request, obj)
+            ]
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"transitions/(?P<transition>[A-Za-z0-9_]+)",
+        url_name="take-transition",
+    )
+    def take_transition(
+        self,
+        request: Any,
+        pk: Any = None,
+        transition: str = "",
+    ) -> Response:
+        """Run one: the body carries the fields it asks for, if any.
+
+        Answers the record's summary, as its page reads it.
+        """
+        from generic.sites.summary import build_summary
+        from generic.sites.transitions import TransitionRefused, take
+
+        resource = self.resource
+        # Found through the queryset first: a record out of reach is a
+        # 404 like any other, before its state is looked at.
+        obj = self.get_object()
+        values = request.data if isinstance(request.data, dict) else {}
+
+        try:
+            obj = take(resource, request, obj.pk, transition, values)
+        except TransitionRefused as refusal:
+            return Response({"detail": refusal.message}, status=refusal.status)
+
+        return Response(build_summary(resource, request, obj))
 
     # -- imports -----------------------------------------------------------
 

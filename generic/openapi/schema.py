@@ -40,6 +40,8 @@ OBJECT_ACTIONS = frozenset(
         "rows",
         "import_schema",
         "import_rows",
+        "list_transitions",
+        "take_transition",
     }
 )
 
@@ -142,7 +144,7 @@ class ResourceAutoSchema(AutoSchema):
     def get_request_serializer(self) -> Any:
         action = self.action
 
-        if action in ("run_action", "cells", "rows"):
+        if action in ("run_action", "cells", "rows", "take_transition"):
             return OpenApiTypes.OBJECT
 
         if action == "import_rows":

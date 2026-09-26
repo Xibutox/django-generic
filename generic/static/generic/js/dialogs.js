@@ -219,6 +219,95 @@
     });
   }
 
+  /**
+   * A few values asked for at once - a transition's resolution note:
+   * `fields` = [{name, label, required, multiline, maxLength}]. Resolves
+   * to {name: value}, or null when cancelled.
+   */
+  function fields(options) {
+    options = options || {};
+
+    var dialog = open({ title: options.title || "", icon: options.icon });
+    var form = el("form", "stack");
+    var inputs = [];
+
+    if (options.message) {
+      form.appendChild(el("p", "muted", options.message));
+    }
+
+    (options.fields || []).forEach(function (spec, index) {
+      var id = "dialog-field-" + index;
+      var field = el("div", "sf-field");
+      var label = el("label", "sf-label", spec.label || spec.name);
+      var input = el(spec.multiline ? "textarea" : "input", "input");
+
+      label.htmlFor = id;
+      input.id = id;
+      input.name = spec.name;
+      input.required = Boolean(spec.required);
+
+      if (spec.multiline) {
+        input.rows = 4;
+      } else {
+        input.type = "text";
+      }
+
+      if (spec.maxLength) {
+        input.maxLength = spec.maxLength;
+      }
+
+      field.append(label, input);
+      form.appendChild(field);
+      inputs.push(input);
+    });
+
+    dialog.body.appendChild(form);
+
+    var cancel = button(t("Cancel"), "ghost");
+    var accept = button(
+      options.confirmLabel || t("Save"),
+      options.variant === "danger" ? "danger" : "primary"
+    );
+
+    function submit(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      var missing = inputs.find(function (input) {
+        return input.required && !input.value.trim();
+      });
+
+      if (missing) {
+        missing.focus();
+        return;
+      }
+
+      var values = {};
+
+      inputs.forEach(function (input) {
+        values[input.name] = input.value.trim();
+      });
+      dialog.close(values);
+    }
+
+    cancel.addEventListener("click", function () {
+      dialog.close(null);
+    });
+    accept.addEventListener("click", submit);
+    form.addEventListener("submit", submit);
+
+    dialog.footer.append(cancel, accept);
+
+    if (inputs.length) {
+      inputs[0].focus();
+    }
+
+    return dialog.closed.then(function (result) {
+      return result || null;
+    });
+  }
+
   /* -- Deletion ---------------------------------------------------------
    *
    * The admin's confirmation page, as a dialog: what the cascade would
@@ -379,6 +468,7 @@
   }
 
   Generic.dialogs = {
+    fields: fields,
     confirm: confirm,
     deletion: deletion,
     open: open,

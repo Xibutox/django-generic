@@ -183,14 +183,14 @@ class TestReadingCells:
         result = answer(
             send(
                 admin_client,
-                csv_file("Reference;Status", "SD-1;Résolu"),
+                csv_file("Reference;Priority", "SD-1;Urgente"),
                 commit=True,
             )
         )
 
         assert result["committed"], result["errors"]
         support_desk["login"].refresh_from_db()
-        assert support_desk["login"].status == Ticket.Status.RESOLVED
+        assert support_desk["login"].priority == Ticket.Priority.URGENT
 
     @pytest.mark.parametrize(
         "cell, expected",
@@ -410,7 +410,7 @@ class TestTheMapping:
         result = answer(
             send(
                 admin_client,
-                csv_file("RÉFÉRENCE;titre;Statut", "SD-1;x;open"),
+                csv_file("RÉFÉRENCE;titre;Priorité", "SD-1;x;low"),
             )
         )
 
@@ -423,12 +423,12 @@ class TestTheMapping:
         result = answer(
             send(
                 admin_client,
-                csv_file("Référence;Titre;Statut", "SD-1;x;open"),
+                csv_file("Référence;Titre;Priorité", "SD-1;x;low"),
                 language="fr",
             )
         )
 
-        assert result["mapping"] == ["reference", "title", "status"]
+        assert result["mapping"] == ["reference", "title", "priority"]
 
     def test_a_confirmed_mapping_wins(self, admin_client, support_desk):
         result = answer(
@@ -604,10 +604,14 @@ class TestThePage:
 
     def test_the_schema_endpoint(self, admin_client, support_desk):
         schema = admin_client.get(f"{TICKETS}schema/").json()
-        status = next(c for c in schema["columns"] if c["name"] == "status")
+        priority = next(
+            c for c in schema["columns"] if c["name"] == "priority"
+        )
 
         assert schema["mode"] == "create_update"
-        assert {"value": "open", "label": "Open"} in status["choices"]
+        assert {"value": "urgent", "label": "Urgent"} in priority["choices"]
+        # A state field moves through its transitions: never imported.
+        assert "status" not in [c["name"] for c in schema["columns"]]
 
     def test_the_template_has_the_headers(self, admin_client, support_desk):
         response = admin_client.get(f"{TICKETS}template/")

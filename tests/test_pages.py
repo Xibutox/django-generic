@@ -170,6 +170,7 @@ def pool(db, support_desk, library, workshop) -> Pool:
     from generic.tokens.models import ApiToken
     from generic.wiki.models import WikiPage
     from tests.factories import UserFactory
+    from tests.testapp.models import Manuscript
 
     customer = Customer.objects.create(
         name="Northwind Traders",
@@ -222,6 +223,7 @@ def pool(db, support_desk, library, workshop) -> Pool:
         "generic.message": Message.objects.create(
             title="Pooled", everyone=True
         ),
+        "testapp.manuscript": Manuscript.objects.create(title="Pooled"),
         "generic.scheduledmailing": ScheduledMailing.objects.create(
             name="Pooled", table="site.example.ticket"
         ),

@@ -111,7 +111,8 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 
 `export` adds the Excel export (openpyxl), `import` Excel imports
 (openpyxl, defusedxml), `api` API tokens and the OpenAPI description
-(django-rest-knox, drf-spectacular), `events` live updates over
+(django-rest-knox, drf-spectacular), `fsm` state machines
+(django-fsm-2), `events` live updates over
 WebSocket (Channels, Daphne), `tasks` background tasks (Celery, Redis),
 `beat` schedules managed from the pages, `wiki` the wiki (nh3),
 `postgres` psycopg.
@@ -212,6 +213,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Data tables](docs/tables.md) — columns, filters, ordering, exports
 - [The API for scripts](docs/api.md) — personal tokens made on the account page, and the OpenAPI description and Swagger page of every endpoint
 - [Scheduled mailings](docs/mailings.md) — a list, as each reader may see it, e-mailed as Excel or CSV every day, weekday, week or month
+- [State machines](docs/transitions.md) — a model's django-fsm-2 transitions as buttons, bulk actions and an endpoint, the state read only elsewhere
 - [Imports](docs/imports.md) — `Import(...)`: a spreadsheet read back into records, matched, previewed, all or nothing
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write

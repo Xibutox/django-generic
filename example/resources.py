@@ -210,7 +210,8 @@ class TicketResource(ModelResource):
 
     # What *may* be corrected in a table. The ticket list stays
     # read-only; the Triage grid below is where they are written.
-    editable_fields = ("team", "assignee", "priority", "status", "due_on")
+    # Not the status: it moves through its transitions (below).
+    editable_fields = ("team", "assignee", "priority", "due_on")
 
     # A set of tickets of the project's choosing, corrected many at
     # once: the open ones, to assign and prioritise in one sitting. It
@@ -323,7 +324,11 @@ class TicketResource(ModelResource):
         },
     }
 
-    actions = ("close", "mark_billable", "delete_selected")
+    actions = ("mark_billable", "delete_selected")
+    # The ticket's life: wait, resume, resolve, close, reopen - declared
+    # on the model with django-fsm-2, offered here as buttons on its
+    # page and as bulk actions on the list.
+    transitions = ("status",)
 
     # A spreadsheet of tickets read back: new references are created,
     # known ones updated. An export of this list imports as it is -
@@ -337,7 +342,6 @@ class TicketResource(ModelResource):
             "assignee",
             "tags",
             "priority",
-            "status",
             "is_billable",
             "estimated_hours",
             "due_on",
@@ -377,7 +381,11 @@ class TicketResource(ModelResource):
         (
             _("Billing and outcome"),
             {
-                "fields": (("is_billable", "estimated_hours"), "satisfaction"),
+                "fields": (
+                    ("is_billable", "estimated_hours"),
+                    "satisfaction",
+                    "resolution",
+                ),
                 # Starts folded, unless one of its fields has an error.
                 "classes": ("collapse",),
             },
@@ -417,7 +425,14 @@ class TicketResource(ModelResource):
         (_("Description"), {"fields": ("description",)}),
         (
             _("Billing and outcome"),
-            {"fields": ("is_billable", "estimated_hours", "satisfaction")},
+            {
+                "fields": (
+                    "is_billable",
+                    "estimated_hours",
+                    "satisfaction",
+                    "resolution",
+                )
+            },
         ),
     )
     related_tables = (
@@ -636,28 +651,6 @@ class TicketResource(ModelResource):
             "%(days)s days",
             ticket.age_in_days,
         ) % {"days": ticket.age_in_days}
-
-    @action(
-        description=_("Close"),
-        icon="task_alt",
-        confirm=_("Close the selected tickets?"),
-    )
-    def close(self, request: Any, queryset: QuerySet) -> str:
-        from example.events import tell_teams
-
-        teams = set(queryset.values_list("team_id", flat=True))
-        updated = queryset.update(status=Ticket.Status.CLOSED)
-
-        # update() sends no signal, so open tables are told directly -
-        # and so are the queues of the teams the tickets belong to.
-        announce(self, "bulk")
-        tell_teams(teams)
-
-        return ngettext(
-            "%(count)s ticket closed.",
-            "%(count)s tickets closed.",
-            updated,
-        ) % {"count": updated}
 
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:

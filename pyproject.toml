@@ -80,6 +80,10 @@ postgres = ["psycopg[binary]>=3.1"]
 # The API for scripts: personal tokens (generic.tokens, on
 # django-rest-knox) and its OpenAPI description and docs page
 # (generic.openapi, on drf-spectacular, its assets served locally).
+# State machines (generic.sites.transitions): a model's transitions as
+# buttons and bulk actions.
+fsm = ["django-fsm-2>=4.0"]
+
 api = [
     "django-rest-knox>=5.0",
     "drf-spectacular>=0.28",
@@ -95,6 +99,7 @@ dev = [
     "django-rest-knox>=5.0",
     "drf-spectacular>=0.28",
     "drf-spectacular-sidecar>=2025.1",
+    "django-fsm-2>=4.0",
     # The example project turns it on by itself when it is installed.
     "django-debug-toolbar>=6.0",
     "pytest>=8.0",

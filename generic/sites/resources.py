@@ -149,6 +149,12 @@ class ModelResource(PagesMixin):
     #: Bulk actions: method names, or functions taking
     #: ``(resource, request, queryset)``.
     actions: Sequence[Any] = ("delete_selected",)
+    #: State fields (django-fsm-2 ``FSMField``) whose ``@transition``
+    #: methods become buttons on a record's page. The fields become read
+    #: only in forms and grids. See ``generic.sites.transitions``.
+    transitions: Sequence[str] = ()
+    #: Whether each transition is also a bulk action of the list.
+    transition_actions: bool = True
     show_export: bool = True
     #: Records loaded from a spreadsheet: ``Import(fields=..., key=...)``
     #: gives the list page an *Import* button and its page. None - the
@@ -244,6 +250,7 @@ class ModelResource(PagesMixin):
         self._form_serializer_class: Any = None
         self._inline_instances: list[Any] | None = None
         self._editable_columns: dict[str, Any] | None = None
+        self._transitions: dict[str, Any] | None = None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} for {self.opts.label}>"
@@ -419,6 +426,13 @@ class ModelResource(PagesMixin):
         resource = self.site.get_resource(ScheduledMailing)
 
         return resource.get_add_url() if resource is not None else ""
+
+    def get_transitions_url(self, pk: Any) -> str:
+        """Where a record's transitions are listed; ``<name>/`` runs one."""
+        if not self.get_transitions():
+            return ""
+
+        return self._reverse(self.api_url_name("transitions"), pk=pk)
 
     def get_import_url(self) -> str:
         return self._reverse(self.url_name("import"))
@@ -1058,7 +1072,17 @@ class ModelResource(PagesMixin):
         return default_form_fields(self.model, exclude=self.exclude)
 
     def get_readonly_fields(self, request: Any = None) -> tuple[str, ...]:
-        return tuple(self.readonly_fields)
+        from generic.sites.transitions import state_fields
+
+        declared = tuple(self.readonly_fields)
+        fields = set(self.get_fields(request))
+
+        # A state moves through its transitions, never through a form.
+        return declared + tuple(
+            name
+            for name in state_fields(self)
+            if name not in declared and name in fields
+        )
 
     def get_form_serializer_class(self) -> Any:
         if self.form_serializer is not None:
@@ -1151,6 +1175,55 @@ class ModelResource(PagesMixin):
                 icon=getattr(function, "icon", "") or "",
                 confirm=self._describe(confirm) if confirm else "",
                 variant=getattr(function, "variant", "default") or "default",
+            )
+
+        if self.transition_actions:
+            actions.update(self.get_transition_actions(request))
+
+        return actions
+
+    # -- transitions ----------------------------------------------------------
+
+    def get_transitions(self) -> dict[str, Any]:
+        """The model's transitions this resource offers, by name.
+
+        Read once per process, and checked: a bad declaration raises
+        ``ImproperlyConfigured`` when the resource is registered.
+        """
+        if self._transitions is None:
+            from generic.sites.transitions import read_transitions
+
+            self._transitions = read_transitions(self)
+
+        return self._transitions
+
+    def get_available_transitions(self, request: Any, obj: Any) -> list[Any]:
+        """The transitions ``request``'s user may take on ``obj`` now."""
+        from generic.sites.transitions import available
+
+        return available(self, request, obj)
+
+    def get_transition_actions(self, request: Any) -> dict[str, Any]:
+        """One bulk action per transition asking for nothing."""
+        from generic.sites.transitions import (
+            action_name,
+            bulk_action,
+            may_offer,
+        )
+
+        actions = {}
+
+        for info in self.get_transitions().values():
+            if info.fields or not may_offer(self, request, info):
+                continue
+
+            actions[action_name(info)] = ResourceAction(
+                name=action_name(info),
+                function=bulk_action(self, info),
+                description=force_str(info.label),
+                icon=info.icon,
+                confirm=force_str(info.confirm) if info.confirm else "",
+                variant=info.variant,
             )
 
         return actions

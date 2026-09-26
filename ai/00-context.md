@@ -116,6 +116,7 @@ generic/
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── charts.py           Chart: declared aggregates -> chart payload; chart_payload()
+│   ├── transitions.py      a model's django-fsm-2 transitions: read, offered, taken
 │   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
 │   │                       validated by the form serializer, written all or nothing
 │   ├── inlines.py          TabularInline, StackedInline
@@ -483,6 +484,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
 | `show_export`, `show_full_result_count` | True, True | export menu; count all rows each draw |
+| `transitions`, `transition_actions` | `()`, True | FSM state fields whose `@transition`s become buttons, bulk actions (`transition:<name>`) and `<pk>/transitions/<name>/` (§5.16); the field turns read only |
 | `imports` | None | `Import(fields=, key=, mode=, lookups=, defaults=, permission=, max_rows=, description=)`: an *Import* button and page (§5.15); None offers nothing and 404s the endpoint |
 | `filter_row` | `"open"` | search fields under the column headers: `"open"` from the start, `"toggle"` behind a toolbar button, `False` not offered; anything else raises `ImproperlyConfigured` (same attribute on `DataTableView`) |
 | `table_serializer`, `table_options` | None, `{}` | hand-written table serializer; client options |
@@ -1023,6 +1025,41 @@ class TicketResource(ModelResource):
   at registration (`check_import`) or first use (form fields). See
   `docs/imports.md`.
 
+### 5.16 State machines (`transitions`)
+
+```python
+# models.py - django-fsm-2
+status = FSMField(choices=Status.choices, default=Status.OPEN)
+
+@transition(field=status, source=[Status.OPEN], target=Status.RESOLVED,
+            permission="app.resolve_ticket",            # or callable(instance, user)
+            conditions=[has_owner],
+            custom={"label": _("Resolve"), "icon": "task_alt",
+                    "confirm": _("Sure?"), "variant": "danger",
+                    "fields": ("resolution",)})           # asked in a dialog
+def resolve(self): ...
+
+# resources.py
+class TicketResource(ModelResource):
+    transitions = ("status",)
+```
+
+- Offered when: `has_change_permission(request, obj)` + the
+  transition's permission + conditions + source state
+  (`transitions.may_take`). The summary JSON has `transitions` and
+  `urls.transitions`; `detail.html` draws them, `summary.js` `take()`
+  (confirm, or `Generic.dialogs.fields`), POST
+  `<pk>/transitions/<name>/` -> the new summary.
+- `transitions.take()`: row lock (`select_for_update(of=("self",))`),
+  409 if the state moved or a condition fails, 403, 404, 400 (fields
+  through the form serializer, partial); `acting_as(source=
+  "Transition: <label>")`. Bulk: transitions without `fields`, each
+  row through `take`, skipped ones counted.
+- The state is read only: added to `get_readonly_fields`, refused in
+  `editable_fields`, so not importable. Metadata only in `custom`;
+  checked at registration (`get_transitions`). See
+  `docs/transitions.md`.
+
 ---
 
 ## 6. URLs and endpoints (generated)
@@ -1050,6 +1087,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}` |
 | `GET .../import/schema/`, `.../import/template/`, `POST .../import/` | where `imports` is declared (§5.15) |
+| `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 

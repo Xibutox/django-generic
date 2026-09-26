@@ -1437,3 +1437,6 @@ msgstr "jamais"
 
 msgid "not yet"
 msgstr "pas encore"
+
+msgid "%(action)s: done."
+msgstr "%(action)s : fait."

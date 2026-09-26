@@ -32,6 +32,7 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 | --- | --- | --- |
 | `export` | openpyxl | the Excel export (CSV needs nothing) |
 | `import` | openpyxl, defusedxml | Excel imports, read safely (CSV needs nothing) |
+| `fsm` | django-fsm-2 | state machines: a model's transitions as buttons and bulk actions, see [State machines](transitions.md) |
 | `api` | django-rest-knox, drf-spectacular, its sidecar | personal API tokens (`generic.tokens`) and the OpenAPI description (`generic.openapi`), see [The API for scripts](api.md) |
 | `events` | Channels, channels-redis, Daphne | live updates, notifications, watches over WebSocket |
 | `tasks` | Celery, redis | declared tasks run in the background |

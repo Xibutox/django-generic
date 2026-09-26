@@ -23,6 +23,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - The admin account is sent the open urgent tickets every weekday at
   eight (*Scheduled mailings*, in the Tasks group), and the scheduler
   runs the mailings every five minutes.
+- A ticket moves through its life by buttons: *Wait for the customer*,
+  *Customer answered*, *Resolve* (with a resolution), *Close*, and
+  *Reopen* for supervisors (`example.reopen_ticket`). The status is no
+  longer edited in forms, the Triage grid or imports, and the list's
+  *Close* action is the generated one.
 - Scripts call the API with a token made on the account page; the
   seed prints a read-only one for admin. `api/docs/` describes every
   endpoint.
