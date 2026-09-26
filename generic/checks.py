@@ -15,6 +15,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W004  LOGIN_URL leads nowhere
     generic.W005  a WebSocket is offered but nothing serves ASGI
     generic.W006  Django 6.1 or later, and MAILERS is not set
+    generic.W007  a resource ranks its search without generic.search
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -272,4 +273,30 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
             )
         )
 
+    messages.extend(check_search_rank())
+
     return messages
+
+
+def check_search_rank() -> list:
+    """``search_rank`` needs the app that installs ``pg_trgm``."""
+    from django.apps import apps
+
+    if apps.is_installed("generic.search"):
+        return []
+
+    from generic.sites import site
+
+    return [
+        checks.Warning(
+            f"{type(resource).__name__} sets search_rank = True, but "
+            f"generic.search is not installed: its results keep their "
+            f"usual order.",
+            hint="Add 'generic.search' to INSTALLED_APPS and migrate "
+            "(docs/search.md), or drop search_rank.",
+            obj=type(resource),
+            id="generic.W007",
+        )
+        for resource in site.get_resources()
+        if getattr(resource, "search_rank", False)
+    ]

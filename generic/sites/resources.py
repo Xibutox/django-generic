@@ -24,8 +24,9 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 
-from generic.api.filters import apply_search
+from generic.api.filters import apply_search, split_search_terms
 from generic.conf import generic_settings
+from generic.search.ranking import rank
 from generic.sites.decorators import action
 from generic.sites.pages import PagesMixin
 from generic.sites.serializers import (
@@ -108,6 +109,11 @@ class ModelResource(PagesMixin):
     #: What the global search box, the autocomplete and the command
     #: palette match against.
     search_fields: Sequence[str] = ()
+    #: Order the command palette's and the autocompletes' results by
+    #: how closely they match, best first (PostgreSQL with
+    #: ``generic.search``; elsewhere the usual order). Tables keep the
+    #: order their reader chose.
+    search_rank: bool = False
     ordering: Sequence[str] | None = None
     #: A hand-written table serializer, replacing the generated one.
     table_serializer: Any = None
@@ -534,7 +540,23 @@ class ModelResource(PagesMixin):
             term,
         )
 
-        return list(queryset[:limit])
+        return list(self.rank_search_results(request, queryset, term)[:limit])
+
+    def rank_search_results(
+        self,
+        request: Any,
+        queryset: QuerySet,
+        term: str,
+    ) -> QuerySet:
+        """Best match first, when ``search_rank`` asks for it."""
+        if not self.search_rank:
+            return queryset
+
+        words = " ".join(
+            text for text, negated in split_search_terms(term) if not negated
+        )
+
+        return rank(queryset, self.get_search_fields(request), words)
 
     def get_object_label(self, obj: Any) -> str:
         return force_str(obj)

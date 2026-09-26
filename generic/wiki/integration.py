@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from generic.conf import generic_settings
+from generic.search import text_lookup
 from generic.wiki.models import WikiPage
 from generic.wiki.sanitize import safe_html
 
@@ -43,7 +44,7 @@ def search_pages(request: Any, term: str) -> list[dict[str, Any]]:
         return []
 
     pages = WikiPage.objects.filter(
-        Q(title__icontains=term) | Q(content__icontains=term)
+        Q(**{text_lookup("title"): term}) | Q(**{text_lookup("content"): term})
     ).order_by("position", "title")[
         : generic_settings.SEARCH_RESULTS_PER_RESOURCE
     ]

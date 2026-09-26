@@ -657,9 +657,9 @@ class ResourceViewSet(
         if len(term) < generic_settings.AUTOCOMPLETE_MIN_INPUT_LENGTH:
             return Response({"results": [], "pagination": {"more": False}})
 
-        queryset = apply_search(
-            queryset,
-            resource.get_search_fields(request),
+        queryset = resource.rank_search_results(
+            request,
+            apply_search(queryset, resource.get_search_fields(request), term),
             term,
         )
 

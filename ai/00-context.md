@@ -147,6 +147,9 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning
+├── search/                 optional app generic.search: accents set aside in every text match
+│                           (text_lookup, fold, normalize), lookups.py the unaccented transform,
+│                           operations.py InstallUnaccent / CreateSearchIndex, ranking.py search_rank
 ├── forms/fieldsets.py      admin-style fieldsets for classic Django forms
 ├── views/                  classic server-rendered views: GenericListView, GenericDetailView,
 │                           GenericCreateView, GenericUpdateView, GenericDeleteView, DataTableView;
@@ -275,7 +278,8 @@ The full wiring with every line explained is `docs/installation.md`;
 (`generic.E001` request context processor, `E002` middleware before
 the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
-without `MAILERS`, `I001`). `site.urls`
+without `MAILERS`, `W007` `search_rank` without `generic.search`,
+`I001`). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -290,6 +294,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "generic",
     "generic.wiki",                 # optional
+    "generic.search",               # optional: searches ignore accents (§5.14)
     "myapp",
 ]
 TEMPLATES[0]["OPTIONS"]["context_processors"] must include
@@ -457,6 +462,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_display_links` | first column | columns linking to the row's page |
 | `list_select_related`, `list_prefetch_related` | auto | extra joins |
 | `list_per_page` | settings | first page size |
+| `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength` |
@@ -934,6 +940,41 @@ registration (`check_pages`). In templates: `{% include
 `{% generic_chart %}` for a chart, `.prose` for long text; styles in
 `extrastyle`. Example: `example/pages.py` (customer map + GeoJSON,
 ticket timeline, service runbook), `docs/pages.md`.
+
+### 5.14 Searches that ignore accents (`generic.search`)
+
+```python
+INSTALLED_APPS = [..., "generic", "generic.search", ...]    # then migrate
+
+# myapp/migrations/00xx_search_indexes.py - PostgreSQL only, a no-op elsewhere
+from generic.search.operations import CreateSearchIndex
+operations = [CreateSearchIndex("ticket", ("reference", "title"), name="ticket_search")]
+
+# a project's own search agrees with the framework's:
+from generic.search import fold, normalize, text_lookup
+Ticket.objects.filter(**{text_lookup("title"): term})   # title__unaccented__icontains
+```
+
+- Installed, **every** text match sets accents aside: table search,
+  column text filters (contains/is/starts/ends), facets value search
+  (choice labels by `normalize`), palette, resource and
+  `AutocompleteView` autocompletes, `GenericListView ?q=`, wiki,
+  `DataResource` rows (`rows.py`: `TRANSFORM` in `TRANSFORMS`, `fold`).
+  Not installed: exactly the old `icontains`. Never write
+  `f"{field}__icontains"` in the framework - call `text_lookup`.
+- The `unaccented` transform is registered on every `Field`, bilateral,
+  output text: PostgreSQL `generic_unaccent((col)::text)` (an
+  `IMMUTABLE` wrapper over `unaccent`, created with the `unaccent` and
+  `pg_trgm` extensions by `InstallUnaccent`, the app's migration -
+  trusted extensions, the database owner suffices), SQLite a Python
+  function registered on `connection_created`, others the bare column.
+- `CreateSearchIndex` is a migration operation, not a `Meta.indexes`
+  entry, because it must not exist outside PostgreSQL: one GIN
+  `gin_trgm_ops` index per field on `UPPER(generic_unaccent(col))`.
+- `search_rank = True`: `resource.rank_search_results(request,
+  queryset, term)` orders by `word_similarity` (fields crossing a
+  many-valued relation skipped); a no-op off PostgreSQL. See
+  `docs/search.md`.
 
 ---
 

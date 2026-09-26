@@ -90,6 +90,10 @@ generic/
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
 ├── wiki/                Optional: pages, editor, history, pinned pages
+├── search/              Optional: every text match sets accents aside
+│   ├── lookups.py       The unaccented transform, per database
+│   ├── operations.py    Migration operations: unaccent, trigram indexes
+│   └── ranking.py       search_rank: best match first
 │
 ├── events/
 │   ├── registry.py      Declared topics and who may subscribe

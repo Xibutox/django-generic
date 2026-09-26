@@ -12,6 +12,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Added
+- Searches ignore accents: `region` finds *Région Occitanie*. The
+  project installs `generic.search`, and tickets and customers have
+  trigram indexes on PostgreSQL. Some seeded names carry their accents
+  to show it.
+
 ### Fixed
 - *Run now* hands the task to the Celery worker. The web server never
   loaded the project's Celery application, found no broker, and ran

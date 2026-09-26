@@ -27,6 +27,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "generic",
     "generic.wiki",
+    # Accent-insensitive search: installed, as a project would, so the
+    # suite runs every search through it - on SQLite and on PostgreSQL.
+    "generic.search",
     "tests.testapp",
     # Covered by the suite too: the example is a deliverable, and a
     # broken example is a broken promise.

@@ -218,6 +218,8 @@ INSTALLED_APPS = [
     "generic",
     # --- optional: the wiki ---
     "generic.wiki",
+    # --- optional: searches ignore accents (docs/search.md) ---
+    "generic.search",
     # --- this example ---
     "example",
 ]

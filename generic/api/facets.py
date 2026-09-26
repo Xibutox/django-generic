@@ -44,6 +44,7 @@ from generic.api.columns import (
     FILTER_INTEGER,
     FILTER_TEXT,
 )
+from generic.search import normalize, text_lookup
 
 #: Query parameters.
 COLUMN_PARAM = "column"
@@ -313,13 +314,13 @@ class FacetMixin:
         options: Any,
         spec: Any,
     ) -> Any:
-        lowered = term.lower()
+        wanted = normalize(term)
 
         if choices:
             keys = [
                 key
                 for key, label in choices.items()
-                if lowered in force_str(label).lower()
+                if wanted in normalize(force_str(label))
             ]
 
             return rows.filter(**{f"{spec.field}__in": keys})
@@ -331,13 +332,13 @@ class FacetMixin:
                 return rows.none()
 
             matching = related._default_manager.filter(
-                **{f"{lookup}__icontains": term}
+                **{text_lookup(lookup): term}
             ).values("pk")
 
             return rows.filter(**{f"{spec.field}__in": matching})
 
         if spec.type == FILTER_TEXT:
-            return rows.filter(**{f"{spec.field}__icontains": term})
+            return rows.filter(**{text_lookup(spec.field): term})
 
         return rows
 

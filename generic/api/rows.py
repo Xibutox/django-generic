@@ -59,6 +59,7 @@ from generic.api.filters import (
     split_search_terms,
 )
 from generic.api.viewsets import DataTableViewSet
+from generic.search import TRANSFORM, fold, normalize
 
 #: The lookups the filter engines write, read here against a value.
 LOOKUPS = frozenset(
@@ -80,8 +81,9 @@ LOOKUPS = frozenset(
     }
 )
 
-#: What the date engine puts between a field and its lookup.
-TRANSFORMS = frozenset({"date"})
+#: What the engines put between a field and its lookup: the date
+#: engine's day, and the search's accents set aside (generic.search).
+TRANSFORMS = frozenset({"date", TRANSFORM})
 
 SEVERAL = (list, tuple, set, frozenset)
 
@@ -342,6 +344,13 @@ def match_lookup(row: Any, key: str, target: Any) -> bool:
 
     if transform == "date":
         values = [as_date(value) for value in values]
+    elif transform == TRANSFORM:
+        values = [fold(text_of(value)) for value in values]
+        target = (
+            [fold(item) for item in target]
+            if isinstance(target, SEVERAL)
+            else fold(target)
+        )
 
     present = [value for value in values if value is not None]
 
@@ -396,7 +405,7 @@ def search_rows(rows: Iterable[Any], fields: Sequence[str], raw: str) -> Any:
 
     def texts(row: Any) -> list[str]:
         return [
-            text_of(value).casefold()
+            normalize(text_of(value))
             for field in fields
             for value in values_at(row, field)
             if value is not None
@@ -408,7 +417,7 @@ def search_rows(rows: Iterable[Any], fields: Sequence[str], raw: str) -> Any:
         found = texts(row)
 
         if all(
-            any(text.casefold() in value for value in found) != negated
+            any(normalize(text) in value for value in found) != negated
             for text, negated in terms
         ):
             kept.append(row)
@@ -626,7 +635,7 @@ class RowsDataTableViewSet(DataTableViewSet):
             if raw_ids is not None:
                 if str(key) not in wanted:
                     continue
-            elif term and term.casefold() not in label.casefold():
+            elif term and normalize(term) not in normalize(label):
                 continue
 
             entry = {"value": plain(key), "label": label, "count": count}

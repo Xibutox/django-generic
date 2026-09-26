@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from generic.conf import generic_settings
+from generic.search import text_lookup
 
 
 class AutocompleteView(APIView):
@@ -79,7 +80,7 @@ class AutocompleteView(APIView):
         condition = Q()
 
         for field in self.search_fields:
-            condition |= Q(**{f"{field}__icontains": term})
+            condition |= Q(**{text_lookup(field): term})
 
         return queryset.filter(condition)
 

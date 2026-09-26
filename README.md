@@ -204,6 +204,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
 - [The wiki](docs/wiki.md) — pages, editor, history, the HTML it keeps
+- [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case
 - [Architecture](docs/architecture.md) — how the modules fit together, and why the UI is DRF-first
 - [Data tables](docs/tables.md) — columns, filters, ordering, exports

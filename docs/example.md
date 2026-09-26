@@ -266,6 +266,8 @@ the customer is named but not linked if the customer page is out of
 reach.
 
 **Everywhere.** Ctrl+K searches every page, record and wiki page.
+Accents do not matter (`generic.search`): `region` finds *Région
+Occitanie*, and `lefevre` finds the agent *Norah Lefèvre*.
 *Watch* on a record tells you when it changes, and the arrow beside it
 offers every ticket at once; both end up on the *Watching* page.
 

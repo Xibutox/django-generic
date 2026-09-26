@@ -35,13 +35,13 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 | `tasks` | Celery, redis | declared tasks run in the background |
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |
 | `wiki` | nh3 | the wiki (`generic.wiki`) |
-| `postgres` | psycopg | PostgreSQL |
+| `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
 
 Distributed as a file or from a private index, the name is the same:
 
 ```bash
-pip install django_generic-1.0.0-py3-none-any.whl
+pip install django_generic-1.1.0-py3-none-any.whl
 pip install --index-url https://pypi.example.com/simple/ django-generic
 ```
 
@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "rest_framework",                # the framework's
     "generic",                       # the framework's
     # "generic.wiki",                # optional: the wiki
+    # "generic.search",              # optional: searches ignore accents
     "myapp",
 ]
 

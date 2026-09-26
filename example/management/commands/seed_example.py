@@ -55,9 +55,9 @@ TEAMS = [
 AGENTS = [
     "Camille Rousseau",
     "Yanis Bertrand",
-    "Norah Lefevre",
+    "Norah Lef\u00e8vre",
     "Tomas Klein",
-    "Aurelie Meunier",
+    "Aur\u00e9lie Meunier",
     "Sofiane Bakri",
     "Elena Vasquez",
     "Marek Nowak",
@@ -94,7 +94,7 @@ CUSTOMERS = [
         "Lille",
         "https://adatum.example",
     ),
-    ("Region Occitanie", "OCC", "public", "Toulouse", ""),
+    ("R\u00e9gion Occitanie", "OCC", "public", "Toulouse", ""),
     ("Litware Labs", "LWL", "small", "Rennes", ""),
 ]
 

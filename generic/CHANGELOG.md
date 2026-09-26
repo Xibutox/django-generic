@@ -9,6 +9,23 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.1.0] - 2026-09-26
+
+### Added
+- `generic.search`, an optional app: every text match the framework
+  makes - the table search, column filters, the filter editor, the
+  command palette, the autocompletes, classic list views, the wiki and
+  data resources - sets accents aside as well as case, so `societe`
+  finds *Société*. PostgreSQL through `unaccent` (its migration creates
+  the extension and an indexable wrapper), SQLite through a Python
+  function of the same name, other databases untouched.
+- `generic.search.operations.CreateSearchIndex`: a GIN trigram index on
+  exactly the expression a search compiles to, built on PostgreSQL and
+  skipped elsewhere.
+- `ModelResource.search_rank`: the command palette and the
+  autocompletes list the closest match first (`pg_trgm`); `generic.W007`
+  when the app is missing.
+
 ## [1.0.0] - 2026-09-25
 
 The first official release: an admin-like application framework for

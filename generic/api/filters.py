@@ -61,6 +61,7 @@ from generic.api.columns import (
     FILTER_TEXT,
     FilterSpec,
 )
+from generic.search import text_lookup
 
 #: Query parameter carrying a filter tree.
 FILTERS_PARAM = "filters"
@@ -225,7 +226,7 @@ def apply_search(
         condition = Q()
 
         for field in fields:
-            condition |= Q(**{f"{field}__icontains": text})
+            condition |= Q(**{text_lookup(field): text})
 
         if spawns_duplicates:
             condition = Q(
@@ -323,7 +324,9 @@ def text_engine(
     # Several values: any of them matches - and with a negated operator,
     # none of them may.
     return (
-        _any(Q(**{f"{spec.field}__{lookup}": value}) for value in values),
+        _any(
+            Q(**{text_lookup(spec.field, lookup): value}) for value in values
+        ),
         negate,
     )
 

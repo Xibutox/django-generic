@@ -12,6 +12,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.list import ListView
 
+from generic.search import text_lookup
 from generic.views.mixins import AccessMixin, ModelPageMixin
 from generic.views.tables import ObjectColumn, ObjectTable
 from generic.views.toolbar import Breadcrumb, ToolbarItem
@@ -164,7 +165,7 @@ class GenericListView(
         condition = Q()
 
         for field in self.search_fields:
-            condition |= Q(**{f"{field}__icontains": term})
+            condition |= Q(**{text_lookup(field): term})
 
         return queryset.filter(condition)
 
