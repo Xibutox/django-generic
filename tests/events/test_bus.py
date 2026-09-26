@@ -228,3 +228,53 @@ class TestNotificationSignals:
 
         assert payload["type"] == "notification.deleted"
         assert payload["payload"] == {"id": notification_id}
+
+
+class TestWhatTravels:
+    """A payload is JSON before it reaches the layer.
+
+    The Redis layer serialises with msgpack, which refuses a date, a
+    Decimal, a UUID or a lazy translation: such an event used to be
+    logged and dropped on a server, while the in-memory layer of the
+    tests carried it through.
+    """
+
+    def test_every_value_is_plain_json(self):
+        import datetime
+        import json
+        from decimal import Decimal
+        from uuid import UUID
+
+        from django.utils.translation import gettext_lazy
+
+        payload = Event(
+            type="row.changed",
+            payload={
+                "on": datetime.date(2026, 3, 15),
+                "at": datetime.datetime(2026, 3, 15, 9, 30),
+                "amount": Decimal("12.50"),
+                "id": UUID("12345678-1234-5678-1234-567812345678"),
+                "title": gettext_lazy("Needs attention"),
+                "rows": [{"hours": Decimal("1.5")}],
+            },
+        ).as_dict()["payload"]
+
+        # The standard encoder - msgpack's equal here - takes it as is.
+        json.dumps(payload)
+        assert payload["on"] == "2026-03-15"
+        assert payload["amount"] == "12.50"
+        assert payload["title"] == "Needs attention"
+        assert payload["rows"] == [{"hours": "1.5"}]
+
+    def test_what_nothing_can_encode_is_logged_not_raised(self, caplog):
+        from asgiref.sync import async_to_sync
+
+        layer = mock.AsyncMock()
+
+        with mock.patch.object(bus, "get_channel_layer", return_value=layer):
+            async_to_sync(bus.asend_to_groups)(
+                ["generic.user.1"], Event(type="odd", payload={"x": object()})
+            )
+
+        assert layer.group_send.call_count == 0
+        assert "cannot be encoded" in caplog.text

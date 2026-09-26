@@ -12,10 +12,12 @@ running an ASGI server.
 from __future__ import annotations
 
 import dataclasses
+import json
 import logging
 from typing import Any, Iterable, Sequence
 
 from asgiref.sync import async_to_sync
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
 
@@ -53,9 +55,22 @@ class Event:
     def as_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
-            "payload": self.payload,
+            "payload": plain(self.payload),
             "timestamp": self.timestamp or timezone.now().isoformat(),
         }
+
+
+def plain(value: Any) -> Any:
+    """``value`` in JSON's own types, which every channel layer carries.
+
+    The Redis layer serialises with msgpack, which knows no date, no
+    Decimal, no UUID and no lazy translation: a payload holding one was
+    refused by ``group_send`` - logged, and never delivered. The
+    in-memory layer hands objects over as they are, which is why only a
+    server on Redis lost them. Encoded here, as the socket will encode
+    it anyway, a payload travels the same on both.
+    """
+    return json.loads(json.dumps(value, cls=DjangoJSONEncoder))
 
 
 def get_channel_layer() -> Any:
@@ -103,7 +118,13 @@ async def asend_to_groups(
     if layer is None or not groups:
         return
 
-    message = {"type": MESSAGE_TYPE, "event": event.as_dict()}
+    try:
+        message = {"type": MESSAGE_TYPE, "event": event.as_dict()}
+    except TypeError:
+        # Not even Django's encoder knows it: say which event, and let
+        # the request that produced it carry on.
+        logger.exception("Event '%s' cannot be encoded.", event.type)
+        return
 
     for group in dict.fromkeys(groups):
         try:

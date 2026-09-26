@@ -371,3 +371,26 @@ class TestComingBackUp:
 
         assert count == 1
         assert armed.call_args.args[0].pk != past.pk
+
+
+class TestTheTimerThread:
+    def test_it_closes_its_own_connections(self):
+        with (
+            mock.patch.object(scheduler, "_fire") as fire,
+            mock.patch.object(scheduler.connections, "close_all") as close,
+        ):
+            scheduler._fire_in_thread(7, "reminder")
+
+        fire.assert_called_once_with(7, "reminder")
+        assert close.call_count == 1
+
+    def test_the_moment_itself_leaves_them_alone(self, sent, armed, user):
+        """Run in a thread that is not the timer's - a test's, inside
+        its transaction on Postgres - it must not close that thread's
+        connection under it."""
+        announcement = announce(is_manual=True)
+
+        with mock.patch.object(scheduler.connections, "close_all") as close:
+            scheduler._fire(announcement.pk, "reminder")
+
+        assert close.call_count == 0

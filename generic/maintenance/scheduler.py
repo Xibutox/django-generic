@@ -142,7 +142,9 @@ def schedule(announcement: RestartAnnouncement) -> None:
     timers = []
 
     for delay, phase in _delays(announcement):
-        timer = threading.Timer(delay, _fire, (announcement.pk, phase))
+        timer = threading.Timer(
+            delay, _fire_in_thread, (announcement.pk, phase)
+        )
         timer.daemon = True
         timer.name = f"generic-restart-{announcement.pk}-{phase}"
         timer.start()
@@ -161,8 +163,22 @@ def cancel_timers(announcement_id: int) -> None:
         timer.cancel()
 
 
+def _fire_in_thread(announcement_id: int, phase: str) -> None:
+    """A timer's own thread: the moment, then its connections closed.
+
+    The thread opened its own connection; leaving it around would hold
+    one per warning until the process ends. Closing belongs here and
+    not in :func:`_fire`, which may also run in a thread whose
+    connection is somebody else's - a test's, inside its transaction.
+    """
+    try:
+        _fire(announcement_id, phase)
+    finally:
+        connections.close_all()
+
+
 def _fire(announcement_id: int, phase: str) -> None:
-    """One moment arriving, in a thread of its own."""
+    """One moment arriving."""
     try:
         announcement = RestartAnnouncement.objects.filter(
             pk=announcement_id,
@@ -179,10 +195,6 @@ def _fire(announcement_id: int, phase: str) -> None:
     except Exception:
         # A warning that fails must not take the process down with it.
         logger.exception("Restart announcement %s failed.", announcement_id)
-    finally:
-        # This thread opened its own connection; leaving it around would
-        # hold one per warning until the process ends.
-        connections.close_all()
 
 
 def _carry_out(announcement: RestartAnnouncement) -> None:
