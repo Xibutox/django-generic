@@ -275,7 +275,9 @@ CHANNEL_LAYERS = {
 }
 # CHANNEL_LAYERS = {"default": {
 #     "BACKEND": "channels_redis.core.RedisChannelLayer",
-#     "CONFIG": {"hosts": ["redis://localhost:6379/0"]}}}
+#     # Above the 5 seconds channels-redis waits (see Events).
+#     "CONFIG": {"hosts": [{"address": "redis://localhost:6379/0",
+#                           "socket_timeout": 15}]}}}
 ```
 
 ```python
@@ -318,8 +320,11 @@ The `wiki` extra, `"generic.wiki"` in `INSTALLED_APPS`, and its URLs:
 
 ### Background tasks
 
-The `tasks` extra and a Celery app; `beat` for schedules managed from
-the pages. See [Tasks](tasks.md).
+The `tasks` extra and a Celery app, imported by the project package's
+`__init__.py` as Celery's guide for Django does - otherwise the web
+server never loads it, and a task started from a page runs in the
+request instead of going to the worker. `beat` for schedules managed
+from the pages. See [Tasks](tasks.md).
 
 ### Translations
 

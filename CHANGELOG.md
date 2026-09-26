@@ -10,6 +10,23 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Fixed
+- *Run now* hands the task to the Celery worker. The web server never
+  loaded the project's Celery application, found no broker, and ran
+  every task in the request; `example_project/__init__.py` now imports
+  it, as Celery's guide for Django does.
+- A page left quiet keeps its live connection. With redis-py 8, a reply
+  from Redis is given up on after 5 seconds - the time channels-redis
+  waits for the next event - and every quiet WebSocket was closed and
+  reopened, deaf in between. The channel layer now waits 15.
+- The development Docker stack migrates first, in a `migrate` service
+  web, worker and beat wait for: beat no longer exits on a new
+  database, its tables not there yet.
+- `pytest` in the development image passes whoever owns the mounted
+  checkout: the coverage data go to `/tmp`.
+
 ## [1.0.0] - 2026-09-25
 
 The example released with django-generic 1.0.0: a small support desk

@@ -238,8 +238,31 @@ class TestRunning:
         assert run.celery_id == "abc-123"
         assert run.log == []
 
-    def test_without_a_broker_it_runs_here(self, digest):
-        assert can_queue(registry.get("tests.digest")) is False
+    @pytest.mark.parametrize(
+        "conf,queued",
+        [
+            # No broker: a queue nobody serves, so the work runs here.
+            ({}, False),
+            ({"broker_url": "redis://x"}, True),
+            # Eager still goes through Celery, which is the point of it.
+            ({"task_always_eager": True}, True),
+        ],
+    )
+    def test_it_is_queued_only_with_a_broker(self, conf, queued):
+        """Asked of the task's own Celery app, not of whichever one the
+        suite has made current by importing a project."""
+
+        class CeleryTask:
+            app = type("App", (), {"conf": conf})()
+
+        definition = TaskDefinition(
+            name="tests.anywhere",
+            function=lambda run: None,
+            label="Anywhere",
+            celery_task=CeleryTask(),
+        )
+
+        assert can_queue(definition) is queued
 
 
 class TestWhoHears:

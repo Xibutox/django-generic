@@ -72,13 +72,21 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
 
+  # Migrations first, on every start, and before anything reads the
+  # database: beat queries its schedules the moment it starts, and on a
+  # new database would find no table. Runs once and exits; the rest
+  # waits for it to succeed. Pulling a branch that adds a migration is
+  # then `up` again, not a step to remember.
+  migrate:
+    <<: *app
+    command: python manage.py migrate --noinput
+
   web:
     <<: *app
-    # Migrations first, on every start: pulling a branch that adds one
-    # is then a restart, not a step to remember.
-    command: >
-      sh -c "python manage.py migrate --noinput
-      && python manage.py runserver 0.0.0.0:8000"
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "${WEB_PORT:-8000}:8000"
       # debugpy, when debug.py --listen runs the server (see above).
@@ -89,6 +97,9 @@ services:
   worker:
     <<: *app
     command: celery -A example_project.celery worker --loglevel=info
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   # The database scheduler, so beat runs what the Schedules pages hold
   # rather than a list frozen into the settings.
@@ -97,6 +108,9 @@ services:
     command: >
       celery -A example_project.celery beat --loglevel=info
       --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

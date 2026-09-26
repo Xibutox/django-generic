@@ -122,10 +122,15 @@ REDIS_URL = os.environ.get("REDIS_URL")
 if REDIS_URL:
     # The in-memory layer is per process: with more than one worker,
     # only the worker holding the socket would see the event.
+    # A read allowed longer than the 5 seconds channels-redis waits on
+    # Redis for the next message: redis-py 8 gives up after 5 by
+    # default (see example_project/settings/base.py).
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [REDIS_URL]},
+            "CONFIG": {
+                "hosts": [{"address": REDIS_URL, "socket_timeout": 15}]
+            },
         }
     }
     CACHES = {
@@ -141,11 +146,11 @@ else:
         }
     }
 
-CELERY_BROKER_URL = os.environ.get(
-    "CELERY_BROKER_URL",
-    "memory://",
-)
-CELERY_TASK_ALWAYS_EAGER = not os.environ.get("CELERY_BROKER_URL")
+# Whatever the environment says - the Docker stack sets
+# CELERY_BROKER_URL for its own worker - a task the suite sends through
+# Celery runs here: a worker would not see the test database.
+CELERY_BROKER_URL = "memory://"
+CELERY_TASK_ALWAYS_EAGER = True
 
 # Framework configuration under test.
 GENERIC = {

@@ -210,6 +210,12 @@ helpers `env`, `env_bool`, `env_int`, `env_list`, `env_required`,
 `database_from_url`, `redis_backends`), `dev.py` and `prod.py`, each
 starting `from .base import *`. `manage.py` and `celery.py` default to
 `dev`; `asgi.py` and `wsgi.py` to `prod`; the package alone raises.
+`example_project/__init__.py` imports the Celery app (`celery_app`), so
+the web server and `manage.py` hand tasks to the broker, not only the
+worker. `redis_backends` gives the channel layer's host a
+`socket_timeout` of 15: redis-py 8's default, 5 seconds, races the 5
+seconds channels-redis waits for the next event and closes every quiet
+WebSocket.
 `prod.py` reads every secret with `env_required` (no start without
 `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DATABASE_URL`,
 `REDIS_URL`), assumes HTTPS unless `DJANGO_HTTPS=0`, uses
@@ -239,9 +245,11 @@ is ignored. Pytest under the debugger needs `--no-cov`. Tests:
 **Docker** (`docker/`): one `Dockerfile`, targets `dev` (every extra,
 runserver), `prod` (default; Daphne `--proxy-headers`, static files
 collected at build, user `app`) and `proxy` (Caddy + the static files,
-`docker/Caddyfile`). `docker-compose.dev.yml`: db, redis, web
-(migrate then runserver, source mounted, 5678 published for debugpy),
-worker, beat.
+`docker/Caddyfile`). `docker-compose.dev.yml`: db, redis, `migrate`
+(the others wait for it: beat reads its tables on start), web
+(runserver, source mounted, 5678 published for debugpy), worker, beat;
+the `dev` image keeps coverage data in `/tmp` (`COVERAGE_FILE`), the
+mounted checkout not always being uid 1000's.
 `docker-compose.prod.yml` with `--env-file docker/prod.env` (from
 `prod.env.example`, never committed): db, redis, `migrate` (the others
 wait for it), web, worker, beat, proxy — only the proxy published.
@@ -284,7 +292,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
 }
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels_redis.core.RedisChannelLayer",
-                              "CONFIG": {"hosts": [REDIS_URL]}}}   # InMemoryChannelLayer in dev
+                              "CONFIG": {"hosts": [{"address": REDIS_URL,
+                                                    "socket_timeout": 15}]}}}  # > 5: redis-py 8
+                                                    # InMemoryChannelLayer in dev
 GENERIC = {"SITE_TITLE": "My app", "SITE_ICON": "dataset", "TABLE_PAGE_SIZE": 15}
 # Translation (§12). Narrow LANGUAGES: untouched it holds every language
 # Django ships, and the frame then offers no menu.
@@ -1290,7 +1300,10 @@ def nightly_digest(run):
   from code; the *Tasks* page (`site:tasks`, permission
   `generic.run_task`) starts one by hand.
 - With Celery and a broker, a worker does the work; without, the
-  process that asked does. Same steps either way.
+  process that asked does. Same steps either way. The broker is the one
+  of the Celery app the process loaded: the project package's
+  `__init__.py` imports it (`from .celery import app as celery_app`),
+  or the web server runs every task in the request.
 - `django_celery_beat` installed puts its `PeriodicTask`, interval,
   crontab and clocked models in the **Tasks** group as resources, with
   *Run now*. `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.

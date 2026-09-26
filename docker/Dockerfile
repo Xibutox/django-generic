@@ -57,6 +57,11 @@ RUN pip install ".[export,events,tasks,postgres,wiki,dev]" \
 # docker-compose.dev.yml mounts the working copy over it.
 COPY --chown=app:app . .
 
+# The suite measures coverage by default, and writes its data where
+# this user can: /app is root's in the image, and mounted, it is the
+# host user's, who is not always uid 1000.
+ENV COVERAGE_FILE=/tmp/.coverage
+
 USER app
 # 5678: debugpy, for `python debug.py --listen 0.0.0.0:5678`.
 EXPOSE 8000 5678

@@ -109,6 +109,16 @@ def database_from_url(url):
     )
 
 
+#: How long the channel layer waits on a Redis reply. channels-redis
+#: asks Redis for a socket's next event and waits up to 5 seconds for
+#: it; redis-py 8 gives up on any reply after 5 seconds by default. The
+#: two race, and the socket loses: a page left quiet has its WebSocket
+#: closed with a TimeoutError every few seconds, and misses what is
+#: sent until it reconnects. Longer than that wait, not unbounded: a
+#: Redis that stops answering is still noticed.
+CHANNEL_LAYER_SOCKET_TIMEOUT = 15
+
+
 def redis_backends(url):
     """The channel layer and the cache, on Redis.
 
@@ -120,7 +130,14 @@ def redis_backends(url):
         {
             "default": {
                 "BACKEND": "channels_redis.core.RedisChannelLayer",
-                "CONFIG": {"hosts": [url]},
+                "CONFIG": {
+                    "hosts": [
+                        {
+                            "address": url,
+                            "socket_timeout": CHANNEL_LAYER_SOCKET_TIMEOUT,
+                        }
+                    ]
+                },
             }
         },
         {

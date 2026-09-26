@@ -110,6 +110,21 @@ steps, the same pages; only the waiting differs.
 `CELERY_TASK_ALWAYS_EAGER` still counts as queued: it goes through
 Celery, which is the point of eager.
 
+The broker is the one of the Celery application the process has
+loaded. A web server loads the project's only if the project's package
+imports it, as Celery's guide for Django does:
+
+```python
+# mysite/__init__.py
+from .celery import app as celery_app
+
+__all__ = ["celery_app"]
+```
+
+Without it, only the worker has the application; the web server's
+Celery has no broker, and every task started from a page runs in the
+request while the worker waits.
+
 ## The pages
 
 Three, in the **Tasks** group of the navigation:

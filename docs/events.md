@@ -50,7 +50,11 @@ INSTALLED_APPS = [..., "generic"]
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": ["redis://redis:6379/0"]},
+        "CONFIG": {
+            "hosts": [
+                {"address": "redis://redis:6379/0", "socket_timeout": 15}
+            ],
+        },
     }
 }
 ```
@@ -58,6 +62,13 @@ CHANNEL_LAYERS = {
 The in-memory layer is per process. With more than one worker, only the
 worker holding the socket would see the event — it is for tests and a
 single-process dev server, nothing else.
+
+`socket_timeout` matters from redis-py 8 on. Its default gives up on a
+Redis reply after 5 seconds — exactly how long channels-redis waits for
+a socket's next event. The two race and the socket loses: a page left
+quiet has its WebSocket closed with a `TimeoutError` every few seconds,
+reconnected, and deaf in between. Any value above 5 will do; a Redis
+that stops answering is still noticed.
 
 Then the ASGI application (a full example is in `tests/asgi.py`):
 

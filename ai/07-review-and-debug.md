@@ -84,6 +84,9 @@ causes — the fix**. Do not report style an automatic formatter handles.
 | Page without any styling, 404 on `/static/` | ASGI server run directly without `ASGIStaticFilesHandler`; or `INSTALLED_APPS` changed without restarting | Copy `example_project/asgi.py`; restart runserver |
 | Page looks half-updated after a change | Browser cache of JS/CSS | Hard reload (Ctrl+F5) |
 | *Live* badge never appears, tables do not refresh | `daphne` not first in `INSTALLED_APPS` (runserver is WSGI), no `CHANNEL_LAYERS`, WSGI server in production, in-memory layer with several workers | Fix settings; Redis channel layer; serve with Daphne/Uvicorn |
+| The WebSocket closes every few seconds on a quiet page; `Timeout reading from redis` in the server log | redis-py 8 gives up on a reply after 5 seconds, the time channels-redis waits for the next event | `socket_timeout` above 5 in the layer's hosts: `{"address": url, "socket_timeout": 15}` (`docs/events.md`) |
+| *Run now* runs in the request; the Celery worker never receives anything | The web process never imported the project's Celery app (`celery_app` in the project package's `__init__.py`) | Import it there (`docs/tasks.md`) |
+| Celery beat exits on start with "relation ... does not exist" | Started before `migrate` finished on a new database | A `migrate` service the others wait for (`docker/docker-compose.*.yml`) |
 | A model is missing from the sidebar | No `view`/`add` permission; `show_in_navigation = False`; `resources.py` not in an installed app | Grant permissions; check the app |
 | 403 on a resource endpoint | User lacks `view` (or `change`) on the model | Group permissions |
 | 404 on a related tab's rows | `RelatedTable` model not registered, the key's model differs from the endpoint's, or the parent record is invisible to the user | Register the child resource; check `get_queryset` of the parent |
