@@ -283,8 +283,9 @@ for channels, group in by_preference(readers).items():
 
 `message` is called once per language, inside it, so `gettext` answers
 in each reader's. `select_related("generic_preferences")` reads every
-reader's language and choice in the same query. A mail server that is
-down is logged, never raised.
+reader's language and choice in the same query. Mail leaves through
+Django's default mailer ([Mail](installation.md#mail)); a mail server
+that is down is logged, never raised.
 
 ## Notifications
 

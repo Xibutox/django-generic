@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+import django
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
@@ -147,6 +148,54 @@ def redis_backends(url):
             }
         },
     )
+
+
+def mail_settings(backend, **options):
+    """The settings sending mail through ``backend``, on either Django.
+
+    Django 6.1 configures mail with ``MAILERS`` and deprecates
+    ``EMAIL_BACKEND`` and the other ``EMAIL_*`` settings - and refuses
+    to start with both. 5.2, the oldest this project runs on, reads
+    only the latter. ``options`` take MAILERS' names (``host``,
+    ``port``, ``username``, ``password``, ``use_tls``...) and become
+    the old settings where those are what Django reads::
+
+        globals().update(mail_settings(SMTP, host="smtp.example.com"))
+
+    Once 5.2 is left behind, write ``MAILERS`` instead.
+    """
+    if django.VERSION >= (6, 1):
+        mailer = {"BACKEND": backend}
+
+        if options:
+            mailer["OPTIONS"] = options
+
+        return {"MAILERS": {"default": mailer}}
+
+    legacy = {
+        "host": "EMAIL_HOST",
+        "port": "EMAIL_PORT",
+        "username": "EMAIL_HOST_USER",
+        "password": "EMAIL_HOST_PASSWORD",
+        "use_tls": "EMAIL_USE_TLS",
+        "use_ssl": "EMAIL_USE_SSL",
+        "timeout": "EMAIL_TIMEOUT",
+        "ssl_certfile": "EMAIL_SSL_CERTFILE",
+        "ssl_keyfile": "EMAIL_SSL_KEYFILE",
+        "file_path": "EMAIL_FILE_PATH",
+    }
+    unknown = sorted(set(options) - set(legacy))
+
+    if unknown:
+        raise ImproperlyConfigured(
+            f"Mail option {', '.join(unknown)}: Django "
+            f"{django.get_version()} has no EMAIL_* setting for it."
+        )
+
+    return {
+        "EMAIL_BACKEND": backend,
+        **{legacy[name]: value for name, value in options.items()},
+    }
 
 
 # -- Applications ------------------------------------------------------

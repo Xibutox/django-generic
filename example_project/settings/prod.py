@@ -20,6 +20,7 @@ from .base import (
     env_int,
     env_list,
     env_required,
+    mail_settings,
     redis_backends,
 )
 
@@ -109,18 +110,29 @@ SILENCED_SYSTEM_CHECKS = [
 # -- Mail --------------------------------------------------------------
 #
 # The notifications that go by mail. Without EMAIL_HOST they are
-# written to the log instead of being lost.
+# written to the log instead of being lost. The variables keep the
+# names of Django's old settings; the settings they become - MAILERS
+# from Django 6.1, EMAIL_* before - are mail_settings' choice (base.py).
 
-EMAIL_HOST = env("EMAIL_HOST")
-
-if EMAIL_HOST:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_PORT = env_int("EMAIL_PORT", 587)
-    EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+if env("EMAIL_HOST"):
+    globals().update(
+        mail_settings(
+            "django.core.mail.backends.smtp.EmailBackend",
+            host=env("EMAIL_HOST"),
+            port=env_int("EMAIL_PORT", 587),
+            username=env("EMAIL_HOST_USER"),
+            password=env("EMAIL_HOST_PASSWORD"),
+            use_tls=env_bool("EMAIL_USE_TLS", True),
+        )
+    )
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    globals().update(
+        mail_settings("django.core.mail.backends.console.EmailBackend")
+    )
+    # The log is a decision too, like the HSTS ones above. Django 6.1's
+    # deployment check calls the console a development backend
+    # (mail.E001); here standard output is the log that keeps them.
+    SILENCED_SYSTEM_CHECKS = [*SILENCED_SYSTEM_CHECKS, "mail.E001"]
 
 DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", "webmaster@localhost")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL

@@ -174,6 +174,8 @@ See [History](history.md).
 | `USE_TZ` | Date filters compare against day boundaries in the active timezone |
 | `TIME_ZONE` | Which day a timestamp belongs to |
 | `REST_FRAMEWORK` | Authentication and permission defaults |
+| `MAILERS` | The `default` mailer carries every e-mail the framework sends; `EMAIL_BACKEND` and `EMAIL_*` before Django 6.1 — see [Mail](installation.md#mail) |
+| `DEFAULT_FROM_EMAIL` | The sender of those e-mails |
 
 The framework does **not** require any particular DRF pagination,
 filter-backend or renderer configuration: the viewsets declare their own

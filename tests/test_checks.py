@@ -4,6 +4,7 @@ plugged the framework in (generic/checks.py)."""
 from __future__ import annotations
 
 import importlib.util
+from types import SimpleNamespace
 
 import pytest
 from django.conf import settings
@@ -94,6 +95,37 @@ class TestRestFramework:
             }
         ):
             assert ids(checks.check_rest_framework()) == ["generic.E003"]
+
+
+class TestMail:
+    """Whether MAILERS is set is read from the settings module, which no
+    override_settings can take back: the check reads it through
+    ``checks.settings``, replaced here."""
+
+    def unset(self, monkeypatch):
+        monkeypatch.setattr(
+            checks,
+            "settings",
+            SimpleNamespace(is_overridden=lambda name: name != "MAILERS"),
+        )
+
+    def test_the_suite_s_settings_pass(self):
+        assert checks.check_mail() == []
+
+    def test_without_mailers_it_is_said(self, monkeypatch):
+        monkeypatch.setattr(checks, "HAS_MAILERS", True)
+        self.unset(monkeypatch)
+
+        messages = checks.check_mail()
+
+        assert ids(messages) == ["generic.W006"]
+        assert "MAILERS" in messages[0].hint
+
+    def test_before_django_6_1_there_is_nothing_to_set(self, monkeypatch):
+        monkeypatch.setattr(checks, "HAS_MAILERS", False)
+        self.unset(monkeypatch)
+
+        assert checks.check_mail() == []
 
 
 class TestUrls:

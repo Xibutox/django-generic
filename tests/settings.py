@@ -9,6 +9,8 @@ does) and the same suite runs against Postgres and Redis instead.
 import os
 from urllib.parse import urlparse
 
+import django
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "test-only-not-a-secret",
@@ -151,6 +153,18 @@ else:
 # Celery runs here: a worker would not see the test database.
 CELERY_BROKER_URL = "memory://"
 CELERY_TASK_ALWAYS_EAGER = True
+
+# The suite's mail lands in django.core.mail.outbox whatever is written
+# here: the test runner swaps every mailer for the in-memory one. From
+# Django 6.1 there has to be a mailer to swap - without MAILERS, every
+# mail sent warns that Django 7.0 will have nowhere to send it. Before
+# 6.1 the runner swaps EMAIL_BACKEND, which needs nothing.
+if django.VERSION >= (6, 1):
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.locmem.EmailBackend",
+        }
+    }
 
 # Framework configuration under test.
 GENERIC = {

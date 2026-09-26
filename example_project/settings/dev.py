@@ -18,6 +18,7 @@ from .base import (
     MIDDLEWARE,
     database_from_url,
     env,
+    mail_settings,
     redis_backends,
 )
 
@@ -60,9 +61,12 @@ CELERY_TASK_ALWAYS_EAGER = not env("CELERY_BROKER_URL")
 # -- Mail --------------------------------------------------------------
 #
 # Printed by runserver rather than sent: the notifications that go by
-# mail can be read without a mail server.
+# mail can be read without a mail server. MAILERS from Django 6.1,
+# EMAIL_BACKEND before - see mail_settings in base.py.
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+globals().update(
+    mail_settings("django.core.mail.backends.console.EmailBackend")
+)
 
 # -- Django Debug Toolbar ----------------------------------------------
 #
