@@ -175,7 +175,7 @@ def model_field(model: Any, name: str) -> Any:
 
 def is_importable_field(field: Any) -> bool:
     """A field a file can write: the model's own, editable, not a key."""
-    if field is None or field.auto_created and not field.concrete:
+    if field is None:
         return False
 
     if getattr(field, "primary_key", False) and isinstance(
@@ -183,8 +183,14 @@ def is_importable_field(field: Any) -> bool:
     ):
         return False
 
+    # Declared on the model, not the reverse side of someone else's.
+    # Django 6.1 no longer calls a many-to-many field "concrete" - it
+    # has no column - so that flag cannot say it.
     if field.many_to_many:
-        return field.concrete and field.editable
+        return not field.auto_created and bool(field.editable)
+
+    if field.auto_created and not field.concrete:
+        return False
 
     return bool(field.concrete and field.editable)
 
