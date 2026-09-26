@@ -52,7 +52,13 @@ def tasks_are_offered() -> bool:
     if setting is not None:
         return bool(setting)
 
-    return bool(registry.names()) or beat_installed()
+    # The framework's own tasks - the mailings' dispatcher - are no
+    # reason to show a project pages it never asked for.
+    declared = [
+        name for name in registry.names() if not name.startswith("generic.")
+    ]
+
+    return bool(declared) or beat_installed()
 
 
 class TaskRunResource(ModelResource):

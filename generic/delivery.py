@@ -33,7 +33,7 @@ import logging
 from typing import Any, Callable, Iterable
 
 from django.conf import settings
-from django.core.mail import send_mass_mail
+from django.core.mail import EmailMessage, send_mass_mail
 from django.utils import translation
 
 from generic.conf import generic_settings
@@ -157,6 +157,47 @@ def mail(
         logger.exception("Could not send the mail for %s", context or title)
 
 
+def mail_with_attachment(
+    user: Any,
+    *,
+    subject: str,
+    body: str,
+    filename: str = "",
+    content: bytes = b"",
+    mimetype: str = "application/octet-stream",
+    context: str = "",
+) -> bool:
+    """One e-mail to one reader, with a file when there is one.
+
+    Through the default mailer, like :func:`mail` - ``MAILERS`` from
+    Django 6.1, ``EMAIL_BACKEND`` before. A failure is logged and
+    answered with False, never raised: the mailing reports it.
+    """
+    address = getattr(user, "email", "")
+
+    if not address:
+        return False
+
+    message = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[address],
+    )
+
+    if filename:
+        message.attach(filename, content, mimetype)
+
+    try:
+        message.send()
+    except Exception:
+        logger.exception("Could not send the mail for %s", context or subject)
+
+        return False
+
+    return True
+
+
 def deliver(
     users: Iterable[Any],
     *,
@@ -198,6 +239,7 @@ __all__ = [
     "by_language",
     "by_preference",
     "deliver",
+    "mail_with_attachment",
     "mail",
     "notify",
     "preferred_channels",

@@ -20,6 +20,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - Tickets and customers can be imported from a spreadsheet: *Import*
   on their lists. A ticket's reference and a customer's code find the
   record to update.
+- The admin account is sent the open urgent tickets every weekday at
+  eight (*Scheduled mailings*, in the Tasks group), and the scheduler
+  runs the mailings every five minutes.
 
 ### Fixed
 - *Run now* hands the task to the Celery worker. The web server never

@@ -272,6 +272,12 @@ French) in the file, add a row with a new reference, and drop it again:
 the preview says one to create, one to update, and names any cell it
 cannot read. As `viewer`, the button is not there.
 
+**Mailing a list.** Filter the ticket list, open **Views** and choose
+*Send by e-mail on a schedule…*: the form holds the list as you see
+it. *Scheduled mailings* (Tasks group) already has *Open urgent
+tickets* for `admin`; *Send now* on it, and the development stack's
+worker log shows the e-mail and its attachment.
+
 **Everywhere.** Ctrl+K searches every page, record and wiki page.
 Accents do not matter (`generic.search`): `region` finds *Région
 Occitanie*, and `lefevre` finds the agent *Norah Lefèvre*.

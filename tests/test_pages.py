@@ -162,6 +162,7 @@ def pool(db, support_desk, library, workshop) -> Pool:
     from example.models import Customer, TimeEntry
     from generic.events.models import Message
     from generic.history.models import HistoryEntry
+    from generic.mailings.models import ScheduledMailing
     from generic.tasks.models import TaskRun
     from generic.wiki.models import WikiPage
     from tests.factories import UserFactory
@@ -216,6 +217,9 @@ def pool(db, support_desk, library, workshop) -> Pool:
         "auth.permission": Permission.objects.first(),
         "generic.message": Message.objects.create(
             title="Pooled", everyone=True
+        ),
+        "generic.scheduledmailing": ScheduledMailing.objects.create(
+            name="Pooled", table="site.example.ticket"
         ),
         # The hand-written pages of tests/testapp and the example.
         "book": library["emma"],

@@ -300,3 +300,35 @@ class TestThePreference:
         )
 
         assert "Account settings" in response.content.decode()
+
+
+class TestEveryRequestInItsOwnLanguage:
+    """Regression: generated titles were forced to text when the
+    serializer class was built - once per process - so every export and
+    every form after the first request kept that request's language."""
+
+    def test_export_headers(self, admin_client, support_desk):
+        def headers(language: str) -> str:
+            response = admin_client.get(
+                "/api/example/ticket/export-csv/",
+                HTTP_ACCEPT_LANGUAGE=language,
+            )
+
+            return b"".join(response.streaming_content).decode()[:30]
+
+        assert "Reference;Title" in headers("en")
+        assert "Référence;Titre" in headers("fr")
+
+    def test_form_sections(self, admin_client, support_desk):
+        def sections(language: str) -> list[str]:
+            response = admin_client.get(
+                "/api/example/ticket/form-schema/",
+                HTTP_ACCEPT_LANGUAGE=language,
+            )
+
+            return [
+                section["title"] for section in response.json()["sections"]
+            ]
+
+        assert "Assignment" in sections("en")
+        assert "Attribution" in sections("fr")

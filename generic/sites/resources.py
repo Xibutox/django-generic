@@ -213,6 +213,10 @@ class ModelResource(PagesMixin):
     #: Publish every change so open tables refresh themselves.
     realtime: bool = True
 
+    #: Whether this list may be sent by e-mail on a schedule - offered
+    #: to holders of ``generic.add_scheduledmailing`` (generic.mailings).
+    mailing: bool = True
+
     #: Offer users the choice of being told when a record changes, or
     #: when any record of this model does. False for models whose
     #: changes are nobody's news - a log, a run, a schedule's counter.
@@ -399,6 +403,22 @@ class ModelResource(PagesMixin):
 
     def get_actions_url(self) -> str:
         return self._reverse(self.api_url_name("actions"))
+
+    def get_mailing_url(self, request: Any) -> str:
+        """The add form of a mailing of this list, or ``""``."""
+        from generic.mailings.models import ScheduledMailing
+
+        if not self.mailing or not generic_settings.SHOW_MAILINGS:
+            return ""
+
+        user = getattr(request, "user", None)
+
+        if user is None or not user.has_perm("generic.add_scheduledmailing"):
+            return ""
+
+        resource = self.site.get_resource(ScheduledMailing)
+
+        return resource.get_add_url() if resource is not None else ""
 
     def get_import_url(self) -> str:
         return self._reverse(self.url_name("import"))
@@ -745,6 +765,8 @@ class ModelResource(PagesMixin):
             "bulkActionsUrl": self.get_actions_url(),
             "presets": self.get_presets(request),
             "savedViewsUrl": self._reverse("generic:saved-view-list"),
+            # Where "Send by e-mail on a schedule" leads, for who may.
+            "mailingUrl": self.get_mailing_url(request),
             "realtimeTopic": self.topic_name if self.realtime else "",
             "label": self.get_label(),
             "labelPlural": self.get_label_plural(),

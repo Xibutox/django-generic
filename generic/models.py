@@ -14,6 +14,7 @@ from generic.events.models import (
     NotificationQuerySet,
 )
 from generic.history.models import HistoryEntry
+from generic.mailings.models import ScheduledMailing
 from generic.maintenance.models import RestartAnnouncement
 from generic.tasks.models import TaskRun
 from generic.watch.models import Watch
@@ -27,6 +28,7 @@ __all__ = [
     "NotificationQuerySet",
     "RestartAnnouncement",
     "SavedView",
+    "ScheduledMailing",
     "TaskRun",
     "UserPreferences",
     "Watch",

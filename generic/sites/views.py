@@ -7,6 +7,7 @@ write then go through the resource's DRF endpoint.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from django.contrib.auth.views import redirect_to_login
@@ -458,6 +459,12 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
 
             if isinstance(field, models.ManyToManyField):
                 initial[name] = [value for value in values if value]
+            elif isinstance(field, models.JSONField):
+                # Sent as text; the form's JSON widget wants the value.
+                try:
+                    initial[name] = json.loads(values[0])
+                except ValueError:
+                    continue
             else:
                 initial[name] = values[0]
 

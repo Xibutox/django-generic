@@ -270,6 +270,7 @@ class Command(BaseCommand):
         self.create_notifications(users)
         self.create_wiki_pages(users)
         self.create_schedule()
+        self.create_mailing(users)
         self.work_a_few_tickets(tickets, agents, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
@@ -362,6 +363,76 @@ class Command(BaseCommand):
                     "Every working morning, count what is late and tell "
                     "the desk."
                 ),
+            },
+        )
+
+    def create_mailing(self, users: dict[str, Any]) -> None:
+        """Every weekday at eight, the open urgent tickets for admin.
+
+        With the dispatcher on the scheduler every five minutes where
+        it is installed; the development stack's console mailer then
+        shows the mail in the worker's log.
+        """
+        from generic.mailings.dispatch import TASK
+        from generic.mailings.models import ScheduledMailing
+        from generic.mailings.schedule import next_run
+
+        admin = users["admin"]
+        mailing, created = ScheduledMailing.objects.get_or_create(
+            name="Open urgent tickets",
+            owner=admin,
+            defaults={
+                "table": "site.example.ticket",
+                "state": {
+                    "columns": [
+                        "reference",
+                        "title",
+                        "customer",
+                        "team",
+                        "assignee",
+                        "due_on",
+                    ],
+                    "order": [["due_on", "asc"]],
+                    "filters": {
+                        "match": "all",
+                        "conditions": [
+                            {
+                                "column": "status",
+                                "operator": "any_of",
+                                "value": ["open", "pending"],
+                            },
+                            {
+                                "column": "priority",
+                                "operator": "any_of",
+                                "value": ["urgent"],
+                            },
+                        ],
+                    },
+                    "search": "",
+                },
+                "frequency": ScheduledMailing.Frequency.WEEKDAYS,
+                "time": "08:00",
+            },
+        )
+
+        if created:
+            mailing.next_run_at = next_run(mailing)
+            mailing.save(update_fields=["next_run_at"])
+
+        if not apps.is_installed("django_celery_beat"):
+            return
+
+        interval = apps.get_model("django_celery_beat", "IntervalSchedule")
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        every, _created = interval.objects.get_or_create(
+            every=5, period="minutes"
+        )
+        periodic.objects.get_or_create(
+            name="Scheduled mailings",
+            defaults={
+                "task": TASK,
+                "interval": every,
+                "description": "Sends the mailings whose time has come.",
             },
         )
 

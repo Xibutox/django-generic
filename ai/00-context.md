@@ -134,6 +134,9 @@ generic/
 ├── locale/fr/LC_MESSAGES/  django.po/.mo (pages) and djangojs.po/.mo (browser)
 ├── maintenance/            announced restarts: RestartAnnouncement, the three
 │                           warnings and the restart (scheduler.py), api, page
+├── mailings/               ScheduledMailing: a list's state e-mailed on a schedule; sending.py
+│                           (as each recipient, through the resource's own export),
+│                           dispatch.py (the generic.send_scheduled_mailings task)
 ├── tasks/                  declared tasks: registry, runner (announce, run,
 │                           collect, report), TaskRun, the catalogue page and
 │                           the django-celery-beat screens
@@ -491,6 +494,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
 | `realtime` | True | publish changes; open tables, summaries and charts refresh |
+| `mailing` | True | the list may be e-mailed on a schedule (§13d), offered to holders of `generic.add_scheduledmailing` |
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
 | `history` | True | keep a version of every record, read back by its History tab (§13c) |
 | `history_exclude` | `()` | fields left out of that version, by name |
@@ -1228,7 +1232,8 @@ strftime string fixes the text),
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
-`SHOW_MESSAGES`, `SHOW_TASKS`, `HISTORY`.
+`SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`,
+`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`.
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1502,6 +1507,33 @@ history_of(ticket)                 # every version, newest first
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
   `generic.history.prune()` deletes what is older. See
   `docs/history.md`.
+
+## 13d. Scheduled mailings
+
+- *Send by e-mail on a schedule…* in a list's Views menu (option
+  `mailingUrl` of `get_table_options`, from `get_mailing_url`) opens the
+  `ScheduledMailing` add form with `?table=<state key>&state=<json>`;
+  `ResourceFormView.get_initial` reads JSON fields as JSON.
+- `generic.ScheduledMailing`: name, owner, table (`site.<app>.<model>`),
+  state (a saved view's), format xlsx/csv, frequency
+  daily/weekdays/weekly/monthly + time (project `TIME_ZONE`), weekday,
+  day_of_month (1-28), include_owner, users, groups (active, with an
+  address, distinct), send_when_empty, is_active, next_run_at,
+  last_sent_at, last_error.
+- **Rows as each recipient**: `sending.send(mailing)` calls the
+  resource's own `list` (count) and `export`/`export_csv` actions
+  through a synthetic GET signed in as the recipient, state turned into
+  `filters`/`search`/`ordering`/`columns` (`parameters()`), inside the
+  recipient's language. Never read rows another way.
+- Dispatcher `generic.send_scheduled_mailings` (`managed_task`, page
+  channel only) or `manage.py send_scheduled_mailings`: claim under
+  `select_for_update(skip_locked=True)`, move `next_run_at` first. A
+  `MailingProblem` pauses the mailing and notifies the owner.
+- Permissions: `add_scheduledmailing` (own), `view_`/`change_`/
+  `delete_scheduledmailing` (everyone's). `mailing = False` on a
+  resource, `SHOW_MAILINGS = False` for the project. The framework's
+  own `generic.*` tasks do not turn `SHOW_TASKS = None` on. See
+  `docs/mailings.md`.
 
 ## 14. Known pitfalls
 

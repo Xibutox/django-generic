@@ -31,11 +31,30 @@ version.
   `import/template/` and `import/`; hooks `clean_import_row` and
   `save_import_row`; settings `IMPORT_MAX_ROWS`,
   `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- Scheduled mailings (`generic.mailings`): *Send by e-mail on a
+  schedule* in a list's Views menu sends the table as it is - filters,
+  search, columns, order - as Excel or CSV, daily, on weekdays, weekly
+  or monthly, to people and groups. Each recipient gets the rows they
+  may see, computed as them through the resource's own export, in
+  their language. A dispatcher task (`generic.send_scheduled_mailings`,
+  or `manage.py send_scheduled_mailings` from cron) claims each due
+  mailing once; one that no longer works pauses and tells its owner.
+  Behind `generic.add_scheduledmailing`; `ModelResource.mailing`,
+  `SHOW_MAILINGS`, `MAILING_MAX_ATTACHMENT_SIZE`;
+  `generic.delivery.mail_with_attachment`.
 - `generic.sites.realtime.batch(resource)`: every change made in a
   block announced as one `bulk` event.
 - `ModelResource.search_rank`: the command palette and the
   autocompletes list the closest match first (`pg_trgm`); `generic.W007`
   when the app is missing.
+
+### Fixed
+- Exports and forms speak each request's language. Column titles and
+  form sections were turned into text when a resource's serializers
+  were built - once per process - so every export and form after the
+  first request kept that request's language.
+- A JSON field of an add form takes its value from the address
+  (`?state={...}`) as JSON rather than as text.
 
 ## [1.0.0] - 2026-09-25
 

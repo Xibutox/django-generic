@@ -296,6 +296,29 @@
       panel.appendChild(save);
     }
 
+    var mailingUrl = controller.options.mailingUrl;
+
+    if (mailingUrl && Generic && Generic.isSafeUrl(mailingUrl)) {
+      var mailing = menuItem(
+        "forward_to_inbox",
+        t("Send by e-mail on a schedule") + "\u2026"
+      );
+
+      // The mailing's own form, with this table as it is now: its
+      // filters, search, columns and order.
+      mailing.addEventListener("click", function () {
+        var query = new URLSearchParams({
+          table: controller.options.stateKey,
+          name: controller.activeView || controller.options.labelPlural || "",
+          state: JSON.stringify(controller.captureState())
+        });
+
+        menu.close();
+        window.location.href = mailingUrl + "?" + query.toString();
+      });
+      panel.appendChild(mailing);
+    }
+
     var reset = menuItem("restart_alt", t("Back to the default layout"));
 
     reset.addEventListener("click", function () {

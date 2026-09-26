@@ -133,10 +133,19 @@ See [Planned restarts](maintenance.md).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as a task is declared or `django_celery_beat` is installed |
+| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as the project declares a task or `django_celery_beat` is installed |
 | `TASK_RECENT_RUNS` | `5` | How many runs the catalogue lists under each task |
 
 See [Tasks](tasks.md).
+
+## Scheduled mailings
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `SHOW_MAILINGS` | `True` | The list menu's *Send by e-mail on a schedule*, the Scheduled mailings screen and their dispatcher |
+| `MAILING_MAX_ATTACHMENT_SIZE` | `10 * 1024 * 1024` | Bytes; a larger file is not attached, and the mail links the list |
+
+See [Scheduled mailings](mailings.md).
 
 ## Signing in
 

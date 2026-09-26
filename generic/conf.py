@@ -71,6 +71,11 @@ DEFAULTS: dict[str, Any] = {
     "EXPORT_MAX_ROWS": 250_000,
     "EXPORT_DATE_FORMAT": "DD/MM/YYYY",
     "EXPORT_DATETIME_FORMAT": "DD/MM/YYYY HH:MM",
+    # --- Scheduled mailings (generic.mailings) ------------------------
+    # The Mailings screens, the list menu's entry and the dispatcher.
+    "SHOW_MAILINGS": True,
+    # Bytes; a larger file is not attached - the mail links the list.
+    "MAILING_MAX_ATTACHMENT_SIZE": 10 * 1024 * 1024,
     # --- Imports (a resource's ``imports``) -----------------------------
     # Rows one file may hold; a resource's Import(max_rows=...) wins.
     "IMPORT_MAX_ROWS": 5000,

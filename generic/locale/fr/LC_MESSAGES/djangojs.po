@@ -1398,3 +1398,6 @@ msgstr "Inchangé"
 
 msgid "Error"
 msgstr "Erreur"
+
+msgid "Send by e-mail on a schedule"
+msgstr "Envoyer par e-mail selon un calendrier"

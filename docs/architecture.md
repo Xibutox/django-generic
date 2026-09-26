@@ -77,6 +77,12 @@ generic/
 │
 ├── watch/               Watch: a user follows a record or a model
 ├── tasks/               Declared tasks: the four steps, runs, schedules
+├── mailings/            A list, as each reader may see it, e-mailed on a schedule
+│   ├── models.py        ScheduledMailing: which table, as whom, to whom, when
+│   ├── schedule.py      The next sending, in local time
+│   ├── sending.py       As each recipient: the resource's own export
+│   ├── dispatch.py      The dispatcher task: what is due, claimed once
+│   └── resources.py     The Scheduled mailings screen
 ├── delivery.py          One message, some people, the channels they chose
 ├── locale/              The framework's own catalogs (English, French)
 │
