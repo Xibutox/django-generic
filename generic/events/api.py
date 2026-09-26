@@ -35,6 +35,10 @@ class NotificationViewSet(
     """
 
     serializer_class = NotificationSerializer
+
+    #: Read by the API description, which cannot ask get_queryset() -
+    #: it has no signed-in user. Every request goes through it anyway.
+    queryset = Notification.objects.none()
     permission_classes = (IsAuthenticated,)
     filter_backends = DATATABLE_FILTER_BACKENDS
     pagination_class = DataTablesPagination

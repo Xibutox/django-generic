@@ -56,6 +56,7 @@ from generic.api.pagination import DataTablesPagination
 from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
 from generic.api.viewsets import FormSchemaViewSetMixin
 from generic.conf import generic_settings
+from generic.openapi import framework_schema
 from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
 from generic.sites.related import RELATED_PARAM
 from generic.views.delete import collect_deletion_summary
@@ -133,6 +134,10 @@ class ResourceViewSet(
     ``resource`` is filled in per model by
     :meth:`ModelResource.get_viewset_class`.
     """
+
+    #: drf-spectacular's inspector, taught these endpoints, when it is
+    #: installed (generic.openapi); DRF's default otherwise.
+    schema = framework_schema()
 
     resource: Any = None
 

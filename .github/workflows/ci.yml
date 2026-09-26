@@ -30,6 +30,10 @@ jobs:
       - name: message catalogs
         # A .po edited without recompiling translates nothing.
         run: python scripts/compile_messages.py --check
+      - name: OpenAPI description
+        # Every endpoint of the example described, and no guess left:
+        # a resource the schema cannot describe fails here.
+        run: python manage.py spectacular --validate --fail-on-warn --file /dev/null
       - name: bandit
         # B101 (assert) is noise in a codebase that uses asserts as
         # internal invariants rather than as input validation.

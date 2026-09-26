@@ -22,6 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from generic.openapi import framework_schema
 from generic.views.delete import GenericDeleteView
 from generic.views.mixins import POPUP_PARAM, PageMixin
 from generic.views.toolbar import Breadcrumb, ToolbarItem
@@ -83,6 +84,8 @@ class SiteIndexView(SiteViewMixin, TemplateView):
 
 class SiteSearchView(APIView):
     """What the command palette shows, as JSON."""
+
+    schema = framework_schema()
 
     site: Any = None
     permission_classes = (IsAuthenticated,)

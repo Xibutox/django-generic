@@ -76,6 +76,13 @@ DEFAULTS: dict[str, Any] = {
     "SHOW_MAILINGS": True,
     # Bytes; a larger file is not attached - the mail links the list.
     "MAILING_MAX_ATTACHMENT_SIZE": 10 * 1024 * 1024,
+    # --- API tokens (generic.tokens) ----------------------------------
+    # Days a new token lasts unless its owner chooses.
+    "API_TOKEN_DEFAULT_DAYS": 90,
+    # The longest a token may last; None allows tokens that never expire.
+    "API_TOKEN_MAX_DAYS": 365,
+    # Tokens one person may hold at once.
+    "API_TOKEN_LIMIT_PER_USER": 10,
     # --- Imports (a resource's ``imports``) -----------------------------
     # Rows one file may hold; a resource's Import(max_rows=...) wins.
     "IMPORT_MAX_ROWS": 5000,

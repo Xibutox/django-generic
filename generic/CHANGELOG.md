@@ -31,6 +31,17 @@ version.
   `import/template/` and `import/`; hooks `clean_import_row` and
   `save_import_row`; settings `IMPORT_MAX_ROWS`,
   `IMPORT_MAX_FILE_SIZE`, `IMPORT_PREVIEW_ROWS`; the `import` extra.
+- The API for scripts. `generic.tokens` (on django-rest-knox,
+  `KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"`): personal tokens made
+  on the account page and shown once, read only or read and write, with
+  an expiry and their last use; an *API tokens* screen under People to
+  revoke anyone's; `generic.tokens.authentication.TokenAuthentication`.
+  `generic.openapi` (on drf-spectacular): `api/schema/` and `api/docs/`
+  describe every generated endpoint as it behaves - the DataTables
+  envelope and its filter tree, charts, actions, exports, imports -
+  listing only what the reader may use, Swagger UI served from the
+  sidecar's files. Checks `generic.E006`, `E007`, `W008`, `E008`;
+  settings `API_TOKEN_*`; the `api` extra.
 - Scheduled mailings (`generic.mailings`): *Send by e-mail on a
   schedule* in a list's Views menu sends the table as it is - filters,
   search, columns, order - as Excel or CSV, daily, on weekdays, weekly
@@ -53,6 +64,8 @@ version.
   form sections were turned into text when a resource's serializers
   were built - once per process - so every export and form after the
   first request kept that request's language.
+- An account page shown to nobody - the API description, written with
+  no request - no longer fails asking an anonymous user for a password.
 - A JSON field of an add form takes its value from the address
   (`?state={...}`) as JSON rather than as text.
 

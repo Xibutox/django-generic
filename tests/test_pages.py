@@ -60,6 +60,9 @@ EXPECTED: dict[str, tuple[int, ...]] = {
     # resource refuses to add or remove one.
     "site:auth_permission_add": (403,),
     "site:auth_permission_delete": (403,),
+    # A token is made by its owner on the account page, shown once
+    # there: the People screen only reads and revokes.
+    "site:generic_tokens_apitoken_add": (403,),
 }
 
 
@@ -164,6 +167,7 @@ def pool(db, support_desk, library, workshop) -> Pool:
     from generic.history.models import HistoryEntry
     from generic.mailings.models import ScheduledMailing
     from generic.tasks.models import TaskRun
+    from generic.tokens.models import ApiToken
     from generic.wiki.models import WikiPage
     from tests.factories import UserFactory
 
@@ -221,6 +225,9 @@ def pool(db, support_desk, library, workshop) -> Pool:
         "generic.scheduledmailing": ScheduledMailing.objects.create(
             name="Pooled", table="site.example.ticket"
         ),
+        "generic_tokens.apitoken": ApiToken.objects.create(
+            user=UserFactory(username="tokened"), name="Pooled"
+        )[0],
         # The hand-written pages of tests/testapp and the example.
         "book": library["emma"],
         "publisher": library["publisher"],

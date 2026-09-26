@@ -278,6 +278,13 @@ it. *Scheduled mailings* (Tasks group) already has *Open urgent
 tickets* for `admin`; *Send now* on it, and the development stack's
 worker log shows the e-mail and its attachment.
 
+**From a script.** `seed_example` printed a read-only token for
+`admin`: `curl -H 'Authorization: Token ...'
+http://127.0.0.1:8000/api/example/ticket/?length=5`. Make others on the
+account page (*API tokens*), and read what each endpoint takes at
+`/api/docs/`. Signed in as `viewer`, the description lists only what
+`viewer` may open.
+
 **Everywhere.** Ctrl+K searches every page, record and wiki page.
 Accents do not matter (`generic.search`): `region` finds *Région
 Occitanie*, and `lefevre` finds the agent *Norah Lefèvre*.

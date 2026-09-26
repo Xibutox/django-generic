@@ -100,6 +100,9 @@ class WatchViewSet(
     """The user's watches; start and stop one through ``toggle``."""
 
     serializer_class = WatchSerializer
+    #: Read by the API description, which cannot ask get_queryset() -
+    #: it has no signed-in user. Every request goes through it anyway.
+    queryset = Watch.objects.none()
     permission_classes = (IsAuthenticated,)
     pagination_class = None
 

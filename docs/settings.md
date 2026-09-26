@@ -138,6 +138,16 @@ See [Planned restarts](maintenance.md).
 
 See [Tasks](tasks.md).
 
+## API tokens
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `API_TOKEN_DEFAULT_DAYS` | `90` | A new token's life, unless its owner chooses |
+| `API_TOKEN_MAX_DAYS` | `365` | The longest a token may last; `None` allows tokens that never expire |
+| `API_TOKEN_LIMIT_PER_USER` | `10` | Tokens one person may hold at once |
+
+See [The API for scripts](api.md).
+
 ## Scheduled mailings
 
 | Setting | Default | Meaning |

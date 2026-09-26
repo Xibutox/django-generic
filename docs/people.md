@@ -87,6 +87,15 @@ refusal names the field and the form shows it there.
 The rules live in `generic/accounts/guard.py`, on their own, so they can
 be read in one sitting.
 
+## API tokens
+
+With `generic.tokens` installed, an **API tokens** screen joins them:
+everyone's tokens - name, owner, scope, expiry, last use - for holders
+of `generic_tokens.view_apitoken`, revoked with
+`generic_tokens.delete_apitoken`. Nobody makes or changes a token here:
+its owner makes it on the account page, where it is shown once. See
+[The API for scripts](api.md).
+
 ## Turning them off
 
 ```python

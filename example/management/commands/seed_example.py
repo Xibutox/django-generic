@@ -271,6 +271,7 @@ class Command(BaseCommand):
         self.create_wiki_pages(users)
         self.create_schedule()
         self.create_mailing(users)
+        self.create_api_token(users)
         self.work_a_few_tickets(tickets, agents, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
@@ -434,6 +435,34 @@ class Command(BaseCommand):
                 "interval": every,
                 "description": "Sends the mailings whose time has come.",
             },
+        )
+
+    def create_api_token(self, users: dict[str, Any]) -> None:
+        """A read token for admin, printed once, as the account page does.
+
+        Only a hash is kept: a second run cannot print it again, and
+        makes none - revoke it on the account page to get a new one.
+        """
+        if not apps.is_installed("generic.tokens"):
+            return
+
+        from generic.tokens.models import ApiToken
+
+        admin = users["admin"]
+
+        if ApiToken.objects.filter(user=admin, name="Seed script").exists():
+            return
+
+        _instance, token = ApiToken.objects.create(
+            user=admin,
+            name="Seed script",
+            scope=ApiToken.Scope.READ,
+            expiry=datetime.timedelta(days=90),
+        )
+        self.stdout.write(
+            f"A read-only API token for admin (shown once): {token}\n"
+            f"  curl -H 'Authorization: Token {token}' "
+            f"http://127.0.0.1:8000/api/example/ticket/?length=5"
         )
 
     # -- the equipment ---------------------------------------------------

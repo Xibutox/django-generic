@@ -40,6 +40,7 @@ from generic.api.inlines import (
 )
 from generic.api.pagination import DataTablesPagination
 from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
+from generic.openapi import framework_schema
 
 
 class DataTableViewSet(
@@ -54,6 +55,10 @@ class DataTableViewSet(
     through the serializer's column declaration, so a subclass only has
     to describe *what* is selected.
     """
+
+    #: drf-spectacular's inspector, taught these endpoints, when it is
+    #: installed (generic.openapi); DRF's default otherwise.
+    schema = framework_schema()
 
     http_method_names = ["get", "head", "options"]
 
@@ -448,5 +453,9 @@ class ModelFormViewSet(
     Pairs with the frontend editor: the page fetches ``form-schema``,
     renders the form, and submits back here.
     """
+
+    #: drf-spectacular's inspector, taught these endpoints, when it is
+    #: installed (generic.openapi); DRF's default otherwise.
+    schema = framework_schema()
 
     permission_classes = (IsAuthenticated,)

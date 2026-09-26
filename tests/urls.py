@@ -121,6 +121,7 @@ urlpatterns = [
         include("example.api_urls", namespace="example_api"),
     ),
     path("example/", include("example.urls", namespace="example")),
+    path("api/", include("generic.openapi.urls")),
     path("api/", include(router.urls)),
     path(
         "api/author-autocomplete/",

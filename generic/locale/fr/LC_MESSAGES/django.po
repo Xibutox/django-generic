@@ -2698,3 +2698,75 @@ msgid "%(count)s row of %(list)s, as of %(when)s."
 msgid_plural "%(count)s rows of %(list)s, as of %(when)s."
 msgstr[0] "%(count)s ligne de %(list)s, au %(when)s."
 msgstr[1] "%(count)s lignes de %(list)s, au %(when)s."
+
+msgid "You may not create API tokens."
+msgstr "Vous ne pouvez pas créer de jetons d'API."
+
+msgid "You have %(count)s tokens already: revoke one first."
+msgstr "Vous avez déjà %(count)s jetons : révoquez-en un d'abord."
+
+msgid "API tokens"
+msgstr "Jetons d'API"
+
+msgid "This token may only read."
+msgstr "Ce jeton ne peut que lire."
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "What uses it: a script, a report, a colleague's tool."
+msgstr "Ce qui l'utilise : un script, un rapport, l'outil d'un collègue."
+
+msgid "scope"
+msgstr "portée"
+
+msgid "last used"
+msgstr "dernière utilisation"
+
+msgid "API token"
+msgstr "Jeton d'API"
+
+msgid "Tokens scripts call the API with, as the person who made them."
+msgstr "Les jetons avec lesquels des scripts appellent l'API, au nom de la personne qui les a créés."
+
+msgid "Valid for (days)"
+msgstr "Valable (jours)"
+
+msgid "Every token expires, within %(days)s days."
+msgstr "Tout jeton expire, sous %(days)s jours."
+
+msgid "At most %(days)s days."
+msgstr "Au plus %(days)s jours."
+
+msgid "Copy it now: it will not be shown again."
+msgstr "Copiez-le maintenant : il ne sera plus affiché."
+
+msgid "Copy"
+msgstr "Copier"
+
+msgid "Scope"
+msgstr "Portée"
+
+msgid "Expires"
+msgstr "Expire"
+
+msgid "Last used"
+msgstr "Dernière utilisation"
+
+msgid "Revoke"
+msgstr "Révoquer"
+
+msgid "No token yet."
+msgstr "Aucun jeton pour l'instant."
+
+msgid "Create a token"
+msgstr "Créer un jeton"
+
+msgid "What will use it"
+msgstr "Ce qui va l'utiliser"
+
+msgid "Valid for"
+msgstr "Valable"
+
+msgid "A script sends one in an <code>Authorization: Token ...</code> header and acts as you, with your permissions."
+msgstr "Un script l'envoie dans un en-tête <code>Authorization: Token ...</code> et agit en votre nom, avec vos permissions."

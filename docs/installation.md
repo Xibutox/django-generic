@@ -32,6 +32,7 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 | --- | --- | --- |
 | `export` | openpyxl | the Excel export (CSV needs nothing) |
 | `import` | openpyxl, defusedxml | Excel imports, read safely (CSV needs nothing) |
+| `api` | django-rest-knox, drf-spectacular, its sidecar | personal API tokens (`generic.tokens`) and the OpenAPI description (`generic.openapi`), see [The API for scripts](api.md) |
 | `events` | Channels, channels-redis, Daphne | live updates, notifications, watches over WebSocket |
 | `tasks` | Celery, redis | declared tasks run in the background |
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "generic",                       # the framework's
     # "generic.wiki",                # optional: the wiki
     # "generic.search",              # optional: searches ignore accents
+    # "knox", "generic.tokens",      # optional: API tokens (docs/api.md)
     "myapp",
 ]
 

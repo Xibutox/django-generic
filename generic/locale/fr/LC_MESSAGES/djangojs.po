@@ -1401,3 +1401,39 @@ msgstr "Erreur"
 
 msgid "Send by e-mail on a schedule"
 msgstr "Envoyer par e-mail selon un calendrier"
+
+msgid "%(days)s days"
+msgstr "%(days)s jours"
+
+msgid "Never expires"
+msgstr "N'expire jamais"
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "Read only"
+msgstr "Lecture seule"
+
+msgid "Copied."
+msgstr "Copié."
+
+msgid "Revoke this token?"
+msgstr "Révoquer ce jeton ?"
+
+msgid "%(name)s stops working at once, for whatever uses it."
+msgstr "%(name)s cesse de fonctionner immédiatement, pour tout ce qui l'utilise."
+
+msgid "Revoke"
+msgstr "Révoquer"
+
+msgid "expires: %(when)s"
+msgstr "expire : %(when)s"
+
+msgid "last used: %(when)s"
+msgstr "dernière utilisation : %(when)s"
+
+msgid "never"
+msgstr "jamais"
+
+msgid "not yet"
+msgstr "pas encore"

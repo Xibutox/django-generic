@@ -9,6 +9,7 @@ The pages - dashboard, account, sign in - come with the site instead::
     path("", site.urls),
 """
 
+from django.apps import apps
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -39,6 +40,12 @@ router.register(
 )
 router.register("saved-views", SavedViewViewSet, basename="saved-view")
 router.register("watches", WatchViewSet, basename="watch")
+
+# A person's own API tokens, where the project installed them.
+if apps.is_installed("generic.tokens"):
+    from generic.tokens.api import ApiTokenViewSet
+
+    router.register("tokens", ApiTokenViewSet, basename="api-token")
 
 urlpatterns = [
     path(

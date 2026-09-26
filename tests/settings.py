@@ -30,6 +30,11 @@ INSTALLED_APPS = [
     # Accent-insensitive search: installed, as a project would, so the
     # suite runs every search through it - on SQLite and on PostgreSQL.
     "generic.search",
+    # The API for scripts: tokens, and its OpenAPI description.
+    "knox",
+    "generic.tokens",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "tests.testapp",
     # Covered by the suite too: the example is a deliverable, and a
     # broken example is a broken promise.
@@ -114,10 +119,15 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
+# The tokens knox writes are generic.tokens' own (docs/api.md).
+KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        "generic.tokens.authentication.TokenAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }

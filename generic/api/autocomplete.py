@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from generic.conf import generic_settings
+from generic.openapi import framework_schema
 from generic.search import text_lookup
 
 
@@ -35,6 +36,10 @@ class AutocompleteView(APIView):
     ``search_fields`` is a fixed whitelist: the client only ever sends a
     search term, never a field to search in.
     """
+
+    #: drf-spectacular's inspector, taught these endpoints, when it is
+    #: installed (generic.openapi); DRF's default otherwise.
+    schema = framework_schema()
 
     permission_classes = (IsAuthenticated,)
 

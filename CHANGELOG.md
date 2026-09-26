@@ -23,6 +23,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - The admin account is sent the open urgent tickets every weekday at
   eight (*Scheduled mailings*, in the Tasks group), and the scheduler
   runs the mailings every five minutes.
+- Scripts call the API with a token made on the account page; the
+  seed prints a read-only one for admin. `api/docs/` describes every
+  endpoint.
 
 ### Fixed
 - *Run now* hands the task to the Celery worker. The web server never

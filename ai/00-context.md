@@ -152,6 +152,11 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning
+├── tokens/                 optional app generic.tokens: ApiToken (knox's token model, via
+│                           KNOX_TOKEN_MODEL), TokenAuthentication (scope, last use),
+│                           api/generic/tokens/, the account section, the People screen
+├── openapi/                framework_schema(), ResourceAutoSchema (drf-spectacular),
+│                           urls.py: api/schema/ and api/docs/ (sidecar files)
 ├── search/                 optional app generic.search: accents set aside in every text match
 │                           (text_lookup, fold, normalize), lookups.py the unaccented transform,
 │                           operations.py InstallUnaccent / CreateSearchIndex, ranking.py search_rank
@@ -284,7 +289,9 @@ The full wiring with every line explained is `docs/installation.md`;
 the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
-`I001`). `site.urls`
+`E006`/`E007`/`W008` `generic.tokens` without knox / without
+`KNOX_TOKEN_MODEL` / its class not in DRF, `E008` OpenAPI pages without
+drf-spectacular, `I001`). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1232,7 +1239,8 @@ strftime string fixes the text),
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
-`SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`,
+`SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
+`API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
 `MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`.
 Read them via `from generic.conf import generic_settings`.
 
@@ -1507,6 +1515,36 @@ history_of(ticket)                 # every version, newest first
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
   `generic.history.prune()` deletes what is older. See
   `docs/history.md`.
+
+## 13e. The API for scripts (`generic.tokens`, `generic.openapi`)
+
+```python
+INSTALLED_APPS += ["knox", "generic.tokens", "drf_spectacular", "drf_spectacular_sidecar"]
+KNOX_TOKEN_MODEL = "generic_tokens.ApiToken"
+REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] += ["generic.tokens.authentication.TokenAuthentication"]
+REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+path("api/", include("generic.openapi.urls"))      # before site.urls
+```
+
+- A token = `ApiToken(AbstractAuthToken)`: digest (pk), token_key,
+  user, created, expiry + name, scope (`read`/`read_write`),
+  last_used_at (written once a minute at most, by `update()`). It acts
+  with its owner's permissions; a read token on an unsafe method is a
+  403 raised by the authentication class. Made on the account page
+  (`AccountView.api_tokens`, `generic/account/api_tokens.html`, Alpine
+  `apiTokens`), shown once; `generic_tokens.add_apitoken` to make one.
+  `api/generic/tokens/` is session only. People › API tokens: read and
+  revoke (`view_`/`delete_apitoken`), never add or change.
+- Framework viewsets and hand-built API views carry `schema =
+  framework_schema()`: `ResourceAutoSchema` when `drf_spectacular` is
+  in `INSTALLED_APPS`, DRF's `DefaultSchema` otherwise. It types the
+  list through `DataTablesPagination.get_paginated_response_schema`,
+  adds the filter parameters, answers hand-built actions as objects or
+  files, maps `TagsColumn`/`ManyRelatedColumn` by extensions, names
+  generated serializers `<App><Name>`. A new endpoint or column type
+  must keep `manage.py spectacular --validate --fail-on-warn` clean (CI
+  runs it on the example). A user-scoped viewset sets `queryset =
+  Model.objects.none()` for the generator. See `docs/api.md`.
 
 ## 13d. Scheduled mailings
 
