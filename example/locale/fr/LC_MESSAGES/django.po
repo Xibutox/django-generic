@@ -1890,3 +1890,7 @@ msgstr "Rouvrir ce ticket ?"
 
 msgid "One row per ticket. A known reference updates that ticket, and an empty cell keeps its value; a new one creates it. Customers, teams and agents are named as the list shows them."
 msgstr "Une ligne par ticket. Une référence connue met à jour ce ticket, et une cellule vide garde sa valeur ; une nouvelle en crée un. Clients, équipes et agents sont nommés comme la liste les affiche."
+
+#: example/models.py
+msgid "attachment"
+msgstr "pièce jointe"

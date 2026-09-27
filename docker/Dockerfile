@@ -95,9 +95,10 @@ RUN DJANGO_SETTINGS_MODULE=example_project.settings.prod \
     python manage.py collectstatic --noinput \
     && rm -f /tmp/collectstatic.sqlite3
 
-# Where the production stack's log file lives (a volume mounted over it,
-# which takes this folder's owner): the application's user writes it.
-RUN mkdir -p /app/logs && chown app:app /app/logs
+# Where the production stack's log file lives, and the files people
+# upload (MEDIA_ROOT): volumes mounted over them take these folders'
+# owner, and the application's user writes both.
+RUN mkdir -p /app/logs /app/media && chown app:app /app/logs /app/media
 
 # -- proxy --------------------------------------------------------------
 

@@ -22,6 +22,8 @@ logs/
 # Celery Beat's own state file, written where it is started.
 celerybeat-schedule*
 staticfiles/
+# MEDIA_ROOT: the files uploaded while running the example.
+media/
 .env
 # The production stack's secrets: docker/prod.env.example is the one to
 # commit.

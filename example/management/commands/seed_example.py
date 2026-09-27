@@ -273,6 +273,7 @@ class Command(BaseCommand):
         self.create_mailing(users)
         self.create_api_token(users)
         self.work_a_few_tickets(tickets, agents, users)
+        self.attach_a_file(tickets, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
 
@@ -333,6 +334,36 @@ class Command(BaseCommand):
                     f"{ticket.description}\n\nAnswered by the desk."
                 ).strip()
                 ticket.save()
+
+    def attach_a_file(
+        self,
+        tickets: list[Ticket],
+        users: dict[str, Any],
+    ) -> None:
+        """The customer's log on the first ticket: a file to download.
+
+        Written to MEDIA_ROOT like any upload; its page links it
+        through the ticket's own endpoint, and the form offers to
+        replace or remove it.
+        """
+        from django.core.files.base import ContentFile
+
+        from generic.history import acting_as
+
+        if not tickets or tickets[0].attachment:
+            return
+
+        ticket = tickets[0]
+        log = (
+            "2026-03-02 09:14:07 ERROR Export timed out after 30 s\n"
+            "2026-03-02 09:14:52 ERROR Export timed out after 30 s\n"
+            "2026-03-02 09:16:30 WARNING Retried by the customer\n"
+        )
+
+        with acting_as(users["viewer"]):
+            ticket.attachment.save(
+                "customer-log.txt", ContentFile(log.encode()), save=True
+            )
 
     # -- schedules -----------------------------------------------------
 

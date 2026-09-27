@@ -48,6 +48,9 @@ x-app: &app
     EMAIL_USE_TLS: ${EMAIL_USE_TLS:-}
   volumes:
     - app-logs:/app/logs
+    # MEDIA_ROOT: the files people upload. Back it up with the database;
+    # Django serves them itself, through each record's endpoint.
+    - app-media:/app/media
 
 services:
   db:
@@ -149,6 +152,7 @@ services:
 
 volumes:
   app-logs:
+  app-media:
   postgres-data:
   redis-data:
   caddy-data:

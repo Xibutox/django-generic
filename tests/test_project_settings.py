@@ -47,6 +47,7 @@ READ = (
     "DJANGO_ADMINS",
     "DJANGO_LOG_LEVEL",
     "DJANGO_LOG_FILE",
+    "DJANGO_MEDIA_ROOT",
 )
 
 #: The settings Django 6.1 deprecates for MAILERS, and refuses to start
@@ -468,6 +469,26 @@ def manage(*args: str, **environ: str) -> subprocess.CompletedProcess:
         text=True,
         timeout=300,
     )
+
+
+class TestUploadedFiles:
+    @pytest.mark.parametrize("mode", ["dev", "prod"])
+    def test_beside_the_code_by_default(self, load, mode):
+        """/app/media in the image: the prod stack's app-media volume."""
+        settings = load(mode, **PRODUCTION)
+
+        assert settings["MEDIA_ROOT"] == settings["BASE_DIR"] / "media"
+
+    def test_the_environment_moves_them(self, load, tmp_path):
+        settings = load(
+            "prod", **PRODUCTION, DJANGO_MEDIA_ROOT=str(tmp_path / "files")
+        )
+
+        assert settings["MEDIA_ROOT"] == tmp_path / "files"
+
+    def test_no_folder_of_them_is_public(self, load):
+        """Each file is downloaded through its record's endpoint."""
+        assert not load("prod", **PRODUCTION).get("MEDIA_URL")
 
 
 class TestProductionForReal:

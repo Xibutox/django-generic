@@ -364,6 +364,9 @@ class TicketResource(ModelResource):
                     ("title", "team"),
                     "customer",
                     "description",
+                    # A file: chosen here, sent with the rest of the
+                    # form, downloaded from the ticket's page.
+                    "attachment",
                 )
             },
         ),
@@ -422,7 +425,7 @@ class TicketResource(ModelResource):
                 )
             },
         ),
-        (_("Description"), {"fields": ("description",)}),
+        (_("Description"), {"fields": ("description", "attachment")}),
         (
             _("Billing and outcome"),
             {

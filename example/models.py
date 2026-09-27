@@ -17,6 +17,7 @@ The delete rules are deliberate too:
 
 from __future__ import annotations
 
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -163,6 +164,19 @@ class Ticket(models.Model):
     reference = models.CharField(_("reference"), max_length=12, unique=True)
     title = models.CharField(_("title"), max_length=200)
     description = models.TextField(_("description"), blank=True, default="")
+    # A file of the customer's: chosen on the ticket's form, downloaded
+    # from its page through the ticket's own endpoint - never from a
+    # public folder. The extensions become the chooser's filter.
+    attachment = models.FileField(
+        _("attachment"),
+        upload_to="tickets/%Y/%m/",
+        blank=True,
+        validators=[
+            FileExtensionValidator(
+                ["pdf", "png", "jpg", "jpeg", "txt", "csv", "xlsx"]
+            )
+        ],
+    )
 
     # PROTECT: the delete page has to explain why a busy team cannot go.
     team = models.ForeignKey(
