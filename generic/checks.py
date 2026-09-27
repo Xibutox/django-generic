@@ -255,7 +255,7 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
             checks.Error(
                 "generic.wiki is installed but nh3 is not: the wiki cannot "
                 "clean what its editor writes, and saving a page fails.",
-                hint="pip install 'django-generic[wiki]'. " + DOCS,
+                hint="Install nh3: the framework's 'wiki' extra. " + DOCS,
                 id="generic.E005",
             )
         )
@@ -313,7 +313,8 @@ def check_openapi() -> list:
         checks.Error(
             "generic.openapi's pages are mounted, but the description "
             "cannot be written without: " + ", ".join(missing) + ".",
-            hint="pip install 'django-generic[api]' and see docs/api.md.",
+            hint="Install the framework's 'api' extra, and see "
+            "docs/api.md.",
             id="generic.E008",
         )
     ]

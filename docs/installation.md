@@ -1,9 +1,14 @@
 # Installation
 
-From nothing to a working screen, in a new project or an existing one.
-Every block below is what `scripts/smoke_install.py` writes into a fresh
-project and then opens page by page, so this guide and the package are
-checked against each other.
+From nothing to a working screen, in a new project or an existing one:
+the package built from this repository, installed from a file - it is
+not on PyPI - then plugged into the project's settings and URLs.
+
+The first sections are the two walkthroughs; the ones from
+[Settings](#settings) on describe each piece they use. The settings and
+URLs are what `scripts/smoke_install.py` writes into a fresh project
+and then opens page by page, so this guide and the package are checked
+against each other.
 
 ## Requirements
 
@@ -15,18 +20,222 @@ checked against each other.
 | Database | any Django supports; SQLite to try, PostgreSQL in production |
 | Optional | Redis - live updates across processes, Celery; an ASGI server - Daphne - for live updates |
 
-## 1. Install the package
+## Get the package
+
+django-generic is not published on PyPI: a project installs it from a
+**wheel** built from this repository, one file holding the whole
+framework - code, templates, static files, translations.
+
+> **Never `pip install django-generic` by name.** That name on PyPI
+> belongs to an unrelated project, and pip would install it. Every
+> command below names the wheel by its path.
+
+Built once per version, from a checkout:
 
 ```bash
-pip install django-generic
+git clone https://github.com/Xibutox/django-generic.git
+cd django-generic
+git checkout v1.1.0          # the version to install; `git tag` lists them
+python -m pip wheel --no-deps --wheel-dir dist .
 ```
 
-That is the core: Django and DRF, nothing else. The rest comes as
-extras, installed the same way:
+That leaves `dist/django_generic-1.1.0-py3-none-any.whl`. Building it
+needs pip alone (and the network, for the build's own setuptools). The
+same file installs everywhere: a virtual environment, a Docker image, a
+server that cannot reach the repository.
+
+A project keeps its copy of the wheel in a `vendor/` folder, committed
+with the rest, and names it in `requirements.txt`. Whoever clones the
+project then installs the same framework with `pip install -r
+requirements.txt` and nothing else.
+
+## A new project, from nothing
+
+Beside the checkout of the framework, a new folder and its own virtual
+environment:
 
 ```bash
-pip install "django-generic[export,events,tasks,wiki,postgres]"
+mkdir mysite && cd mysite
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+
+mkdir vendor
+cp ../django-generic/dist/django_generic-1.1.0-py3-none-any.whl vendor/
 ```
+
+`requirements.txt`, at the project's root - the wheel by its path,
+with the [extras](#extras) wanted in brackets:
+
+```text
+./vendor/django_generic-1.1.0-py3-none-any.whl[export]
+```
+
+```bash
+pip install -r requirements.txt      # from the project's root: the path is read from there
+django-admin startproject mysite .
+python manage.py startapp library
+```
+
+pip brings Django and Django REST framework with it. Then, in the new
+project:
+
+1. **Settings** - in `mysite/settings.py`, as [Settings](#settings)
+   shows: `"rest_framework"`, `"generic"` and `"library"` in
+   `INSTALLED_APPS`; `LocaleMiddleware` and the framework's two
+   middlewares in `MIDDLEWARE`; and, at the end of the file,
+   `REST_FRAMEWORK`, `LOGIN_URL`, `LOGIN_REDIRECT_URL`, `LANGUAGES`,
+   `STATIC_ROOT` and `GENERIC`. `startproject`'s `TEMPLATES` already
+   has the `request` context processor.
+2. **URLs** - `mysite/urls.py` becomes the block of [URLs](#urls).
+3. **A model** and its screen:
+
+   ```python
+   # library/models.py
+   from django.db import models
+
+
+   class Book(models.Model):
+       title = models.CharField(max_length=200)
+       author = models.CharField(max_length=200)
+       pages = models.PositiveIntegerField(default=0)
+
+       def __str__(self):
+           return self.title
+   ```
+
+   ```python
+   # library/resources.py
+   from generic.sites import auto
+
+   from library.models import Book
+
+   auto(Book)
+   ```
+
+4. **The database, the checks, a first user:**
+
+   ```bash
+   python manage.py makemigrations library
+   python manage.py migrate
+   python manage.py check               # names anything missing
+   python manage.py createsuperuser
+   python manage.py runserver
+   ```
+
+`check` answers *no issues* - or, on Django 6.1 and later, warns that
+`MAILERS` is not set (`generic.W006`) until the project says how it
+sends mail ([Mail](#mail)).
+
+Sign in at <http://127.0.0.1:8000/>: the dashboard, and *Books* in the
+navigation - its list, its forms, a page per book.
+
+## An existing project
+
+Nothing the project already has is replaced: the framework adds apps,
+two middlewares, a few URLs and its own tables.
+
+1. **Versions.** Python 3.10, Django 5.2 and Django REST framework 3.16
+   or later. Copy the wheel into `vendor/` and add its line to
+   `requirements.txt` as above, then ask pip what it would change
+   before it changes anything:
+
+   ```bash
+   pip install --dry-run -r requirements.txt
+   ```
+
+   It lists what it would install. If that includes Django, or pip
+   reports a conflict with the project's own requirement on Django,
+   move the project to Django 5.2 on its own first, with Django's
+   release notes - not as a side effect of this.
+
+2. **Install:** `pip install -r requirements.txt`, from the project's
+   root.
+
+   A project whose dependencies live in its `pyproject.toml` lists the
+   framework there by name, with its extras -
+   `"django-generic[export]>=1.1,<2"` - and keeps the wheel's path in
+   `requirements.txt`, installed in the same command as the project
+   itself:
+
+   ```text
+   ./vendor/django_generic-1.1.0-py3-none-any.whl
+   -e .
+   ```
+
+   pip takes the wheel for that name, with the extras `pyproject.toml`
+   asks for. Without the wheel, the requirement fails rather than
+   bringing in the unrelated package of the same name.
+
+3. **Settings** - *added* to what is there, as [Settings](#settings)
+   describes each line:
+   - `"rest_framework"` (if it is not there yet) and `"generic"` in
+     `INSTALLED_APPS`;
+   - `generic.middleware.UserLanguageMiddleware` and
+     `generic.middleware.CurrentUserMiddleware` in `MIDDLEWARE`, after
+     `AuthenticationMiddleware`;
+   - the languages: `LocaleMiddleware` if the site speaks several, or
+     else `LANGUAGES` narrowed to the one it speaks -
+     `[("en", "English")]`. Unset, Django's `LANGUAGES` lists every
+     language it knows, and the language menu offers them all;
+   - the `request` context processor in `TEMPLATES`, if it is missing;
+   - in `REST_FRAMEWORK`, the project's own classes stay:
+     `SessionAuthentication` is added to them if it is not among them,
+     since the pages call the API with the session they are signed in
+     by;
+   - `LOGIN_URL`: kept if the project has its own sign-in page, else
+     `"site:login"`;
+   - `STATIC_ROOT`, if production collects the static files and it is
+     not set; `GENERIC` for the title and the icon.
+4. **URLs** - `jsi18n/` and `api/generic/` as in [URLs](#urls), and
+   the site **under a prefix** when the root is already taken:
+   `path("app/", site.urls)`, last. Every address the framework builds
+   follows it.
+5. **The database:** `python manage.py migrate` creates the framework's
+   own tables - history, notifications, preferences, saved views - and
+   touches none of the project's.
+6. **The checks:** `python manage.py check` names whatever is still
+   missing, with the line to write ([Check the wiring](#check-the-wiring)).
+7. **A first screen** - a `resources.py` in one of the project's apps,
+   for a model it already has:
+
+   ```python
+   # shop/resources.py
+   from generic.sites import auto
+
+   from shop.models import Product
+
+   auto(Product)
+   ```
+
+   A superuser sees it at once under the prefix (`/app/`); everyone
+   else according to the model permissions the project already
+   grants (`shop.view_product` to see the products, and so on).
+
+What keeps working beside it:
+
+- **The Django admin**, which shares the users, groups and permissions.
+- **A custom user model**: the People screens read `USERNAME_FIELD` and
+  show only the fields the model has.
+- **Existing views, URLs and templates**: the framework's templates live
+  under `generic/`, and a project overrides any of them the usual way,
+  from its own `templates/generic/...`.
+- **The project's own API**: the framework's endpoints live under the
+  site's `api/` - `api/<app>/<model>/` - and follow DRF's settings for
+  authentication and permissions only. Its viewsets bring their own
+  renderers, pagination and filters, so nothing the project set up for
+  its own API changes them.
+
+## Extras
+
+The wheel alone is the core: Django and DRF, nothing else. The optional
+parts come as extras, named in brackets after the wheel's path - in
+`requirements.txt`, or in `pyproject.toml` after the name:
+
+```text
+./vendor/django_generic-1.1.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+```
+
+and installed again with `pip install -r requirements.txt`.
 
 | Extra | Adds | For |
 | --- | --- | --- |
@@ -41,14 +250,63 @@ pip install "django-generic[export,events,tasks,wiki,postgres]"
 | `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
 
-Distributed as a file or from a private index, the name is the same:
+## Working on the framework and a project together
+
+To change the framework while a project uses it, install the checkout
+itself, editable, in place of the wheel:
 
 ```bash
-pip install django_generic-1.1.0-py3-none-any.whl
-pip install --index-url https://pypi.example.com/simple/ django-generic
+pip install -e "../django-generic[export]"
 ```
 
-## 2. Settings
+A change to the framework then shows in the project at the next
+restart, with no wheel to rebuild. It depends on the checkout's
+place on this machine: keep the wheel in `requirements.txt` for
+everyone else, Docker and production.
+
+## Updating
+
+A new version is a new wheel:
+
+```bash
+cd ../django-generic
+git fetch --tags && git checkout v1.2.0
+python -m pip wheel --no-deps --wheel-dir dist .
+cd ../mysite
+rm vendor/django_generic-*.whl
+cp ../django-generic/dist/django_generic-1.2.0-py3-none-any.whl vendor/
+```
+
+Then the new file name in `requirements.txt`, and:
+
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic       # in production
+python manage.py check
+```
+
+What changed, and what to do about it, is in the framework's
+changelog - also on every application's *Help › What changed* page.
+
+## In Docker
+
+The wheel travels with the project, so the image installs it with no
+access to the framework's repository - the requirements and `vendor/`
+copied before the source, to keep the layer when only the code
+changes:
+
+```dockerfile
+COPY requirements.txt ./
+COPY vendor/ ./vendor/
+RUN pip install -r requirements.txt
+COPY . .
+```
+
+A `requirements.txt` ending in `-e .` installs the project too: copy
+its `pyproject.toml` and package before the `RUN` as well.
+
+## Settings
 
 Added to the project's settings - a new `django-admin startproject` or
 one that has been running for years. Comments mark what is the
@@ -67,7 +325,7 @@ INSTALLED_APPS = [
     # "generic.wiki",                # optional: the wiki
     # "generic.search",              # optional: searches ignore accents
     # "knox", "generic.tokens",      # optional: API tokens (docs/api.md)
-    "myapp",
+    "library",                       # the project's own apps
 ]
 
 MIDDLEWARE = [
@@ -139,9 +397,10 @@ What each framework line is for:
 - `LOGIN_URL` - the pages send signed-out readers to the site's sign-in
   page themselves; this is for the project's other views.
 
-## 3. URLs
+## URLs
 
 ```python
+from django.contrib import admin
 from django.urls import include, path
 from django.views.i18n import JavaScriptCatalog
 
@@ -175,7 +434,7 @@ path("app/", site.urls),       # dashboard at /app/, sign-in at /app/login/
 Keep the namespace `site`: the framework's own screens are registered on
 that site.
 
-## 4. Database, static files, first user
+## Database, static files, first user
 
 ```bash
 python manage.py migrate
@@ -193,7 +452,7 @@ python manage.py collectstatic
 The package ships its own libraries - DataTables, Select2, Alpine,
 ECharts, Quill, the icon font: no CDN, no Node, no build step.
 
-## 5. Check the wiring
+## Check the wiring
 
 ```bash
 python manage.py check
@@ -219,16 +478,16 @@ names what is missing, with the line to write:
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.
 
-## 6. The first screen
+## The first screen
 
 In any installed app, a `resources.py` - imported at start-up, the way
 `admin.py` is:
 
 ```python
-# myapp/resources.py
+# library/resources.py
 from generic.sites import auto
 
-from myapp.models import Book
+from library.models import Book
 
 auto(Book)
 ```
@@ -244,18 +503,18 @@ from generic.sites import ModelResource, register
 @register(Book)
 class BookResource(ModelResource):
     icon = "menu_book"
-    list_display = ("title", "author", "pages", "status")
+    list_display = ("title", "author", "pages")
     search_fields = ("title", "author")
 ```
 
 Who sees what follows the model permissions: a user needs
-`myapp.view_book` to see the books, `add_book` to add one, and so on.
+`library.view_book` to see the books, `add_book` to add one, and so on.
 
 From here: [Sites and resources](sites.md) for everything a resource
 declares, [Pages from the model](auto.md), [Rows from
 elsewhere](data.md), [Pages of a resource's own](pages.md).
 
-## 7. Optional parts
+## Optional parts
 
 ### Live updates
 
@@ -364,23 +623,7 @@ project narrows `LANGUAGES` to what it offers - the frame builds its
 language menu from it - and adds its own catalogs with `LOCALE_PATHS`.
 See [Translation](i18n.md).
 
-## 8. In an existing project
-
-- **The Django admin keeps working** beside the site; the two share the
-  users, groups and permissions.
-- **A custom user model** is supported: the People screens read
-  `USERNAME_FIELD` and show only the fields the model has.
-- **Existing views and URLs** are untouched: mount the site under a
-  prefix if the root is taken (above).
-- **Existing templates** are untouched: the framework's live under
-  `generic/`, and a project overrides any of them the usual way, from
-  its own `templates/generic/...`.
-- **The API** lives under the site's `api/` - `api/<app>/<model>/` - and
-  follows DRF's settings for authentication and permissions only: the
-  framework's viewsets bring their own renderers, pagination and
-  filters, so nothing the project set up for its own API changes them.
-
-## 9. Deploying
+## Deploying
 
 Production is a Django deployment like any other, served over ASGI when
 live updates are on: `DEBUG = False`, `collectstatic`, `check --deploy`,
@@ -394,7 +637,7 @@ The repository's example is a whole application built on the framework,
 with demo data:
 
 ```bash
-git clone <repository> django-generic && cd django-generic
+git clone https://github.com/Xibutox/django-generic.git && cd django-generic
 pip install -e ".[export,events,tasks,wiki,dev]"
 python manage.py migrate
 python manage.py seed_example

@@ -33,6 +33,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
+- The installation guide says how the framework really arrives: it is
+  not on PyPI, where `django-generic` is an unrelated package, so a
+  project builds its wheel from the repository, keeps it in `vendor/`
+  and names it by its path in `requirements.txt`. Two walkthroughs, a
+  new project from nothing and an existing one, both run as written;
+  Docker, updating and working on the framework beside a project
+  follow. The README, the feature pages, the checks' hints and the
+  error messages no longer say `pip install django-generic[...]`.
 - *Mark all as read* works, in the bell and on the notifications page.
   The framework looked its endpoint up by a route name DRF never gave
   it, got no address, and the bell posted to the page itself (a 405);

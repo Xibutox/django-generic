@@ -139,8 +139,8 @@ def read_transitions(resource: Any) -> dict[str, TransitionInfo]:
 
     if library is None:
         raise ImproperlyConfigured(
-            f"{owner}.transitions needs django-fsm-2: pip install "
-            f"'django-generic[fsm]'."
+            f"{owner}.transitions needs django-fsm-2: the framework's "
+            f"'fsm' extra (docs/installation.md)."
         )
 
     model = resource.model

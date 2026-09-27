@@ -99,23 +99,39 @@ Taken from the example application in this repository
 Python 3.10 or later, Django 5.2 or later, Django REST framework 3.16 or
 later.
 
+django-generic is not on PyPI - and the name `django-generic` there
+belongs to an unrelated project, so never `pip install` it by name.
+Build its wheel from this repository, keep it in the project's
+`vendor/` folder, and name it by its path:
+
 ```bash
-pip install django-generic
+git clone https://github.com/Xibutox/django-generic.git
+cd django-generic && git checkout v1.1.0
+python -m pip wheel --no-deps --wheel-dir dist .
+mkdir -p ../mysite/vendor && cp dist/django_generic-1.1.0-py3-none-any.whl ../mysite/vendor/
 ```
 
-The core needs nothing else. Extras add the optional parts:
-
-```bash
-pip install "django-generic[export,events,tasks,wiki,postgres]"
+```text
+# mysite/requirements.txt
+./vendor/django_generic-1.1.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
-`export` adds the Excel export (openpyxl), `import` Excel imports
-(openpyxl, defusedxml), `api` API tokens and the OpenAPI description
-(django-rest-knox, drf-spectacular), `fsm` state machines
-(django-fsm-2), `events` live updates over
-WebSocket (Channels, Daphne), `tasks` background tasks (Celery, Redis),
-`beat` schedules managed from the pages, `wiki` the wiki (nh3),
-`postgres` psycopg.
+```bash
+cd ../mysite && pip install -r requirements.txt
+```
+
+The wheel alone is the core, which needs nothing but Django and DRF.
+The extras in brackets add the optional parts: `export` the Excel
+export (openpyxl), `import` Excel imports (openpyxl, defusedxml), `api`
+API tokens and the OpenAPI description (django-rest-knox,
+drf-spectacular), `fsm` state machines (django-fsm-2), `events` live
+updates over WebSocket (Channels, Daphne), `tasks` background tasks
+(Celery, Redis), `beat` schedules managed from the pages, `wiki` the
+wiki (nh3), `postgres` psycopg.
+
+[Installation](docs/installation.md) walks through both cases, a new
+project from nothing and an existing one, and covers Docker, updating,
+and working on the framework and a project together.
 
 Then, in the project's settings and URLs - the full version, with what
 each line is for, is in [Installation](docs/installation.md):
@@ -199,7 +215,7 @@ See [Pages of a resource's own](docs/pages.md).
 
 ## Documentation
 
-- [Installation](docs/installation.md) — requirements, extras, plugging it into a new or existing project, the checks, the optional parts
+- [Installation](docs/installation.md) — the wheel, a new project from nothing, an existing project, extras, Docker, updating, the checks, the optional parts
 - [The example project](docs/example.md) — click through every feature
 - [Pages from the model](docs/auto.md) — `auto()`: the five pages of a model from one line, and what is worked out
 - [Rows from elsewhere](docs/data.md) — `DataResource`: a list and a page per row for data that is not a model's, an external API's answer

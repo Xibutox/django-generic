@@ -17,7 +17,10 @@ rather than inventing new wiring.
 
 ```
 <project>/
-├── pyproject.toml            dependencies: django-generic with its extras
+├── pyproject.toml            dependencies: django-generic[<extras>]>=1.1,<2 by name
+├── requirements.txt          ./vendor/django_generic-<version>-py3-none-any.whl, then -e .
+├── requirements-dev.txt      -r requirements.txt, then -e .[dev]
+├── vendor/                   the framework's wheel, committed (it is not on PyPI)
 ├── manage.py                 defaults to <project>.settings.dev
 ├── <project>/
 │   ├── __init__.py           imports the Celery app (Celery's usual pattern)
@@ -49,11 +52,17 @@ rather than inventing new wiring.
 
 ## Steps
 
-1. **Dependencies.** `django-generic[export,events,tasks,postgres,wiki]`
-   from the package index or its wheel (Python ≥ 3.10, Django ≥ 5.2,
-   DRF ≥ 3.16); the project's own `dev` extra for tests and linters.
-   `docs/installation.md` is the wiring reference; `manage.py check`
-   names what is missing (`generic.E001`…`generic.I001`).
+1. **Dependencies.** django-generic is not on PyPI, and the name there
+   is an unrelated package: never install it by name. Build its wheel
+   from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`),
+   copy it into `vendor/`, and commit it. `pyproject.toml` lists
+   `django-generic[export,events,tasks,postgres,wiki]>=1.1,<2` by name
+   (Python ≥ 3.10, Django ≥ 5.2, DRF ≥ 3.16) and the project's own
+   `dev` extra for tests and linters. `requirements.txt` holds the
+   wheel's path, then `-e .`, so pip takes the wheel for the name;
+   `requirements-dev.txt` is `-r requirements.txt` then `-e .[dev]`.
+   `docs/installation.md` is the reference; `manage.py check` names
+   what is missing (`generic.E001`…`generic.I001`).
 2. **Settings** — copy `example_project/settings/` (base, dev, prod;
    see `docs/deployment.md`) and change the names. In `base.py`:
    - `INSTALLED_APPS`: `daphne` first, Django contrib apps, `channels`,
@@ -83,7 +92,11 @@ rather than inventing new wiring.
    hands a task to the worker.
 5. **Docker** — copy `docker/` and `.dockerignore`, replacing
    `example_project` (Dockerfile `collectstatic` step and CMD, compose
-   files) and the compose project names. Dev: runserver on the mounted
+   files) and the compose project names. The Dockerfile copies
+   `requirements.txt` and `vendor/` - with `pyproject.toml` and the
+   project package's `__init__.py` for `-e .` - and installs with
+   `pip install -r requirements.txt` (prod) or `-r
+   requirements-dev.txt` (dev) in place of `".[...]"`. Dev: runserver on the mounted
    source, a `migrate` service on every start that web, worker and
    beat wait for. Prod: Caddy in front, a `migrate`
    service the others wait for, nothing published but Caddy, every
@@ -102,7 +115,7 @@ rather than inventing new wiring.
 8. **First run** — commands below; create a superuser; open `/`.
 
 ```bash
-pip install -e ".[dev]"                 # the project, with django-generic[...] as a dependency
+pip install -r requirements-dev.txt     # the framework's wheel from vendor/, then the project with its dev extra
 python manage.py migrate
 python manage.py check                  # the framework's wiring checks included
 python manage.py createsuperuser

@@ -154,9 +154,9 @@ column the declaration does not offer.
 | `IMPORT_MAX_FILE_SIZE` | `5 * 1024 * 1024` | bytes, refused before reading |
 | `IMPORT_PREVIEW_ROWS` | `20` | rows the preview shows |
 
-`pip install "django-generic[import]"` brings openpyxl and defusedxml -
-with the second installed, openpyxl refuses the XML tricks a hostile
-workbook could hold. CSV needs nothing.
+The `import` extra ([Extras](installation.md#extras)) brings openpyxl
+and defusedxml - with the second installed, openpyxl refuses the XML
+tricks a hostile workbook could hold. CSV needs nothing.
 
 Not covered yet: inlines and child rows, and files too large for one
 request, which will go through a task.
