@@ -32,6 +32,7 @@ from generic.api.columns import (
     DateColumn,
     DateTimeColumn,
     DecimalColumn,
+    FileColumn,
     FloatColumn,
     IntegerColumn,
     ManyRelatedColumn,
@@ -484,6 +485,10 @@ class TableSerializerBuilder:
         if isinstance(field, models.IntegerField):
             return IntegerColumn(allow_null=True, **common)
 
+        # Its name, linking to the permission-checked download.
+        if isinstance(field, models.FileField):
+            return FileColumn(**common)
+
         if isinstance(field, (models.CharField, models.TextField)):
             # Long text is given room, rather than a word per line.
             wide = isinstance(field, models.TextField) or (
@@ -693,8 +698,9 @@ class TableSerializerBuilder:
             name: {"display_type": "link", "link_url": template}
             for name in names
             if name in self.declared and name != ROW_KEY
-            # Tags link each to their own record, not to the row's.
-            and not isinstance(self.declared[name], TagsColumn)
+            # Tags link each to their own record, not to the row's; a
+            # file to its download.
+            and not isinstance(self.declared[name], (TagsColumn, FileColumn))
         }
 
 

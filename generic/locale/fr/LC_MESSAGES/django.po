@@ -2785,3 +2785,63 @@ msgstr "Vous ne pouvez pas faire cela à cet enregistrement."
 
 msgid "%(action)s: %(done)s done, %(skipped)s skipped (not in a state that allows it, or not allowed)."
 msgstr "%(action)s : %(done)s fait(s), %(skipped)s ignoré(s) (pas dans un état qui le permet, ou non autorisé)."
+
+#: generic/api/files.py
+msgid "The file is too large: at most %(limit)s."
+msgstr "Le fichier est trop volumineux : %(limit)s au plus."
+
+#: generic/api/parsers.py
+msgid "The %(part)s part is not valid JSON."
+msgstr "La partie %(part)s n'est pas du JSON valide."
+
+#: generic/api/parsers.py
+msgid "The %(part)s part must be a JSON object."
+msgstr "La partie %(part)s doit être un objet JSON."
+
+#: generic/sites/viewsets.py
+msgid "There is no such file."
+msgstr "Ce fichier n'existe pas."
+
+#: generic/wiki/api.py
+msgid "Choose an image to upload."
+msgstr "Choisissez une image à envoyer."
+
+#: generic/wiki/api.py
+msgid "Only PNG, JPEG, GIF and WebP images can be added."
+msgstr "Seules les images PNG, JPEG, GIF et WebP peuvent être ajoutées."
+
+#: generic/wiki/api.py
+msgid "The image is too large: at most %(limit)s."
+msgstr "L'image est trop volumineuse : %(limit)s au plus."
+
+#: generic/wiki/api.py
+msgid "This file is not a PNG, JPEG, GIF or WebP image."
+msgstr "Ce fichier n'est pas une image PNG, JPEG, GIF ou WebP."
+
+#: generic/wiki/models.py
+msgid "file"
+msgstr "fichier"
+
+#: generic/wiki/models.py
+msgid "original name"
+msgstr "nom d'origine"
+
+#: generic/wiki/models.py
+msgid "uploaded by"
+msgstr "envoyé par"
+
+#: generic/wiki/models.py
+msgid "uploaded at"
+msgstr "envoyé le"
+
+#: generic/wiki/models.py
+msgid "wiki image"
+msgstr "image de wiki"
+
+#: generic/wiki/models.py
+msgid "wiki images"
+msgstr "images de wiki"
+
+#: generic/templates/generic/wiki/page.html
+msgid "Uploading the image…"
+msgstr "Envoi de l'image…"

@@ -32,6 +32,19 @@
     </span>
   </template>
 
+  <template x-if="!field.empty && field.type === 'file'">
+    <span class="summary-file">
+      <span class="icon material-symbols-outlined icon--sm" aria-hidden="true">draft</span>
+      <template x-if="safeUrl(field.url)">
+        <a :href="safeUrl(field.url)" x-text="field.display"></a>
+      </template>
+      <template x-if="!safeUrl(field.url)">
+        <span x-text="field.display"></span>
+      </template>
+      <span class="summary-file__size muted" x-show="field.sizeDisplay" x-text="field.sizeDisplay"></span>
+    </span>
+  </template>
+
   <template x-if="!field.empty && field.type === 'email'">
     <a :href="'mailto:' + field.display" x-text="field.display"></a>
   </template>

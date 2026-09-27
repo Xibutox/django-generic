@@ -340,7 +340,9 @@ write to, and `tickets__title` has none in particular.
 - a computed column, a `@display` method or a property — there is
   nothing to write to;
 - a field the model does not allow to be written (`editable=False`, an
-  automatic key).
+  automatic key);
+- a file field — a cell writes JSON; a file is chosen on the record's
+  form ([Files](forms.md#files)).
 
 Each refusal names the resource and the column, at start-up rather
 than on a Friday.

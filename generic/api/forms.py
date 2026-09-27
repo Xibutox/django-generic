@@ -18,6 +18,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from django.db import models
 from django.db.models import NOT_PROVIDED
 from django.urls import NoReverseMatch, reverse
 from django.utils.encoding import force_str
@@ -26,6 +27,7 @@ from rest_framework import serializers
 from rest_framework.fields import empty
 
 from generic.api.columns import json_safe
+from generic.api.files import FormFileField, FormImageField, accept_of
 from generic.api.relations import (
     DISPLAY_KEY,
     LABEL_KEY,
@@ -51,14 +53,18 @@ FIELD_TYPE_MAPPING: tuple[tuple[type[serializers.Field], str], ...] = (
     (serializers.URLField, "url"),
     (serializers.SlugField, "slug"),
     (serializers.UUIDField, "uuid"),
-    (serializers.FileField, "file"),
+    # An image field is a file field: the image first.
     (serializers.ImageField, "image"),
+    (serializers.FileField, "file"),
     (serializers.MultipleChoiceField, "multiselect"),
     (serializers.ChoiceField, "select"),
     (serializers.JSONField, "json"),
     (serializers.ListField, "list"),
     (serializers.CharField, "text"),
 )
+
+#: Field types drawn as a file chooser.
+FILE_TYPES = frozenset({"file", "image"})
 
 DEFAULT_SECTION = {
     "name": "general",
@@ -71,6 +77,7 @@ __all__ = [
     "DEFAULT_SECTION",
     "DISPLAY_KEY",
     "FIELD_TYPE_MAPPING",
+    "FILE_TYPES",
     "FormModelSerializer",
     "FormSerializer",
     "FormSerializerMixin",
@@ -354,6 +361,15 @@ class FormSerializerMixin:
                 generic_settings.FORM_RELATED_POPUP_HEIGHT,
             ),
             "autocompleteUrl": overrides.get("autocompleteUrl"),
+            # What a file chooser offers, and the largest file it takes:
+            # both checked in the browser before anything is sent, and
+            # by the server again.
+            "accept": overrides.get("accept", cls.resolve_accept(field)),
+            "maxSize": (
+                generic_settings.FILE_MAX_SIZE
+                if field_type in FILE_TYPES
+                else None
+            ),
             # Carried with the record but never drawn, the way the admin
             # treats a record's own key.
             "hidden": overrides.get(
@@ -382,6 +398,14 @@ class FormSerializerMixin:
             and model is not None
             and field_name == model._meta.pk.name
         )
+
+    @staticmethod
+    def resolve_accept(field: serializers.Field) -> str | None:
+        """The ``accept`` attribute of a file field's chooser."""
+        if not isinstance(field, serializers.FileField):
+            return None
+
+        return accept_of(field)
 
     @staticmethod
     def resolve_help_text(
@@ -481,4 +505,30 @@ class FormModelSerializer(
     FormSerializerMixin,
     serializers.ModelSerializer,
 ):
-    """Model serializer rendered by the generic form."""
+    """Model serializer rendered by the generic form.
+
+    A model's file field reads as ``{"name", "url", "size"}`` and takes
+    an upload (:mod:`generic.api.files`).
+    """
+
+    serializer_field_mapping = {
+        **serializers.ModelSerializer.serializer_field_mapping,
+        models.FileField: FormFileField,
+        models.ImageField: FormImageField,
+    }
+
+    def build_standard_field(
+        self,
+        field_name: str,
+        model_field: Any,
+    ) -> tuple[Any, dict[str, Any]]:
+        field_class, field_kwargs = super().build_standard_field(
+            field_name, model_field
+        )
+
+        # A file field that may be blank may be emptied: null, in JSON,
+        # is how a form says "remove it".
+        if isinstance(model_field, models.FileField) and model_field.blank:
+            field_kwargs["allow_null"] = True
+
+        return field_class, field_kwargs

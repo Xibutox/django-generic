@@ -20,6 +20,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W008  generic.tokens, its authentication class not in DRF
     generic.W009  (--deploy) ADMINS is empty: errors are mailed to nobody
     generic.E008  the OpenAPI pages without drf-spectacular
+    generic.W010  a model with a file field, and MEDIA_ROOT is empty
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -303,6 +304,7 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
 
     messages.extend(check_search_rank())
     messages.extend(check_openapi())
+    messages.extend(check_media_root())
 
     return messages
 
@@ -341,6 +343,53 @@ def check_openapi() -> list:
             hint="Install the framework's 'api' extra, and see "
             "docs/api.md.",
             id="generic.E008",
+        )
+    ]
+
+
+def check_media_root() -> list:
+    """Files are written under ``MEDIA_ROOT``: it has to say where.
+
+    Empty - Django's default - a file is written relative to whatever
+    directory the server was started in: somewhere else after the next
+    deployment, and in no backup.
+    """
+    if getattr(settings, "MEDIA_ROOT", ""):
+        return []
+
+    from django.apps import apps
+    from django.db import models
+
+    from generic.sites import site
+
+    labels = sorted(
+        {
+            resource.model._meta.label
+            for resource in site.get_resources()
+            if any(
+                isinstance(field, models.FileField)
+                for field in resource.model._meta.get_fields()
+            )
+        }
+    )
+
+    # The wiki's images are files too, whether or not a resource shows
+    # them.
+    if apps.is_installed("generic.wiki"):
+        labels.append("generic_wiki.WikiImage")
+
+    if not labels:
+        return []
+
+    return [
+        checks.Warning(
+            f"MEDIA_ROOT is empty, and models store files "
+            f"({', '.join(labels)}): each file would be written relative "
+            f"to the directory the server was started in.",
+            hint="Set MEDIA_ROOT to a folder of its own, kept - and backed "
+            "up - like the database. MEDIA_URL is not needed: files are "
+            "served through the resource's endpoint. See docs/forms.md.",
+            id="generic.W010",
         )
     ]
 

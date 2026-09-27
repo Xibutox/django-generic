@@ -7,6 +7,7 @@ deletion preview.
 
 from __future__ import annotations
 
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django_fsm import FSMField, transition
 
@@ -163,3 +164,46 @@ class Manuscript(models.Model):
     )
     def reject(self) -> None:
         pass
+
+
+class Document(models.Model):
+    """Files in a form: a required one, an optional one, a hidden one.
+
+    With a many-to-many, a JSON field and inline notes beside them, so
+    a form sent as ``_payload`` plus files can be checked to write
+    everything JSON would have. ``scan`` is a plain file field rather
+    than an image field: Pillow is not a dependency of the framework.
+    """
+
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to="documents/")
+    scan = models.FileField(
+        upload_to="scans/",
+        blank=True,
+        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "pdf"])],
+    )
+    #: Stored, and shown by no screen: never downloadable.
+    archive = models.FileField(upload_to="archives/", blank=True)
+    authors = models.ManyToManyField(
+        Author, related_name="documents", blank=True
+    )
+    details = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class DocumentNote(models.Model):
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name="notes"
+    )
+    text = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ("pk",)
+
+    def __str__(self) -> str:
+        return self.text

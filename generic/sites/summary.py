@@ -19,11 +19,13 @@ from typing import Any
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import models
+from django.template.defaultfilters import filesizeformat
 from django.utils import formats, timezone
 from django.utils.encoding import force_str
 from django.utils.text import capfirst, slugify
 from django.utils.translation import gettext
 
+from generic.api.files import describe_file
 from generic.api.tags import tag_items
 from generic.sites.serializers import (
     flatten_fieldsets,
@@ -203,6 +205,35 @@ def field_value(obj: Any, field: Any) -> Any:
     return getattr(obj, field.attname)
 
 
+def describe_stored_file(
+    resource: Any,
+    obj: Any,
+    field: Any,
+    value: Any,
+) -> dict[str, Any]:
+    """A file of the record: its name, linking to its download.
+
+    ``value`` is ``{"name", "url", "size"}``, as the form reads it; the
+    link is the resource's permission-checked endpoint, never the
+    storage's own URL.
+    """
+    described = describe_file(value, resource.get_file_url(obj.pk, field.name))
+
+    if described is None:
+        return {"type": "file", "empty": True}
+
+    size = described["size"]
+
+    return {
+        "type": "file",
+        "display": described["name"],
+        "url": described["url"] or "",
+        "size": size,
+        "sizeDisplay": filesizeformat(size) if size is not None else "",
+        "value": described,
+    }
+
+
 def describe_field(
     resource: Any,
     request: Any,
@@ -265,6 +296,9 @@ def describe_field(
     if isinstance(field, models.BooleanField):
         return describe_value(site, request, value, boolean=True)
 
+    if isinstance(field, models.FileField):
+        return describe_stored_file(resource, obj, field, value)
+
     if value is None or value == "":
         return {"type": "text", "empty": True}
 
@@ -279,9 +313,6 @@ def describe_field(
 
     if isinstance(field, models.URLField):
         return {"type": "url", "display": value, "url": value}
-
-    if isinstance(field, models.FileField):
-        return {"type": "url", "display": value.name, "url": value.url}
 
     if isinstance(field, models.JSONField):
         return {

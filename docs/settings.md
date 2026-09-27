@@ -86,6 +86,7 @@ See [Imports](imports.md).
 | `FORM_RELATED_POPUP_WIDTH` | `980` | Related editor popup |
 | `FORM_RELATED_POPUP_HEIGHT` | `760` | Related editor popup |
 | `FORM_CHOICES_LIMIT` | `200` | Choices embedded in a relation field without an autocomplete |
+| `FILE_MAX_SIZE` | `10 * 1024 * 1024` | The largest file, in bytes, a form's file field or the wiki's editor takes: refused in the browser before sending, and by the server ([Files](forms.md#files)) |
 
 ## Events
 
@@ -213,6 +214,7 @@ See [Logs and error reports](logging.md).
 | `REST_FRAMEWORK` | Authentication and permission defaults |
 | `MAILERS` | The `default` mailer carries every e-mail the framework sends; `EMAIL_BACKEND` and `EMAIL_*` before Django 6.1 — see [Mail](installation.md#mail) |
 | `DEFAULT_FROM_EMAIL` | The sender of those e-mails |
+| `MEDIA_ROOT` | Where uploaded files are written - a model's file fields, the wiki's images. Empty, `check` warns `generic.W010`. `MEDIA_URL` is not needed: files are served through each record's endpoint ([Files](forms.md#files)) |
 
 The framework does **not** require any particular DRF pagination,
 filter-backend or renderer configuration: the viewsets declare their own

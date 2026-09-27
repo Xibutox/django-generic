@@ -8,6 +8,7 @@ history is read, and that is the part a reader sees.
 from __future__ import annotations
 
 import datetime
+import decimal
 
 import pytest
 from django.contrib.auth.models import Permission
@@ -94,6 +95,29 @@ class TestRecording:
         ticket.save()
 
         assert len(entries(ticket)) == 1
+
+    def test_a_decimal_is_recorded_as_the_database_holds_it(
+        self,
+        support_desk,
+    ):
+        # Found by the browser tests: `Decimal(2)` written by code was
+        # kept as "2", the database gave "2.00" back, and the next save
+        # of the title listed "Estimated hours 2.00 -> 2.00" as well.
+        ticket = support_desk["export"]
+        ticket.estimated_hours = decimal.Decimal(2)
+        ticket.save()
+        ticket.refresh_from_db()
+
+        ticket.title = "Invoice export is slow on Mondays"
+        ticket.save()
+
+        *_, set_hours, retitled = entries(ticket)
+        assert set_hours.values["estimated_hours"] == "2.00"
+        assert {
+            name
+            for name, value in retitled.values.items()
+            if set_hours.values.get(name) != value
+        } == {"title"}
 
     def test_a_deletion_is_the_last_thing_recorded(self, support_desk):
         ticket = support_desk["export"]

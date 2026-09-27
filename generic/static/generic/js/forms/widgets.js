@@ -142,6 +142,85 @@
     return String(value);
   }
 
+  function icon(name) {
+    var node = el("span", "icon material-symbols-outlined icon--sm", name);
+    node.setAttribute("aria-hidden", "true");
+
+    return node;
+  }
+
+  /* -- Files: shared ----------------------------------------------------
+   *
+   * A stored file arrives as {name, url, size}; `url` is the record's
+   * own download endpoint, which checks who asks.
+   */
+
+  function isFileField(field) {
+    return field.type === "file" || field.type === "image";
+  }
+
+  /** A stored file as {name, url, size}, or null when there is none. */
+  function storedFile(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    if (typeof value === "object" && value.name) {
+      return {
+        name: String(value.name),
+        url: value.url ? String(value.url) : "",
+        size: typeof value.size === "number" ? value.size : null
+      };
+    }
+
+    // A hand-written serializer may still send the storage's URL.
+    var text = String(value);
+
+    return { name: text.split("/").pop(), url: text, size: null };
+  }
+
+  var formatSize = Generic.formatSize;
+
+  /** Whether `file` is one an `accept` attribute lets through. */
+  function acceptsFile(accept, file) {
+    if (!accept) {
+      return true;
+    }
+
+    var name = String(file.name || "").toLowerCase();
+    var type = String(file.type || "").toLowerCase();
+
+    return accept.split(",").some(function (token) {
+      token = token.trim().toLowerCase();
+
+      if (!token) {
+        return false;
+      }
+
+      if (token.charAt(0) === ".") {
+        return name.length > token.length && name.slice(-token.length) === token;
+      }
+
+      if (token.slice(-2) === "/*") {
+        return type.indexOf(token.slice(0, -1)) === 0;
+      }
+
+      return type === token;
+    });
+  }
+
+  /** A stored file's name, linking to its download when there is one. */
+  function fileLink(stored) {
+    var url = stored.url && Generic.isSafeUrl(stored.url) ? stored.url : "";
+    var node = el(url ? "a" : "span", "sf-file__name", stored.name);
+
+    if (url) {
+      node.href = url;
+    }
+
+    return node;
+  }
+
   /* -- Read only -------------------------------------------------------- */
 
   function readonlyWidget(field) {
@@ -155,17 +234,23 @@
         return undefined;
       },
       set: function (value, labels) {
-        if ((field.type === "file" || field.type === "image") && value) {
+        if (isFileField(field)) {
+          var stored = storedFile(value);
+
           root.replaceChildren();
 
-          if (Generic.isSafeUrl(value)) {
-            var link = el("a", "", String(value).split("/").pop());
-            link.href = value;
-            link.target = "_blank";
-            link.rel = "noopener";
-            root.appendChild(link);
+          if (!stored) {
+            root.textContent = EMPTY;
             return;
           }
+
+          root.appendChild(fileLink(stored));
+
+          if (stored.size !== null) {
+            root.append(" ", el("span", "sf-file__size", formatSize(stored.size)));
+          }
+
+          return;
         }
 
         root.textContent = displayValue(field, value, labels);
@@ -525,6 +610,188 @@
     };
   }
 
+  /* -- Files -------------------------------------------------------------
+   *
+   * What the reader did with the field is what get() says: nothing
+   * (FILE_UNCHANGED, which the form leaves out of what it sends),
+   * removed it (null), or chose a new file (the File itself, which the
+   * form sends as a multipart part). The native chooser sits inside
+   * the "Choose a file" button, out of sight but focusable: the
+   * keyboard reaches it, and the field's label opens it.
+   */
+
+  var FILE_UNCHANGED = Object.freeze({ fileUnchanged: true });
+
+  function fileWidget(field, context) {
+    var root = el("div", "sf-file");
+    var current = el("div", "sf-file__current");
+    var chosenRow = el("div", "sf-file__chosen");
+    var chosenName = el("span", "sf-file__name");
+    var chosenSize = el("span", "sf-file__size");
+    var actions = el("div", "sf-file__actions");
+    var chooser = el("label", "button button--sm sf-file__choose");
+    var chooserText = el("span");
+    var input = el("input", "sf-file__input");
+    var remove = el("button", "button button--sm button--danger-ghost");
+    var cancel = el("button", "button button--sm button--ghost", t("Cancel"));
+    var stored = null;
+    var chosen = null;
+    var removed = false;
+
+    input.type = "file";
+
+    if (field.accept) {
+      input.accept = field.accept;
+    }
+
+    remove.type = "button";
+    cancel.type = "button";
+    chooser.append(icon("upload_file"), chooserText, input);
+    chosenRow.append(
+      icon("draft"),
+      chosenName,
+      chosenSize,
+      el("span", "sf-file__note", t("Sent when you save.")),
+      cancel
+    );
+    actions.append(chooser, remove);
+    root.append(current, chosenRow, actions);
+
+    function render() {
+      current.replaceChildren();
+
+      if (stored) {
+        current.append(icon("draft"), fileLink(stored));
+
+        if (stored.size !== null) {
+          current.appendChild(el("span", "sf-file__size", formatSize(stored.size)));
+        }
+
+        if (removed) {
+          current.appendChild(el("span", "sf-file__note", t("Removed when you save.")));
+        } else if (chosen) {
+          current.appendChild(el("span", "sf-file__note", t("Replaced when you save.")));
+        }
+      } else {
+        current.appendChild(el("span", "sf-file__note", t("No file")));
+      }
+
+      current.hidden = !stored && Boolean(chosen);
+      chosenRow.hidden = !chosen;
+
+      if (chosen) {
+        chosenName.textContent = chosen.name;
+        chosenSize.textContent = formatSize(chosen.size);
+      }
+
+      chooserText.textContent = stored || chosen ? t("Replace") : t("Choose a file");
+      // A file the field may go without can be taken away; a choice
+      // not yet sent is dropped with Cancel instead.
+      remove.hidden = !stored || Boolean(field.required) || Boolean(chosen);
+      remove.textContent = removed ? t("Keep the file") : t("Remove");
+      root.classList.toggle("is-removed", removed);
+    }
+
+    function report(message) {
+      var form = context.form;
+
+      if (form && typeof form.setFieldError === "function") {
+        form.setFieldError(field.name, message);
+      } else if (message) {
+        Generic.toast(message, "error");
+      }
+    }
+
+    function changed() {
+      root.dispatchEvent(new CustomEvent("generic:change", { bubbles: true }));
+    }
+
+    /** Why `file` cannot be sent, or "" - the server checks it again. */
+    function refusal(file) {
+      if (field.maxSize && file.size > field.maxSize) {
+        return Generic.format(
+          t("%(name)s is too large (%(size)s): the limit is %(limit)s."),
+          { name: file.name, size: formatSize(file.size), limit: formatSize(field.maxSize) }
+        );
+      }
+
+      if (!acceptsFile(field.accept, file)) {
+        return Generic.format(
+          t("%(name)s is not a kind of file this field takes (%(accept)s)."),
+          { name: file.name, accept: field.accept }
+        );
+      }
+
+      return "";
+    }
+
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+
+      // Emptied at once, so choosing the same file again still counts.
+      input.value = "";
+
+      if (!file) {
+        return;
+      }
+
+      var message = refusal(file);
+
+      report(message);
+
+      if (message) {
+        return;
+      }
+
+      chosen = file;
+      removed = false;
+      render();
+      changed();
+    });
+
+    cancel.addEventListener("click", function () {
+      chosen = null;
+      report("");
+      render();
+      changed();
+      input.focus();
+    });
+
+    remove.addEventListener("click", function () {
+      removed = !removed;
+      render();
+      changed();
+    });
+
+    render();
+
+    return {
+      root: root,
+      focus: input,
+      get: function () {
+        if (chosen) {
+          return chosen;
+        }
+
+        return removed ? null : FILE_UNCHANGED;
+      },
+      set: function (value) {
+        stored = storedFile(value);
+        chosen = null;
+        removed = false;
+        render();
+      },
+      disable: function (disabled) {
+        input.disabled = disabled;
+        remove.disabled = disabled;
+        cancel.disabled = disabled;
+        root.classList.toggle("is-disabled", disabled);
+      },
+      mount: function () {},
+      destroy: function () {}
+    };
+  }
+
   /* -- Registry ---------------------------------------------------------------- */
 
   function registerWidget(name, factory) {
@@ -570,9 +837,9 @@
       return colorWidget(field, context);
     }
 
-    // Uploads are not sent as JSON; the field is shown, not edited.
+    // A file travels beside the JSON, as a multipart part (form.js).
     if (kind === "file" || kind === "image") {
-      return readonlyWidget(field);
+      return fileWidget(field, context);
     }
 
     return inputWidget(field, context);
@@ -582,7 +849,9 @@
     create: create,
     displayValue: displayValue,
     isEmpty: isEmpty,
-    truthy: truthy
+    truthy: truthy,
+    acceptsFile: acceptsFile
   };
+  forms.FILE_UNCHANGED = FILE_UNCHANGED;
   forms.registerWidget = registerWidget;
 })(window, document);

@@ -17,11 +17,14 @@ dist
 coverage.xml
 htmlcov
 report.xml
+test-results
 
 **/*.sqlite3
 **/*.log
 logs
 staticfiles
+# Uploaded files are data, in the app-media volume, never in an image.
+media
 
 .idea
 .vscode

@@ -13,6 +13,44 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Files in the generated forms, and images in the wiki. A model's
+  `FileField` is now a chooser in its form - the current file linked,
+  *Choose a file* / *Replace*, *Remove* when it may be empty, the choice
+  checked in the browser against its extensions (`accept`, from the
+  field's `FileExtensionValidator`) and `GENERIC["FILE_MAX_SIZE"]`
+  (10 MB) before anything is sent. A form with a new file sends its
+  usual JSON as a `_payload` part beside one part per file
+  (`generic.api.parsers.MultiPartJSONParser`); without one, JSON as
+  before, and classic multipart still works for scripts. A file reads
+  as `{"name", "url", "size"}` in the record, a table cell and the
+  summary page, and downloads through
+  `api/<app>/<model>/<pk>/files/<field>/`: the record's permission and
+  row restrictions apply, only files the screens show are served, a
+  raster image is shown and anything else - HTML, SVG - downloaded,
+  always with `nosniff` and `Content-Security-Policy: sandbox`; no
+  `MEDIA_URL` anywhere. Replaced files are kept for the history. File
+  fields are refused in grids and imports, and read-only in inline
+  rows; `check` warns when `MEDIA_ROOT` is empty (`generic.W010`). The
+  wiki's editor uploads PNG, JPEG, GIF and WebP images, checked by
+  their bytes (`api/generic/wiki/images/`, shown from
+  `wiki/images/<id>/` to its readers). The example's tickets carry an
+  attachment; the production stacks keep uploads in an `app-media`
+  volume, to back up with the database. See docs/forms.md#files and
+  docs/wiki.md#images.
+- Browser tests: `tests/browser/` drives the Support desk through a
+  real Chromium - signing in, the ticket list (search, ordering,
+  paging, a reload, a `status:open` chip, a bulk transition, the Excel
+  download), the add and change forms, a summary page's tabs (the
+  regression test for 1.1.0's `GenericDataTables.start` race), a
+  transition's dialog, the Triage grid, an import, the command
+  palette, the dark theme, French and the navigation on a phone, a
+  ticket's attachment (chosen, downloaded, replaced, removed, refused
+  before sending, refused to a stranger) and a wiki image uploaded
+  from the editor - and fails on any error a page logs. Python Playwright through
+  pytest-playwright against `live_server`, no Node; opt-in with the
+  new `browser` extra (`pytest tests/browser -m browser --no-cov`, a
+  plain `pytest` leaves them out), and a CI job of their own that keeps
+  the screenshots of what failed. See docs/testing.md.
 - The production stack behind nginx: `docker/docker-compose.prod-nginx.yml`
   is the Caddy stack with nginx in front (the `nginx` image target),
   serving the server's own certificate, or plain HTTP to try it. For a
@@ -58,6 +96,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
+- The history no longer lists a decimal that did not change. A value
+  set by code without its places - `Decimal(2)` in a field of two - was
+  kept as `2`, the database gave `2.00` back, and the next save of
+  anything else showed "Estimated hours 2.00 -> 2.00" as well. A
+  version now holds decimals as the database does. Found by the
+  browser tests.
 - The installation guide says how the framework really arrives: it is
   not on PyPI, where `django-generic` is an unrelated package, so a
   project builds its wheel from the repository, keeps it in `vendor/`

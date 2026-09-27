@@ -287,6 +287,39 @@
     };
   }
 
+  /**
+   * A stored file, `{name, url, size}`: its name, linking to the
+   * record's download endpoint. Sorting and filtering read the name.
+   */
+  function buildFileRenderer() {
+    return function (data, renderingType) {
+      var isObject = data !== null && typeof data === "object";
+      var name = isObject ? data.name : data;
+
+      if (renderingType !== "display") {
+        return name || "";
+      }
+
+      if (!name) {
+        return "";
+      }
+
+      var url = isObject ? data.url : "";
+
+      if (!url || !core.isSafeUrl(url)) {
+        return core.escapeHtml(name);
+      }
+
+      return (
+        '<a class="dt-file" href="' +
+        core.escapeHtml(url) +
+        '">' +
+        core.escapeHtml(name) +
+        "</a>"
+      );
+    };
+  }
+
   /** Render a boolean as a word rather than `true` / `false`. */
   function buildBooleanRenderer() {
     return function (data, renderingType) {
@@ -385,6 +418,8 @@
       if (!result.render) {
         if (displayType === "tags") {
           result.render = buildTagsRenderer(result);
+        } else if (displayType === "file") {
+          result.render = buildFileRenderer();
         } else if (displayType === "link") {
           result.render = buildLinkRenderer(result);
         } else if (
@@ -461,6 +496,7 @@
     buildBooleanRenderer: buildBooleanRenderer,
     buildDateRenderer: buildDateRenderer,
     buildChoiceRenderer: buildChoiceRenderer,
+    buildFileRenderer: buildFileRenderer,
     buildLinkRenderer: buildLinkRenderer,
     buildTagsRenderer: buildTagsRenderer,
     tagHtml: renderTag,

@@ -38,6 +38,27 @@ class TestTheTwoStacks:
 
         assert nginx == caddy
 
+    @pytest.mark.parametrize(
+        "name", ["docker-compose.prod.yml", "docker-compose.prod-nginx.yml"]
+    )
+    def test_uploaded_files_outlive_the_containers(self, name):
+        """MEDIA_ROOT is /app/media in the image: a volume every service
+        of the application shares, kept - and backed up - like the
+        database."""
+        stack = compose(name)
+
+        assert "app-media" in stack["volumes"]
+
+        for service in ("migrate", "web", "worker", "beat"):
+            assert "app-media:/app/media" in (
+                stack["services"][service]["volumes"]
+            )
+
+    def test_the_image_lets_the_application_write_them(self):
+        dockerfile = (DOCKER / "Dockerfile").read_text()
+
+        assert "chown app:app /app/logs /app/media" in dockerfile
+
     def test_nginx_takes_the_proxy_s_place(self):
         proxy = compose("docker-compose.prod-nginx.yml")["services"]["proxy"]
 
@@ -76,6 +97,19 @@ class TestTheNginxConfiguration:
         assert int(size.group(1)) * 1024 * 1024 > (
             DEFAULTS["IMPORT_MAX_FILE_SIZE"]
         )
+
+    def test_uploads_the_size_forms_send(self):
+        """A form's file may be FILE_MAX_SIZE (10 MB), plus the rest of
+        the form."""
+        from generic.conf import DEFAULTS
+
+        size = re.search(r"client_max_body_size (\d+)m;", self.conf())
+
+        assert int(size.group(1)) * 1024 * 1024 > DEFAULTS["FILE_MAX_SIZE"]
+
+    def test_no_folder_of_uploads_is_served(self):
+        """Files go through Django, which checks who asks."""
+        assert "/media/" not in self.conf()
 
     def test_the_websocket_is_upgraded_and_kept_open(self):
         from generic.conf import DEFAULTS

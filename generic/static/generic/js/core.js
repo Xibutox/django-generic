@@ -167,6 +167,38 @@
     });
   }
 
+  /**
+   * A size in bytes, "12.3 KB", in the page's own language: 1024 bytes
+   * to the kilobyte, as the server's messages count them.
+   */
+  function formatSize(bytes) {
+    if (typeof bytes !== "number" || isNaN(bytes) || bytes < 0) {
+      return "";
+    }
+
+    var units = ["byte", "kilobyte", "megabyte", "gigabyte"];
+    var short = ["B", "KB", "MB", "GB"];
+    var index = 0;
+    var value = bytes;
+
+    while (value >= 1024 && index < units.length - 1) {
+      value /= 1024;
+      index += 1;
+    }
+
+    try {
+      return new Intl.NumberFormat(locale(), {
+        style: "unit",
+        unit: units[index],
+        // "12 bytes", "12 octets": the short form of a byte is no word.
+        unitDisplay: index ? "short" : "long",
+        maximumFractionDigits: index ? 1 : 0
+      }).format(value);
+    } catch (error) {
+      return (index ? value.toFixed(1) : String(value)) + "\u00a0" + short[index];
+    }
+  }
+
   /** "5 minutes ago", in the page's own language. */
   function relativeTime(value) {
     if (!value) {
@@ -743,6 +775,7 @@
     flash: flash,
     format: format,
     formatDateTime: formatDateTime,
+    formatSize: formatSize,
     isSafeUrl: isSafeUrl,
     nt: nt,
     ready: ready,

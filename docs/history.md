@@ -47,6 +47,10 @@ follow, and both are the reason for it:
 - Any version can be shown in full, which a stored diff could not do
   without replaying every entry since the first.
 
+Values are kept as the database gives them back: a decimal set by code
+as `Decimal(2)` in a field of two places is kept as `2.00`, so the next
+version does not list it as a change.
+
 A page of history therefore asks the database for one entry more than
 it shows, so the oldest one on the page still has something to be a
 change from.

@@ -1440,3 +1440,71 @@ msgstr "pas encore"
 
 msgid "%(action)s: done."
 msgstr "%(action)s : fait."
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Sent when you save."
+msgstr "Envoyé à l'enregistrement."
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Removed when you save."
+msgstr "Retiré à l'enregistrement."
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Replaced when you save."
+msgstr "Remplacé à l'enregistrement."
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "No file"
+msgstr "Aucun fichier"
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Replace"
+msgstr "Remplacer"
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Choose a file"
+msgstr "Choisir un fichier"
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "Keep the file"
+msgstr "Garder le fichier"
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "%(name)s is too large (%(size)s): the limit is %(limit)s."
+msgstr "%(name)s est trop volumineux (%(size)s) : la limite est de %(limit)s."
+
+#: generic/static/generic/js/forms/widgets.js
+msgid "%(name)s is not a kind of file this field takes (%(accept)s)."
+msgstr "%(name)s n'est pas un type de fichier que ce champ accepte (%(accept)s)."
+
+#: generic/static/generic/js/wiki.js
+msgid "Or its address"
+msgstr "Ou son adresse"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert"
+msgstr "Insérer"
+
+#: generic/static/generic/js/wiki.js
+msgid "Upload an image"
+msgstr "Envoyer une image"
+
+#: generic/static/generic/js/wiki.js
+msgid "PNG, JPEG, GIF or WebP, up to %(limit)s."
+msgstr "PNG, JPEG, GIF ou WebP, jusqu'à %(limit)s."
+
+#: generic/static/generic/js/wiki.js
+msgid "PNG, JPEG, GIF or WebP."
+msgstr "PNG, JPEG, GIF ou WebP."
+
+#: generic/static/generic/js/wiki.js
+msgid "Only PNG, JPEG, GIF and WebP images can be added."
+msgstr "Seules les images PNG, JPEG, GIF et WebP peuvent être ajoutées."
+
+#: generic/static/generic/js/wiki.js
+msgid "The image is too large: at most %(limit)s."
+msgstr "L'image est trop volumineuse : %(limit)s au plus."
+
+#: generic/static/generic/js/wiki.js
+msgid "The image could not be uploaded."
+msgstr "L'image n'a pas pu être envoyée."

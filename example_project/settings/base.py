@@ -309,6 +309,16 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = Path(env("DJANGO_STATIC_ROOT", str(BASE_DIR / "staticfiles")))
 
+# -- Uploaded files ------------------------------------------------------
+#
+# Where the files people upload are written: a ticket's attachment, the
+# wiki's images. Kept like the database, and backed up with it (the
+# prod stack's app-media volume). No MEDIA_URL: nothing is served from
+# this folder directly - each file is downloaded through its record's
+# endpoint, which checks who asks (docs/forms.md).
+
+MEDIA_ROOT = Path(env("DJANGO_MEDIA_ROOT") or BASE_DIR / "media")
+
 # -- Authentication ----------------------------------------------------
 #
 # The site brings its own sign-in page; a route name works here.

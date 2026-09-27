@@ -225,8 +225,127 @@ take with it, using Django's own cascade collector:
 the way, so the confirmation dialog can say why instead of failing on
 submit.
 
-## File uploads
+## Files
 
-A multipart request can only send nested rows as a JSON string, so
-`_inlines` is parsed from a string when it arrives as one. Everything
-else is unchanged.
+A model's `FileField` (and `ImageField`) is a field of the generated
+form like any other: declared on the model, listed in `fields` or a
+fieldset, and the form offers to choose a file, replace it or remove
+it. Nothing is served from `MEDIA_URL`: a file is downloaded through
+the record's own endpoint, which checks who asks.
+
+```python
+# models.py
+attachment = models.FileField(
+    _("attachment"),
+    upload_to="tickets/%Y/%m/",
+    blank=True,                       # may be removed
+    validators=[FileExtensionValidator(["pdf", "png", "jpg", "txt"])],
+)
+
+# settings.py
+MEDIA_ROOT = BASE_DIR / "media"       # where files are written; no MEDIA_URL
+GENERIC = {"FILE_MAX_SIZE": 10 * 1024 * 1024}    # the default, in bytes
+```
+
+### What the form shows
+
+In the schema, a file field has `type` `"file"` (or `"image"`) and two
+keys more:
+
+| Key | From |
+| --- | --- |
+| `accept` | The `FileExtensionValidator` of the model field (`".pdf,.png,.jpg,.txt"`); `"image/*"` for an image field without one; absent otherwise |
+| `maxSize` | `GENERIC["FILE_MAX_SIZE"]`, in bytes |
+
+The record's value - in the form's `GET`, a table cell, the summary
+page - is an object, or `null` when the field is empty:
+
+```json
+{"name": "invoice.pdf", "url": "/api/example/ticket/7/files/attachment/", "size": 48213}
+```
+
+The widget shows the current file as a link to that `url`, with its
+size; a *Choose a file* / *Replace* button - a real `<label>` over the
+native `<input type="file" accept="...">`, which stays reachable by the
+keyboard; *Remove* when the field may be empty (`blank=True`); the
+chosen file's name and size before saving, and *Cancel* to drop it. A
+file over `maxSize`, or outside `accept`, is refused at once, under
+the field, before anything is sent - and by the server again.
+
+### What is sent
+
+Without a new file, the form sends JSON, exactly as before - a file
+nobody touched is left out, and the API keeps it. With one, it sends
+`multipart/form-data`:
+
+| Part | Holds |
+| --- | --- |
+| `_payload` | The JSON body a form without files would have sent - the inline rows (`_inlines`) included, the files left out |
+| `<field>` | One part per chosen file, named by its field |
+
+`generic.api.parsers.MultiPartJSONParser` puts them back together: the
+request's data is the payload, a plain dict, with each file under its
+field - so a many-to-many, a JSON field or the inline rows arrive
+exactly as JSON would carry them. A request without `_payload` is plain
+multipart, as DRF parses it, and still works (`_inlines` then travels
+as a JSON string). Every resource endpoint and `ModelFormViewSet`
+reads JSON, `_payload` multipart and HTML forms
+(`generic.api.viewsets.FORM_PARSERS`).
+
+A removed file travels in the JSON as `"attachment": null`: a field
+whose model field is `blank=True` accepts `null` (or `""`) and stores an
+empty name; a required one refuses it with a 400. The size is checked
+against `FILE_MAX_SIZE` ("The file is too large: at most 10 MB."), and
+the model field's validators apply as usual - an extension outside the
+`FileExtensionValidator` is a 400 under the field.
+
+### The download
+
+```
+GET api/<app>/<model>/<pk>/files/<field>/        site:api_<app>_<model>-file
+```
+
+- The record is read through the resource's queryset: its view
+  permission and its row restrictions (`get_queryset`) apply - 403
+  without the permission, 404 for a record out of reach.
+- `<field>` must be a file field the resource shows this reader - in
+  its form, its summary page (sections and figures) or its list;
+  `resource.get_file_fields(request)` says which. Anything else, an
+  empty field and a file the storage no longer holds are a 404.
+- The file is opened through the field's own storage - any storage,
+  not only the file system - and answered with `FileResponse`, its
+  type guessed from its name (`application/octet-stream` otherwise).
+- A PNG, JPEG, GIF or WebP image is shown in the browser (`inline`);
+  everything else is `attachment; filename=...`, with the RFC 6266
+  form for a name outside ASCII. An HTML page or an SVG is **never**
+  shown: an uploaded file must not run script in the site's origin.
+- Every answer, refusals included, carries `X-Content-Type-Options:
+  nosniff` and `Content-Security-Policy: sandbox`.
+
+In a table, a file column draws the name as a link to the download
+(its `size` is left `null`: asking the storage would be a request per
+row on a remote one); an export writes the name.
+
+### Keeping files
+
+`MEDIA_ROOT` is where files are written, and has to be set:
+`manage.py check` warns `generic.W010` when a registered model has a
+file field and it is empty - files would land relative to whatever
+directory the server started in. Back it up with the database
+([deployment](deployment.md#backups)).
+
+A file that is **replaced or removed is not deleted** from the
+storage: the record's history keeps versions naming it, and restoring
+one of them must find its file. Clean the storage yourself, knowingly,
+if it matters.
+
+### What files do not do
+
+- **Grids**: a file field in `editable_fields` raises
+  `ImproperlyConfigured` - a cell writes JSON; a file is chosen on the
+  record's form.
+- **Imports**: a file field is not importable (`Import(fields=...)`
+  naming one raises); a spreadsheet cell cannot hold a file.
+- **Inline rows**: a file field of an inline is shown, read-only, with
+  its link - rows travel inside the parent's JSON, where no file can.
+  Choose the file on the row's own form.

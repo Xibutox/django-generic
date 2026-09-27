@@ -141,10 +141,11 @@
             </div>
 
             <div class="wiki__editor-actions">
+              <span class="muted" role="status" x-show="uploading">{% translate "Uploading the image…" %}</span>
               <button type="button" class="button button--ghost" @click="cancel()">
                 {% translate "Cancel" %}
               </button>
-              <button type="button" class="button button--primary" :disabled="saving" @click="save()">
+              <button type="button" class="button button--primary" :disabled="saving || uploading" @click="save()">
                 {% icon "check" %} {% translate "Save" %}
               </button>
             </div>

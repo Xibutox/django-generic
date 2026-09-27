@@ -719,6 +719,70 @@ select.input[multiple] {
   padding: 0;
 }
 
+/* A file: the one stored, the one chosen, and the buttons. The native
+   chooser sits inside its button, out of sight but focusable, so the
+   keyboard reaches it and the button shows where the focus is. */
+.sf-file {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sf-file__current,
+.sf-file__chosen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  overflow-wrap: anywhere;
+}
+
+.sf-file__size,
+.sf-file__note {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.sf-file.is-removed .sf-file__current > a,
+.sf-file.is-removed .sf-file__current > .sf-file__name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.sf-file__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sf-file__choose {
+  position: relative;
+  cursor: pointer;
+}
+
+.sf-file__choose:has(.sf-file__input:focus-visible) {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+
+.sf-file__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sf-file.is-disabled .sf-file__choose {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* -- Search ------------------------------------------------------------ */
 
 .search-form {

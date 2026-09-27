@@ -227,6 +227,7 @@ ones that matter first:
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | | Without `EMAIL_HOST`, mails go to the log. Read into `MAILERS` from Django 6.1, into the settings of the same names before (`mail_settings`) |
 | `DJANGO_ADMINS` | `ops@example.com` | Comma-separated: who is mailed every unexpected error, with its traceback - once per error every ten minutes. Empty, `check --deploy` warns (`generic.W009`) |
 | `DJANGO_LOG_LEVEL` | `INFO` | Everything is logged to standard output (`docker compose ... logs web`) and to `/app/logs/app.log` in the `app-logs` volume, from every service. See [Logs and error reports](logging.md) |
+| `DJANGO_MEDIA_ROOT` | | Where uploaded files are written. Leave it empty in the stack: `/app/media`, the `app-media` volume ([Backups](#backups)) |
 
 ### Trying it on your machine
 
@@ -248,6 +249,16 @@ sent back over plain HTTP, and signing in would fail without a word.
   (`SECURE_PROXY_SSL_HEADER`); cookies are secure, HTTP redirects to
   HTTPS, HSTS is sent. Caddy (or nginx) overwrites any `X-Forwarded-*` a client
   sends, so the header cannot be forged from outside.
+- **Uploaded files** are written to `MEDIA_ROOT`, `/app/media` in the
+  image, which is the `app-media` volume - shared by web, worker, beat
+  and migrate, owned by the image's `app` user, and kept across
+  updates. Neither Caddy nor nginx serves it: there is no `/media/`
+  location, and no `MEDIA_URL`. Django serves each file itself, through
+  its record's endpoint (`<pk>/files/<field>/`, the wiki's
+  `images/<id>/`), which checks the reader's permission and the
+  record's row restrictions before answering - a proxy handing out a
+  folder would hand out every file to anyone who guesses a name.
+  `DJANGO_MEDIA_ROOT` moves the folder outside the image's layout.
 - **No persistent database connections**: under an ASGI server each
   request may run on a different thread, and a kept connection is
   never reused. Pool in front of Postgres if connections become the
@@ -289,7 +300,7 @@ replaced once it has succeeded.
 ### With nginx in place of Caddy
 
 `docker/docker-compose.prod-nginx.yml` is the same stack - web,
-migrate, worker, beat, Postgres, Redis, the log volume - with nginx in
+migrate, worker, beat, Postgres, Redis, the log and media volumes - with nginx in
 front instead of Caddy, for a server whose people know nginx. The two
 files differ in the proxy alone (`tests/test_docker.py` holds them to
 it), and both read the same `docker/prod.env`:
@@ -370,12 +381,20 @@ unchanged, so nothing about that prefix is nginx's business.
 
 ### Backups
 
-The database is the only state worth keeping — Redis holds the queue
-and the cache, Caddy its certificates (nginx's are the server's):
+Two things hold state worth keeping, and go together: the **database**
+and the **`app-media` volume** - the files people upload, which the
+database names (a ticket's attachment, the wiki's images, and the
+earlier files the history still points at). Redis holds the queue and
+the cache, Caddy its certificates (nginx's are the server's):
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec -T db pg_dump -U generic generic > backup.sql
+docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec -T web tar -C /app/media -czf - . > media.tar.gz
 ```
+
+Restore both from the same moment: a database naming files the volume
+lacks answers 404 for them; files the database no longer names are
+only taking room.
 
 ### More than one web process
 

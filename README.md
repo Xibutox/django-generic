@@ -4,8 +4,8 @@ A reusable Django foundation for internal applications: an admin-like
 interface built on a REST API, rich server-side data tables with
 coloured tag columns, summary pages with tables of related records,
 charts computed by the database, schema-driven forms with inline
-editing, per-user colour personalisation, a small wiki, and real-time
-events over WebSocket.
+editing and file uploads, per-user colour personalisation, a small
+wiki, and real-time events over WebSocket.
 
 ![A list page: charts computed by the database above a filterable table](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/list.png)
 
@@ -222,7 +222,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
-- [The wiki](docs/wiki.md) — pages, editor, history, the HTML it keeps
+- [The wiki](docs/wiki.md) — pages, editor, images uploaded into a page, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case
@@ -232,7 +232,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Scheduled mailings](docs/mailings.md) — a list, as each reader may see it, e-mailed as Excel or CSV every day, weekday, week or month
 - [State machines](docs/transitions.md) — a model's django-fsm-2 transitions as buttons, bulk actions and an endpoint, the state read only elsewhere
 - [Imports](docs/imports.md) — `Import(...)`: a spreadsheet read back into records, matched, previewed, all or nothing
-- [Forms and inlines](docs/forms.md) — schema, sections, related rows
+- [Forms and inlines](docs/forms.md) — schema, sections, related rows, files uploaded and downloaded behind the record's permission
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS
 - [Events, notifications and messages](docs/events.md) — who hears what, messages from an administrator, publishing, topics, the client protocol
@@ -284,6 +284,11 @@ above:
 ```bash
 pytest
 ```
+
+The pages themselves, driven through a real Chromium - tables, forms,
+summary pages, grids, imports - are opt-in: install the `browser`
+extra and the browser (`python -m playwright install chromium`), then
+`pytest tests/browser -m browser --no-cov`.
 
 Against the real backends, through Docker:
 
@@ -348,13 +353,3 @@ application built on it, after the application's own
 BSD 3-Clause, as Django's own - see [LICENSE](LICENSE). The libraries
 shipped under `generic/static/generic/vendor/` keep their own licences,
 each beside its files.
-
-## Roadmap
-
-1. **Browser tests.** The JavaScript is checked by hand; a Playwright
-   suite driving the example would keep it honest.
-2. **`drf-spectacular` schema** and the generated API reference.
-3. **File fields in generated forms.** The schema describes them, but
-   the JSON submit does not carry uploads yet — and the wiki inserts
-   images by address only, for the same reason.
-4. **Sharing saved views** between users, beside the per-user ones.

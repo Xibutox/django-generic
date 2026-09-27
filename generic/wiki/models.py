@@ -143,3 +143,38 @@ class WikiRevision(models.Model):
             cls.objects.filter(pk__in=stale).delete()
 
         return revision
+
+
+class WikiImage(models.Model):
+    """An image uploaded from the editor, shown in a page by its address.
+
+    Not attached to a page: a page holds ``<img src="/wiki/images/7/">``
+    like any other image, and an image may be shown by several pages -
+    or by an earlier version of one, which is why nothing deletes it
+    when a page stops showing it.
+    """
+
+    file = models.FileField(_("file"), upload_to="wiki/images/%Y/%m/")
+    original_name = models.CharField(
+        _("original name"), max_length=255, blank=True, default=""
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("uploaded by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    uploaded_at = models.DateTimeField(_("uploaded at"), default=timezone.now)
+
+    class Meta:
+        ordering = ("-uploaded_at", "-pk")
+        verbose_name = _("wiki image")
+        verbose_name_plural = _("wiki images")
+
+    def __str__(self) -> str:
+        return self.original_name or self.file.name
+
+    def get_absolute_url(self) -> str:
+        return reverse("generic_wiki:image", kwargs={"pk": self.pk})

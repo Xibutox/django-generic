@@ -109,6 +109,15 @@ record.
 
 ## Things worth trying
 
+**A file on a ticket.** Open ticket `SD-1000`: its *Description*
+section links `customer-log.txt`, downloaded through the ticket's own
+endpoint (`/api/example/ticket/<pk>/files/attachment/`), which checks
+you may read the ticket. *Edit* it: *Replace* chooses another file -
+a PDF, an image, a spreadsheet - shown with its size before you save;
+*Remove* takes it away; a file too large, or of a kind the field does
+not take, is refused before anything is sent. As `guest`, the same
+download answers 403.
+
 **On a customer.** Open the largest one from the dashboard. The figures
 sit on top, the values below — the account manager is a link to the
 agent's own page. Switch to *Time spent*: that table starts only now,
@@ -254,9 +263,11 @@ Save, and the next page opens that way — on any browser you sign in
 from.
 
 **In the wiki.** As `admin`, edit a page: headings, lists, links,
-quotes, code. Save, then open *History* and restore the earlier
-version — the text you replaced is kept too. Pin a page to the
-dashboard. As `viewer`, the same pages are there to read, without the
+quotes, code. *Insert an image*, then *Upload an image*: a PNG from
+your disk lands in the page, and stays there when you save - a `.png`
+that is really something else is refused. Save, then open *History*
+and restore the earlier version — the text you replaced is kept too.
+Pin a page to the dashboard. As `viewer`, the same pages are there to read, without the
 buttons.
 
 **As `viewer`.** The pencil and plus beside *Team* are gone, and the

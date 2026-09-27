@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db import models
 from drf_spectacular.extensions import (
     OpenApiAuthenticationExtension,
     OpenApiSerializerFieldExtension,
@@ -21,6 +22,7 @@ from drf_spectacular.plumbing import (
     build_bearer_security_scheme_object,
     build_object_type,
 )
+from drf_spectacular.settings import spectacular_settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, inline_serializer
 from rest_framework import serializers
@@ -46,7 +48,9 @@ OBJECT_ACTIONS = frozenset(
 )
 
 #: Answers that are files.
-FILE_ACTIONS = frozenset({"export", "export_csv", "import_template"})
+FILE_ACTIONS = frozenset(
+    {"export", "export_csv", "import_template", "download_file"}
+)
 
 #: Actions reading the table: they take its filters and search.
 TABLE_ACTIONS = frozenset(
@@ -126,12 +130,42 @@ IMPORT_UPLOAD = inline_serializer(
 )
 
 
+#: What the wiki's image upload takes: one image.
+WIKI_IMAGE_UPLOAD = inline_serializer(
+    name="WikiImageUpload",
+    fields={
+        "file": serializers.FileField(
+            help_text="A PNG, JPEG, GIF or WebP image, up to "
+            "GENERIC['FILE_MAX_SIZE'] bytes."
+        ),
+    },
+)
+
+#: Bodies of hand-built views, by the ``openapi_request`` they name.
+REQUESTS = {"wiki_image_upload": WIKI_IMAGE_UPLOAD}
+
+
 class ResourceAutoSchema(AutoSchema):
     """drf-spectacular's inspector, for the framework's endpoints."""
 
     @property
     def action(self) -> str:
         return getattr(self.view, "action", None) or ""
+
+    def is_excluded(self) -> bool:
+        # The download of a record's files is every resource's action;
+        # only a model that has files has anything to download.
+        if self.action == "download_file":
+            model = getattr(
+                getattr(self.view, "resource", None), "model", None
+            )
+
+            return model is None or not any(
+                isinstance(field, models.FileField)
+                for field in model._meta.fields
+            )
+
+        return super().is_excluded()
 
     def get_tags(self) -> list[str]:
         resource = getattr(self.view, "resource", None)
@@ -143,6 +177,10 @@ class ResourceAutoSchema(AutoSchema):
 
     def get_request_serializer(self) -> Any:
         action = self.action
+        declared = REQUESTS.get(getattr(self.view, "openapi_request", ""))
+
+        if declared is not None:
+            return declared
 
         if action in ("run_action", "cells", "rows", "take_transition"):
             return OpenApiTypes.OBJECT
@@ -283,6 +321,57 @@ class TagsColumnExtension(OpenApiSerializerFieldExtension):
         )
 
         return build_array_type(tag)
+
+
+def stored_file_object() -> Any:
+    """``{"name", "url", "size"}``: a stored file, as it is read."""
+    described = build_object_type(
+        properties={
+            "name": build_basic_type(STRING),
+            "url": {**build_basic_type(STRING), "nullable": True},
+            "size": {**build_basic_type(INTEGER), "nullable": True},
+        },
+        description="The file's name, where it is downloaded (the "
+        "record's files/<field>/ endpoint) and its size in bytes.",
+    )
+    described["nullable"] = True
+
+    return described
+
+
+class FormFileFieldExtension(OpenApiSerializerFieldExtension):
+    """A form's file: read as an object, written as a multipart part."""
+
+    target_class = "generic.api.files.FormFileField"
+    match_subclasses = True
+
+    def map_serializer_field(self, auto_schema: Any, direction: str) -> Any:
+        # drf-spectacular's own rule for a file field: the upload is
+        # only described where requests have components of their own.
+        if (
+            direction == "request"
+            and spectacular_settings.COMPONENT_SPLIT_REQUEST
+        ):
+            written = build_basic_type(OpenApiTypes.BINARY)
+            written["nullable"] = True
+            written["description"] = (
+                "A file part; null removes the current file, where the "
+                "field may be empty."
+            )
+
+            return written
+
+        return stored_file_object()
+
+
+class FileColumnExtension(OpenApiSerializerFieldExtension):
+    """A table's file cell: the same object, its size left out."""
+
+    target_class = "generic.api.columns.FileColumn"
+    match_subclasses = True
+
+    def map_serializer_field(self, auto_schema: Any, direction: str) -> Any:
+        return stored_file_object()
 
 
 class ManyRelatedColumnExtension(OpenApiSerializerFieldExtension):

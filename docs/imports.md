@@ -42,7 +42,8 @@ class TicketResource(ModelResource):
 
 A declaration is checked when the resource is registered: an unknown
 field, a key that is not unique, an update mode without a key, a
-lookup on something that is not a relation, all raise
+lookup on something that is not a relation, a file field (a cell
+cannot hold a file - [Files](forms.md#files)), all raise
 `ImproperlyConfigured` naming the resource. A field its form cannot
 write raises at the first use, when the form serializer exists.
 

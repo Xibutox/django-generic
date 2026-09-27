@@ -36,7 +36,7 @@ class TestEveryPage(PageSweep):
         from django.utils import timezone
 
         from example.models import Customer, TimeEntry
-        from tests.testapp.models import Manuscript
+        from tests.testapp.models import Document, Manuscript
 
         customer = Customer.objects.create(
             name="Northwind Traders",
@@ -63,6 +63,10 @@ class TestEveryPage(PageSweep):
             "example.equipment": workshop["laptop"],
             "example.maintenance": workshop["visit"],
             "testapp.manuscript": Manuscript.objects.create(title="Pooled"),
+            # Its file is named, not written: the storage has none.
+            "testapp.document": Document.objects.create(
+                title="Pooled", file="documents/pooled.txt"
+            ),
             # The hand-written pages of tests/testapp and the example.
             "book": library["emma"],
             "publisher": library["publisher"],

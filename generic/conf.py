@@ -101,6 +101,9 @@ DEFAULTS: dict[str, Any] = {
     # its choices in the schema - up to this many, beyond which the
     # schema would be too heavy and the field needs an endpoint.
     "FORM_CHOICES_LIMIT": 200,
+    # The largest file a form field - or the wiki's editor - accepts, in
+    # bytes. Checked in the browser before sending and by the server.
+    "FILE_MAX_SIZE": 10 * 1024 * 1024,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

@@ -20,7 +20,8 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 from django.contrib.auth import get_permission_codename
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
+from django.db import models
 from django.forms.models import _get_foreign_key
 from django.utils.encoding import force_str
 from django.utils.translation import gettext
@@ -115,19 +116,35 @@ class InlineResource:
             return self.serializer_class
 
         if self._serializer_class is None:
+            fields = self.get_fields()
+            # A row travels inside its parent's JSON, where no file can:
+            # its files are shown, and chosen on its own form.
+            files = [
+                name
+                for name in fields
+                if name not in self.readonly_fields
+                and isinstance(self._model_field(name), models.FileField)
+            ]
+
             # The parent link is part of the serializer so a constraint
             # spanning it can be validated; it is supplied on save and
             # left out of the schema.
             self._serializer_class = build_form_serializer(
                 self.model,
-                fields=[*self.get_fields(), self.fk.name],
-                readonly_fields=self.readonly_fields,
+                fields=[*fields, self.fk.name],
+                readonly_fields=[*self.readonly_fields, *files],
                 overrides=self.form_overrides,
                 source=self,
                 name=f"{self.model.__name__}InlineSerializer",
             )
 
         return self._serializer_class
+
+    def _model_field(self, name: str) -> Any:
+        try:
+            return self.opts.get_field(name)
+        except FieldDoesNotExist:
+            return None
 
     # -- permissions ----------------------------------------------------
     #
