@@ -140,36 +140,3 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # The address in the links those mails carry: without it, a mail says
 # "/example/ticket/12/" and no one can click it.
 GENERIC = {**GENERIC, "SITE_URL": env("DJANGO_SITE_URL") or None}
-
-# -- Logging -----------------------------------------------------------
-#
-# To standard output, one line per record: the container runtime keeps
-# it (`docker compose logs web`). Errors carry their traceback there,
-# since nobody reads a DEBUG page in production.
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "line": {
-            "format": "{asctime} {levelname} {name} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "line"},
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": env("DJANGO_LOG_LEVEL", "INFO"),
-    },
-    "loggers": {
-        # Every refused host name would be an error line otherwise, and
-        # the internet sends plenty.
-        "django.security.DisallowedHost": {
-            "handlers": ["console"],
-            "level": "CRITICAL",
-            "propagate": False,
-        },
-    },
-}

@@ -474,6 +474,7 @@ names what is missing, with the line to write:
 | `generic.W004` | `LOGIN_URL` leads to a page nobody serves |
 | `generic.W005` | Channels is installed but nothing serves ASGI |
 | `generic.W006` | Django 6.1 or later, and no `MAILERS` ([Mail](#mail)) |
+| `generic.W009` | `check --deploy` only: `ADMINS` is empty, so errors are mailed to nobody ([Logs](#logs-and-error-mails)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.
@@ -615,6 +616,21 @@ both, like the example's, switches on `django.VERSION` -
 later, `check` warns without `MAILERS` (`generic.W006`): Django 7.0
 sends nothing without it, and a mail that cannot leave is logged, never
 raised - the people who asked for it would simply stop receiving it.
+
+### Logs and error mails
+
+A log file beside standard output, rotated and shared by every process,
+and every unexpected error mailed with its traceback to `ADMINS`:
+
+```python
+from generic.logs import admins, logging_config
+
+ADMINS = admins(["ops@example.com"])
+LOGGING = logging_config(file=BASE_DIR / "logs" / "app.log")
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False       # with the tasks extra
+```
+
+See [Logs and error reports](logging.md).
 
 ### Translations
 

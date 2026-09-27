@@ -148,6 +148,7 @@ generic/
 ├── watch/                  Watch: a user follows a record or a model; the
 │                           messages, the endpoints and the Watching page
 ├── delivery.py             one message, some people, the channels they chose
+├── logs.py                 logging_config(), admins(), SharedRotatingFileHandler, ErrorMailHandler
 │                           (notification / mail / event); shared by both
 ├── help/                   help page and changelog, read from the project's
 │                           own LICENSE and CHANGELOG.md files
@@ -292,7 +293,7 @@ the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
 `E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
-drf-spectacular, `I001`). `site.urls`
+drf-spectacular, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1617,6 +1618,32 @@ path("api/", include("generic.openapi.urls"))      # before site.urls
   resource, `SHOW_MAILINGS = False` for the project. The framework's
   own `generic.*` tasks do not turn `SHOW_TASKS = None` on. See
   `docs/mailings.md`.
+
+## 13f. Logs and error reports (`generic.logs`)
+
+- Settings: `ADMINS = admins([...])` (addresses from Django 6.0,
+  `(name, address)` pairs before); `LOGGING = logging_config(level=,
+  file=, max_bytes=10MB, backups=5, mail_errors=True, quiet=
+  ("django.security.DisallowedHost",))`; with Celery,
+  `CELERY_WORKER_HIJACK_ROOT_LOGGER = False` or the worker's errors
+  bypass `LOGGING`. The example reads `DJANGO_ADMINS`,
+  `DJANGO_LOG_LEVEL`, `DJANGO_LOG_FILE` (base.py); the prod stack
+  writes `/app/logs/app.log` in the `app-logs` volume from every
+  service.
+- Root handlers: console, the file (`SharedRotatingFileHandler`:
+  follows another process's rotation, rotates under an `fcntl` lock),
+  `ErrorMailHandler` at ERROR with `require_debug_false`. `django` is
+  redefined without handlers so Django's default `mail_admins` does not
+  mail twice.
+- `ErrorMailHandler`: same error (logger, level, message - or exception
+  type + innermost line) once per `ERROR_MAIL_INTERVAL` (600 s; 0 =
+  all), counted in the default cache, "[N more since the last mail]";
+  cache failure → mail anyway; a send failure goes to `handleError`,
+  never to the caller.
+- Framework code logs failures with `logger.exception` on
+  `logging.getLogger(__name__)` and never swallows them silently;
+  `check --deploy` warns `generic.W009` when `ADMINS` is empty. See
+  `docs/logging.md`.
 
 ## 14. Known pitfalls
 

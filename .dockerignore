@@ -20,6 +20,7 @@ report.xml
 
 **/*.sqlite3
 **/*.log
+logs
 staticfiles
 
 .idea

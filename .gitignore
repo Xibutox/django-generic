@@ -17,6 +17,8 @@ htmlcov/
 *.sqlite3
 demo.sqlite3
 *.log
+# DJANGO_LOG_FILE=logs/app.log, its rotated copies and its lock.
+logs/
 # Celery Beat's own state file, written where it is started.
 celerybeat-schedule*
 staticfiles/

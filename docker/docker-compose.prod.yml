@@ -33,6 +33,10 @@ x-app: &app
     DJANGO_HSTS_SUBDOMAINS: ${DJANGO_HSTS_SUBDOMAINS:-}
     DJANGO_HSTS_PRELOAD: ${DJANGO_HSTS_PRELOAD:-}
     DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+    # Every service writes the same file, in the app-logs volume; the
+    # process number on each line tells them apart.
+    DJANGO_LOG_FILE: /app/logs/app.log
+    DJANGO_ADMINS: ${DJANGO_ADMINS:-}
     DJANGO_DEFAULT_FROM_EMAIL: ${DJANGO_DEFAULT_FROM_EMAIL:-}
     DATABASE_URL: postgres://${POSTGRES_USER:-generic}:${POSTGRES_PASSWORD:?set it in docker/prod.env}@db:5432/${POSTGRES_DB:-generic}
     REDIS_URL: redis://redis:6379/0
@@ -42,6 +46,8 @@ x-app: &app
     EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
     EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
     EMAIL_USE_TLS: ${EMAIL_USE_TLS:-}
+  volumes:
+    - app-logs:/app/logs
 
 services:
   db:
@@ -142,6 +148,7 @@ services:
         condition: service_healthy
 
 volumes:
+  app-logs:
   postgres-data:
   redis-data:
   caddy-data:

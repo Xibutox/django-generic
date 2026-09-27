@@ -378,6 +378,29 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
+# -- Logs --------------------------------------------------------------
+#
+# Every record at DJANGO_LOG_LEVEL or above to standard output - what
+# runserver prints, what `docker compose logs` keeps - and to
+# DJANGO_LOG_FILE when it is set, rotated at 10 MB with five kept. The
+# unexpected errors, with their traceback, also go by mail to
+# DJANGO_ADMINS when DEBUG is off: once per error every ten minutes,
+# with a count of the ones held back. See docs/logging.md.
+
+from generic.logs import admins, logging_config  # noqa: E402
+
+ADMINS = admins(env_list("DJANGO_ADMINS"))
+LOGGING = logging_config(
+    level=env("DJANGO_LOG_LEVEL", "INFO"),
+    file=env("DJANGO_LOG_FILE") or None,
+)
+EMAIL_SUBJECT_PREFIX = "[Support desk] "
+
+# The worker logs through LOGGING like every other process, rather than
+# through the handlers Celery would put in its place: its errors reach
+# the file and the mail too.
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+
 # -- The framework -----------------------------------------------------
 #
 # Every setting has a default; these are only the ones this example

@@ -44,6 +44,9 @@ READ = (
     "EMAIL_HOST_PASSWORD",
     "EMAIL_USE_TLS",
     "DEBUG_TOOLBAR",
+    "DJANGO_ADMINS",
+    "DJANGO_LOG_LEVEL",
+    "DJANGO_LOG_FILE",
 )
 
 #: The settings Django 6.1 deprecates for MAILERS, and refuses to start
@@ -70,6 +73,7 @@ PRODUCTION = {
     "DJANGO_ALLOWED_HOSTS": "desk.example.com, www.desk.example.com",
     "DATABASE_URL": "postgres://desk:s%40fe@db:5432/desk",
     "REDIS_URL": "redis://redis:6379/0",
+    "DJANGO_ADMINS": "ops@example.com",
 }
 
 
@@ -83,6 +87,11 @@ def load(monkeypatch):
 
         for name, value in environ.items():
             monkeypatch.setenv(name, value)
+
+        # base.py reads the environment too: imported again, not reused.
+        monkeypatch.delitem(
+            sys.modules, "example_project.settings.base", raising=False
+        )
 
         return runpy.run_module(f"example_project.settings.{mode}")
 
@@ -347,6 +356,51 @@ class TestDevelopment:
         )
 
 
+class TestLogs:
+    @pytest.mark.parametrize("mode", ["dev", "prod"])
+    def test_standard_output_alone_by_default(self, load, mode):
+        settings = load(mode, **PRODUCTION)
+
+        assert set(settings["LOGGING"]["handlers"]) == {
+            "console",
+            "mail_errors",
+        }
+        assert settings["LOGGING"]["root"]["level"] == "INFO"
+
+    def test_a_file_and_a_level_when_given(self, load, tmp_path):
+        settings = load(
+            "prod",
+            **PRODUCTION,
+            DJANGO_LOG_FILE=str(tmp_path / "app.log"),
+            DJANGO_LOG_LEVEL="WARNING",
+        )
+
+        logging = settings["LOGGING"]
+        assert logging["handlers"]["file"]["filename"] == str(
+            tmp_path / "app.log"
+        )
+        assert logging["root"]["level"] == "WARNING"
+
+    def test_the_errors_go_to_the_admins(self, load):
+        from generic.logs import admins
+
+        settings = load(
+            "prod", **{**PRODUCTION, "DJANGO_ADMINS": "a@x.io, b@x.io"}
+        )
+
+        assert settings["ADMINS"] == admins(["a@x.io", "b@x.io"])
+        assert settings["SERVER_EMAIL"] == settings["DEFAULT_FROM_EMAIL"]
+
+    def test_the_worker_logs_like_the_rest(self, load):
+        """Left to itself, Celery replaces the handlers of the root
+        logger with its own: the worker's errors would reach neither
+        the file nor the mail."""
+        assert (
+            load("prod", **PRODUCTION)["CELERY_WORKER_HIJACK_ROOT_LOGGER"]
+            is False
+        )
+
+
 class TestDatabaseUrl:
     def parse(self, url):
         from example_project.settings.base import database_from_url
@@ -446,6 +500,17 @@ class TestProductionForReal:
 
         assert result.returncode == 0, result.stdout + result.stderr
         assert "MAILERS" not in result.stderr, result.stderr
+
+    def test_check_deploy_says_when_nobody_hears_of_errors(self, tmp_path):
+        environ = self.environ(tmp_path)
+        del environ["DJANGO_ADMINS"]
+
+        result = manage(
+            "check", "--deploy", "--fail-level", "WARNING", **environ
+        )
+
+        assert result.returncode == 1
+        assert "generic.W009" in result.stderr
 
     def test_the_static_files_collect_with_hashed_names(self, tmp_path):
         """What the image build runs. A vendored file mentioning a

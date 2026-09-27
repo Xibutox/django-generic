@@ -225,7 +225,8 @@ ones that matter first:
 | `DJANGO_SITE_URL` | `https://desk.example.com` | For the links in the mails the site sends |
 | `DJANGO_HSTS_SECONDS` | `31536000` | One hour by default; raise it once HTTPS works everywhere |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` | | Without `EMAIL_HOST`, mails go to the log. Read into `MAILERS` from Django 6.1, into the settings of the same names before (`mail_settings`) |
-| `DJANGO_LOG_LEVEL` | `INFO` | Everything is logged to standard output: `docker compose ... logs web` |
+| `DJANGO_ADMINS` | `ops@example.com` | Comma-separated: who is mailed every unexpected error, with its traceback - once per error every ten minutes. Empty, `check --deploy` warns (`generic.W009`) |
+| `DJANGO_LOG_LEVEL` | `INFO` | Everything is logged to standard output (`docker compose ... logs web`) and to `/app/logs/app.log` in the `app-logs` volume, from every service. See [Logs and error reports](logging.md) |
 
 ### Trying it on your machine
 
@@ -251,6 +252,17 @@ sent back over plain HTTP, and signing in would fail without a word.
   request may run on a different thread, and a kept connection is
   never reused. Pool in front of Postgres if connections become the
   limit.
+- **Logs** go to standard output and to one file shared by the web
+  server, the worker, the scheduler and the migrations -
+  `/app/logs/app.log` in the `app-logs` volume, rotated at 10 MB with
+  five kept - and every unexpected error goes by mail to
+  `DJANGO_ADMINS`:
+
+  ```bash
+  docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec web tail -f logs/app.log
+  docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec web python manage.py sendtestemail --admins
+  ```
+
 - **`check --deploy`** has nothing to say:
 
   ```bash
