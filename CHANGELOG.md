@@ -13,30 +13,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
-- Files in the generated forms, and images in the wiki. A model's
-  `FileField` is now a chooser in its form - the current file linked,
-  *Choose a file* / *Replace*, *Remove* when it may be empty, the choice
-  checked in the browser against its extensions (`accept`, from the
-  field's `FileExtensionValidator`) and `GENERIC["FILE_MAX_SIZE"]`
-  (10 MB) before anything is sent. A form with a new file sends its
-  usual JSON as a `_payload` part beside one part per file
-  (`generic.api.parsers.MultiPartJSONParser`); without one, JSON as
-  before, and classic multipart still works for scripts. A file reads
-  as `{"name", "url", "size"}` in the record, a table cell and the
-  summary page, and downloads through
-  `api/<app>/<model>/<pk>/files/<field>/`: the record's permission and
-  row restrictions apply, only files the screens show are served, a
-  raster image is shown and anything else - HTML, SVG - downloaded,
-  always with `nosniff` and `Content-Security-Policy: sandbox`; no
-  `MEDIA_URL` anywhere. Replaced files are kept for the history. File
-  fields are refused in grids and imports, and read-only in inline
-  rows; `check` warns when `MEDIA_ROOT` is empty (`generic.W010`). The
-  wiki's editor uploads PNG, JPEG, GIF and WebP images, checked by
-  their bytes (`api/generic/wiki/images/`, shown from
-  `wiki/images/<id>/` to its readers). The example's tickets carry an
-  attachment; the production stacks keep uploads in an `app-media`
-  volume, to back up with the database. See docs/forms.md#files and
-  docs/wiki.md#images.
+- Tickets carry an attachment, chosen in their form and downloaded from
+  their page - behind the ticket's own permission - and the wiki's
+  pages show images uploaded from its editor. The seed attaches a log
+  to SD-1000. The production stacks keep uploads in an `app-media`
+  volume, to back up with the database (docs/deployment.md). The
+  framework's side is in generic/CHANGELOG.md, 1.2.0.
 - Browser tests: `tests/browser/` drives the Support desk through a
   real Chromium - signing in, the ticket list (search, ordering,
   paging, a reload, a `status:open` chip, a bulk transition, the Excel
@@ -62,20 +44,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   application: the WebSocket upgraded and kept open, the scheme and the
   client's address set by nginx, uploads the size imports send. CI runs
   `nginx -t` on every configuration. See docs/deployment.md.
-- Logs a production can read, and errors somebody hears of.
-  `generic.logs.logging_config()` logs to standard output and, when
-  asked, to a file rotated at 10 MB that the web server, the Celery
-  worker, the scheduler and `manage.py` share without losing a line
-  (`SharedRotatingFileHandler`); every unexpected error, with its
-  traceback, goes by mail to `ADMINS` - the same error once every ten
-  minutes (`ERROR_MAIL_INTERVAL`), the next mail counting the ones
-  held back. `admins()` writes `ADMINS` the way the running Django
-  reads it, and `check --deploy` warns when it is empty
-  (`generic.W009`). The example reads `DJANGO_ADMINS`,
-  `DJANGO_LOG_FILE` and `DJANGO_LOG_LEVEL`; its production stack
-  writes `/app/logs/app.log` in an `app-logs` volume from every
-  service, and its worker now logs through the project's settings
-  rather than Celery's own handlers. See docs/logging.md.
+- Unexpected errors are mailed to `DJANGO_ADMINS`, and everything is
+  logged to standard output and, with `DJANGO_LOG_FILE`, to a file: the
+  production stack writes `/app/logs/app.log` in an `app-logs` volume
+  from every service. The worker logs through the project's settings
+  rather than Celery's own handlers (`generic.logs`, docs/logging.md).
 - Searches ignore accents: `region` finds *Région Occitanie*. The
   project installs `generic.search`, and tickets and customers have
   trigram indexes on PostgreSQL. Some seeded names carry their accents
@@ -96,30 +69,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
-- The sign-in page, and the last page of a popup form, name the site's
-  icon like every other page. Without one, the browser asked for
-  `/favicon.ico`, which nobody serves, and logged a 404 on every first
-  visit. The icon is one include, `generic/includes/favicon.html`, for
-  a project to override once; the browser tests no longer allow that
-  error.
-- The history no longer lists a decimal that did not change. A value
-  set by code without its places - `Decimal(2)` in a field of two - was
-  kept as `2`, the database gave `2.00` back, and the next save of
-  anything else showed "Estimated hours 2.00 -> 2.00" as well. A
-  version now holds decimals as the database does. Found by the
-  browser tests.
 - The installation guide says how the framework really arrives: it is
   not on PyPI, where `django-generic` is an unrelated package, so a
   project builds its wheel from the repository, keeps it in `vendor/`
   and names it by its path in `requirements.txt`. Two walkthroughs, a
   new project from nothing and an existing one, both run as written;
   Docker, updating and working on the framework beside a project
-  follow. The README, the feature pages, the checks' hints and the
-  error messages no longer say `pip install django-generic[...]`.
-- *Mark all as read* works, in the bell and on the notifications page.
-  The framework looked its endpoint up by a route name DRF never gave
-  it, got no address, and the bell posted to the page itself (a 405);
-  the notifications page left the button out.
+  follow. The README and the feature pages no longer say `pip install
+  django-generic[...]`.
 - *Run now* hands the task to the Celery worker. The web server never
   loaded the project's Celery application, found no broker, and ran
   every task in the request; `example_project/__init__.py` now imports

@@ -9,6 +9,68 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.2.0] - 2026-09-27
+
+### Added
+- Files in the generated forms. A model's `FileField` (or
+  `ImageField`) is a chooser in its form: the current file linked with
+  its size, *Choose a file* / *Replace*, *Cancel*, and *Remove* when it
+  may be empty. The choice is checked in the browser against the
+  field's extensions (`accept`, from its `FileExtensionValidator`) and
+  `GENERIC["FILE_MAX_SIZE"]` (10 MB) before anything is sent, and
+  checked again by the server. A form with a new file sends its usual
+  JSON as a `_payload` part beside one part per file
+  (`generic.api.parsers.MultiPartJSONParser`); without one, it sends
+  JSON as before, and classic multipart still works for scripts.
+- A record's files download through
+  `api/<app>/<model>/<pk>/files/<field>/`, never from a public
+  `MEDIA_URL`: the record's view permission and row restrictions apply,
+  and only the file fields the resource shows that reader are served. A
+  raster image (PNG, JPEG, GIF, WebP) is shown; anything else - HTML and
+  SVG first - is downloaded, and every answer carries
+  `X-Content-Type-Options: nosniff` and `Content-Security-Policy:
+  sandbox`. A file reads as `{"name", "url", "size"}` in the record, a
+  table cell (`FileColumn`) and the summary page; exports write its
+  name. Replaced and removed files are kept: the history points at
+  them. File fields are refused in `editable_fields` and imports, and
+  read-only in inline rows. `generic.W010`: files are stored and
+  `MEDIA_ROOT` is empty.
+- Images in the wiki: the editor's *Insert an image* uploads a PNG,
+  JPEG, GIF or WebP - checked by its bytes, not its name; never SVG -
+  for whoever may add or change pages (`api/generic/wiki/images/`),
+  shown to the wiki's readers from `wiki/images/<id>/`. A new model,
+  `generic_wiki.WikiImage`, and its migration.
+- `generic.logs`: logs a production can read, and errors somebody hears
+  of. `logging_config()` logs to standard output and, when asked, to a
+  file rotated by size that the web server, a Celery worker's children,
+  the scheduler and `manage.py` share without losing a line
+  (`SharedRotatingFileHandler`). Every unexpected error goes by mail,
+  with its traceback, to `ADMINS` when `DEBUG` is off - the same error
+  once per `ERROR_MAIL_INTERVAL` (ten minutes), the next mail counting
+  the ones held back, and a mail that cannot leave never raised into
+  the failing request (`ErrorMailHandler`). `admins()` writes `ADMINS`
+  the way the running Django reads it. `generic.W009` (`check
+  --deploy`): `ADMINS` is empty. See docs/logging.md.
+
+### Fixed
+- The sign-in pages, and the last page of a popup form, name the site's
+  icon like every other page; the browser no longer asks for a
+  `/favicon.ico` nobody serves. The icon is one include,
+  `generic/includes/favicon.html`, for a project to override once.
+- The history no longer shows a decimal that did not change. A value
+  set by code without its places - `Decimal(2)` in a field of two - was
+  kept as `2`, read back as `2.00`, and listed as "2.00 -> 2.00" at the
+  next save of anything else.
+- *Mark all as read* works, in the bell and on the notifications page:
+  its endpoint was looked up by a route name DRF never gave it.
+- A classic multipart create or update - a form posted with its files -
+  no longer receives every value as a list, and an `ImageField` is
+  described as an image rather than a file.
+- The checks' hints and the error messages no longer say `pip install
+  django-generic[...]`: that name on PyPI is an unrelated package. They
+  name the extra, and docs/installation.md installs the framework from
+  a wheel built from its repository.
+
 ## [1.1.0] - 2026-09-26
 
 ### Added
