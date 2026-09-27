@@ -270,8 +270,8 @@ is ignored. Pytest under the debugger needs `--no-cov`. Tests:
 
 **Docker** (`docker/`): one `Dockerfile`, targets `dev` (every extra,
 runserver), `prod` (default; Daphne `--proxy-headers`, static files
-collected at build, user `app`) and `proxy` (Caddy + the static files,
-`docker/Caddyfile`). `docker-compose.dev.yml`: db, redis, `migrate`
+collected at build, user `app`), `proxy` (Caddy + the static files,
+`docker/Caddyfile`) and `nginx` (nginx + the same, `docker/nginx/`). `docker-compose.dev.yml`: db, redis, `migrate`
 (the others wait for it: beat reads its tables on start), web
 (runserver, source mounted, 5678 published for debugpy), worker, beat;
 the `dev` image keeps coverage data in `/tmp` (`COVERAGE_FILE`), the
@@ -281,6 +281,21 @@ mounted checkout not always being uid 1000's.
 wait for it), web, worker, beat, proxy — only the proxy published.
 Vendored static files must not reference missing files (source maps):
 the Manifest storage fails the image build.
+`docker-compose.prod-nginx.yml`: the same stack with the `nginx` target
+(`nginx:stable-alpine`, `docker/nginx/`) in place of Caddy - identical
+but for `proxy` (`tests/test_docker.py`). `NGINX_MODE=https` (default,
+the server's certificate: `NGINX_CERTS_DIR`, `NGINX_CERT`,
+`NGINX_CERT_KEY`; refuses to start without) or `http`; `SERVER_NAME`.
+`docker/nginx/django-generic.conf` is what any nginx needs: `/ws/`
+upgraded with `proxy_read_timeout 1h`, `X-Forwarded-Proto $scheme` and
+`X-Forwarded-For $remote_addr` set (never appended), Host,
+`client_max_body_size 20m`, `proxy_pass http://$generic_upstream` (each
+server block sets its own upstream). `docker-compose.host-nginx.yml`
+added to either prod file: proxy under a profile (not started), web on
+`127.0.0.1:${WEB_PORT}`, a one-shot `static` service copying the files
+to `STATIC_EXPORT_DIR`; the server's nginx gets
+`docker/nginx/host-site.conf.example`. CI job `nginx` runs `nginx -t`
+on all of it.
 
 ---
 

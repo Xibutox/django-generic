@@ -26,6 +26,9 @@ staticfiles/
 # The production stack's secrets: docker/prod.env.example is the one to
 # commit.
 docker/prod.env
+# Certificates and certbot's challenges for the nginx stack: the server's.
+docker/nginx/certs/
+docker/nginx/acme/
 
 .idea/
 # Claude Code's own per-machine settings (the preview server's command

@@ -1,0 +1,39 @@
+# The stack behind an nginx that already runs on the server and serves
+# other applications: added to either production file, it
+#
+# - leaves the stack's own proxy stopped (it is only started with
+#   --profile bundled-proxy);
+# - publishes Daphne on 127.0.0.1:WEB_PORT - this machine only - for
+#   the server's nginx to hand requests to;
+# - copies the collected static files to STATIC_EXPORT_DIR on every
+#   start, for the server's nginx to serve.
+#
+#   docker compose -f docker/docker-compose.prod-nginx.yml \
+#     -f docker/docker-compose.host-nginx.yml --env-file docker/prod.env up -d --build
+#
+# The server's nginx then gets a server block like
+# docker/nginx/host-site.conf.example, which includes
+# docker/nginx/django-generic.conf. See docs/deployment.md.
+
+services:
+  proxy:
+    profiles: ["bundled-proxy"]
+
+  web:
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+
+  # Runs once per start and exits. Files of earlier releases are kept:
+  # a page still open in a browser may ask for them.
+  static:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: prod
+    image: ${APP_IMAGE:-django-generic:prod}
+    restart: "no"
+    # The folder is the host's, and its owner is not the image's user.
+    user: root
+    command: ["sh", "-c", "cp -a /app/staticfiles/. /export/ && chmod -R a+rX /export"]
+    volumes:
+      - ${STATIC_EXPORT_DIR:?set it in docker/prod.env - the folder the server's nginx serves /static/ from}:/export

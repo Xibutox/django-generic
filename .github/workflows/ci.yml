@@ -153,3 +153,55 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  nginx:
+    name: The nginx front, configured
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The compose files, as Compose reads them
+        run: |
+          printf 'DJANGO_SECRET_KEY=ci\nDJANGO_ALLOWED_HOSTS=desk.example.com\nPOSTGRES_PASSWORD=ci\nSTATIC_EXPORT_DIR=/tmp/static\n' > /tmp/ci.env
+          for files in "-f docker/docker-compose.prod.yml" \
+                       "-f docker/docker-compose.prod-nginx.yml" \
+                       "-f docker/docker-compose.prod-nginx.yml -f docker/docker-compose.host-nginx.yml"; do
+            docker compose $files --env-file /tmp/ci.env config -q
+          done
+      - name: Build the nginx image
+        run: docker build -f docker/Dockerfile --target nginx -t generic-nginx .
+      - name: A certificate to serve
+        run: |
+          mkdir -p /tmp/certs/live/desk.example.com
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=desk.example.com" \
+            -keyout /tmp/certs/live/desk.example.com/privkey.pem \
+            -out /tmp/certs/live/desk.example.com/fullchain.pem
+          chmod -R a+r /tmp/certs
+      - name: nginx -t, over HTTP and over HTTPS
+        # web stands for the application's container, which nginx
+        # resolves when it reads its configuration.
+        run: |
+          docker run --rm --add-host web:127.0.0.1 -e NGINX_MODE=http \
+            generic-nginx nginx -t
+          docker run --rm --add-host web:127.0.0.1 \
+            -v /tmp/certs:/etc/nginx/certs:ro \
+            -e NGINX_CERT=/etc/nginx/certs/live/desk.example.com/fullchain.pem \
+            -e NGINX_CERT_KEY=/etc/nginx/certs/live/desk.example.com/privkey.pem \
+            generic-nginx nginx -t
+      - name: HTTPS without a certificate is refused, saying why
+        run: |
+          ! docker run --rm generic-nginx nginx -t 2> /tmp/refused.txt
+          grep -q "no certificate" /tmp/refused.txt
+      - name: The server block for an nginx already on the server
+        # As an administrator would install it, beside another site.
+        run: |
+          # A container network may have no IPv6: its lines go, as the
+          # file says to on such a server.
+          sed '/listen \[::\]/d' docker/nginx/host-site.conf.example > /tmp/desk.conf
+          sed 's/desk/crm/g; s/8000/8001/' /tmp/desk.conf > /tmp/crm.conf
+          cp -r /tmp/certs/live/desk.example.com /tmp/certs/live/crm.example.com
+          docker run --rm \
+            -v /tmp/desk.conf:/etc/nginx/conf.d/desk.conf:ro \
+            -v /tmp/crm.conf:/etc/nginx/conf.d/crm.conf:ro \
+            -v "$PWD/docker/nginx/django-generic.conf:/etc/nginx/snippets/django-generic.conf:ro" \
+            -v /tmp/certs:/etc/letsencrypt:ro \
+            nginx:stable-alpine sh -c 'rm /etc/nginx/conf.d/default.conf && nginx -t'

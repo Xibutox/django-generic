@@ -40,6 +40,11 @@ rather than inventing new wiring.
 ├── docker/                   copy of docker/:
 │   ├── Dockerfile            targets dev, prod (default), proxy
 │   ├── Caddyfile             HTTPS, /static/, the rest to web:8000
+│   ├── nginx/                the same for nginx: django-generic.conf, the two
+│   │                         server-block templates, host-site.conf.example
+│   ├── docker-compose.prod-nginx.yml   the prod stack with nginx in front
+│   ├── docker-compose.host-nginx.yml   no proxy: web on 127.0.0.1, static exported
+│   │                                   for the server's own nginx
 │   ├── docker-compose.dev.yml    db, redis, web (runserver, source mounted), worker, beat
 │   ├── docker-compose.prod.yml   db, redis, migrate, web (Daphne), worker, beat, proxy
 │   └── prod.env.example      every production variable; docker/prod.env is ignored
@@ -102,7 +107,10 @@ rather than inventing new wiring.
    `pip install -r requirements.txt` (prod) or `-r
    requirements-dev.txt` (dev) in place of `".[...]"`. Dev: runserver on the mounted
    source, a `migrate` service on every start that web, worker and
-   beat wait for. Prod: Caddy in front, a `migrate`
+   beat wait for. Prod: Caddy in front - or nginx
+   (`docker-compose.prod-nginx.yml`), or the server's own nginx
+   (`+ docker-compose.host-nginx.yml`), whichever the people running
+   the server know - a `migrate`
    service the others wait for, nothing published but Caddy, every
    value from `docker/prod.env` via `--env-file`.
 6. **Tests** — `tests/settings.py` importing the project settings with
