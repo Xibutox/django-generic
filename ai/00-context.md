@@ -56,7 +56,7 @@ pages, charts, filters, exports or permissions.
 | Tests | pytest, pytest-django, factory-boy; Playwright for the opt-in browser tests |
 | Style | black + isort (line length **79**), flake8 |
 
-Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.1.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.1,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
+Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.2.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.2,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
 
 ---
 
@@ -1184,7 +1184,9 @@ Framework API under `api/generic/`: `account/preferences/`,
 
 ### Templates
 
-Every page extends `generic/base.html`. Blocks: `title`, `favicon`,
+Every page extends `generic/base.html`. Blocks: `title`, `favicon`
+(the include `generic/includes/favicon.html`, also used by the sign-in
+frame and the popup response: override that file to change the icon),
 `styles`, `extrastyle`, `extrahead`, `bodyclass`, `sidebar`, `header`,
 `breadcrumbs`, `usertools`, `messages`, `page_header` (`page_eyebrow`,
 `page_title`, `page_subtitle`, `object_tools`, `toolbar`), `content`,
