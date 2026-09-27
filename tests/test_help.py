@@ -277,3 +277,21 @@ def test_the_package_ships_its_own_changelog():
     # The version the package says it is, released.
     assert releases[0].version == __version__
     assert not releases[0].is_unreleased
+
+
+def test_the_example_is_released_with_the_framework():
+    """The example ships with each release of the framework, and says
+    so in three places the framework's version does not reach: the
+    navigation's footer and the Help page, its API description, and its
+    own changelog. They stayed at 1.0.0 through 1.1.0 and 1.2.0, their
+    changes piled under Unreleased. Unreleased entries may wait on top
+    of it between releases; the newest release must be this one."""
+    from example_project.settings import base
+    from generic import __version__
+
+    releases = read(Path(__file__).resolve().parent.parent / "CHANGELOG.md")
+    released = [release for release in releases if not release.is_unreleased]
+
+    assert base.GENERIC["VERSION"] == __version__
+    assert base.SPECTACULAR_SETTINGS["VERSION"] == __version__
+    assert released[0].version == __version__

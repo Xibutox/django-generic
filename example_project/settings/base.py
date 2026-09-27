@@ -377,7 +377,7 @@ SPECTACULAR_SETTINGS = {
         "in with a token from your account page: "
         "`Authorization: Token 3f9c...`."
     ),
-    "VERSION": "1.0.0",
+    "VERSION": "1.2.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -427,7 +427,7 @@ GENERIC = {
     "AUTOCOMPLETE_PAGE_SIZE": 20,
     # Shown in the navigation's footer and on the help page. The help
     # page finds LICENSE and CHANGELOG.md by itself.
-    "VERSION": "1.0.0",
+    "VERSION": "1.2.0",
     "HELP_TEXT": (
         "A support desk built on django-generic: tickets, customers, "
         "teams and the time spent on them. Every screen here is "

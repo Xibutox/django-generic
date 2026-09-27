@@ -1737,6 +1737,14 @@ path("api/", include("generic.openapi.urls"))      # before site.urls
 ## 14. Known pitfalls
 
 - `site.urls` must be the **last** URL pattern.
+- **A release moves five labels together**: `generic/__init__.py`
+  `__version__` (the package's only version source), a dated
+  `## [x.y.z]` section in `generic/CHANGELOG.md` (on top - it takes no
+  Unreleased section) and in the root `CHANGELOG.md` (the example's;
+  its Unreleased entries become that section), and the example's
+  `GENERIC["VERSION"]` and `SPECTACULAR_SETTINGS["VERSION"]` in
+  `example_project/settings/base.py`. `tests/test_help.py` checks all
+  of them against `__version__`; the tag (`vX.Y.Z`) comes last.
 - A DRF `@action`'s route name comes from its **method** name, not its
   `url_path`: `mark_all_read` with `url_path="read-all"` is
   `notification-mark-all-read`. `get_framework_api()` turns a name that
