@@ -10,11 +10,11 @@ The example project runs two ways, and a new project copies both:
 | Database | SQLite, or Postgres when `DATABASE_URL` is set | Postgres, required |
 | Events, cache | in memory, or Redis when `REDIS_URL` is set | Redis, required |
 | Tasks | run in the request without a broker | a Celery worker, always |
-| Static files | served by runserver from the apps | collected with hashed names, served by Caddy |
+| Static files | served by runserver from the apps | collected with hashed names, served by Caddy or nginx |
 | HTTPS | no | assumed: secure cookies, redirect, HSTS |
 | Mail | printed to the console | SMTP, or the log without `EMAIL_HOST` |
 | Debug Toolbar | on when installed | never installed |
-| Docker | `docker/docker-compose.dev.yml` | `docker/docker-compose.prod.yml` |
+| Docker | `docker/docker-compose.dev.yml` | `docker/docker-compose.prod.yml` (Caddy), `docker/docker-compose.prod-nginx.yml` (nginx), `+ docker-compose.host-nginx.yml` (the server's own nginx) |
 
 ## The settings
 
@@ -246,7 +246,7 @@ sent back over plain HTTP, and signing in would fail without a word.
 - **HTTPS** is assumed: the proxy terminates it and says so in
   `X-Forwarded-Proto`, which Django trusts
   (`SECURE_PROXY_SSL_HEADER`); cookies are secure, HTTP redirects to
-  HTTPS, HSTS is sent. Caddy overwrites any `X-Forwarded-*` a client
+  HTTPS, HSTS is sent. Caddy (or nginx) overwrites any `X-Forwarded-*` a client
   sends, so the header cannot be forged from outside.
 - **No persistent database connections**: under an ASGI server each
   request may run on a different thread, and a kept connection is
@@ -286,10 +286,92 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env up -
 The images are rebuilt, `migrate` runs, and web, worker and beat are
 replaced once it has succeeded.
 
+### With nginx in place of Caddy
+
+`docker/docker-compose.prod-nginx.yml` is the same stack - web,
+migrate, worker, beat, Postgres, Redis, the log volume - with nginx in
+front instead of Caddy, for a server whose people know nginx. The two
+files differ in the proxy alone (`tests/test_docker.py` holds them to
+it), and both read the same `docker/prod.env`:
+
+```bash
+docker compose -f docker/docker-compose.prod-nginx.yml --env-file docker/prod.env up -d --build
+```
+
+What nginx does not do by itself, and Caddy did:
+
+- **Certificates.** nginx serves the server's, it does not obtain them.
+  With certbot on the server, mount its folder and name the files as
+  seen from inside:
+
+  ```bash
+  NGINX_CERTS_DIR=/etc/letsencrypt
+  NGINX_CERT=/etc/nginx/certs/live/desk.example.com/fullchain.pem
+  NGINX_CERT_KEY=/etc/nginx/certs/live/desk.example.com/privkey.pem
+  ```
+
+  Port 80 answers certbot's HTTP challenges from `NGINX_ACME_DIR`
+  (`certbot certonly --webroot -w <that folder> -d desk.example.com`),
+  and redirects everything else to HTTPS. After a renewal: `docker
+  compose ... exec proxy nginx -s reload`. Without a certificate,
+  `NGINX_MODE=https` (the default) refuses to start and says so.
+- **Plain HTTP to try it**: `NGINX_MODE=http` with `DJANGO_HTTPS=0`, and
+  `HTTP_PORT` if 80 is taken.
+
+The configuration, in `docker/nginx/`:
+
+| File | Is |
+| --- | --- |
+| `django-generic.conf` | what the application needs from nginx, for any server block to include: the WebSocket at `/ws/` upgraded and kept open for an hour (nginx closes a quiet connection after 60 seconds), `X-Forwarded-Proto` and `X-Forwarded-For` set by nginx - never taken from the client - since Django trusts the one and Daphne the other, uploads up to 20 MB (nginx refuses above 1 MB by default; imports send up to 5), gzip, five minutes for a large export |
+| `static.conf` | `/static/`: hashed names cached for a year, the rest for an hour |
+| `https.conf.template`, `http.conf.template` | the server blocks of the two `NGINX_MODE`s; `SERVER_NAME` and the certificate paths are filled in when the container starts |
+| `host-site.conf.example` | a server block for an nginx already on the server (below) |
+
+`SERVER_NAME` is the name the server block answers to (`_`, any, by
+default).
+
+### An nginx already on the server
+
+A server whose nginx already serves other applications keeps it: the
+stack runs without its own proxy, and the server's nginx gets one more
+server block.
+
+1. Start the stack with `docker/docker-compose.host-nginx.yml` added
+   (with either production file). The stack's proxy is then not
+   started; Daphne is published on `127.0.0.1:WEB_PORT` (8000) - this
+   machine only; and on every start a `static` service copies the
+   collected files to `STATIC_EXPORT_DIR`:
+
+   ```bash
+   docker compose -f docker/docker-compose.prod-nginx.yml -f docker/docker-compose.host-nginx.yml \
+     --env-file docker/prod.env up -d --build
+   ```
+
+2. Give the server's nginx the application's needs and its site:
+
+   ```bash
+   sudo cp docker/nginx/django-generic.conf /etc/nginx/snippets/
+   sudo cp docker/nginx/host-site.conf.example /etc/nginx/sites-available/desk.conf
+   # edit: the name, the port (WEB_PORT), the static folder (STATIC_EXPORT_DIR), the certificate
+   sudo ln -s ../sites-available/desk.conf /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+Each application on that nginx names its own upstream in its server
+block (`set $generic_upstream desk_web;`), so several projects built on
+django-generic - each on its own `WEB_PORT` - include the same
+`django-generic.conf` side by side.
+
+The site keeps its own name (`desk.example.com`) and `DJANGO_ALLOWED_HOSTS`
+matches it. Inside an existing Django project, the framework's pages sit
+wherever its URLconf mounts them (`path("app/", site.urls)`, see
+[Installation](installation.md)); nginx passes every path through
+unchanged, so nothing about that prefix is nginx's business.
+
 ### Backups
 
 The database is the only state worth keeping — Redis holds the queue
-and the cache, Caddy its certificates:
+and the cache, Caddy its certificates (nginx's are the server's):
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec -T db pg_dump -U generic generic > backup.sql
@@ -300,17 +382,19 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env exec
 Daphne is one process. Events already work across several, through
 Redis. To run more, add web services (or replicas behind a load
 balancer) and list them in the Caddyfile's `reverse_proxy`, which
-balances between its upstreams.
+balances between its upstreams - or, with nginx, as more `server` lines
+of the `upstream` block.
 
 ## The images
 
-`docker/Dockerfile` builds three, by target:
+`docker/Dockerfile` builds four, by target:
 
 | Target | From | Holds |
 | --- | --- | --- |
 | `dev` | `python:3.12-slim` | every extra, the test tools, the Debug Toolbar, the source; `runserver` |
 | `prod` (default) | `python:3.12-slim` | `export,import,api,fsm,events,tasks,postgres,wiki` and the scheduler, the source, the collected static files; Daphne, as user `app` |
 | `proxy` | `caddy:2-alpine` | `docker/Caddyfile` and the static files collected by the `prod` build |
+| `nginx` | `nginx:stable-alpine` | `docker/nginx/` and the same static files; `NGINX_MODE` picks the server block when it starts |
 
 The dependencies are installed from `pyproject.toml` and a stub of the
 package before the source is copied, so a change to the code rebuilds

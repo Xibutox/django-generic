@@ -1,0 +1,16 @@
+# The site over plain HTTP (NGINX_MODE=http): to try the stack on this
+# machine with DJANGO_HTTPS=0, or behind something else that terminates
+# HTTPS - which must then send X-Forwarded-Proto itself.
+
+upstream django_generic_web {
+    server web:8000;
+}
+
+server {
+    listen 80;
+    server_name ${SERVER_NAME};
+
+    set $generic_upstream django_generic_web;
+    include /etc/nginx/snippets/django-generic-static.conf;
+    include /etc/nginx/snippets/django-generic.conf;
+}

@@ -324,6 +324,10 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env up -
 **Production**: `example_project.settings.prod`, every secret from the
 environment or no start, Daphne behind Caddy (HTTPS, hashed static
 files), migrations run once per start, Celery worker and scheduler.
+The same stack behind **nginx** is `docker/docker-compose.prod-nginx.yml`,
+and behind an nginx the server already runs for other applications,
+`docker/docker-compose.host-nginx.yml` added to it
+([With nginx](docs/deployment.md#with-nginx-in-place-of-caddy)).
 
 Either way the web server is **ASGI**, not WSGI: the events module
 needs it. A WSGI server serves the REST API perfectly well and drops

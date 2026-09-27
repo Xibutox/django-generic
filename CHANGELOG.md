@@ -13,6 +13,17 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- The production stack behind nginx: `docker/docker-compose.prod-nginx.yml`
+  is the Caddy stack with nginx in front (the `nginx` image target),
+  serving the server's own certificate, or plain HTTP to try it. For a
+  server whose nginx already serves other applications,
+  `docker/docker-compose.host-nginx.yml` runs the stack without a
+  proxy - Daphne on 127.0.0.1, the static files copied to a folder -
+  and `docker/nginx/host-site.conf.example` is the server block to add.
+  `docker/nginx/django-generic.conf` holds what any nginx needs for the
+  application: the WebSocket upgraded and kept open, the scheme and the
+  client's address set by nginx, uploads the size imports send. CI runs
+  `nginx -t` on every configuration. See docs/deployment.md.
 - Logs a production can read, and errors somebody hears of.
   `generic.logs.logging_config()` logs to standard output and, when
   asked, to a file rotated at 10 MB that the web server, the Celery

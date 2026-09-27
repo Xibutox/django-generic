@@ -1,0 +1,49 @@
+# A django-generic project behind an nginx that already serves other
+# applications on this server - a file for its sites-available/ (or
+# conf.d/), beside theirs. See docs/deployment.md, "An nginx already on
+# the server".
+#
+# Before: the stack started with docker-compose.host-nginx.yml, which
+# publishes Daphne on 127.0.0.1:8000 and copies the static files to
+# STATIC_EXPORT_DIR; and docker/nginx/django-generic.conf copied to
+# /etc/nginx/snippets/. Replace desk.example.com, the port and the
+# folder with the project's; drop the [::] lines on a server without
+# IPv6.
+
+upstream desk_web {
+    server 127.0.0.1:8000;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name desk.example.com;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name desk.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/desk.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/desk.example.com/privkey.pem;
+
+    set $generic_upstream desk_web;
+
+    location /static/ {
+        alias /srv/desk/static/;
+        access_log off;
+        add_header Cache-Control "public, max-age=3600";
+
+        location ~ "\.[0-9a-f]{12}\.[A-Za-z0-9]+$" {
+            add_header Cache-Control "public, max-age=31536000, immutable";
+        }
+    }
+
+    include /etc/nginx/snippets/django-generic.conf;
+}

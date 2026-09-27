@@ -1,0 +1,42 @@
+# The site over HTTPS (NGINX_MODE=https, the default). ${VARIABLES} in
+# capitals are filled from the environment when the container starts;
+# nginx's own ($host, $scheme...) are left alone.
+#
+# The certificate is the server's: NGINX_CERTS_DIR is mounted on
+# /etc/nginx/certs, and NGINX_CERT / NGINX_CERT_KEY name the files in it
+# - /etc/nginx/certs/live/desk.example.com/fullchain.pem when the folder
+# mounted is /etc/letsencrypt. Port 80 redirects to HTTPS, and answers
+# certbot's HTTP challenges from NGINX_ACME_DIR.
+
+upstream django_generic_web {
+    server web:8000;
+}
+
+server {
+    listen 80;
+    server_name ${SERVER_NAME};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/acme;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${SERVER_NAME};
+
+    ssl_certificate ${NGINX_CERT};
+    ssl_certificate_key ${NGINX_CERT_KEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    set $generic_upstream django_generic_web;
+    include /etc/nginx/snippets/django-generic-static.conf;
+    include /etc/nginx/snippets/django-generic.conf;
+}

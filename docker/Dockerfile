@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1
 #
-# One file, three images:
+# One file, four images:
 #
 #   --target dev     every extra, the test tools and the Debug Toolbar.
 #                    docker-compose.dev.yml mounts the source over /app
 #                    and runs runserver, which reloads on every change.
 #   --target proxy   Caddy with the collected static files: HTTPS, the
 #                    static files, the rest handed to Daphne.
+#   --target nginx   the same with nginx, for a server that runs nginx
+#                    (docker-compose.prod-nginx.yml).
 #   --target prod    (the default) the application alone - no test
 #                    tools, no toolbar, the static files collected with
 #                    hashed names - run by Daphne as a user that owns
@@ -103,6 +105,22 @@ FROM caddy:2-alpine AS proxy
 
 COPY docker/Caddyfile /etc/caddy/Caddyfile
 COPY --from=app /app/staticfiles /srv/static
+
+# -- nginx: the same front, for a server that runs nginx ------------------
+#
+# docker-compose.prod-nginx.yml. NGINX_MODE picks HTTPS (the default,
+# with the server's certificate mounted) or plain HTTP; the nginx
+# image's entrypoint fills in the chosen template. See docker/nginx/.
+
+FROM nginx:stable-alpine AS nginx
+
+COPY docker/nginx/django-generic.conf /etc/nginx/snippets/django-generic.conf
+COPY docker/nginx/static.conf /etc/nginx/snippets/django-generic-static.conf
+COPY docker/nginx/https.conf.template docker/nginx/http.conf.template \
+     /etc/nginx/django-generic/
+COPY --chmod=755 docker/nginx/15-django-generic-mode.sh /docker-entrypoint.d/
+COPY --from=app /app/staticfiles /srv/static
+RUN mkdir -p /var/www/acme
 
 # -- prod: the default target -------------------------------------------
 

@@ -1,0 +1,159 @@
+# Production stack, with nginx in front: the same application, worker,
+# scheduler, Postgres and Redis as docker-compose.prod.yml, and nginx in
+# place of Caddy - for a server whose people know nginx. The two files
+# differ only in the proxy service (tests/test_docker.py says so).
+#
+#   cp docker/prod.env.example docker/prod.env      # then fill it in
+#   docker compose -f docker/docker-compose.prod-nginx.yml --env-file docker/prod.env up -d --build
+#   docker compose -f docker/docker-compose.prod-nginx.yml --env-file docker/prod.env exec web python manage.py createsuperuser
+#
+# nginx does not obtain certificates itself: NGINX_CERTS_DIR is the
+# folder holding the server's (certbot's /etc/letsencrypt, say), and
+# NGINX_CERT / NGINX_CERT_KEY the files in it. NGINX_MODE=http serves
+# plain HTTP instead, to try the stack with DJANGO_HTTPS=0.
+#
+# On a server whose own nginx already serves other applications, add
+# docker-compose.host-nginx.yml: this nginx is then not started, and
+# the server's includes docker/nginx/django-generic.conf.
+
+name: django-generic-prod-nginx
+
+x-app: &app
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile
+    target: prod
+  image: ${APP_IMAGE:-django-generic:prod}
+  restart: unless-stopped
+  environment:
+    DJANGO_SETTINGS_MODULE: example_project.settings.prod
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set it in docker/prod.env}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set it in docker/prod.env}
+    DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+    DJANGO_SITE_URL: ${DJANGO_SITE_URL:-}
+    DJANGO_HTTPS: ${DJANGO_HTTPS:-1}
+    DJANGO_HSTS_SECONDS: ${DJANGO_HSTS_SECONDS:-}
+    DJANGO_HSTS_SUBDOMAINS: ${DJANGO_HSTS_SUBDOMAINS:-}
+    DJANGO_HSTS_PRELOAD: ${DJANGO_HSTS_PRELOAD:-}
+    DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+    # Every service writes the same file, in the app-logs volume; the
+    # process number on each line tells them apart.
+    DJANGO_LOG_FILE: /app/logs/app.log
+    DJANGO_ADMINS: ${DJANGO_ADMINS:-}
+    DJANGO_DEFAULT_FROM_EMAIL: ${DJANGO_DEFAULT_FROM_EMAIL:-}
+    DATABASE_URL: postgres://${POSTGRES_USER:-generic}:${POSTGRES_PASSWORD:?set it in docker/prod.env}@db:5432/${POSTGRES_DB:-generic}
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    EMAIL_HOST: ${EMAIL_HOST:-}
+    EMAIL_PORT: ${EMAIL_PORT:-}
+    EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+    EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    EMAIL_USE_TLS: ${EMAIL_USE_TLS:-}
+  volumes:
+    - app-logs:/app/logs
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-generic}
+      POSTGRES_USER: ${POSTGRES_USER:-generic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in docker/prod.env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Kept on disk: the task queue lives here, and a restart must not
+    # lose what was waiting in it.
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Runs once per start and exits; the rest waits for it to succeed.
+  migrate:
+    <<: *app
+    restart: "no"
+    command: python manage.py migrate --noinput
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Is Daphne listening? A request would need a host name the
+      # settings accept; a connection needs nothing.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 8000), 2)"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  worker:
+    <<: *app
+    command: celery -A example_project.celery worker --loglevel=info
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # One scheduler, never two: each would send every task it schedules.
+  beat:
+    <<: *app
+    command: >
+      celery -A example_project.celery beat --loglevel=info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: nginx
+    image: ${NGINX_IMAGE:-django-generic:nginx}
+    restart: unless-stopped
+    environment:
+      NGINX_MODE: ${NGINX_MODE:-https}
+      # The names this server block answers to; "_" answers to any.
+      SERVER_NAME: ${SERVER_NAME:-_}
+      NGINX_CERT: ${NGINX_CERT:-/etc/nginx/certs/fullchain.pem}
+      NGINX_CERT_KEY: ${NGINX_CERT_KEY:-/etc/nginx/certs/privkey.pem}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # Relative paths are from this folder, docker/.
+      - ${NGINX_CERTS_DIR:-./nginx/certs}:/etc/nginx/certs:ro
+      # certbot --webroot -w <this folder> answers its challenges here.
+      - ${NGINX_ACME_DIR:-./nginx/acme}:/var/www/acme:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  app-logs:
+  postgres-data:
+  redis-data:
