@@ -13,6 +13,18 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Browser tests: `tests/browser/` drives the Support desk through a
+  real Chromium - signing in, the ticket list (search, ordering,
+  paging, a reload, a `status:open` chip, a bulk transition, the Excel
+  download), the add and change forms, a summary page's tabs (the
+  regression test for 1.1.0's `GenericDataTables.start` race), a
+  transition's dialog, the Triage grid, an import, the command
+  palette, the dark theme, French and the navigation on a phone - and
+  fails on any error a page logs. Python Playwright through
+  pytest-playwright against `live_server`, no Node; opt-in with the
+  new `browser` extra (`pytest tests/browser -m browser --no-cov`, a
+  plain `pytest` leaves them out), and a CI job of their own that keeps
+  the screenshots of what failed. See docs/testing.md.
 - The production stack behind nginx: `docker/docker-compose.prod-nginx.yml`
   is the Caddy stack with nginx in front (the `nginx` image target),
   serving the server's own certificate, or plain HTTP to try it. For a

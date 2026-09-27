@@ -1,10 +1,11 @@
 # Testing
 
 ```bash
-pytest                       # everything, with coverage
+pytest                       # everything but the browser, with coverage
 pytest tests/api             # one area
 pytest -k inlines            # one topic
 pytest --no-cov -q           # fastest feedback
+pytest tests/browser -m browser --no-cov   # in a real browser: opt-in
 ```
 
 The suite is self-contained: SQLite and an in-memory channel layer, no
@@ -54,6 +55,66 @@ translations, a dependency the core imports without declaring it, or a
 guide that no longer matches the package. Both pipelines run it on
 every change, the core alone and with every extra on the oldest Django
 accepted.
+
+## Browser tests
+
+Everything above talks to the server. `tests/browser/` opens the
+example's pages in a real Chromium instead, so the JavaScript runs as
+it does for a person: the ticket list (rows from the API, search,
+ordering, paging, a reload keeping the search and the page, a
+`status:open` chip and its removal, a bulk transition, the Excel
+download), the add and change forms (a field's error, a Select2
+relation, the History tab), a summary page (the first tab's table on
+every load - the regression test for 1.1.0's
+`GenericDataTables.start is not a function` - and another tab's
+count), a transition asking for its field, the Triage grid, an import,
+the command palette, the dark theme, French, and the navigation on a
+phone. About 25 tests, half a minute.
+
+They use Python Playwright through pytest-playwright, against
+pytest-django's `live_server` - no Node, no build step - and need the
+`browser` extra and the browser itself, a download of its own:
+
+```bash
+pip install -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
+python -m playwright install chromium
+pytest tests/browser -m browser --no-cov \
+    --screenshot only-on-failure --output test-results/browser
+```
+
+**Opt-in.** Every test in the folder is marked `browser`, and a plain
+`pytest` deselects that marker (`addopts` in `pyproject.toml`); without
+Playwright installed the folder is not even collected. Run them on
+their own, as above: they bring their own database and server.
+
+**A Chromium of your own.** When the browsers on the machine were
+installed for another Playwright version, name the executable:
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium pytest ...`.
+`--headed` shows the window, `--slowmo 500` slows each step down.
+
+**When one fails**, its screenshot is in `test-results/browser/`, one
+folder per test (ignored by git); CI keeps that folder as the job's
+artifact. A test also fails when a page raised an error or logged one
+in the console: `tests/browser/conftest.py` watches every page. A test
+expecting the server to refuse something says so with
+`console.allow(status, path)`.
+
+What `tests/browser/conftest.py` sets up, and why:
+
+| | |
+| --- | --- |
+| `desk` | the support desk: 2 teams, 3 agents, 2 customers, tags, 25 tickets (SD-1001 to SD-1025, SD-1001 first, with comments and time entries) |
+| `admin`, `viewer`, `worker` | a superuser; a reader with only `view_*` on the example; a desk agent who may not reopen a ticket |
+| `sign_in(user)` | signs in without the form: a session from `force_login`, its cookie given to the browser |
+| `console` | fails the test on a page error; `console.allow(403, "/example/ticket/add/")` |
+| the database | SQLite in a file, not in memory: the live server's threads each get a connection rather than sharing the tests' one, which can hang |
+| the CSRF middleware | added, as the example project has it - `tests/settings.py` does not, and the pages post through the API |
+| `EVENTS_WEBSOCKET_URL` | `None`: the live server speaks WSGI, so the pages open no socket (the live events are the channels tests') |
+| events from the tests | dropped: Playwright's loop runs in the tests' thread, where handing an event to the channel layer is refused; the server's own are sent |
+| `DJANGO_ALLOW_ASYNC_UNSAFE` | set for the session, for the same loop: the fixtures and assertions use the ORM beside it |
+
+A new scenario opens the page with `page.goto("/example/...")` and
+waits with Playwright's `expect`, never `time.sleep`.
 
 ## Versions tested
 
@@ -118,7 +179,10 @@ tests/
 │                       what a new row writes and gets, scopes, arguments
 ├── accounts/           Preferences, profile, saved views
 ├── wiki/               HTML cleaning, API rules, pages, dashboard, search
-└── views/              List, detail, edit, delete, datatable, toolbar
+├── views/              List, detail, edit, delete, datatable, toolbar
+└── browser/            The example through a real Chromium: sign-in,
+                        tables, forms, records, grids, imports, the
+                        frame - opt-in, see Browser tests above
 ```
 
 `tests/testapp` is also the worked example: `Publisher`, `Author`,
@@ -328,7 +392,7 @@ mypy generic               # reported, not blocking: see below
 
 CI runs the linters once, the suite on Python 3.10 to 3.13 - the oldest
 Django and DRF accepted included - against SQLite, once more against
-Postgres and Redis, and the package job above. Coverage must stay at or
+Postgres and Redis, the browser tests, and the package job above. Coverage must stay at or
 above 80%; it sits at 93%. mypy reports without failing the build:
 django-stubs trails the Django versions the framework runs on, and most
 of what it says is that.
@@ -336,18 +400,19 @@ of what it says is that.
 Two pipelines describe the same thing, for whichever host a project
 uses: `.github/workflows/ci.yml` and `.gitlab-ci.yml`. The GitLab one
 runs everything in containers on a Docker executor — the linters and the
-catalogs check, the suite over the four Python versions, the suite
-again against `postgres:16` and `redis:7` as services, the wheel built
-and tried by `scripts/smoke_install.py`, then
+catalogs check, the suite over the four Python versions, the browser
+tests, the suite again against `postgres:16` and `redis:7` as services,
+the wheel built and tried by `scripts/smoke_install.py`, then
 `docker/Dockerfile` built, run (`pytest`, `manage.py check`) and pushed
 to the project's registry on the default branch and on tags. The
 `package` stage needs a privileged runner for docker-in-docker; the
 stages before it need only the Docker executor.
 
-The JavaScript — tables, forms, charts — has no automated tests yet. It
-is checked by hand in a browser against the example; `node --check`
-catches syntax errors, and every file must stay ASCII (non-ASCII
-characters written as `\uXXXX`).
+The JavaScript — tables, forms, summary pages, dialogs, the palette,
+grids, imports — is driven through a real browser by the [browser
+tests](#browser-tests), on the example's pages; charts are drawn there
+but not examined. `node --check` catches syntax errors, and every file
+must stay ASCII (non-ASCII characters written as `\uXXXX`).
 
 ## Conventions
 
