@@ -69,7 +69,10 @@ every load - the regression test for 1.1.0's
 `GenericDataTables.start is not a function` - and another tab's
 count), a transition asking for its field, the Triage grid, an import,
 the command palette, the dark theme, French, and the navigation on a
-phone. About 25 tests, half a minute.
+phone; files too (`test_files.py`: a ticket's attachment chosen,
+downloaded, replaced, removed and refused before sending, a reader's
+download and a stranger's 403, a wiki image uploaded and drawn). About
+30 tests, under a minute.
 
 They use Python Playwright through pytest-playwright, against
 pytest-django's `live_server` - no Node, no build step - and need the

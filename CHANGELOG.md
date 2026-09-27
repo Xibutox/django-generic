@@ -43,8 +43,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   download), the add and change forms, a summary page's tabs (the
   regression test for 1.1.0's `GenericDataTables.start` race), a
   transition's dialog, the Triage grid, an import, the command
-  palette, the dark theme, French and the navigation on a phone - and
-  fails on any error a page logs. Python Playwright through
+  palette, the dark theme, French and the navigation on a phone, a
+  ticket's attachment (chosen, downloaded, replaced, removed, refused
+  before sending, refused to a stranger) and a wiki image uploaded
+  from the editor - and fails on any error a page logs. Python Playwright through
   pytest-playwright against `live_server`, no Node; opt-in with the
   new `browser` extra (`pytest tests/browser -m browser --no-cov`, a
   plain `pytest` leaves them out), and a CI job of their own that keeps
