@@ -195,8 +195,8 @@ class ExportMixin:
             from openpyxl.cell import WriteOnlyCell
         except ImportError as error:  # pragma: no cover
             raise ImportError(
-                "The Excel export needs openpyxl. Install the "
-                "'export' extra: pip install django-generic[export]."
+                "The Excel export needs openpyxl: the framework's "
+                "'export' extra (docs/installation.md)."
             ) from error
 
         columns = self.get_export_columns(request)

@@ -11,9 +11,9 @@ attachments.
 
 ## Enabling it
 
-```bash
-pip install -e ".[wiki]"        # nh3, which cleans the pages' HTML
-```
+The `wiki` extra - nh3, which cleans the pages' HTML - in the brackets
+after the framework's wheel in `requirements.txt` (see
+[Extras](installation.md#extras)), then:
 
 ```python
 INSTALLED_APPS = [

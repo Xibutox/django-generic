@@ -20,8 +20,9 @@ def check_tokens(app_configs: Any = None, **kwargs: Any) -> list:
             checks.Error(
                 "generic.tokens is installed but knox is not: the tokens "
                 "have nowhere to keep their hash.",
-                hint="pip install 'django-generic[api]' and add 'knox' to "
-                "INSTALLED_APPS. See docs/api.md.",
+                hint="Install django-rest-knox - the framework's 'api' "
+                "extra - and add 'knox' to INSTALLED_APPS. See "
+                "docs/api.md.",
                 id="generic.E006",
             )
         )

@@ -312,11 +312,20 @@ CI builds all three: the suite runs in `dev`, `check --deploy` in
 
 ## Starting a new project from this one
 
-The framework itself is a dependency, not something to copy: the new
-project's `pyproject.toml` lists
-`django-generic[export,import,api,fsm,events,tasks,postgres,wiki]`, which the
-Dockerfile's `pip install ".[...]"` then brings in with the rest (see
-[Installation](installation.md)).
+The framework itself is a dependency, not something to copy. Its wheel,
+built from this repository, goes into the new project's `vendor/`
+folder, and the project's `requirements.txt` names it by its path with
+the extras it uses:
+
+```text
+./vendor/django_generic-1.1.0-py3-none-any.whl[export,import,api,fsm,events,tasks,postgres,wiki]
+```
+
+The copied Dockerfile then copies `requirements.txt` and `vendor/` in
+place of `pyproject.toml` and the package stub, and installs with `pip
+install -r requirements.txt` where it installed `".[...]"` - the dev
+target adding the project's test tools. See [Installation](installation.md),
+*A new project, from nothing* and *In Docker*.
 
 Copy `example_project/` (renamed), `manage.py`, `docker/`,
 `.dockerignore` and the `tests/settings.py` pattern, then replace:

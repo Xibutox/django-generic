@@ -14,9 +14,9 @@ resource names the state field, and each transition becomes:
 The state field itself becomes read only - in forms, in grids, in
 imports: a state changes through its transitions, or not at all.
 
-```bash
-pip install "django-generic[fsm]"
-```
+It needs the `fsm` extra (django-fsm-2): `fsm` in the brackets after
+the framework's wheel in `requirements.txt`, then `pip install -r
+requirements.txt` - see [Extras](installation.md#extras).
 
 ## Declaring it
 

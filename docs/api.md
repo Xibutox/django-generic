@@ -17,9 +17,9 @@ who may do what is new: every resource decides as it does for a page.
 
 ## Turning it on
 
-```bash
-pip install "django-generic[api]"
-```
+The `api` extra - `api` in the brackets after the framework's wheel in
+`requirements.txt`, then `pip install -r requirements.txt` (see
+[Extras](installation.md#extras)) - then:
 
 ```python
 INSTALLED_APPS = [
