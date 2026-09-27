@@ -78,8 +78,12 @@ rather than inventing new wiring.
      than overriding colours.
 
    `dev.py` and `prod.py` need only the names changed: the database,
-   Redis, Celery, HTTPS, mail and logging are already split between
-   them. Production reads every secret with `env_required` — never give
+   Redis, Celery, HTTPS and mail are already split between them. The
+   logs are in `base.py` - `ADMINS = admins(env_list("DJANGO_ADMINS"))`,
+   `LOGGING = logging_config(...)` from `DJANGO_LOG_LEVEL` and
+   `DJANGO_LOG_FILE`, `CELERY_WORKER_HIJACK_ROOT_LOGGER = False` - and
+   the prod stack's `app-logs` volume holds the file
+   (`docs/logging.md`); change `EMAIL_SUBJECT_PREFIX`. Production reads every secret with `env_required` — never give
    it a default. Build new lists in `dev.py` (`[*INSTALLED_APPS, ...]`),
    never `append` to base's.
 3. **URLs** — as in `00-context.md` §4; the site last; the Debug
@@ -131,6 +135,8 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env up -
 - [ ] `DJANGO_SETTINGS_MODULE=<project>.settings.prod python manage.py
       check --deploy --fail-level WARNING` passes with production values,
       and fails naming the variable when one is missing.
+- [ ] `manage.py sendtestemail --admins` reaches `DJANGO_ADMINS`, and
+      `/app/logs/app.log` fills in the prod stack (web and worker lines).
 - [ ] `collectstatic` succeeds with the production settings (hashed
       names): a static file naming a missing one fails the image build.
 - [ ] `/` redirects to `/login/` when signed out; the dashboard shows

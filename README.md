@@ -245,6 +245,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Translation](docs/i18n.md) — the French catalog, the language menu, the workflow
 - [Settings](docs/settings.md) — every knob and its default
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
+- [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
 - [Testing](docs/testing.md) — running and extending the suite
 
 ## Seeing it run

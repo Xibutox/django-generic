@@ -194,6 +194,14 @@ declares none accepts anything.
 
 See [History](history.md).
 
+## Logs
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `ERROR_MAIL_INTERVAL` | `600` | Seconds during which the same error is mailed to `ADMINS` only once, by `generic.logs.ErrorMailHandler`; the next mail says how many were held back. `0` mails every one |
+
+See [Logs and error reports](logging.md).
+
 ## Django settings that matter
 
 | Setting | Why |

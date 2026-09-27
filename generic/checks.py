@@ -18,6 +18,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W007  a resource ranks its search without generic.search
     generic.E006  generic.tokens without knox (generic/tokens/checks.py)
     generic.W008  generic.tokens, its authentication class not in DRF
+    generic.W009  (--deploy) ADMINS is empty: errors are mailed to nobody
     generic.E008  the OpenAPI pages without drf-spectacular
     generic.I001  the JavaScript catalog is not mounted
 """
@@ -170,6 +171,30 @@ def check_mail(app_configs: Any = None, **kwargs: Any) -> list:
             "of EMAIL_BACKEND and the EMAIL_* settings (Django's "
             "'Migrating email to mailers'). " + DOCS,
             id="generic.W006",
+        )
+    ]
+
+
+@checks.register(checks.Tags.security, deploy=True)
+def check_admins(app_configs: Any = None, **kwargs: Any) -> list:
+    """Somebody hears of an unexpected error.
+
+    In production nobody reads a DEBUG page: an error that is only
+    logged is read the day someone thinks of looking. ``ADMINS`` is
+    who Django - and ``generic.logs.ErrorMailHandler`` - mail it to.
+    """
+    if settings.ADMINS:
+        return []
+
+    return [
+        checks.Warning(
+            "ADMINS is empty: an unexpected error - a page that fails, a "
+            "task that raises - is logged, and mailed to nobody.",
+            hint="ADMINS = generic.logs.admins(['ops@example.com']), with "
+            "generic.logs.logging_config() for LOGGING; or silence "
+            "generic.W009 if the logs are watched another way. See "
+            "docs/logging.md.",
+            id="generic.W009",
         )
     ]
 

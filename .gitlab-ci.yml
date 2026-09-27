@@ -175,6 +175,7 @@ build images:
       -e DJANGO_ALLOWED_HOSTS=desk.example.com
       -e DATABASE_URL=sqlite:////tmp/ci.sqlite3
       -e REDIS_URL=redis://localhost:6379/0
+      -e DJANGO_ADMINS=ops@example.com
       "$IMAGE" python manage.py check --deploy --fail-level WARNING
     - docker build -f docker/Dockerfile --target proxy -t "$PROXY_IMAGE" .
     - docker push "$IMAGE"

@@ -193,6 +193,11 @@ DEFAULTS: dict[str, Any] = {
     # ``generic.history.prune()`` and the ``prune_history`` command
     # delete beyond.
     "HISTORY_RETENTION_DAYS": None,
+    # --- Logs ----------------------------------------------------------
+    # Seconds during which the same error is mailed to ADMINS only once
+    # (generic.logs.ErrorMailHandler); the next mail says how many were
+    # held back. 0 mails every one.
+    "ERROR_MAIL_INTERVAL": 600,
 }
 
 #: Settings holding an import path that should be resolved to an object.

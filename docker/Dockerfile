@@ -93,6 +93,10 @@ RUN DJANGO_SETTINGS_MODULE=example_project.settings.prod \
     python manage.py collectstatic --noinput \
     && rm -f /tmp/collectstatic.sqlite3
 
+# Where the production stack's log file lives (a volume mounted over it,
+# which takes this folder's owner): the application's user writes it.
+RUN mkdir -p /app/logs && chown app:app /app/logs
+
 # -- proxy --------------------------------------------------------------
 
 FROM caddy:2-alpine AS proxy

@@ -13,6 +13,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Logs a production can read, and errors somebody hears of.
+  `generic.logs.logging_config()` logs to standard output and, when
+  asked, to a file rotated at 10 MB that the web server, the Celery
+  worker, the scheduler and `manage.py` share without losing a line
+  (`SharedRotatingFileHandler`); every unexpected error, with its
+  traceback, goes by mail to `ADMINS` - the same error once every ten
+  minutes (`ERROR_MAIL_INTERVAL`), the next mail counting the ones
+  held back. `admins()` writes `ADMINS` the way the running Django
+  reads it, and `check --deploy` warns when it is empty
+  (`generic.W009`). The example reads `DJANGO_ADMINS`,
+  `DJANGO_LOG_FILE` and `DJANGO_LOG_LEVEL`; its production stack
+  writes `/app/logs/app.log` in an `app-logs` volume from every
+  service, and its worker now logs through the project's settings
+  rather than Celery's own handlers. See docs/logging.md.
 - Searches ignore accents: `region` finds *Région Occitanie*. The
   project installs `generic.search`, and tickets and customers have
   trigram indexes on PostgreSQL. Some seeded names carry their accents
