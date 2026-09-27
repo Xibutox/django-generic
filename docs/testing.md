@@ -89,7 +89,8 @@ tests/
 │                       charts - on the example's resources; test_auto.py:
 │                       what auto() works out, and what a declaration keeps;
 │                       test_data.py: data resources; test_resource_pages.py:
-│                       pages of a resource's own
+│                       pages of a resource's own; test_files.py: files in
+│                       forms - sent, read, downloaded, refused
 ├── test_checks.py      The system checks: what `manage.py check` says about
 │                       how a project plugged the framework in
 ├── test_i18n.py        Catalogs, the language menu, switching, the preference
@@ -117,7 +118,8 @@ tests/
 ├── test_grids.py       Rows added in a grid, and grids over any set:
 │                       what a new row writes and gets, scopes, arguments
 ├── accounts/           Preferences, profile, saved views
-├── wiki/               HTML cleaning, API rules, pages, dashboard, search
+├── wiki/               HTML cleaning, API rules, pages, dashboard, search,
+│                       images uploaded and served
 └── views/              List, detail, edit, delete, datatable, toolbar
 ```
 
@@ -212,7 +214,9 @@ What a subclass may set:
 The framework's own screens - people, groups, permissions, changes,
 messages, runs, mailings, tokens, the wiki, the schedules - get a
 record each from the base class (`framework_records`): a project feeds
-only its own models. `scripts/smoke_install.py --sweep` runs such a
+only its own models. The wiki's image names a file the sweep never
+writes - nothing lands in a project's `MEDIA_ROOT` - so its page is
+expected to answer 200 or 404. `scripts/smoke_install.py --sweep` runs such a
 subclass against the installed wheel in CI, so the helper is tested as
 a project uses it.
 

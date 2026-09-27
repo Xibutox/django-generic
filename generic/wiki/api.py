@@ -12,25 +12,77 @@
 
 Reading is for any signed-in user; writing needs the model permissions
 ``add``, ``change`` and ``delete`` on wiki pages.
+
+The editor's images are uploaded to ``api/generic/wiki/images/`` - in
+``generic.urls``, beside the framework's other endpoints - by whoever
+may write a page (:class:`WikiImageUploadView`), and shown from the
+wiki's own ``images/<id>/`` (``generic.wiki.views.WikiImageView``).
 """
 
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import Any
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from django.template.defaultfilters import filesizeformat
+from django.utils.translation import gettext
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from generic.wiki.models import WikiPage, WikiRevision
+from generic.conf import generic_settings
+from generic.openapi import framework_schema
+from generic.wiki.models import WikiImage, WikiPage, WikiRevision
 from generic.wiki.serializers import (
     WikiPageListSerializer,
     WikiPageSerializer,
     WikiRevisionSerializer,
 )
+
+#: The images a page may show: what their first bytes are, the name
+#: they are stored under, and the names they may arrive with. Nothing
+#: else - no SVG, which is a document that can hold a script.
+IMAGE_KINDS = (
+    ("png", "image/png", ("png",)),
+    ("jpg", "image/jpeg", ("jpg", "jpeg")),
+    ("gif", "image/gif", ("gif",)),
+    ("webp", "image/webp", ("webp",)),
+)
+
+#: Every extension an uploaded image may carry.
+IMAGE_EXTENSIONS = frozenset(
+    name for _stored, _type, names in IMAGE_KINDS for name in names
+)
+
+#: Content type of a stored image, by the extension it was stored with.
+IMAGE_TYPES = {stored: content_type for stored, content_type, _ in IMAGE_KINDS}
+
+
+def sniff_image(head: bytes) -> str | None:
+    """The stored extension of the image ``head`` begins, or ``None``.
+
+    Read from the bytes, never from the name: a page saved as
+    ``photo.png`` is still a page.
+    """
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+
+    if head.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+
+    if head[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "webp"
+
+    return None
+
 
 #: HTTP method -> the permission a write needs.
 WRITE_PERMISSIONS = {
@@ -129,4 +181,85 @@ class WikiPageViewSet(viewsets.ModelViewSet):
 
         return Response(
             WikiPageSerializer(page, context={"request": request}).data
+        )
+
+
+class WikiImagePermission(BasePermission):
+    """Whoever may write a page - add one or change one - may add an
+    image to it."""
+
+    def has_permission(self, request: Any, view: Any) -> bool:
+        user = request.user
+
+        return bool(
+            user
+            and user.is_authenticated
+            and (can(user, "add") or can(user, "change"))
+        )
+
+
+class WikiImageUploadView(APIView):
+    """``POST`` one image - multipart, part ``file`` - for a page.
+
+    PNG, JPEG, GIF or WebP, told by its extension and by its first
+    bytes, up to ``FILE_MAX_SIZE``. Answers ``{"id", "url"}``: ``url``
+    is the image's address under the wiki, where every signed-in reader
+    of the wiki may see it, and what the editor puts in the page.
+    """
+
+    schema = framework_schema()
+    #: What generic.openapi describes this body as.
+    openapi_request = "wiki_image_upload"
+    permission_classes = (WikiImagePermission,)
+    parser_classes = (MultiPartParser,)
+
+    def post(self, request: Any) -> Response:
+        upload = request.FILES.get("file")
+
+        if upload is None:
+            return self.refuse(gettext("Choose an image to upload."))
+
+        extension = PurePath(upload.name).suffix.lower().lstrip(".")
+
+        if extension not in IMAGE_EXTENSIONS:
+            return self.refuse(
+                gettext("Only PNG, JPEG, GIF and WebP images can be added.")
+            )
+
+        limit = generic_settings.FILE_MAX_SIZE
+
+        if limit and upload.size > limit:
+            return self.refuse(
+                gettext("The image is too large: at most %(limit)s.")
+                % {"limit": filesizeformat(limit)}
+            )
+
+        head = upload.read(16)
+        upload.seek(0)
+        stored = sniff_image(head)
+
+        if stored is None:
+            return self.refuse(
+                gettext("This file is not a PNG, JPEG, GIF or WebP image.")
+            )
+
+        stem = PurePath(upload.name).stem or "image"
+        image = WikiImage(
+            original_name=upload.name[:255],
+            uploaded_by=request.user,
+        )
+        # Stored under the extension its bytes say, whatever it was
+        # called: that is the type it is served as.
+        image.file.save(f"{stem}.{stored}", upload, save=False)
+        image.save()
+
+        return Response(
+            {"id": image.pk, "url": image.get_absolute_url()},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @staticmethod
+    def refuse(message: str) -> Response:
+        return Response(
+            {"detail": message}, status=status.HTTP_400_BAD_REQUEST
         )

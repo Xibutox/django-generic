@@ -87,6 +87,8 @@ generic/
 │   ├── exports.py          ExportMixin: streaming Excel and CSV of the filtered rows
 │   ├── autocomplete.py     AutocompleteView (Select2)
 │   ├── forms.py            FormModelSerializer: serializer -> JSON form schema
+│   ├── files.py            FormFileField, FileValueMixin: a stored file as {name, url, size}
+│   ├── parsers.py          MultiPartJSONParser: _payload (JSON) + one part per file
 │   ├── inlines.py          InlineProcessor: nested rows in one transaction
 │   ├── relations.py        relation labels, Select2 wiring in forms
 │   └── viewsets.py         DataTableViewSet, AggregatedDataTableViewSet, ModelFormViewSet
@@ -115,6 +117,7 @@ generic/
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
+│   ├── files.py            a record's files: download URL, which are shown, the answer
 │   ├── charts.py           Chart: declared aggregates -> chart payload; chart_payload()
 │   ├── transitions.py      a model's django-fsm-2 transitions: read, offered, taken
 │   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
@@ -153,7 +156,8 @@ generic/
 ├── help/                   help page and changelog, read from the project's
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
-├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning
+├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning,
+│                           WikiImage (images uploaded from the editor)
 ├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
 │                           its own table), TokenAuthentication (scope, last use),
 │                           api/generic/tokens/, the account section, the People screen
@@ -290,7 +294,10 @@ the server's certificate: `NGINX_CERTS_DIR`, `NGINX_CERT`,
 upgraded with `proxy_read_timeout 1h`, `X-Forwarded-Proto $scheme` and
 `X-Forwarded-For $remote_addr` set (never appended), Host,
 `client_max_body_size 20m`, `proxy_pass http://$generic_upstream` (each
-server block sets its own upstream). `docker-compose.host-nginx.yml`
+server block sets its own upstream). Both prod files mount the
+`app-media` volume on `/app/media` (MEDIA_ROOT; the Dockerfile makes it
+`app`'s) beside `app-logs`; no proxy serves it - files go through
+Django (§5.17). Backups: the database **and** `app-media`. `docker-compose.host-nginx.yml`
 added to either prod file: proxy under a profile (not started), web on
 `127.0.0.1:${WEB_PORT}`, a one-shot `static` service copying the files
 to `STATIC_EXPORT_DIR`; the server's nginx gets
@@ -308,7 +315,8 @@ the auth, `E003` no session auth in DRF, `E004` `site.urls` not
 mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
 `E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
-drf-spectacular, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+drf-spectacular, `W010` a model with a file field - or the wiki - and
+no `MEDIA_ROOT`, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1076,6 +1084,50 @@ class TicketResource(ModelResource):
   checked at registration (`get_transitions`). See
   `docs/transitions.md`.
 
+### 5.17 Files (`FileField`, `ImageField`)
+
+```python
+attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank=True,
+                              validators=[FileExtensionValidator(["pdf", "png"])])
+# settings: MEDIA_ROOT = BASE_DIR / "media" (W010 when empty); no MEDIA_URL
+```
+
+- Nothing to declare: a file field in `fields`/fieldsets is a chooser
+  (`widgets.js` fileWidget: link to the current file, *Choose a file* /
+  *Replace*, *Remove* when `blank=True`, *Cancel*; refused locally over
+  `maxSize` or outside `accept`). Schema keys: `accept` (the
+  `FileExtensionValidator`, or `image/*`), `maxSize`
+  (`GENERIC["FILE_MAX_SIZE"]`, 10 MB). The value everywhere - record,
+  table cell (`FileColumn`, size `null`), summary (`type: "file"`) -
+  is `{"name", "url", "size"}` or `null`; exports write the name.
+- Sent: JSON as before without a new file (an untouched file is left
+  out; removed = `null`); with one, multipart - `_payload` = the same
+  JSON (`_inlines` included, files left out) + a part per file, read
+  back by `MultiPartJSONParser` into a plain dict. Classic multipart
+  (no `_payload`) still works. `FORM_PARSERS` on every resource
+  viewset and `ModelFormViewSet`.
+- `FormFileField`: `null`/`""` clears a `blank=True` field (stores
+  `""`), refused on a required one; size checked; model validators
+  apply. Replaced or removed files are **never deleted** (the history
+  names them).
+- Download: `GET api/<app>/<model>/<pk>/files/<field>/`
+  (`site:api_<app>_<model>-file`, `resource.get_file_url(pk, field)`):
+  `get_object()` (view permission, row restrictions), only fields in
+  `resource.get_file_fields(request)` (form, summary, list), 404 when
+  empty or missing from storage, any storage; raster images `inline`,
+  all else (HTML, SVG) `attachment`; always `nosniff` + `CSP: sandbox`.
+  The serializer context carries `file_url` (`FILE_URL`), set by
+  `ResourceViewSet.get_serializer_context`.
+- Refused: file fields in `editable_fields` (`ImproperlyConfigured`),
+  in `Import(fields=...)`; read-only in inline rows.
+- Wiki images: `POST api/generic/wiki/images/` (multipart `file`;
+  `add_wikipage` or `change_wikipage`; png/jpeg/gif/webp by extension
+  **and** magic bytes, no SVG; ≤ FILE_MAX_SIZE) → `{"id", "url":
+  "/wiki/images/<id>/"}`; `GET wiki/images/<id>/` for any signed-in
+  reader (inline, nosniff, `Cache-Control: private, max-age=86400`).
+  The editor's *Insert an image* offers *Upload an image* beside the
+  address. See `docs/forms.md#files`, `docs/wiki.md#images`.
+
 ---
 
 ## 6. URLs and endpoints (generated)
@@ -1094,9 +1146,10 @@ API (route names `site:api_<app>_<model>-<action>`):
 | --- | --- |
 | `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `order[i]...`, `filters` JSON tree, `_related`) |
 | `GET .../facets/?column=<name>` | a column's values with counts under the other filters (`q=` search, `ids=` labels), or `{"kind": "range", min, max, empty}` |
-| `POST api/<app>/<model>/` | create (JSON, `_inlines`) |
+| `POST api/<app>/<model>/` | create (JSON, `_inlines`; or multipart `_payload` + a part per file, §5.17) |
 | `GET/PATCH/DELETE api/<app>/<model>/<pk>/` | read (with `_display`, `_label`, `_inlines`), update, delete (refused with reason when protected) |
 | `GET .../<pk>/summary/` | summary JSON |
+| `GET .../<pk>/files/<field>/` | one of the record's files, permission-checked (§5.17) |
 | `GET .../<pk>/history/` | the record's versions, newest first (`limit`, `offset`); 404 where the model keeps none |
 | `GET .../form-schema/` | form schema |
 | `GET .../<pk>/deletion-preview/` | cascade preview |
@@ -1197,7 +1250,8 @@ Tokens: `var(--color-accent)`, `--text-primary|secondary|muted`,
   `Generic.flash(message, level)` (after navigation),
   `Generic.dialogs.confirm({title, message, confirmLabel, variant})`.
 - `Generic.t(text)`, `Generic.format("%(n)s", {n: 1})`, `Generic.ready(fn)`,
-  `Generic.debounce(fn, ms)`, `Generic.isSafeUrl(url)`, `Generic.config()`.
+  `Generic.debounce(fn, ms)`, `Generic.isSafeUrl(url)`, `Generic.config()`,
+  `Generic.formatSize(bytes)`.
 - `Generic.events.subscribe(topic)`, `Generic.events.on(type, handler)` → unsubscribe fn.
 - `Generic.colors.clean(css)`, `.readableOn(background)`.
 - `Generic.charts.customize(name | "*", (option, payload, theme) => option)`.
@@ -1290,7 +1344,7 @@ strftime string fixes the text),
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
 `IMPORT_PREVIEW_ROWS`, `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
-`FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`,
+`FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`, `FILE_MAX_SIZE`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,

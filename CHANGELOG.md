@@ -13,6 +13,30 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Files in the generated forms, and images in the wiki. A model's
+  `FileField` is now a chooser in its form - the current file linked,
+  *Choose a file* / *Replace*, *Remove* when it may be empty, the choice
+  checked in the browser against its extensions (`accept`, from the
+  field's `FileExtensionValidator`) and `GENERIC["FILE_MAX_SIZE"]`
+  (10 MB) before anything is sent. A form with a new file sends its
+  usual JSON as a `_payload` part beside one part per file
+  (`generic.api.parsers.MultiPartJSONParser`); without one, JSON as
+  before, and classic multipart still works for scripts. A file reads
+  as `{"name", "url", "size"}` in the record, a table cell and the
+  summary page, and downloads through
+  `api/<app>/<model>/<pk>/files/<field>/`: the record's permission and
+  row restrictions apply, only files the screens show are served, a
+  raster image is shown and anything else - HTML, SVG - downloaded,
+  always with `nosniff` and `Content-Security-Policy: sandbox`; no
+  `MEDIA_URL` anywhere. Replaced files are kept for the history. File
+  fields are refused in grids and imports, and read-only in inline
+  rows; `check` warns when `MEDIA_ROOT` is empty (`generic.W010`). The
+  wiki's editor uploads PNG, JPEG, GIF and WebP images, checked by
+  their bytes (`api/generic/wiki/images/`, shown from
+  `wiki/images/<id>/` to its readers). The example's tickets carry an
+  attachment; the production stacks keep uploads in an `app-media`
+  volume, to back up with the database. See docs/forms.md#files and
+  docs/wiki.md#images.
 - The production stack behind nginx: `docker/docker-compose.prod-nginx.yml`
   is the Caddy stack with nginx in front (the `nginx` image target),
   serving the server's own certificate, or plain HTTP to try it. For a

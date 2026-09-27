@@ -21,6 +21,17 @@
     ["clean"]
   ];
 
+  //: The images a page may hold, as the upload endpoint takes them.
+  var IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+  var IMAGE_NAME = /\.(png|jpe?g|gif|webp)$/i;
+
+  function icon(name) {
+    var node = el("span", "icon material-symbols-outlined", name);
+    node.setAttribute("aria-hidden", "true");
+
+    return node;
+  }
+
   function readJson(id) {
     var element = document.getElementById(id);
 
@@ -91,6 +102,7 @@
         page: config.page,
         editing: false,
         saving: false,
+        uploading: false,
         filter: "",
         form: {},
         original: "",
@@ -169,34 +181,172 @@
           });
         },
 
-        /** An image by its address: nothing is uploaded or inlined. */
+        /**
+         * An image for the page: uploaded from this computer, or named
+         * by its address. An upload comes back as an address under the
+         * wiki, which only its readers may open; nothing is inlined in
+         * the page. Without the upload endpoint, the address alone.
+         */
         insertImage: function () {
-          Generic.dialogs
-            .prompt({
-              title: t("Insert an image"),
-              label: t("Address of the image"),
-              placeholder: "https://"
+          var self = this;
+
+          if (!config.imagesUrl) {
+            Generic.dialogs
+              .prompt({
+                title: t("Insert an image"),
+                label: t("Address of the image"),
+                placeholder: "https://"
+              })
+              .then(function (result) {
+                self.embedImage(result && result.value);
+              });
+            return;
+          }
+
+          var dialog = Generic.dialogs.open({ title: t("Insert an image"), icon: "image" });
+          var content = el("div", "stack");
+          var upload = el("div", "sf-field");
+          var chooser = el("label", "button button--primary sf-file__choose");
+          var input = el("input", "sf-file__input");
+          var form = el("form", "sf-field");
+          var label = el("label", "sf-label", t("Or its address"));
+          var address = el("input", "input");
+          var cancel = el("button", "button button--ghost", t("Cancel"));
+          var accept = el("button", "button", t("Insert"));
+          var limit = Number(config.imageMaxSize) || 0;
+
+          input.type = "file";
+          input.accept = IMAGE_TYPES.join(",");
+          chooser.append(icon("upload"), document.createTextNode(t("Upload an image")), input);
+          upload.append(
+            chooser,
+            el(
+              "p",
+              "sf-help",
+              limit
+                ? Generic.format(t("PNG, JPEG, GIF or WebP, up to %(limit)s."), {
+                    limit: Generic.formatSize(limit)
+                  })
+                : t("PNG, JPEG, GIF or WebP.")
+            )
+          );
+
+          address.type = "text";
+          address.id = "wiki-image-address";
+          address.placeholder = "https://";
+          label.htmlFor = address.id;
+          form.append(label, address);
+          content.append(upload, form);
+          dialog.body.appendChild(content);
+
+          cancel.type = "button";
+          accept.type = "button";
+          dialog.footer.append(cancel, accept);
+
+          function byAddress(event) {
+            if (event) {
+              event.preventDefault();
+            }
+
+            if (!address.value.trim()) {
+              address.focus();
+              return;
+            }
+
+            dialog.close({ address: address.value });
+          }
+
+          input.addEventListener("change", function () {
+            if (input.files && input.files[0]) {
+              dialog.close({ file: input.files[0] });
+            }
+          });
+          cancel.addEventListener("click", function () {
+            dialog.close(null);
+          });
+          accept.addEventListener("click", byAddress);
+          form.addEventListener("submit", byAddress);
+          input.focus();
+
+          dialog.closed.then(function (result) {
+            if (result && result.file) {
+              self.uploadImage(result.file);
+            } else if (result && result.address) {
+              self.embedImage(result.address);
+            }
+          });
+        },
+
+        /** Put the image at `url` where the cursor is. */
+        embedImage: function (value, index) {
+          var url = value ? String(value).trim() : "";
+
+          if (!url) {
+            return;
+          }
+
+          if (!/^(https?:\/\/|\/)/i.test(url)) {
+            Generic.toast(t("Give an address starting with https:// or /."), "error");
+            return;
+          }
+
+          if (index === undefined) {
+            var range = quill.getSelection(true);
+            index = range ? range.index : quill.getLength();
+          }
+
+          quill.insertEmbed(index, "image", url, "user");
+        },
+
+        /**
+         * Send one image to the upload endpoint, and put what it answers
+         * in the page. Checked here first - its type, its size - and by
+         * the server again, from its bytes.
+         */
+        uploadImage: function (file) {
+          var self = this;
+          var limit = Number(config.imageMaxSize) || 0;
+          var type = String(file.type || "").toLowerCase();
+
+          if (
+            !IMAGE_NAME.test(file.name || "") ||
+            (type && IMAGE_TYPES.indexOf(type) === -1)
+          ) {
+            Generic.toast(t("Only PNG, JPEG, GIF and WebP images can be added."), "error");
+            return;
+          }
+
+          if (limit && file.size > limit) {
+            Generic.toast(
+              Generic.format(t("The image is too large: at most %(limit)s."), {
+                limit: Generic.formatSize(limit)
+              }),
+              "error"
+            );
+            return;
+          }
+
+          var range = quill.getSelection(true);
+          var index = range ? range.index : quill.getLength();
+          var body = new FormData();
+
+          body.append("file", file, file.name);
+          this.uploading = true;
+
+          Generic.api
+            .post(config.imagesUrl, body)
+            .then(function (data) {
+              self.uploading = false;
+
+              if (!data || !data.url) {
+                throw new Error(t("The image could not be uploaded."));
+              }
+
+              self.embedImage(data.url, index);
             })
-            .then(function (result) {
-              var url = result && result.value ? String(result.value).trim() : "";
-
-              if (!url) {
-                return;
-              }
-
-              if (!/^(https?:\/\/|\/)/i.test(url)) {
-                Generic.toast(t("Give an address starting with https:// or /."), "error");
-                return;
-              }
-
-              var range = quill.getSelection(true);
-
-              quill.insertEmbed(
-                range ? range.index : quill.getLength(),
-                "image",
-                url,
-                "user"
-              );
+            .catch(function (error) {
+              self.uploading = false;
+              Generic.toast(errorText(error) || t("The image could not be uploaded."), "error");
             });
         },
 

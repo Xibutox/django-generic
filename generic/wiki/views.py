@@ -7,20 +7,35 @@ API, as JSON, like every other screen of the application.
 
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import Any
 
+from django.contrib.auth.views import redirect_to_login
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from django.utils.translation import gettext
+from django.views import View
 from django.views.generic import TemplateView
 
+from generic.api.files import file_name
+from generic.conf import generic_settings
 from generic.sites import site
+from generic.sites.files import is_stored, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki.api import can
-from generic.wiki.models import WikiPage
+from generic.wiki.api import IMAGE_TYPES, can
+from generic.wiki.models import WikiImage, WikiPage
 from generic.wiki.sanitize import safe_html
 from generic.wiki.serializers import WikiPageSerializer
+
+
+def image_upload_url() -> str:
+    """Where the editor uploads an image; empty when not mounted."""
+    try:
+        return reverse("generic:wiki-images")
+    except NoReverseMatch:
+        return ""
 
 
 def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
@@ -148,6 +163,10 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                     "generic_wiki:page", kwargs={"slug": "__slug__"}
                 ),
                 "indexUrl": reverse("generic_wiki:index"),
+                # Images uploaded from the editor, when the framework's
+                # endpoints are mounted; the address is offered anyway.
+                "imagesUrl": image_upload_url(),
+                "imageMaxSize": generic_settings.FILE_MAX_SIZE,
                 "can": rights,
                 "parents": [
                     {"id": entry.pk, "title": entry.title}
@@ -186,3 +205,36 @@ class WikiPageView(WikiViewMixin):
         )
 
         return super().get(request, *args, **kwargs)
+
+
+class WikiImageView(View):
+    """An image of the wiki, for whoever may read its pages.
+
+    Shown in the page (``inline``), as the image type its bytes were
+    found to be when it was uploaded, never sniffed as anything else,
+    and kept by the reader's browser for a day - never by a shared
+    cache, since it is only for signed-in readers.
+    """
+
+    def get(self, request: Any, pk: int) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        image = get_object_or_404(WikiImage, pk=pk)
+        name = file_name(image.file)
+        content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
+
+        if content_type is None or not is_stored(image.file):
+            raise Http404
+
+        response = FileResponse(
+            image.file.open("rb"),
+            filename=name,
+            content_type=content_type,
+        )
+        protect(response)
+        response["Cache-Control"] = "private, max-age=86400"
+
+        return response

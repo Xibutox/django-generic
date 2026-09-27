@@ -7,7 +7,8 @@ pinned to the dashboard, which makes the wiki the natural home for
 announcements and how-tos.
 
 It is optional, and deliberately modest: no workflow, no comments, no
-attachments.
+attachments - only images, uploaded into a page from the editor
+([Images](#images)).
 
 ## Enabling it
 
@@ -43,6 +44,7 @@ pinned pages, and the command palette finds pages by title and text.
 | Anyone signed in | Read every page, its menu and its history |
 | `generic_wiki.add_wikipage` | Create pages and subpages |
 | `generic_wiki.change_wikipage` | Edit a page, move it in the menu, pin it, restore a version |
+| `add_wikipage` or `change_wikipage` | Upload an image into a page |
 | `generic_wiki.delete_wikipage` | Delete a page |
 
 Superusers hold all of them. For editors who are not superusers, give a
@@ -58,8 +60,8 @@ it was last changed and by whom, and - for editors - *Edit*, *Subpage*,
 *Edit* turns the page into the editor: its title, its parent page, its
 position among its siblings, its address, whether it is pinned to the
 dashboard, and the text, in [Quill](https://quilljs.com): headings,
-bold and italics, lists, quotes, code, links, images by address,
-alignment. *Save* sends everything to the API as JSON and reloads the
+bold and italics, lists, quotes, code, links, images - uploaded or
+by address - and alignment. *Save* sends everything to the API as JSON and reloads the
 page as the server draws it; *Cancel* and leaving the page ask first
 when something changed.
 
@@ -90,8 +92,9 @@ shown - against an allowlist of what the editor produces:
 - links and images to `http`, `https`, `mailto` and `tel` only, or
   relative - another wiki page, a record of the application; links get
   `rel="noopener noreferrer"`;
-- no image data: an image is inserted by its address, never uploaded
-  or inlined;
+- no image data: an image is an address - an uploaded one under the
+  wiki (`/wiki/images/<id>/`, relative, so it is kept), or on the
+  web - never inlined in the page;
 - only the editor's own classes (alignment, indentation, code blocks),
   so a page cannot borrow the application's styles.
 
@@ -114,6 +117,41 @@ Under `wiki/api/`, JSON, like every other screen:
 
 A save against an old version answers `409 Conflict`. The address
 `api` is reserved; a page titled "API" gets `api-page`.
+
+## Images
+
+*Insert an image*, in the editor's toolbar, offers **Upload an image**
+- a file chooser - beside the image's address. The file is checked in
+the browser, then sent to the framework's endpoint, and what comes back
+is put in the page as an ordinary image:
+
+| Request | Does |
+| --- | --- |
+| `POST api/generic/wiki/images/` | Multipart, part `file`: answers `201 {"id", "url"}`, `url` being `/wiki/images/<id>/` wherever the wiki is mounted (built with `reverse`) |
+| `GET wiki/images/<id>/` | The image, for any signed-in reader of the wiki |
+
+- **Who**: an upload needs `generic_wiki.add_wikipage` or
+  `generic_wiki.change_wikipage`; reading one, being signed in - the
+  rule of the pages themselves (signed out, the sign-in page).
+- **What**: PNG, JPEG, GIF or WebP only, told by the name's extension
+  **and** by the file's first bytes - a `.png` that is really a page is
+  refused; never SVG, a document that can hold a script. The image is
+  stored under the extension its bytes say (`upload_to=
+  "wiki/images/%Y/%m/"`), and served as that type.
+- **How big**: up to `GENERIC["FILE_MAX_SIZE"]` (10 MB).
+- **Served** `inline`, with its image type, `X-Content-Type-Options:
+  nosniff`, `Content-Security-Policy: sandbox` and `Cache-Control:
+  private, max-age=86400` - the reader's browser keeps it a day, a
+  shared cache never.
+- A refused file (its type, its size) is said in a toast, and nothing
+  is inserted.
+
+An image is a `generic_wiki.WikiImage` (`file`, `original_name`,
+`uploaded_by`, `uploaded_at`), not attached to a page: several pages -
+or earlier versions of one - may show it, so nothing deletes it when a
+page stops doing so. The files live in `MEDIA_ROOT`, which has to be
+set (`generic.W010`) and backed up with the database
+([deployment](deployment.md#backups)).
 
 ## Why Quill
 
