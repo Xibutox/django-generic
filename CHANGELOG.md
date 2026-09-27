@@ -70,6 +70,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
+- The history no longer lists a decimal that did not change. A value
+  set by code without its places - `Decimal(2)` in a field of two - was
+  kept as `2`, the database gave `2.00` back, and the next save of
+  anything else showed "Estimated hours 2.00 -> 2.00" as well. A
+  version now holds decimals as the database does. Found by the
+  browser tests.
 - The installation guide says how the framework really arrives: it is
   not on PyPI, where `django-generic` is an unrelated package, so a
   project builds its wheel from the repository, keeps it in `vendor/`

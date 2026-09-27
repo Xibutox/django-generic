@@ -1568,7 +1568,8 @@ history_of(ticket)                 # every version, newest first
   the record's own fields **as they were** (a snapshot, not a diff).
   What changed is worked out when the history is read, by comparing an
   entry with the one before it, so a field the project starts or stops
-  tracking never rewrites the past.
+  tracking never rewrites the past. Values are kept as the database
+  returns them (a decimal quantized to its field's places).
 - A save that changes nothing recorded writes nothing. Every save in
   one request - or one `acting_as` block - folds into one entry: one
   unit of work is one version. `update()` and `bulk_create()` fire no

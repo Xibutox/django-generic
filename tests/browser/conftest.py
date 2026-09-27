@@ -421,7 +421,7 @@ def desk(transactional_db) -> dict:
             customer=None if customer is None else customers[customer],
             status=statuses[index % len(statuses)],
             priority=priorities[index % len(priorities)],
-            estimated_hours=Decimal(f"{index % 5 + 1}.00"),
+            estimated_hours=Decimal(index % 5 + 1),
             opened_at=now - datetime.timedelta(days=index, hours=1),
         )
 
