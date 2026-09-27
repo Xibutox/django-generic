@@ -18,8 +18,6 @@ import django
 import pytest
 from django.core import mail
 from django.core.cache import cache
-from django.core.checks import run_checks
-from django.test import override_settings
 
 from generic import logs
 from generic.logs import (
@@ -294,26 +292,35 @@ def write_lines(path: Path, writer: int, count: int) -> None:
 
 
 class TestTheCheck:
-    def deploy(self) -> list[str]:
-        return [
-            message.id
-            for message in run_checks(include_deployment_checks=True)
-            if message.id == "generic.W009"
-        ]
+    """``generic.W009``, called directly: the whole run also holds the
+    database checks, which this suite does not open a database for."""
+
+    def ids(self) -> list[str]:
+        from generic.checks import check_admins
+
+        return [message.id for message in check_admins()]
 
     def test_nobody_to_tell(self, settings):
         settings.ADMINS = []
 
-        assert self.deploy() == ["generic.W009"]
+        assert self.ids() == ["generic.W009"]
 
     def test_somebody_to_tell(self, settings):
         settings.ADMINS = ADMINS
 
-        assert self.deploy() == []
+        assert self.ids() == []
 
-    @override_settings(ADMINS=[])
-    def test_not_outside_deployment(self):
-        assert "generic.W009" not in [m.id for m in run_checks()]
+    def test_only_with_deploy(self):
+        from django.core.checks import registry
+
+        from generic.checks import check_admins
+
+        assert check_admins in registry.registry.get_checks(
+            include_deployment_checks=True
+        )
+        assert check_admins not in registry.registry.get_checks(
+            include_deployment_checks=False
+        )
 
 
 def test_a_failing_page_is_logged_to_the_file_and_mailed_once(tmp_path):
