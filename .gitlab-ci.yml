@@ -6,7 +6,8 @@
 #
 #   quality      black, isort, flake8, mypy, bandit, message catalogs
 #   test         the suite on 3.10 to 3.13 (SQLite), the oldest Django
-#                and DRF accepted included
+#                and DRF accepted included; the browser tests, the
+#                example driven through Chromium (tests/browser)
 #   integration  the same suite against Postgres and Redis
 #   package      the wheel built and installed alone in a clean
 #                environment, then plugged into a new project
@@ -105,6 +106,27 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+
+# The example driven through a real Chromium (tests/browser). Opt-in:
+# the jobs above deselect them, and they need the browser extra and
+# the browser itself. Screenshots of what failed are kept.
+browser:
+  image: python:3.12-slim
+  stage: test
+  cache: *pip-cache
+  script:
+    - pip install -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
+    - python -m playwright install --with-deps chromium
+    - >-
+      pytest tests/browser -m browser
+      --no-cov
+      -p no:cacheprovider
+      --screenshot only-on-failure
+      --output test-results/browser
+  artifacts:
+    when: on_failure
+    paths:
+      - test-results/
 
 # -- integration --------------------------------------------------------
 

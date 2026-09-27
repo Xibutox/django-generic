@@ -17,6 +17,7 @@ dist
 coverage.xml
 htmlcov
 report.xml
+test-results
 
 **/*.sqlite3
 **/*.log
