@@ -178,12 +178,7 @@ class ConsoleGuard:
 
     def __init__(self):
         self.errors: list[str] = []
-        self.allowed: list[tuple[int, str]] = [
-            # The sign-in page names no icon, so the browser asks for
-            # /favicon.ico, which is a 404 here. A separate fix is
-            # queued; until then this one error is expected.
-            (404, "/favicon.ico"),
-        ]
+        self.allowed: list[tuple[int, str]] = []
 
     def allow(self, status: int, path: str) -> None:
         """Expect a failed request: ``status`` from a path starting so."""

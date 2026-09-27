@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>{% block title %}{{ page_title }}{% endblock %}{% if chrome.title %} &middot; {{ chrome.title }}{% endif %}</title>
+  {% block favicon %}{% include "generic/includes/favicon.html" %}{% endblock %}
   <script>
     (function () {
       try {

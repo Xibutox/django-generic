@@ -343,6 +343,8 @@ generic/
 ├── delete_confirmation.html  datatable.html
 ├── sidebar.html                  override this for your navigation
 ├── popup_response.html
+├── includes/
+│   └── favicon.html              the site's icon, on every page
 └── components/
     ├── breadcrumbs.html  messages.html  toolbar.html  toolbar_item.html
     ├── search_form.html  actions.html   pagination.html
@@ -356,7 +358,10 @@ Every page extends `generic/base.html`. Useful blocks: `title`,
 
 To restyle one thing everywhere, override the component: a
 `templates/generic/components/toolbar.html` in your project wins over
-the packaged one.
+the packaged one. The site's icon is one such file,
+`generic/includes/favicon.html`: the frame, the sign-in pages and a
+popup's last page all include it, so a browser never asks for a
+`/favicon.ico` nobody serves.
 
 ### The page toolbar
 

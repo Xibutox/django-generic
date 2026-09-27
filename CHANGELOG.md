@@ -96,6 +96,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
+- The sign-in page, and the last page of a popup form, name the site's
+  icon like every other page. Without one, the browser asked for
+  `/favicon.ico`, which nobody serves, and logged a 404 on every first
+  visit. The icon is one include, `generic/includes/favicon.html`, for
+  a project to override once; the browser tests no longer allow that
+  error.
 - The history no longer lists a decimal that did not change. A value
   set by code without its places - `Decimal(2)` in a field of two - was
   kept as `2`, the database gave `2.00` back, and the next save of

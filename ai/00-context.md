@@ -1184,7 +1184,9 @@ Framework API under `api/generic/`: `account/preferences/`,
 
 ### Templates
 
-Every page extends `generic/base.html`. Blocks: `title`, `favicon`,
+Every page extends `generic/base.html`. Blocks: `title`, `favicon`
+(the include `generic/includes/favicon.html`, also used by the sign-in
+frame and the popup response: override that file to change the icon),
 `styles`, `extrastyle`, `extrahead`, `bodyclass`, `sidebar`, `header`,
 `breadcrumbs`, `usertools`, `messages`, `page_header` (`page_eyebrow`,
 `page_title`, `page_subtitle`, `object_tools`, `toolbar`), `content`,
