@@ -377,6 +377,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Where uploaded files are written (file fields, the wiki's images). No
+# MEDIA_URL: each file is downloaded through its record's endpoint.
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Everything has a default; docs/settings.md lists them.
 GENERIC = {
     "SITE_TITLE": "My application",
@@ -396,6 +400,10 @@ What each framework line is for:
   project that lists its own classes must keep it.
 - `LOGIN_URL` - the pages send signed-out readers to the site's sign-in
   page themselves; this is for the project's other views.
+- `MEDIA_ROOT` - where a file field writes its files, backed up with
+  the database; nothing serves it as a folder - no `MEDIA_URL`, no
+  proxy location - since every file is downloaded through its record's
+  endpoint, permission-checked ([Files](forms.md#files)).
 
 ## URLs
 
@@ -475,6 +483,7 @@ names what is missing, with the line to write:
 | `generic.W005` | Channels is installed but nothing serves ASGI |
 | `generic.W006` | Django 6.1 or later, and no `MAILERS` ([Mail](#mail)) |
 | `generic.W009` | `check --deploy` only: `ADMINS` is empty, so errors are mailed to nobody ([Logs](#logs-and-error-mails)) |
+| `generic.W010` | A registered model has a file field - or the wiki is installed - and `MEDIA_ROOT` is empty: files would be written relative to the working directory ([Files](forms.md#files)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.

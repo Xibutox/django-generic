@@ -32,7 +32,7 @@ import dataclasses
 from typing import Any
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
-from django.db import transaction
+from django.db import models, transaction
 from django.utils.translation import gettext
 from rest_framework import serializers
 
@@ -102,6 +102,13 @@ def resolve(resource: Any, name: str) -> EditableColumn:
         raise ImproperlyConfigured(
             f"{owner}.editable_fields names '{name}', which "
             f"{model.__name__} does not allow to be written."
+        )
+
+    if isinstance(field, models.FileField):
+        raise ImproperlyConfigured(
+            f"{owner}.editable_fields names '{name}', a file field: a "
+            f"cell writes JSON, and a file is chosen on the record's "
+            f"form, never in a cell."
         )
 
     return EditableColumn(

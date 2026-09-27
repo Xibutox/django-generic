@@ -19,14 +19,17 @@ from copy import deepcopy
 from typing import Any
 
 from django.contrib.admin.utils import NestedObjects
+from django.core.files import File
 from django.db import router, transaction
 from django.db.models import QuerySet
 from django.db.models.deletion import ProtectedError, RestrictedError
+from django.http import QueryDict
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -39,8 +42,13 @@ from generic.api.inlines import (
     InlineProcessor,
 )
 from generic.api.pagination import DataTablesPagination
+from generic.api.parsers import MultiPartJSONParser
 from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
 from generic.openapi import framework_schema
+
+#: What a form endpoint reads: JSON; a form with files, as ``_payload``
+#: and one part per file (or classic multipart); a plain HTML form.
+FORM_PARSERS = (JSONParser, MultiPartJSONParser, FormParser)
 
 
 class DataTableViewSet(
@@ -237,9 +245,25 @@ class InlineFormViewSetMixin:
     def split_parent_and_inline_data(
         self,
         data: Any,
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        parent_data = deepcopy(dict(data))
-        inline_data = parent_data.pop(self.inline_payload_key, {})
+    ) -> tuple[Any, dict[str, Any]]:
+        if hasattr(data, "getlist"):
+            # Classic multipart, or a form-encoded body: kept a
+            # QueryDict, which the serializer reads a many-to-many from
+            # as repeated keys, and copied without its uploads - a file
+            # cannot be deep-copied, and nothing writes to it here.
+            parent_data: Any = QueryDict(mutable=True)
+
+            for key, values in data.lists():
+                parent_data.setlist(key, list(values))
+
+            inline_values = parent_data.pop(self.inline_payload_key, [])
+            inline_data = inline_values[-1] if inline_values else {}
+        else:
+            parent_data = {
+                key: value if isinstance(value, File) else deepcopy(value)
+                for key, value in dict(data).items()
+            }
+            inline_data = parent_data.pop(self.inline_payload_key, {})
 
         if inline_data in (None, ""):
             return parent_data, {}
@@ -459,3 +483,4 @@ class ModelFormViewSet(
     schema = framework_schema()
 
     permission_classes = (IsAuthenticated,)
+    parser_classes = FORM_PARSERS

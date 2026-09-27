@@ -22,6 +22,7 @@ from django.urls import reverse
 from django.utils.encoding import force_str
 from rest_framework import serializers
 
+from generic.api.files import FileValueMixin, file_name
 from generic.api.tags import TagStyle, tag_items, tags_text
 
 #: Filter engines understood by both the client and
@@ -47,9 +48,10 @@ FILTER_TYPES = frozenset(
 )
 
 #: Display types the client knows how to render. ``link`` renders an
-#: anchor and ``tags`` coloured labels; both still filter as text
-#: unless the column forces another filter.
-DISPLAY_TYPES = FILTER_TYPES | {"link", "tags"}
+#: anchor, ``tags`` coloured labels and ``file`` a stored file's name
+#: linking to its download; all still filter as text unless the column
+#: forces another filter.
+DISPLAY_TYPES = FILTER_TYPES | {"link", "tags", "file"}
 
 
 def prettify_field_name(field_name: str) -> str:
@@ -540,6 +542,32 @@ class TagsColumn(DataTableFieldMixin, serializers.Field):
 
     def to_export(self, value: Any) -> str:
         return tags_text(self.to_representation(value))
+
+
+class FileColumn(FileValueMixin, DataTableFieldMixin, serializers.Field):
+    """A stored file: ``{"name", "url", "size"}``, its name in exports.
+
+    The cell links the name to the download endpoint the serializer
+    context names (:data:`generic.api.files.FILE_URL`). ``size`` stays
+    ``null``: asking the storage for it would be one request per row on
+    a remote storage. Ordered by the stored name; not filtered or
+    searched, since that name is a path of the storage's own.
+    """
+
+    datatable_type = FILTER_TEXT
+    describe_size = False
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("read_only", True)
+        kwargs.setdefault("filterable", False)
+        kwargs.setdefault("searchable", False)
+        super().__init__(*args, **kwargs)
+
+    def resolve_display_type(self, options: ColumnOptions) -> str:
+        return options.display_type or "file"
+
+    def to_export(self, value: Any) -> str | None:
+        return file_name(value) or None
 
 
 def iter_datatable_fields(

@@ -109,6 +109,43 @@ session.patch("https://desk.example.com/api/example/ticket/42/",
 A token request carries no cookie, so no CSRF token either; a browser
 session still needs its CSRF token exactly as before.
 
+### Files
+
+A record's file (`docs/forms.md#files`) reads as `{"name", "url",
+"size"}`; `url` is its download, permission-checked like the record:
+
+```bash
+curl -H "Authorization: Token 3f9c…" -OJ \
+  "https://desk.example.com/api/example/ticket/42/files/attachment/"
+```
+
+A write carrying a file is `multipart/form-data`, in either of two
+shapes. What the generated forms send: a `_payload` part holding the
+JSON body - many-to-many, JSON fields, `_inlines` as JSON would carry
+them - and one part per file, named by its field:
+
+```python
+with open("log.txt", "rb") as log:
+    session.patch(
+        "https://desk.example.com/api/example/ticket/42/",
+        data={"_payload": json.dumps({"priority": "high", "tags": [1, 3]})},
+        files={"attachment": ("log.txt", log, "text/plain")},
+    )
+```
+
+Or classic multipart, the fields as form fields (a many-to-many as the
+same key repeated, `_inlines` as a JSON string):
+
+```bash
+curl -H "Authorization: Token 3f9c…" -X PATCH \
+  -F priority=high -F attachment=@log.txt \
+  "https://desk.example.com/api/example/ticket/42/"
+```
+
+`{"attachment": null}`, in JSON, removes a file the field may go
+without. A file over `GENERIC["FILE_MAX_SIZE"]` (10 MB), or of an
+extension the model field refuses, is a 400 under its field.
+
 A refused request answers **403** when `SessionAuthentication` is first
 in `DEFAULT_AUTHENTICATION_CLASSES` - DRF names the scheme of the first
 class, and sessions have none. List the token class first for a 401
@@ -140,7 +177,7 @@ Every generated endpoint is described as it behaves:
 | `GET api/<app>/<model>/` | the DataTables envelope `{draw, recordsTotal, recordsFiltered, data: [row]}`, the rows typed from the table serializer; parameters `draw`, `start`, `length`, `ordering`, `filters` (the filter tree, with its operators), `search`, `_related` |
 | `POST`, `GET/PATCH/PUT/DELETE .../<pk>/` | the form serializer |
 | `.../<pk>/summary/`, `history/`, `form-schema/`, `facets/`, `autocomplete/`, `charts/{chart}/`, `actions/`, `cells/`, `rows/`, `import/...` | objects, with their parameters |
-| `export/`, `export-csv/`, `import/template/` | files |
+| `export/`, `export-csv/`, `import/template/`, `<pk>/files/{field}/` | files (the last only on a model that has file fields) |
 
 Tags are the resources' names; generated serializers are named after
 their app (`ExampleTicketTable`), so a project's own serializer of the

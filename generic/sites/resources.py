@@ -369,6 +369,13 @@ class ModelResource(PagesMixin):
     def get_history_api_url(self, pk: Any) -> str:
         return self._reverse(self.api_url_name("history"), pk=pk)
 
+    def get_file_url(self, pk: Any, field_name: str) -> str:
+        """Where one of a record's files is downloaded, permission-checked
+        (``<pk>/files/<field>/``); never the storage's own URL."""
+        return self._reverse(
+            self.api_url_name("file"), pk=pk, field=field_name
+        )
+
     def get_cells_url_template(self) -> str:
         """Where a row's edited cells are written.
 
@@ -938,6 +945,17 @@ class ModelResource(PagesMixin):
 
     def get_detail_stats(self, request: Any = None) -> tuple[str, ...]:
         return tuple(self.detail_stats)
+
+    def get_file_fields(self, request: Any = None) -> frozenset:
+        """The file fields this reader may download from a record.
+
+        Those the screens show them - in the form, on the summary page,
+        in the list - and no other: the download endpoint answers 404
+        for the rest. Override to narrow it further.
+        """
+        from generic.sites.files import exposed_file_fields
+
+        return exposed_file_fields(self, request)
 
     def get_related_tables(self, request: Any = None) -> list[Any]:
         """The related tables, resolved once against this resource."""

@@ -6,7 +6,10 @@ start. Set ``DATABASE_URL`` and ``REDIS_URL`` (the Docker compose stack
 does) and the same suite runs against Postgres and Redis instead.
 """
 
+import atexit
 import os
+import shutil
+import tempfile
 from urllib.parse import urlparse
 
 import django
@@ -118,6 +121,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+
+# Uploaded files land in a folder of the run's own, removed at the end:
+# never in the checkout. A test writing files still points MEDIA_ROOT at
+# its own tmp_path, so what it finds there is only what it wrote.
+MEDIA_ROOT = tempfile.mkdtemp(prefix="generic-tests-media-")
+atexit.register(shutil.rmtree, MEDIA_ROOT, True)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

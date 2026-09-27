@@ -183,6 +183,10 @@ def is_importable_field(field: Any) -> bool:
     ):
         return False
 
+    # A cell holds text; a file is chosen on the record's form.
+    if isinstance(field, models.FileField):
+        return False
+
     # Declared on the model, not the reverse side of someone else's.
     # Django 6.1 no longer calls a many-to-many field "concrete" - it
     # has no column - so that flag cannot say it.
@@ -223,7 +227,15 @@ def check_import(resource: Any) -> None:
         )
 
     for field_name in declaration.fields or ():
-        if not is_importable_field(model_field(model, field_name)):
+        field = model_field(model, field_name)
+
+        if isinstance(field, models.FileField):
+            raise ImproperlyConfigured(
+                f"{name}.imports: {field_name!r} is a file field, and a "
+                f"spreadsheet cell cannot hold a file."
+            )
+
+        if not is_importable_field(field):
             raise ImproperlyConfigured(
                 f"{name}.imports: {field_name!r} is not an editable field "
                 f"of {model.__name__}."

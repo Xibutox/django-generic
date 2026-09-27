@@ -157,6 +157,17 @@
   white-space: pre-wrap;
 }
 
+.summary-file {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.summary-file__size {
+  font-size: var(--font-size-sm);
+}
+
 .summary-links {
   display: flex;
   flex-wrap: wrap;

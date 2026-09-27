@@ -5,11 +5,13 @@ Every generated screen talks to it, and so can anything else:
 ==========================  ======================================
 ``GET    api/<app>/<model>/``            rows, in the DataTables protocol
 ``POST   api/<app>/<model>/``            create, with ``_inlines``
+                                        (JSON, or ``_payload`` + files)
 ``GET    api/<app>/<model>/<pk>/``       one record, with its inlines
 ``PATCH  api/<app>/<model>/<pk>/``       update, with ``_inlines``
 ``DELETE api/<app>/<model>/<pk>/``       delete, refused when protected
 ``GET    .../<pk>/summary/``             the record's summary, as JSON
 ``GET    .../<pk>/history/``             its versions, newest first
+``GET    .../<pk>/files/<field>/``       one of its files, downloaded
 ``PATCH  .../<pk>/cells/``               cells edited in the table itself
 ``POST   api/<app>/<model>/rows/``       a row added in a grid
 ``GET    .../form-schema/``              the form, as JSON
@@ -51,10 +53,11 @@ from rest_framework.response import Response
 
 from generic.api.exports import ExportMixin
 from generic.api.facets import FacetMixin
+from generic.api.files import FILE_URL
 from generic.api.filters import DATATABLE_FILTER_BACKENDS, apply_search
 from generic.api.pagination import DataTablesPagination
 from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
-from generic.api.viewsets import FormSchemaViewSetMixin
+from generic.api.viewsets import FORM_PARSERS, FormSchemaViewSetMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
@@ -145,6 +148,9 @@ class ResourceViewSet(
     pagination_class = DataTablesPagination
     renderer_classes = (GenericJSONRenderer, DataTablesRenderer)
     permission_classes = (ResourcePermission,)
+    # A form with a new file sends its JSON as ``_payload`` beside one
+    # part per file (generic.api.parsers); the import keeps its own.
+    parser_classes = FORM_PARSERS
     lookup_value_regex = "[^/]+"
 
     @property
@@ -284,6 +290,16 @@ class ResourceViewSet(
 
         return default_context(self.resource)
 
+    def get_serializer_context(self) -> dict[str, Any]:
+        from generic.sites.files import file_url_resolver
+
+        context = super().get_serializer_context()
+        # A file reads as {name, url, size}, the url this endpoint's
+        # own download - or the one of whichever record it belongs to.
+        context[FILE_URL] = file_url_resolver(self.resource.site)
+
+        return context
+
     def get_serializer_class(self) -> Any:
         if self.action in TABLE_ACTIONS:
             return self.resource.get_table_serializer_class()
@@ -348,6 +364,62 @@ class ResourceViewSet(
         record = self.get_object()
 
         return Response(build_summary(self.resource, request, record))
+
+    # -- files -------------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path=r"files/(?P<field>[A-Za-z0-9_]+)",
+        url_name="file",
+    )
+    def download_file(
+        self,
+        request: Any,
+        pk: Any = None,
+        field: str = "",
+    ) -> Any:
+        """One of the record's files, for a reader who may see the record.
+
+        Only a file field the resource shows this reader answers; an
+        empty one, or one the storage no longer holds, is a 404.
+        """
+        from generic.sites.files import file_response, is_stored
+
+        if field not in self.resource.get_file_fields(request):
+            raise NotFound(gettext("There is no such file."))
+
+        record = self.get_object()
+        value = getattr(record, field)
+
+        if not is_stored(value):
+            raise NotFound(gettext("There is no such file."))
+
+        try:
+            return file_response(value)
+        except OSError:
+            # Gone between the check and the opening.
+            raise NotFound(gettext("There is no such file."))
+
+    def finalize_response(
+        self,
+        request: Any,
+        response: Any,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        response = super().finalize_response(
+            request, response, *args, **kwargs
+        )
+
+        # Refusals too: whatever this address answers, nothing in it
+        # may run in the site's origin.
+        if getattr(self, "action", None) == "download_file":
+            from generic.sites.files import protect
+
+            protect(response)
+
+        return response
 
     # -- cells edited in the table ------------------------------------------
 

@@ -30,6 +30,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from generic.api.forms import (
+    FILE_TYPES,
     FormSerializerMixin,
     remove_none_values,
     resolve_related_editor_url,
@@ -176,7 +177,10 @@ class InlineFormDefinition:
             )
             configuration.update(overrides)
 
-            if self.read_only:
+            # A row travels inside the parent's JSON, under _inlines,
+            # where a file cannot: an inline shows its files, and a
+            # file is chosen on the row's own form.
+            if self.read_only or configuration.get("type") in FILE_TYPES:
                 configuration["readOnly"] = True
 
             result.append(remove_none_values(configuration))

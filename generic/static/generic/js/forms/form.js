@@ -90,6 +90,43 @@
 
   var TEXTUAL = { text: 1, textarea: 1, email: 1, url: 1, slug: 1 };
 
+  function isFile(value) {
+    return typeof File !== "undefined" && value instanceof File;
+  }
+
+  /**
+   * What is sent: the payload itself, as JSON - or, when a file was
+   * chosen, a multipart body. Its `_payload` part is the very JSON
+   * that would have been sent without files (the inline rows too, the
+   * files left out); each file is a part of its own, named by its
+   * field. A removed file stays in the JSON, as null.
+   */
+  function withFiles(payload) {
+    var json = {};
+    var files = [];
+
+    Object.keys(payload).forEach(function (name) {
+      if (isFile(payload[name])) {
+        files.push(name);
+      } else {
+        json[name] = payload[name];
+      }
+    });
+
+    if (!files.length) {
+      return payload;
+    }
+
+    var body = new FormData();
+    body.append("_payload", JSON.stringify(json));
+
+    files.forEach(function (name) {
+      body.append(name, payload[name], payload[name].name);
+    });
+
+    return body;
+  }
+
   function SchemaForm(host, config) {
     instances += 1;
 
@@ -590,7 +627,8 @@
    * default applies.
    */
   SchemaForm.prototype.normalize = function (field, raw) {
-    if (raw === undefined) {
+    // A file nobody touched is not sent, which the API reads as "keep".
+    if (raw === undefined || raw === forms.FILE_UNCHANGED) {
       return undefined;
     }
 
@@ -818,9 +856,10 @@
 
     this.setSaving(true);
 
+    var body = withFiles(payload);
     var request = create
-      ? Generic.api.post(this.config.collectionUrl, payload)
-      : Generic.api.patch(this.config.objectUrl, payload);
+      ? Generic.api.post(this.config.collectionUrl, body)
+      : Generic.api.patch(this.config.objectUrl, body);
 
     request
       .then(function (data) {
@@ -1012,6 +1051,39 @@
     }
 
     return general;
+  };
+
+  /**
+   * One field's own message, set - or cleared with "" - by its widget:
+   * a file refused before anything is sent.
+   */
+  SchemaForm.prototype.setFieldError = function (name, message) {
+    var entry = this.fields.get(name);
+
+    if (!entry) {
+      if (message) {
+        Generic.toast(message, "error");
+      }
+
+      return;
+    }
+
+    entry.errors.replaceChildren();
+    entry.box.classList.toggle("has-error", Boolean(message));
+
+    if (entry.widget.focus && entry.widget.focus.setAttribute) {
+      if (message) {
+        entry.widget.focus.setAttribute("aria-invalid", "true");
+      } else {
+        entry.widget.focus.removeAttribute("aria-invalid");
+      }
+    }
+
+    if (message) {
+      entry.errors.appendChild(el("li", "", message));
+    }
+
+    this.updateTabBadges();
   };
 
   SchemaForm.prototype.showMessage = function (text, details) {

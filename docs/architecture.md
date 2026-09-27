@@ -39,6 +39,8 @@ generic/
 │   ├── exports.py       Streaming Excel and CSV of the filtered set
 │   ├── autocomplete.py  Select2 endpoint for multiselect filters
 │   ├── forms.py         Serializer -> form schema
+│   ├── files.py         A stored file as {name, url, size}; the form's file field
+│   ├── parsers.py       MultiPartJSONParser: _payload JSON + one part per file
 │   ├── inlines.py       Tabular inlines: parse, delete, validate, save
 │   ├── relations.py     Labels and Select2 wiring of relation fields
 │   ├── viewsets.py      DataTableViewSet, ModelFormViewSet, …
@@ -57,6 +59,7 @@ generic/
 │   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
 │   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint
 │   ├── summary.py       A record, typed and formatted for its summary
+│   ├── files.py         A record's files: download URL, exposure, the answer
 │   └── realtime.py      Model changes -> resource.changed
 │
 ├── accounts/
