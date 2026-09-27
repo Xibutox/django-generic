@@ -10,7 +10,7 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.2.0] - 2026-09-27
 
 ### Added
 - Tickets carry an attachment, chosen in their form and downloaded from
@@ -49,6 +49,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   production stack writes `/app/logs/app.log` in an `app-logs` volume
   from every service. The worker logs through the project's settings
   rather than Celery's own handlers (`generic.logs`, docs/logging.md).
+
+### Fixed
+- The installation guide says how the framework really arrives: it is
+  not on PyPI, where `django-generic` is an unrelated package, so a
+  project builds its wheel from the repository, keeps it in `vendor/`
+  and names it by its path in `requirements.txt`. Two walkthroughs, a
+  new project from nothing and an existing one, both run as written;
+  Docker, updating and working on the framework beside a project
+  follow. The README and the feature pages no longer say `pip install
+  django-generic[...]`.
+
+## [1.1.0] - 2026-09-26
+
+### Added
 - Searches ignore accents: `region` finds *Région Occitanie*. The
   project installs `generic.search`, and tickets and customers have
   trigram indexes on PostgreSQL. Some seeded names carry their accents
@@ -69,14 +83,6 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   endpoint.
 
 ### Fixed
-- The installation guide says how the framework really arrives: it is
-  not on PyPI, where `django-generic` is an unrelated package, so a
-  project builds its wheel from the repository, keeps it in `vendor/`
-  and names it by its path in `requirements.txt`. Two walkthroughs, a
-  new project from nothing and an existing one, both run as written;
-  Docker, updating and working on the framework beside a project
-  follow. The README and the feature pages no longer say `pip install
-  django-generic[...]`.
 - *Run now* hands the task to the Celery worker. The web server never
   loaded the project's Celery application, found no broker, and ran
   every task in the request; `example_project/__init__.py` now imports
