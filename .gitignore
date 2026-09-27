@@ -13,6 +13,8 @@ env/
 .coverage
 coverage.xml
 htmlcov/
+# The browser tests' screenshots of what failed (--output).
+test-results/
 
 *.sqlite3
 demo.sqlite3

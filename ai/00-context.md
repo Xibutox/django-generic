@@ -53,7 +53,7 @@ pages, charts, filters, exports or permissions.
 | Wiki editor | Quill 2, HTML cleaned by nh3 |
 | Icons | Material Symbols Outlined (font) — any glyph name works |
 | Colours | CSS custom properties in OKLCH, computed from 5 parameters |
-| Tests | pytest, pytest-django, factory-boy |
+| Tests | pytest, pytest-django, factory-boy; Playwright for the opt-in browser tests |
 | Style | black + isort (line length **79**), flake8 |
 
 Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.1.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.1,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
@@ -1396,6 +1396,23 @@ Read them via `from generic.conf import generic_settings`.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
   `pytest` (coverage ≥ 80%).
+- **Browser tests** (`tests/browser/`, docs/testing.md): the example
+  driven through a real Chromium - Python Playwright via
+  pytest-playwright, against pytest-django's `live_server`; no Node.
+  Opt-in: every test there is marked `browser`, `addopts` deselects it
+  (`-m "not browser"`), and without the `browser` extra the folder is
+  not collected; run `pytest tests/browser -m browser --no-cov`
+  (`PLAYWRIGHT_CHROMIUM_EXECUTABLE` names another Chromium; failure
+  screenshots in `test-results/`, CI job *Browser tests*). Its
+  conftest: `desk` (25 tickets SD-1001..SD-1025), `admin`, `viewer`,
+  `sign_in(user)` (a `force_login` session as a cookie), and an
+  autouse console guard failing any test whose page raised or logged
+  an error (`console.allow(status, path)` for an expected refusal);
+  SQLite in a file (the server's threads must not share one in-memory
+  connection), the CSRF middleware added, no WebSocket, events from the
+  tests' own thread dropped, `DJANGO_ALLOW_ASYNC_UNSAFE`. A behaviour
+  of the JavaScript gets a scenario there, waiting with `expect`,
+  never `time.sleep`.
 - CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
   3.12 and 3.13. Where the two Djangos differ, switch on
   `django.VERSION`, never on the Python version, and never name in
@@ -1605,7 +1622,8 @@ history_of(ticket)                 # every version, newest first
   the record's own fields **as they were** (a snapshot, not a diff).
   What changed is worked out when the history is read, by comparing an
   entry with the one before it, so a field the project starts or stops
-  tracking never rewrites the past.
+  tracking never rewrites the past. Values are kept as the database
+  returns them (a decimal quantized to its field's places).
 - A save that changes nothing recorded writes nothing. Every save in
   one request - or one `acting_as` block - folds into one entry: one
   unit of work is one version. `update()` and `bulk_create()` fire no

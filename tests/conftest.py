@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import importlib.util
 from decimal import Decimal
 
 import pytest
@@ -18,6 +19,17 @@ from tests.factories import (
     UserFactory,
 )
 from tests.testapp.models import Book
+
+# The browser tests need the `browser` extra (Playwright and its pytest
+# plugin), which the everyday install leaves out: without it, their
+# folder is not even collected, rather than failing on an import - nor
+# its files, when the folder is named on the command line.
+if not (
+    importlib.util.find_spec("playwright")
+    and importlib.util.find_spec("pytest_playwright")
+):
+    collect_ignore = ["browser"]
+    collect_ignore_glob = ["browser/*"]
 
 
 @pytest.fixture

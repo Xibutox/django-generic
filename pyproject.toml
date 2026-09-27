@@ -120,6 +120,11 @@ dev = [
     "debugpy>=1.8",
 ]
 
+# The browser tests (tests/browser): the example driven through a real
+# Chromium. Not part of "dev": the browser itself is a download of its
+# own, `python -m playwright install chromium`.
+browser = ["playwright>=1.47", "pytest-playwright>=0.5"]
+
 [tool.setuptools.dynamic]
 version = { attr = "generic.__version__" }
 
@@ -167,7 +172,18 @@ django_settings_module = "tests.settings"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
-addopts = "--strict-markers --cov=generic --cov-report=term-missing"
+# The browser tests are opt-in: a plain `pytest` leaves them out, and
+# `pytest tests/browser -m browser --no-cov` runs them (docs/testing.md).
+addopts = [
+    "--strict-markers",
+    "--cov=generic",
+    "--cov-report=term-missing",
+    "-m",
+    "not browser",
+]
+markers = [
+    "browser: drives the example through a real browser (tests/browser)",
+]
 asyncio_mode = "auto"
 filterwarnings = ["error::DeprecationWarning:generic.*"]
 

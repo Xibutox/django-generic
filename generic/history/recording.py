@@ -30,7 +30,7 @@ import decimal
 import logging
 from typing import Any
 
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.utils import timezone
 from django.utils.encoding import force_str
@@ -114,9 +114,34 @@ def snapshot(obj: Any, fields: list[Any], carry: dict[str, Any]) -> dict:
 
             continue
 
-        values[field.name] = json_safe(field.value_from_object(obj))
+        values[field.name] = json_safe(stored_value(field, obj))
 
     return values
+
+
+def stored_value(field: Any, obj: Any) -> Any:
+    """A field's value as the database gives it back.
+
+    ``Decimal(2)`` in a field of two places is read back as ``2.00``:
+    kept as it was set, it would differ from the next version's as
+    text, and a save changing something else would list it too.
+    """
+    value = field.value_from_object(obj)
+
+    if (
+        isinstance(field, models.DecimalField)
+        and isinstance(value, decimal.Decimal)
+        and value.is_finite()
+    ):
+        try:
+            value = value.quantize(
+                decimal.Decimal(1).scaleb(-field.decimal_places),
+                context=field.context,
+            )
+        except decimal.InvalidOperation:
+            pass
+
+    return value
 
 
 def last_entry(content_type: Any, object_id: str) -> HistoryEntry | None:

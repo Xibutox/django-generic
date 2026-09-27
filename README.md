@@ -285,6 +285,11 @@ above:
 pytest
 ```
 
+The pages themselves, driven through a real Chromium - tables, forms,
+summary pages, grids, imports - are opt-in: install the `browser`
+extra and the browser (`python -m playwright install chromium`), then
+`pytest tests/browser -m browser --no-cov`.
+
 Against the real backends, through Docker:
 
 ```bash

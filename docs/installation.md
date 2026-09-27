@@ -249,6 +249,7 @@ and installed again with `pip install -r requirements.txt`.
 | `wiki` | nh3 | the wiki (`generic.wiki`) |
 | `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
+| `browser` | Playwright, pytest-playwright | its browser tests, with `python -m playwright install chromium` ([Testing](testing.md#browser-tests)) |
 
 ## Working on the framework and a project together
 
