@@ -4,8 +4,8 @@ A reusable Django foundation for internal applications: an admin-like
 interface built on a REST API, rich server-side data tables with
 coloured tag columns, summary pages with tables of related records,
 charts computed by the database, schema-driven forms with inline
-editing, per-user colour personalisation, a small wiki, and real-time
-events over WebSocket.
+editing and file uploads, per-user colour personalisation, a small
+wiki, and real-time events over WebSocket.
 
 ![A list page: charts computed by the database above a filterable table](https://raw.githubusercontent.com/Xibutox/django-generic/main/docs/screenshots/list.png)
 
@@ -353,13 +353,3 @@ application built on it, after the application's own
 BSD 3-Clause, as Django's own - see [LICENSE](LICENSE). The libraries
 shipped under `generic/static/generic/vendor/` keep their own licences,
 each beside its files.
-
-## Roadmap
-
-1. **Browser tests.** The JavaScript is checked by hand; a Playwright
-   suite driving the example would keep it honest.
-2. **`drf-spectacular` schema** and the generated API reference.
-3. **File fields in generated forms.** The schema describes them, but
-   the JSON submit does not carry uploads yet — and the wiki inserts
-   images by address only, for the same reason.
-4. **Sharing saved views** between users, beside the per-user ones.
