@@ -7,6 +7,7 @@ time, the wiki, API tokens, Celery, Docker, production settings - is in
 ``example_project/``.
 """
 
+import os
 from pathlib import Path
 
 import django
@@ -63,7 +64,8 @@ WSGI_APPLICATION = "mysite.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # Beside manage.py, or where the Docker image says: a volume.
+        "NAME": os.environ.get("DJANGO_DB_PATH") or BASE_DIR / "db.sqlite3",
     }
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

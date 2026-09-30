@@ -226,7 +226,10 @@ The **reference implementation** is `example/` (a support desk) with
 `minimal/` is the smallest project the framework runs in - one
 `settings.py` (no Channels, `EVENTS_WEBSOCKET_URL: None`), `urls.py`,
 one model with `auto(Book)` - run from its folder (`cd minimal &&
-python manage.py runserver`) and kept working by `tests/test_minimal.py`.
+python manage.py runserver`) or in Docker (`minimal/Dockerfile`, one
+service in `minimal/compose.yaml`, SQLite in a volume through
+`DJANGO_DB_PATH`), kept working by `tests/test_minimal.py` and CI's
+`minimal-docker` job.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env

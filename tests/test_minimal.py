@@ -14,6 +14,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 MINIMAL = Path(__file__).resolve().parent.parent / "minimal"
 
 #: Every page and endpoint the example has, opened by a signed-in user
@@ -113,3 +115,19 @@ def test_every_page_answers():
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")
+
+
+def test_the_container_keeps_its_database_in_the_volume():
+    """Built from the root, which holds the framework, with the SQLite
+    file in the volume: a ``down`` and ``up`` loses nothing."""
+    yaml = pytest.importorskip("yaml")
+    compose = yaml.safe_load((MINIMAL / "compose.yaml").read_text())
+    web = compose["services"]["web"]
+    dockerfile = (MINIMAL / "Dockerfile").read_text()
+
+    assert web["build"] == {
+        "context": "..",
+        "dockerfile": "minimal/Dockerfile",
+    }
+    assert "data:/data" in web["volumes"]
+    assert "DJANGO_DB_PATH=/data/db.sqlite3" in dockerfile

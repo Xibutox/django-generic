@@ -227,3 +227,22 @@ jobs:
             -v "$PWD/docker/nginx/django-generic.conf:/etc/nginx/snippets/django-generic.conf:ro" \
             -v /tmp/certs:/etc/letsencrypt:ro \
             nginx:stable-alpine sh -c 'rm /etc/nginx/conf.d/default.conf && nginx -t'
+
+  minimal-docker:
+    name: The minimal example, in Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Built and started as its README says
+        run: docker compose -f minimal/compose.yaml up --build -d
+      - name: The sign-in page answers, and / sends there
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost:8000/login/ && break
+            sleep 2
+          done
+          curl -fsS -o /dev/null http://localhost:8000/login/
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/)" = 302
+      - name: The container's log
+        if: always()
+        run: docker compose -f minimal/compose.yaml logs

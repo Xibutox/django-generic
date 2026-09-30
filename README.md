@@ -272,7 +272,7 @@ VS Code, whose configurations the repository carries. See
 
 `minimal/` is the other end: the least a project needs to run the
 framework - one settings file, the URLs, one model and `auto(Book)` for
-its screens, with no real time, Celery, wiki or Docker. It runs on the
+its screens, with no real time, Celery or wiki. It runs on the
 framework alone:
 
 ```bash
@@ -283,7 +283,8 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-See [its README](minimal/README.md) for what each line is for.
+Or in a container, from the repository's root: `docker compose -f
+minimal/compose.yaml up --build`. See [its README](minimal/README.md) for what each line is for.
 
 ### The full example
 
