@@ -1,9 +1,9 @@
 """The least a Django project needs to run django-generic.
 
 A ``django-admin startproject`` settings file, trimmed, with the
-framework's lines marked. For local use only: the secret key is
-written here and DEBUG is on. Everything the full example adds - real
-time, the wiki, API tokens, Celery, Docker, production settings - is in
+framework's lines marked, and the wiki. For local use only: the secret
+key is written here and DEBUG is on. Everything the full example adds -
+real time, API tokens, Celery, production settings - is in
 ``example_project/``.
 """
 
@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",  # the framework's
     "generic",  # the framework's
+    "generic.wiki",  # the wiki: needs the extra, pip install ".[wiki]"
     "library",
 ]
 
@@ -78,6 +79,11 @@ USE_TZ = True
 TIME_ZONE = "UTC"
 
 STATIC_URL = "/static/"
+
+# Where uploaded files are written: the wiki's images. Beside manage.py,
+# or in the Docker image's volume. No MEDIA_URL: each image is served
+# through the wiki, to whoever is signed in.
+MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT") or BASE_DIR / "media"
 
 # The site's own sign-in page.
 LOGIN_URL = "site:login"

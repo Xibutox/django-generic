@@ -129,8 +129,9 @@ sends mail ([Mail](#mail)).
 Sign in at <http://127.0.0.1:8000/>: the dashboard, and *Books* in the
 navigation - its list, its forms, a page per book.
 
-The repository's `minimal/` folder is this project, ready to run
-(`cd minimal && python manage.py migrate && python manage.py
+The repository's `minimal/` folder is this project, with the wiki
+([The wiki](wiki.md)), ready to run (`pip install -e ".[wiki]"`, then
+`cd minimal && python manage.py migrate && python manage.py
 runserver`): compare it with a project that does not start.
 
 ## An existing project

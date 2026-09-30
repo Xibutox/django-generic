@@ -2,7 +2,7 @@
 
 A runnable support desk that exercises every feature, so you can click
 through them rather than read about them. For the opposite - the
-least a project needs, one model and no options - see
+least a project needs, one model and the wiki - see
 [`minimal/`](../minimal/README.md).
 
 ```bash

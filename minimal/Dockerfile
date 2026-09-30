@@ -14,16 +14,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    DJANGO_DB_PATH=/data/db.sqlite3
+    DJANGO_DB_PATH=/data/db.sqlite3 \
+    DJANGO_MEDIA_ROOT=/data/media
 
-# The framework, as its wheel installs it: the core alone, Django and
-# Django REST framework.
+# The framework, as its wheel installs it: the core - Django and Django
+# REST framework - and the wiki extra, nh3, which cleans its pages.
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
-RUN pip install . && rm -rf /src
+RUN pip install ".[wiki]" && rm -rf /src
 
-# The database lives in /data, a volume, so it outlives the container.
+# The database and the wiki's images live in /data, a volume, so it outlives the container.
 RUN useradd --create-home app && mkdir /data && chown app /data
 
 WORKDIR /app
