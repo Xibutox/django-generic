@@ -60,7 +60,7 @@ lint:
   script:
     - black --check .
     - isort --check-only .
-    - flake8 generic tests example example_project scripts debug.py
+    - flake8 generic tests example example_project minimal scripts debug.py
     # Reported, not blocking: django-stubs has not caught up with the
     # Django this runs on, and most of what it says is that.
     - mypy generic || true

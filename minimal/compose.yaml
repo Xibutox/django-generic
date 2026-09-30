@@ -1,0 +1,22 @@
+# The minimal example, one service:
+#
+#   docker compose -f minimal/compose.yaml up --build
+#   docker compose -f minimal/compose.yaml exec web python manage.py createsuperuser
+#
+# then http://localhost:8000/. The full stack - Postgres, Redis, Celery,
+# Daphne behind Caddy - is ../docker/.
+
+name: django-generic-minimal
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: minimal/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/data
+
+volumes:
+  data:

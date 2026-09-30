@@ -13,6 +13,7 @@ recursive-include docs *.md
 prune tests
 prune example
 prune example_project
+prune minimal
 prune docker
 prune ai
 

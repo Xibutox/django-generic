@@ -268,6 +268,26 @@ Under a debugger, `python debug.py` in place of `runserver` - or F5 in
 VS Code, whose configurations the repository carries. See
 [Debugging](docs/deployment.md#debugging).
 
+### The minimal example
+
+`minimal/` is the other end: the least a project needs to run the
+framework - one settings file, the URLs, one model and `auto(Book)` for
+its screens, with no real time, Celery or wiki. It runs on the
+framework alone:
+
+```bash
+pip install -e .
+cd minimal
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+Or in a container, from the repository's root: `docker compose -f
+minimal/compose.yaml up --build`. See [its README](minimal/README.md) for what each line is for.
+
+### The full example
+
 The bundled example is a small support desk chosen for coverage: every
 column type in one table, fieldsets with a collapsed section and a tab,
 tabular and stacked inlines, customers with close to a hundred tickets
