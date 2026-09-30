@@ -47,7 +47,9 @@ missing line when the wiring is copied into another project.
   authentication for DRF, since the pages call the API as the signed-in
   user; `LOGIN_URL = "site:login"`. `GENERIC["EVENTS_WEBSOCKET_URL"] =
   None` says there is no live updates, so the pages open no WebSocket
-  even where Channels happens to be installed.
+  even where Channels happens to be installed. Mail goes to the
+  console, through `MAILERS` on Django 6.1 and later, `EMAIL_BACKEND`
+  before.
 - **`mysite/urls.py`** - the browser side's strings (`jsi18n/`), the
   framework's own endpoints (`api/generic/`), and `site.urls` last: the
   dashboard, sign-in and account pages, every resource's pages and API.

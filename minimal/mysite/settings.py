@@ -9,6 +9,8 @@ time, the wiki, API tokens, Celery, Docker, production settings - is in
 
 from pathlib import Path
 
+import django
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "minimal-example-local-only"
@@ -88,6 +90,15 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+# Mail - notifications, password resets - printed to the console. Django
+# 6.1 configures it with MAILERS, and refuses it beside EMAIL_BACKEND.
+CONSOLE_MAIL = "django.core.mail.backends.console.EmailBackend"
+
+if django.VERSION >= (6, 1):
+    MAILERS = {"default": {"BACKEND": CONSOLE_MAIL}}
+else:
+    EMAIL_BACKEND = CONSOLE_MAIL
 
 # Everything has a default (docs/settings.md). No live updates: the
 # pages open no WebSocket, so plain WSGI and runserver serve them all.
