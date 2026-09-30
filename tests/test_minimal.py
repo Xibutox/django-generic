@@ -71,6 +71,29 @@ PAGES = textwrap.dedent("""
 
     rows = client.get("/api/library/book/").json()["data"]
     assert [row["title"] for row in rows] == ["Dune"], rows
+
+    # The wiki: in the navigation, empty, then a page written through
+    # its API and read - the HTML cleaned on the way in.
+    assert b'href="/wiki/"' in client.get("/").content
+    assert client.get("/wiki/").status_code == 200
+    response = client.post(
+        "/wiki/api/pages/",
+        {"title": "Welcome", "content": "<p>Hi<script>x</script></p>"},
+        content_type="application/json",
+    )
+    assert response.status_code == 201, response.content
+    page = response.json()
+    assert "script" not in page["content"], page
+
+    assert client.get("/wiki/")["Location"] == f"/wiki/{page['slug']}/"
+
+    for url in (
+        f"/wiki/{page['slug']}/",
+        "/wiki/api/pages/",
+        f"/wiki/api/pages/{page['id']}/revisions/",
+    ):
+        status = client.get(url).status_code
+        assert status == 200, f"{url}: {status}"
     print("ok")
     """)
 
@@ -119,7 +142,8 @@ def test_every_page_answers():
 
 def test_the_container_keeps_its_database_in_the_volume():
     """Built from the root, which holds the framework, with the SQLite
-    file in the volume: a ``down`` and ``up`` loses nothing."""
+    file and the wiki's images in the volume: a ``down`` and ``up``
+    loses nothing."""
     yaml = pytest.importorskip("yaml")
     compose = yaml.safe_load((MINIMAL / "compose.yaml").read_text())
     web = compose["services"]["web"]
@@ -131,3 +155,6 @@ def test_the_container_keeps_its_database_in_the_volume():
     }
     assert "data:/data" in web["volumes"]
     assert "DJANGO_DB_PATH=/data/db.sqlite3" in dockerfile
+    # The wiki's extra, and its images in the volume beside the database.
+    assert 'pip install ".[wiki]"' in dockerfile
+    assert "DJANGO_MEDIA_ROOT=/data/media" in dockerfile

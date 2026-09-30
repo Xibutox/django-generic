@@ -235,7 +235,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Built and started as its README says
         run: docker compose -f minimal/compose.yaml up --build -d
-      - name: The sign-in page answers, and / sends there
+      - name: The sign-in page answers, and / and the wiki send there
         run: |
           for i in $(seq 1 30); do
             curl -fsS -o /dev/null http://localhost:8000/login/ && break
@@ -243,6 +243,7 @@ jobs:
           done
           curl -fsS -o /dev/null http://localhost:8000/login/
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/)" = 302
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/wiki/)" = 302
       - name: The container's log
         if: always()
         run: docker compose -f minimal/compose.yaml logs

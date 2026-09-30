@@ -1,5 +1,5 @@
-"""The minimal example's routes: the framework's endpoints, then the
-site generated from library/resources.py, last."""
+"""The minimal example's routes: the framework's endpoints, the wiki,
+then the site generated from library/resources.py, last."""
 
 from django.urls import include, path
 from django.views.i18n import JavaScriptCatalog
@@ -15,6 +15,8 @@ urlpatterns = [
     ),
     # Notifications, preferences, saved table views.
     path("api/generic/", include("generic.urls", namespace="generic")),
+    # The wiki: its pages, their editor and their API.
+    path("wiki/", include("generic.wiki.urls")),
     # The dashboard, sign-in and account pages, and every resource's
     # pages and API.
     path("", site.urls),
