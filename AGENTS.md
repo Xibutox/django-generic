@@ -3,7 +3,8 @@
 This repository is **django-generic**, a reusable Django framework: an
 admin-like, DRF-driven interface (DataTables, summary pages, schema
 forms, charts, coloured tags, wiki, real-time events) plus a runnable
-example, `example/` + `example_project/`.
+example, `example/` + `example_project/`, and a minimal one,
+`minimal/` (the least a project needs: one settings file, one model).
 
 Before changing anything, read **`ai/00-context.md`** — the reference for
 the rules, the file map and every declaration. Then the use-case prompt
@@ -46,7 +47,7 @@ pip install -e ".[export,events,tasks,postgres,wiki,dev]"
 python manage.py migrate && python manage.py seed_example && python manage.py runserver
 python debug.py                               # runserver under a debugger (VS Code: F5)
 pytest
-black --check . && isort --check-only . && flake8 generic tests example example_project scripts debug.py
+black --check . && isort --check-only . && flake8 generic tests example example_project minimal scripts debug.py
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
 python -m build && python scripts/smoke_install.py   # the wheel, installed and plugged into a new project
 docker compose -f docker/docker-compose.dev.yml up --build     # dev stack

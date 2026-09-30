@@ -391,7 +391,7 @@ the table configuration travels as `json_script`.
 ```bash
 black --check .            # line length 79
 isort --check-only .
-flake8 generic tests example example_project scripts debug.py
+flake8 generic tests example example_project minimal scripts debug.py
 bandit -r generic -ll --skip B101
 python scripts/compile_messages.py --check   # the .mo match the .po
 mypy generic               # reported, not blocking: see below

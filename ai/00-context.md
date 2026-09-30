@@ -223,6 +223,10 @@ tests/                      pytest; conftest.py fixtures; one file per area
 
 The **reference implementation** is `example/` (a support desk) with
 `example_project/`. `example/resources.py` shows every feature; mimic it.
+`minimal/` is the smallest project the framework runs in - one
+`settings.py` (no Channels, `EVENTS_WEBSOCKET_URL: None`), `urls.py`,
+one model with `auto(Book)` - run from its folder (`cd minimal &&
+python manage.py runserver`) and kept working by `tests/test_minimal.py`.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
