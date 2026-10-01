@@ -38,6 +38,7 @@ from example.pages import (
     customer_map,
     customers_geojson,
 )
+from example.tasks import check_tickets, review_customers
 from generic.api import (
     BooleanColumn,
     CharColumn,
@@ -324,7 +325,9 @@ class TicketResource(ModelResource):
         },
     }
 
-    actions = ("mark_billable", "delete_selected")
+    # "check" is an operation (example/tasks.py): its answer is a report
+    # tree, drawn by the table and the ticket's page.
+    actions = ("check", "mark_billable", "delete_selected")
     # The ticket's life: wait, resume, resolve, close, reopen - declared
     # on the model with django-fsm-2, offered here as buttons on its
     # page and as bulk actions on the list.
@@ -655,6 +658,13 @@ class TicketResource(ModelResource):
             ticket.age_in_days,
         ) % {"days": ticket.age_in_days}
 
+    @action(description=_("Check"), icon="fact_check")
+    def check(self, request: Any, queryset: QuerySet) -> Any:
+        # Done in the request: the answer carries the whole report.
+        return check_tickets.start(
+            request, ids=list(queryset.values_list("pk", flat=True))
+        )
+
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:
         updated = queryset.update(is_billable=True)
@@ -786,6 +796,9 @@ class CustomerResource(ModelResource):
         "open_ticket_count",
     )
     search_fields = ("name", "code", "city")
+    # "review" runs in the background (example/tasks.py): the table is
+    # answered at once and told when the report is ready.
+    actions = ("review", "delete_selected")
     # Customers kept in a spreadsheet elsewhere: matched on their code.
     imports = Import(
         fields=("code", "name", "segment", "city", "website", "is_active"),
@@ -885,6 +898,12 @@ class CustomerResource(ModelResource):
                     distinct=True,
                 ),
             )
+        )
+
+    @action(description=_("Review"), icon="manage_search")
+    def review(self, request: Any, queryset: QuerySet) -> Any:
+        return review_customers.start(
+            request, ids=list(queryset.values_list("pk", flat=True))
         )
 
     @display(description=_("Tickets"), ordering="ticket_count")

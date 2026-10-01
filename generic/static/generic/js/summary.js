@@ -529,9 +529,7 @@
                 ids: [self.data.object.pk]
               })
               .then(function (result) {
-                var level = (result && result.level) || "success";
-
-                Generic.toast((result && result.message) || t("Done."), level);
+                Generic.operations.handle(result);
 
                 return self.refresh();
               })

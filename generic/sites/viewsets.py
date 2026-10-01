@@ -60,6 +60,7 @@ from generic.api.renderers import DataTablesRenderer, GenericJSONRenderer
 from generic.api.viewsets import FORM_PARSERS, FormSchemaViewSetMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
+from generic.reports import Report
 from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
 from generic.sites.related import RELATED_PARAM
 from generic.views.delete import collect_deletion_summary
@@ -687,6 +688,23 @@ class ResourceViewSet(
 
     @staticmethod
     def describe_result(result: Any, count: int, entry: Any) -> dict:
+        from generic.tasks.models import TaskRun
+        from generic.tasks.operations import operation_payload
+
+        # The work behind the action, with what it had to say: a report
+        # tree, or a run that may still be going (generic.tasks).
+        if isinstance(result, (Report, TaskRun)):
+            return {**operation_payload(result), "count": count}
+
+        if isinstance(result, dict) and isinstance(
+            result.get("report"), Report
+        ):
+            payload = operation_payload(
+                result["report"], result.get("message", "")
+            )
+
+            return {**payload, "count": count}
+
         if isinstance(result, dict):
             return {
                 "message": str(result.get("message", "")),

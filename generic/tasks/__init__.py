@@ -88,6 +88,8 @@ def managed_task(
     report: Iterable[str] = ("notification",),
     audience: Any = "trigger",
     permission: str = "",
+    catalogue: bool = True,
+    background: bool = False,
 ) -> Any:
     """Declare a task: what it is called, who hears, through what.
 
@@ -98,6 +100,10 @@ def managed_task(
     toast. ``audience`` is ``trigger`` (whoever started it),
     ``staff``, ``superusers``, ``everyone``, or a callable taking the
     run and returning users.
+
+    ``catalogue=False`` keeps it off the Tasks page: something a page of
+    the project starts, as :func:`generic.tasks.operations.operation`
+    declares.
     """
 
     def decorate(target: Callable[..., Any]) -> Callable[..., Any]:
@@ -113,6 +119,8 @@ def managed_task(
             audience=audience,
             permission=permission,
             celery_task=_celery_task(task_name),
+            catalogue=catalogue,
+            background=background,
         )
         registry.register(definition)
 
@@ -129,6 +137,14 @@ def managed_task(
     return decorate
 
 
+# Declared below managed_task, which they are built on.
+from generic.tasks.operations import (  # noqa: E402
+    operation,
+    operation_payload,
+    operation_response,
+    start_operation,
+)
+
 __all__ = [
     "ALL",
     "AUDIENCES",
@@ -140,5 +156,9 @@ __all__ = [
     "get_task",
     "launch",
     "managed_task",
+    "operation",
+    "operation_payload",
+    "operation_response",
     "registry",
+    "start_operation",
 ]

@@ -77,7 +77,7 @@ class TasksPage(SiteViewMixin, TemplateView):
         limit = int(generic_settings.TASK_RECENT_RUNS or 0)
         entries = []
 
-        for definition in registry.all():
+        for definition in registry.catalogue():
             runs = list(TaskRun.objects.of(definition.name)[:limit])
             entries.append(
                 {
@@ -113,7 +113,9 @@ class TasksPage(SiteViewMixin, TemplateView):
         name = (request.POST.get("task") or "").strip()
         definition = registry.get(name)
 
-        if definition is None:
+        # An operation is started by the page offering it, with the
+        # arguments only that page knows: never from here, by name.
+        if definition is None or not definition.catalogue:
             raise Http404(f"No task is called {name!r}.")
 
         if definition.permission and not request.user.has_perm(

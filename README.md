@@ -241,6 +241,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [People](docs/people.md) — users, groups and permissions, passwords, and what the screens refuse
 - [Single sign-on](docs/sso.md) — declaring a provider, the sign-in page, forbidding local passwords
 - [Tasks](docs/tasks.md) — declaring one, the four steps, the runs, Celery Beat schedules
+- [Operations and reports](docs/operations.md) — the work behind a button, in the request or the background, answered with a tree of messages that fold
 - [Planned restarts](docs/maintenance.md) — announcing one, the three warnings, restarting the server
 - [Translation](docs/i18n.md) — the French catalog, the language menu, the workflow
 - [Settings](docs/settings.md) — every knob and its default

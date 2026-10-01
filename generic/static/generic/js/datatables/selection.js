@@ -79,7 +79,9 @@
         .then(function (result) {
           var level = (result && result.level) || "success";
 
-          Generic.toast((result && result.message) || t("Done."), level);
+          // A report, or work still going on elsewhere: drawn as an
+          // operation (operations.js); anything else is a toast.
+          Generic.operations.handle(result);
 
           if (level !== "error") {
             controller.clearSelection();

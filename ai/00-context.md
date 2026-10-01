@@ -142,8 +142,12 @@ generic/
 │                           (as each recipient, through the resource's own export),
 │                           dispatch.py (the generic.send_scheduled_mailings task)
 ├── tasks/                  declared tasks: registry, runner (announce, run,
-│                           collect, report), TaskRun, the catalogue page and
-│                           the django-celery-beat screens
+│                           collect, report; in the request, a worker or a
+│                           thread), TaskRun, the catalogue page and the
+│                           django-celery-beat screens; operations.py:
+│                           @operation, work a page starts (§13g)
+├── reports.py              Report: a tree of levelled lines and sections that
+│                           fold, isolated sections (savepoint) (§13g)
 ├── history/                HistoryEntry: a version of every record of every
 │                           registered model; actor (who), recording (signals
 │                           -> versions), reading (versions -> changes), and
@@ -189,6 +193,8 @@ generic/
     │   summary.css, charts.css, appearance.css, wiki.css, auth.css
     ├── js/core.js          window.Generic: config, t(), api, toast, theme, appearance, colors
     ├── js/events.js        Generic.events: the shared WebSocket
+    ├── js/operations.js    Generic.operations: an answer's report tree as a
+    │                       card, followed until the run ends (§13g)
     ├── js/dialogs.js       Generic.dialogs.confirm/alert
     ├── js/ui.js            Alpine: themeMenu, appearanceEditor, notificationBell,
     │                       commandPalette, watchControl, apiResource
@@ -579,6 +585,7 @@ def column(self, obj): ...
         confirm=_("Sure?"), icon="bolt", variant="default") # or "danger"
 def run(self, request, queryset):
     return None | "message" | {"message": ..., "level": "success|info|warning|error"} | Response
+           | Report | {"message": ..., "report": Report} | an operation's run   # §13g
 ```
 
 A computed column is **not sortable or filterable** unless `ordering` /
@@ -1261,6 +1268,9 @@ Tokens: `var(--color-accent)`, `--text-primary|secondary|muted`,
 - `Generic.api.get(url, params)`, `.post(url, body)`, `.patch`, `.put`,
   `.delete` → Promises of JSON; errors are `ApiError` with `.message`,
   `.status`, `.data`. CSRF handled.
+- `Generic.operations.post(url, body)` / `.handle(answer)`: an answer
+  carrying `operation` (§13g) drawn as a card with its report tree,
+  followed until the run ends; anything else a toast.
 - `Generic.toast(message, "success|info|warning|error")`,
   `Generic.flash(message, level)` (after navigation),
   `Generic.dialogs.confirm({title, message, confirmLabel, variant})`.
@@ -1364,7 +1374,7 @@ strftime string fixes the text),
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
-`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`.
+`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`.
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1557,7 +1567,9 @@ def nightly_digest(run):
   `staff`, `superusers`, `everyone`, or a callable. Each message is
   written in the reader's own language.
 - One `generic.TaskRun` per run, with `summary`, `results`, `log`,
-  `error`; its page shows all of it. `launch(name, user=...)` starts one
+  `error`, and a report tree (`run.report.warning(...)`, `with
+  run.report.section(...)`, §13g; warnings/errors set the report's
+  notification level); its page shows all of it. `launch(name, user=...)` starts one
   from code; the *Tasks* page (`site:tasks`, permission
   `generic.run_task`) starts one by hand.
 - With Celery and a broker, a worker does the work; without, the
@@ -1568,6 +1580,62 @@ def nightly_digest(run):
 - `django_celery_beat` installed puts its `PeriodicTask`, interval,
   crontab and clocked models in the **Tasks** group as resources, with
   *Run now*. `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
+
+## 13g. Operations and reports (the work behind a button)
+
+```python
+# myapp/tasks.py
+from generic.tasks import operation
+
+@operation(label=_("Recompute invoices"), background=True,
+           report=("notification",), permission="")
+def recompute_invoices(run, ids):                       # arguments: JSON only
+    for customer in Customer.objects.filter(pk__in=ids):
+        with run.report.section(str(customer), isolated=True,
+                                url=...) as part:       # savepoint; an exception
+            part.success(...); part.warning(..., detail)  # -> error line, goes on
+    return gettext("Done")                              # headline; else counts
+
+# resources.py - an action (or any view) starts it:
+@action(description=_("Recompute"), icon="calculate")
+def recompute(self, request, queryset):
+    return recompute_invoices.start(request, ids=list(queryset.values_list("pk", flat=True)))
+# a view of its own: return operation_response(run)   # 202 running, 200 done
+```
+
+- **Never hand-build** progress/result feedback for a page's backend
+  work: declare an `@operation` (or return a `Report` for work done in
+  the request that keeps nothing). The tables' bulk actions and the
+  summary page's actions draw the answer; custom pages call
+  `Generic.operations.post(url, body)`.
+- `generic.reports.Report`: `info/success/warning/error(title,
+  detail="", url=..., **extra)`, `section(title, isolated=False)` (a
+  section shows its worst level; `isolated` = savepoint, exception
+  logged and written, work goes on), `level` (`warning`/`error`, else
+  `success`), `counts()`, ≤ 2000 lines, text only, `url` a site path
+  or http(s). JSON node `{level, title, detail, children, url?}`.
+- An operation = a `managed_task` with `catalogue=False` (not on the
+  Tasks page, 404 there, left out of *Run again*), `announce=("page",)`,
+  `audience="trigger"`. `run.report` is the run's report, saved as it
+  grows (`TaskRun.tree`); `TaskRun.language` is the starter's, active
+  while it runs; `run.level`; `as_client()` gains `finished`, `level`,
+  `report`, `counts`.
+- `start(request_or_user, background=None, **arguments)`:
+  `background=False` (default) in the request, answered with the whole
+  report, **not notified**; `True`: answered at once (`202`), a Celery
+  worker when reachable (broker and not eager), else
+  `OPERATION_FALLBACK` (`"thread"`: a daemon thread started on commit,
+  connections closed after; `"inline"`). Its end: a notification
+  (`report` channels) to the starter and the event `operation.finished`
+  (`as_client()`) to that user only; the card turns into the report,
+  the bell skips its toast for a run a card shows.
+- Answer: `{"message", "level", "operation": {...}}` (+ `count` from an
+  action); `operation_payload(run | report)`.
+- The starter may open the run's page without `view_taskrun`
+  (`TaskRunResource.has_view_permission(request, obj)`); operations
+  alone register the runs (`runs_are_kept()`), not the Tasks page.
+  Example: *Check* (tickets, in the request) and *Review* (customers,
+  background) in `example/tasks.py`. See `docs/operations.md`.
 
 ## 13ter. Signing in through somebody else
 

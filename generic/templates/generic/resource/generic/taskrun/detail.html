@@ -2,8 +2,9 @@
 {% load i18n static generic_ui %}
 
 {# A run's own page: the summary the resource generates, and under it #}
-{# what this run produced - the result it concatenated, and the steps #}
-{# it wrote as it went. Both are plain text from the row, never HTML. #}
+{# what this run produced - the result it concatenated, its report    #}
+{# tree, and the steps it wrote as it went. All plain text from the   #}
+{# row, never HTML.                                                   #}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -53,6 +54,19 @@
         </div>
       {% endif %}
     </section>
+
+    {% if object.tree %}
+      <section class="card run-report">
+        <div class="card__header">
+          <h2 class="card__title">{% icon "account_tree" %} {% translate "Report" %}</h2>
+          <span class="cluster">{% with counts=object.report.counts %}
+            {% if counts.error %}<span class="badge badge--danger">{% blocktranslate count count=counts.error %}{{ count }} error{% plural %}{{ count }} errors{% endblocktranslate %}</span>{% endif %}
+            {% if counts.warning %}<span class="badge badge--warning">{% blocktranslate count count=counts.warning %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktranslate %}</span>{% endif %}
+          {% endwith %}</span>
+        </div>
+        {% include "generic/components/report.html" with nodes=object.report.for_page nested=False %}
+      </section>
+    {% endif %}
 
     <section class="card">
       <div class="card__header">

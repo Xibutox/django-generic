@@ -155,6 +155,10 @@ DEFAULTS: dict[str, Any] = {
     "SHOW_TASKS": None,
     # How many runs the catalogue page shows under each task.
     "TASK_RECENT_RUNS": 5,
+    # Where a background operation goes when no Celery worker can be
+    # reached: "thread" (a thread of this process; the page is answered
+    # at once and told when it ends) or "inline" (the request waits).
+    "OPERATION_FALLBACK": "thread",
     # The dashboard's hub: cards pointing at whatever is worth going to
     # first, inside the application or outside it. Same shape as
     # site.add_shortcut(), which is the other way to declare one:

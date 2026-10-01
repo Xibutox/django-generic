@@ -1073,6 +1073,116 @@ a.tag:focus-visible {
   word-break: break-word;
 }
 
+/* -- Operations: a toast holding a report ------------------------------
+   operations.js draws what the work behind a button had to say: a
+   headline, then a tree of levelled lines whose sections fold. The same
+   tree is drawn on a run's page (generic/components/report.html). */
+
+/* A tree needs more room than a sentence. */
+.toasts:has(.operation) {
+  width: min(30rem, calc(100vw - 2rem));
+}
+
+.operation__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: min(70vh, 40rem);
+  overflow: auto;
+}
+
+.operation__title {
+  font-weight: 600;
+}
+
+.operation__spinner {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+}
+
+.operation__error {
+  margin: 0;
+  padding: var(--space-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  background: var(--color-danger-subtle);
+  border-radius: var(--border-radius-sm);
+}
+
+.operation__link {
+  align-self: flex-start;
+  font-size: var(--font-size-sm);
+}
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.report--nested {
+  margin: var(--space-1) 0 0 var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-color);
+}
+
+.report__line {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.report__title {
+  overflow-wrap: anywhere;
+}
+
+.report__item--success > .report__line .report__icon,
+.report__item--success > .report__section > .report__summary .report__icon {
+  color: var(--color-success);
+}
+
+.report__item--warning > .report__line .report__icon,
+.report__item--warning > .report__section > .report__summary .report__icon {
+  color: var(--color-warning);
+}
+
+.report__item--error > .report__line .report__icon,
+.report__item--error > .report__section > .report__summary .report__icon {
+  color: var(--color-danger);
+}
+
+.report__item--info > .report__line .report__icon,
+.report__item--info > .report__section > .report__summary .report__icon {
+  color: var(--color-info);
+}
+
+.report__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.report__counts {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.report__detail {
+  margin: var(--space-1) 0 0 calc(1.25rem + var(--space-2));
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

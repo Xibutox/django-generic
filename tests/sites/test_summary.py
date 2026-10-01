@@ -370,6 +370,7 @@ class TestSummary:
         # Transitions are not among them: they have their own buttons,
         # offered from the record's state.
         assert [entry["name"] for entry in body["actions"]] == [
+            "check",
             "mark_billable",
         ]
         assert [entry["name"] for entry in body["transitions"]] == [

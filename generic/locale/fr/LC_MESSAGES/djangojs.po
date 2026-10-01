@@ -1508,3 +1508,27 @@ msgstr "L'image est trop volumineuse : %(limit)s au plus."
 #: generic/static/generic/js/wiki.js
 msgid "The image could not be uploaded."
 msgstr "L'image n'a pas pu être envoyée."
+
+#: generic/static/generic/js/operations.js
+msgid "%(count)s error"
+msgid_plural "%(count)s errors"
+msgstr[0] "%(count)s erreur"
+msgstr[1] "%(count)s erreurs"
+
+#: generic/static/generic/js/operations.js
+msgid "%(count)s warning"
+msgid_plural "%(count)s warnings"
+msgstr[0] "%(count)s avertissement"
+msgstr[1] "%(count)s avertissements"
+
+#: generic/static/generic/js/operations.js
+msgid "Open the report"
+msgstr "Ouvrir le rapport"
+
+#: generic/static/generic/js/operations.js
+msgid "Follow it on its page"
+msgstr "La suivre sur sa page"
+
+#: generic/static/generic/js/operations.js
+msgid "Something went wrong."
+msgstr "Quelque chose s'est mal passé."

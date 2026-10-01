@@ -1,0 +1,23 @@
+{% load generic_ui %}
+{# A report tree (generic.reports), as Report.for_page() prepares it.  #}
+{# The same shape operations.js draws in a toast: text only, sections  #}
+{# folded unless something in them went wrong.                         #}
+<ul class="report{% if nested %} report--nested{% endif %}">
+  {% for node in nodes %}
+    <li class="report__item report__item--{{ node.shown }}">
+      {% if node.children %}
+        <details class="report__section"{% if node.open %} open{% endif %}>
+          <summary class="report__summary">
+            {% include "generic/components/report_line.html" %}
+            {% if node.counts %}<span class="report__counts">{{ node.counts }}</span>{% endif %}
+          </summary>
+          {% if node.detail %}<p class="report__detail">{{ node.detail }}</p>{% endif %}
+          {% include "generic/components/report.html" with nodes=node.children nested=True %}
+        </details>
+      {% else %}
+        {% include "generic/components/report_line.html" %}
+        {% if node.detail %}<p class="report__detail">{{ node.detail }}</p>{% endif %}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>

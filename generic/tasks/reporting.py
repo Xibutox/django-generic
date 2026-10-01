@@ -16,6 +16,7 @@ from django.utils.translation import gettext as _
 
 from generic import delivery
 from generic.delivery import NotificationLevel
+from generic.reports import describe_counts
 from generic.tasks.models import TaskRun
 from generic.tasks.registry import TaskDefinition
 
@@ -89,11 +90,30 @@ def _finished_message(
             "duration": run.duration_display(),
         }
 
+    # Finished is not the same as fine: a report with warnings or errors
+    # in it says so on the bell as well as on the page.
+    level = run.level
+
+    if level in ("warning", "error"):
+        counts = describe_counts(run.report.counts())
+
+        if counts not in body:
+            body = f"{body} - {counts}"
+
     return (
         _("%(task)s has finished") % {"task": run.label or run.task},
         body,
-        NotificationLevel.SUCCESS,
+        LEVELS.get(level, NotificationLevel.SUCCESS),
     )
+
+
+#: A report's level, as a notification's.
+LEVELS = {
+    "info": NotificationLevel.SUCCESS,
+    "success": NotificationLevel.SUCCESS,
+    "warning": NotificationLevel.WARNING,
+    "error": NotificationLevel.CRITICAL,
+}
 
 
 # -- how ----------------------------------------------------------------

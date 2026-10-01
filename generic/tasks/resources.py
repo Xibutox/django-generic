@@ -53,12 +53,30 @@ def tasks_are_offered() -> bool:
         return bool(setting)
 
     # The framework's own tasks - the mailings' dispatcher - are no
-    # reason to show a project pages it never asked for.
+    # reason to show a project pages it never asked for; nor are
+    # operations, which pages of the project start themselves.
     declared = [
-        name for name in registry.names() if not name.startswith("generic.")
+        name
+        for name in registry.names()
+        if not name.startswith("generic.") and registry.get(name).catalogue
     ]
 
     return bool(declared) or beat_installed()
+
+
+def runs_are_kept() -> bool:
+    """Whether runs need their pages: tasks offered, or operations.
+
+    An operation's run is where its notification leads, so a project
+    declaring one gets the run pages without the Tasks page.
+    """
+    if generic_settings.SHOW_TASKS is not None:
+        return bool(generic_settings.SHOW_TASKS)
+
+    return tasks_are_offered() or any(
+        not task.catalogue and not task.name.startswith("generic.")
+        for task in registry.all()
+    )
 
 
 class TaskRunResource(ModelResource):
@@ -108,6 +126,24 @@ class TaskRunResource(ModelResource):
     # size. The run's own page is its history.
     history = False
 
+    def has_view_permission(self, request: Any, obj: Any = None) -> bool:
+        """Readers of the runs - and whoever started this one.
+
+        An operation tells the person who started it where its report
+        is; that page has to open for them without the right to read
+        everybody's runs.
+        """
+        if super().has_view_permission(request, obj):
+            return True
+
+        user = getattr(request, "user", None)
+
+        return bool(
+            obj is not None
+            and getattr(user, "pk", None) is not None
+            and obj.triggered_by_id == user.pk
+        )
+
     # A run is a record of something that happened: it is not edited,
     # and nothing may be invented by hand.
     def has_add_permission(self, request: Any) -> bool:
@@ -129,21 +165,37 @@ class TaskRunResource(ModelResource):
     def run_again(self, request: Any, queryset: Any) -> str:
         started = 0
         unknown = []
+        operations = []
 
         for run in queryset:
-            if registry.get(run.task) is None:
+            definition = registry.get(run.task)
+
+            if definition is None:
                 unknown.append(run.task)
+                continue
+
+            # An operation ran on what its page chose; running it again
+            # from here, with nothing chosen, would be a different thing.
+            if not definition.catalogue:
+                operations.append(definition.title)
                 continue
 
             launch(run.task, user=request.user)
             started += 1
 
-        if unknown:
-            return gettext(
-                "%(count)s started. %(missing)s is no longer declared."
-            ) % {"count": started, "missing": ", ".join(sorted(set(unknown)))}
+        message = gettext("%(count)s started.") % {"count": started}
 
-        return gettext("%(count)s started.") % {"count": started}
+        if unknown:
+            message += " " + gettext("%(missing)s is no longer declared.") % {
+                "missing": ", ".join(sorted(set(unknown)))
+            }
+
+        if operations:
+            message += " " + gettext(
+                "%(operations)s is started from its own page, not from here."
+            ) % {"operations": ", ".join(sorted(set(operations)))}
+
+        return message
 
 
 # -- The scheduler's own models -----------------------------------------
@@ -345,11 +397,14 @@ def register_screens() -> None:
     anything - below its own in the navigation, and gone entirely with
     ``SHOW_TASKS = False``.
     """
-    if not tasks_are_offered():
+    if not runs_are_kept():
         return
 
     if not site.is_registered(TaskRun):
         site.register(TaskRun, TaskRunResource)
+
+    if not tasks_are_offered():
+        return
 
     if beat_installed():
         register_schedules()
