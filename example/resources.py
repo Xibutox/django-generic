@@ -658,7 +658,7 @@ class TicketResource(ModelResource):
             ticket.age_in_days,
         ) % {"days": ticket.age_in_days}
 
-    @action(description=_("Check"), icon="fact_check", permissions=("view",))
+    @action(description=_("Check"), icon="fact_check")
     def check(self, request: Any, queryset: QuerySet) -> Any:
         # Done in the request: the answer carries the whole report.
         return check_tickets.start(
@@ -900,9 +900,7 @@ class CustomerResource(ModelResource):
             )
         )
 
-    @action(
-        description=_("Review"), icon="manage_search", permissions=("view",)
-    )
+    @action(description=_("Review"), icon="manage_search")
     def review(self, request: Any, queryset: QuerySet) -> Any:
         return review_customers.start(
             request, ids=list(queryset.values_list("pk", flat=True))
