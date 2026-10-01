@@ -90,6 +90,24 @@ def nightly_digest(run):
 `note()` saves immediately, so a task that takes ten minutes has a page
 that fills up while it runs rather than one that appears at the end.
 
+A task with more to say than a headline writes a **report**: levelled
+lines grouped into sections that fold, kept on the run and drawn as a
+tree on its page.
+
+```python
+def nightly_check(run):
+    for customer in Customer.objects.all():
+        with run.report.section(str(customer), isolated=True) as part:
+            if not customer.address:
+                part.warning("No address")
+```
+
+A report with warnings or errors makes the run's notification a warning
+or an error too, with the counts in its body. Everything about reports,
+and about **operations** - tasks a page starts, in the request or in
+the background, answered with their report - is in
+[Operations and reports](operations.md).
+
 What the function returns is folded into the same result:
 
 | Returned | Becomes |

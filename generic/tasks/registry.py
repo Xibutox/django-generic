@@ -77,6 +77,13 @@ class TaskDefinition:
     #: The Celery task, when Celery is installed. ``None`` means every
     #: run happens in the process that asked for it.
     celery_task: Any = None
+    #: Listed on the Tasks page with a *Run now* button. An operation
+    #: (:mod:`generic.tasks.operations`) is not: it is started by the
+    #: page that offers it, with the arguments only that page knows.
+    catalogue: bool = True
+    #: An operation's default: answer at once and do the work elsewhere
+    #: (a worker, else a thread) rather than in the request.
+    background: bool = False
 
     @property
     def title(self) -> str:
@@ -91,6 +98,8 @@ class TaskDefinition:
             "announce": list(self.announce),
             "report": list(self.report),
             "queued": self.celery_task is not None,
+            "catalogue": self.catalogue,
+            "background": self.background,
         }
 
 
@@ -130,11 +139,15 @@ class TaskRegistry:
             self._tasks.values(), key=lambda task: task.title.lower()
         )
 
+    def catalogue(self) -> Sequence[TaskDefinition]:
+        """The tasks the Tasks page offers: operations left out."""
+        return [task for task in self.all() if task.catalogue]
+
     def names(self) -> tuple[str, ...]:
         return tuple(sorted(self._tasks))
 
     def choices(self) -> list[tuple[str, str]]:
-        return [(task.name, task.title) for task in self.all()]
+        return [(task.name, task.title) for task in self.catalogue()]
 
 
 #: The registry the whole application shares.

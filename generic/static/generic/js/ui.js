@@ -646,7 +646,10 @@
               self.items.unshift(normalize(payload));
             }
 
-            Generic.toast(payload.title, LEVEL_TOASTS[payload.level] || "info");
+            // An operation card on this page already says it.
+            if (!(Generic.operations && Generic.operations.claims(payload.url))) {
+              Generic.toast(payload.title, LEVEL_TOASTS[payload.level] || "info");
+            }
           });
 
           Generic.events.on("notification.updated", function (payload) {

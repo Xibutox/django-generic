@@ -93,9 +93,13 @@ msgstr "%(count)s modifié(s). %(skipped)s laissé(s) tel(s) quel(s) : votre pro
 msgid "%(count)s started."
 msgstr "%(count)s lancée(s)."
 
-#: generic/tasks/resources.py:136
-msgid "%(count)s started. %(missing)s is no longer declared."
-msgstr "%(count)s lancée(s). %(missing)s n'est plus déclarée."
+#: generic/tasks/resources.py
+msgid "%(missing)s is no longer declared."
+msgstr "%(missing)s n'est plus déclarée."
+
+#: generic/tasks/resources.py
+msgid "%(operations)s is started from its own page, not from here."
+msgstr "%(operations)s se lance depuis sa propre page, pas d'ici."
 
 #: generic/tasks/resources.py:222
 msgid "%(count)s started. %(missing)s is not declared to the framework, so it can only run on its schedule."
@@ -2845,3 +2849,35 @@ msgstr "images de wiki"
 #: generic/templates/generic/wiki/page.html
 msgid "Uploading the image…"
 msgstr "Envoi de l'image…"
+
+#: generic/reports.py generic/templates/generic/resource/generic/taskrun/detail.html
+msgid "%(count)s error"
+msgid_plural "%(count)s errors"
+msgstr[0] "%(count)s erreur"
+msgstr[1] "%(count)s erreurs"
+
+#: generic/reports.py generic/templates/generic/resource/generic/taskrun/detail.html
+msgid "%(count)s warning"
+msgid_plural "%(count)s warnings"
+msgstr[0] "%(count)s avertissement"
+msgstr[1] "%(count)s avertissements"
+
+#: generic/reports.py
+msgid "Everything went well."
+msgstr "Tout s'est bien passé."
+
+#: generic/tasks/operations.py
+msgid "%(task)s has finished."
+msgstr "%(task)s est terminée."
+
+#: generic/tasks/operations.py
+msgid "%(task)s is running in the background. You will be told when it is done."
+msgstr "%(task)s s'exécute en arrière-plan. Vous serez prévenu quand elle sera terminée."
+
+#: generic/tasks/models.py
+msgid "report"
+msgstr "rapport"
+
+#: generic/templates/generic/resource/generic/taskrun/detail.html
+msgid "Report"
+msgstr "Rapport"

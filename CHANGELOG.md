@@ -10,6 +10,24 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Added
+- Operations: the work behind a button, answered with a report. On the
+  ticket list (or a ticket's page) **Check** looks at each selected
+  ticket in the request and answers with a card holding a section per
+  ticket - folded when nothing is wrong, open on the warning or the
+  error otherwise. On the customer list **Review** goes through the
+  selected customers in the background (a thread on a laptop, a worker
+  in Docker): the card says it is running, then turns into the report
+  when it ends, and the bell leads to the run's page with the same
+  tree. The framework's side: `generic.reports.Report` (levelled lines,
+  sections that fold, isolated sections that roll back one item and go
+  on), `@operation` and `operation_response` in `generic.tasks`, a
+  report on every task run (`TaskRun.tree`, migration `0016`), the
+  `OPERATION_FALLBACK` setting and `Generic.operations` in the browser.
+  See docs/operations.md.
+
 ## [1.2.0] - 2026-09-27
 
 ### Added

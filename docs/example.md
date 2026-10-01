@@ -175,6 +175,17 @@ where **Run now** starts it off schedule. Nothing is queued here —
 there is no broker on a laptop, so the work happens in the process that
 asked for it. See [Tasks](tasks.md).
 
+**Operations.** *Support › Tickets*: tick a few tickets and run
+**Check** from the selection bar (or from a ticket's page). It is done
+in the request and answered with a card holding a section per ticket -
+folded when nothing is wrong, open with the warning or the error
+otherwise, each title leading to its ticket. *Support › Customers*:
+tick some and run **Review**. That one runs in the background - a
+thread here, since a laptop has no Celery worker - so the card first
+says it is running, then turns into the report when it is done; the
+bell has the notification, which leads to the run's page and the same
+tree. See [Operations and reports](operations.md).
+
 **Help and what changed.** *Help* in the account menu: the version, the
 licence read from the project's own `LICENSE`, the keyboard shortcuts,
 and the newest release. *What changed* lists every release of every

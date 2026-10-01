@@ -14,6 +14,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from generic.reports import Report
+
 
 class TaskRunQuerySet(models.QuerySet):
     def unfinished(self) -> "TaskRunQuerySet":
@@ -87,6 +89,14 @@ class TaskRun(models.Model):
     #: What happened, line by line, with the time of each.
     log = models.JSONField(_("steps"), default=list, blank=True)
     error = models.TextField(_("error"), blank=True)
+    #: What the work had to say, as a tree of levelled lines and
+    #: sections (:mod:`generic.reports`): written through ``run.report``
+    #: (``run.report.warning()``, ``run.report.section()``...) and saved
+    #: as it grows.
+    tree = models.JSONField(_("report"), default=list, blank=True)
+    #: The language of whoever started it: a worker or a thread has no
+    #: request to read it from, and the report is written in it.
+    language = models.CharField(_("language"), max_length=15, blank=True)
 
     celery_id = models.CharField(_("Celery id"), max_length=64, blank=True)
 
@@ -132,10 +142,30 @@ class TaskRun(models.Model):
 
         return f"{minutes} min {rest:02d} s"
 
+    @property
+    def level(self) -> str:
+        """How it went, in a toast's words: the report's worst line.
+
+        A failed run is an error whatever its report says; a run that
+        finished with errors written in its report is one too, even
+        though the work as a whole went to its end.
+        """
+        if self.status == self.Status.FAILURE:
+            return "error"
+
+        if not self.is_finished:
+            return "info"
+
+        return self.report.level
+
     def as_client(self) -> dict[str, Any]:
         """The run as an event payload: what a watching page draws."""
         return {
             "id": self.pk,
+            "finished": self.is_finished,
+            "level": self.level,
+            "report": self.report.as_list(),
+            "counts": self.report.counts(),
             "task": self.task,
             "label": self.label or self.task,
             "status": self.status,
@@ -181,3 +211,29 @@ class TaskRun(models.Model):
         self.save(update_fields=["results"])
 
         return item
+
+    # -- the report, as the run goes -------------------------------------
+
+    @property
+    def report(self) -> Report:
+        """What the run has to say, as a :class:`generic.reports.Report`.
+
+        ``run.report.warning(...)``, ``with run.report.section(...)``.
+        Bound to the row: lines are saved as they arrive (once a second
+        at most, and whenever a section closes), so a run's page shows
+        a long piece of work as it goes.
+        """
+        report = self.__dict__.get("_report")
+
+        if report is None or report.nodes is not self.tree:
+            if not isinstance(self.tree, list):
+                self.tree = []
+
+            report = Report(self.tree, on_change=self._save_report)
+            self.__dict__["_report"] = report
+
+        return report
+
+    def _save_report(self) -> None:
+        if self.pk:
+            self.save(update_fields=["tree"])

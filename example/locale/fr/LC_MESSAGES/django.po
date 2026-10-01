@@ -1894,3 +1894,75 @@ msgstr "Une ligne par ticket. Une référence connue met à jour ce ticket, et u
 #: example/models.py
 msgid "attachment"
 msgstr "pièce jointe"
+
+#: example/tasks.py example/resources.py
+msgid "Check tickets"
+msgstr "Vérifier les tickets"
+
+#: example/tasks.py example/resources.py
+msgid "Looks for what is missing on each selected ticket."
+msgstr "Cherche ce qui manque à chaque ticket sélectionné."
+
+#: example/tasks.py example/resources.py
+msgid "Closed: nothing to check."
+msgstr "Fermé : rien à vérifier."
+
+#: example/tasks.py example/resources.py
+msgid "Nobody is working on it."
+msgstr "Personne ne s'en occupe."
+
+#: example/tasks.py example/resources.py
+msgid "Past its date, by %(days)s day(s)."
+msgstr "En retard de %(days)s jour(s)."
+
+#: example/tasks.py example/resources.py
+msgid "Due on %(date)s."
+msgstr "Échéance le %(date)s."
+
+#: example/tasks.py example/resources.py
+msgid "No customer: it cannot be billed."
+msgstr "Pas de client : il ne peut pas être facturé."
+
+#: example/tasks.py example/resources.py
+msgid "Nothing to correct."
+msgstr "Rien à corriger."
+
+#: example/tasks.py example/resources.py
+msgid "%(count)s ticket(s) checked."
+msgstr "%(count)s ticket(s) vérifié(s)."
+
+#: example/tasks.py example/resources.py
+msgid "Review customers"
+msgstr "Passer en revue les clients"
+
+#: example/tasks.py example/resources.py
+msgid "Goes through the selected customers' tickets and says which need attention."
+msgstr "Parcourt les tickets des clients sélectionnés et dit lesquels demandent de l'attention."
+
+#: example/tasks.py example/resources.py
+msgid "Reviewing %(count)s customer(s)"
+msgstr "Revue de %(count)s client(s)"
+
+#: example/tasks.py example/resources.py
+msgid "%(count)s open ticket(s)."
+msgstr "%(count)s ticket(s) ouvert(s)."
+
+#: example/tasks.py example/resources.py
+msgid "%(reference)s is past its date."
+msgstr "%(reference)s a dépassé son échéance."
+
+#: example/tasks.py example/resources.py
+msgid "No account manager."
+msgstr "Pas de responsable de compte."
+
+#: example/tasks.py example/resources.py
+msgid "Inactive, with tickets still open."
+msgstr "Inactif, avec des tickets encore ouverts."
+
+#: example/tasks.py example/resources.py
+msgid "Check"
+msgstr "Vérifier"
+
+#: example/tasks.py example/resources.py
+msgid "Review"
+msgstr "Passer en revue"

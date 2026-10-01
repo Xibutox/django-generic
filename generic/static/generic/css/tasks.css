@@ -110,3 +110,9 @@
   overflow-wrap: anywhere;
   font-size: var(--font-size-sm);
 }
+
+/* The report takes the whole width: a tree is read across, and its
+   sections open below one another. */
+.run-report {
+  grid-column: 1 / -1;
+}

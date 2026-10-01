@@ -347,6 +347,7 @@ badge in the user's other tabs would stay stale.
 | `notification.updated` | One is changed, including marked read |
 | `notification.deleted` | One is dismissed |
 | `notification.read_all` | Everything was marked read at once |
+| `operation.finished` | A run someone started ended away from the request - a background [operation](operations.md), a task run by hand: its run (`TaskRun.as_client()`), to that person only, for the page still waiting on it |
 
 ## The browser client
 

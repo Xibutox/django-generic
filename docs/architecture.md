@@ -81,6 +81,9 @@ generic/
 │
 ├── watch/               Watch: a user follows a record or a model
 ├── tasks/               Declared tasks: the four steps, runs, schedules
+│   ├── runner.py        launch(): in the request, a worker, or a thread
+│   └── operations.py    @operation: work a page starts, answered with a report
+├── reports.py           Report: a tree of levelled lines and sections that fold
 ├── mailings/            A list, as each reader may see it, e-mailed on a schedule
 │   ├── models.py        ScheduledMailing: which table, as whom, to whom, when
 │   ├── schedule.py      The next sending, in local time
