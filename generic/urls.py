@@ -75,16 +75,21 @@ urlpatterns = [
     path("", include(router.urls)),
 ]
 
-# Images the wiki's editor uploads into a page, where the wiki is
-# installed; they are shown from the wiki's own images/<id>/.
+# Images and files the wiki's editor uploads into a page, where the
+# wiki is installed; they are served from the wiki's own images/<id>/
+# and files/<id>/.
 if apps.is_installed("generic.wiki"):
-    from generic.wiki.api import WikiImageUploadView
+    from generic.wiki.api import WikiFileUploadView, WikiImageUploadView
 
-    urlpatterns.insert(
-        0,
+    urlpatterns[:0] = [
         path(
             "wiki/images/",
             WikiImageUploadView.as_view(),
             name="wiki-images",
         ),
-    )
+        path(
+            "wiki/files/",
+            WikiFileUploadView.as_view(),
+            name="wiki-files",
+        ),
+    ]

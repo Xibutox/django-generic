@@ -7,6 +7,7 @@ API, as JSON, like every other screen of the application.
 
 from __future__ import annotations
 
+import mimetypes
 from pathlib import PurePath
 from typing import Any
 
@@ -25,17 +26,23 @@ from generic.sites.files import is_stored, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
 from generic.wiki.api import IMAGE_TYPES, can
-from generic.wiki.models import WikiImage, WikiPage
+from generic.wiki.models import WikiFile, WikiImage, WikiPage
 from generic.wiki.sanitize import safe_html
 from generic.wiki.serializers import WikiPageSerializer
 
 
-def image_upload_url() -> str:
-    """Where the editor uploads an image; empty when not mounted."""
+def upload_url(name: str) -> str:
+    """Where the editor uploads an image or a file (``name``:
+    ``wiki-images``, ``wiki-files``); empty when not mounted."""
     try:
-        return reverse("generic:wiki-images")
+        return reverse(f"generic:{name}")
     except NoReverseMatch:
         return ""
+
+
+def image_upload_url() -> str:
+    """Where the editor uploads an image; empty when not mounted."""
+    return upload_url("wiki-images")
 
 
 def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
@@ -151,6 +158,7 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             page=page,
             menu=build_menu(pages, page),
             content=safe_html(page.content) if page else "",
+            attachments=page.attachments() if page else [],
             can=rights,
             wiki_config={
                 "page": (
@@ -166,6 +174,7 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                 # Images uploaded from the editor, when the framework's
                 # endpoints are mounted; the address is offered anyway.
                 "imagesUrl": image_upload_url(),
+                "filesUrl": upload_url("wiki-files"),
                 "imageMaxSize": generic_settings.FILE_MAX_SIZE,
                 "can": rights,
                 "parents": [
@@ -233,6 +242,39 @@ class WikiImageView(View):
             image.file.open("rb"),
             filename=name,
             content_type=content_type,
+        )
+        protect(response)
+        response["Cache-Control"] = "private, max-age=86400"
+
+        return response
+
+
+class WikiFileView(View):
+    """A file of the wiki, for whoever may read its pages.
+
+    Always a download (``attachment``), under the name it was uploaded
+    with, and never sniffed: whatever somebody uploaded, it never runs
+    in the site's origin. Not kept by a shared cache either.
+    """
+
+    def get(self, request: Any, pk: int) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        attachment = get_object_or_404(WikiFile, pk=pk)
+
+        if not is_stored(attachment.file):
+            raise Http404
+
+        name = attachment.original_name or file_name(attachment.file)
+        response = FileResponse(
+            attachment.file.open("rb"),
+            as_attachment=True,
+            filename=name,
+            content_type=mimetypes.guess_type(name)[0]
+            or "application/octet-stream",
         )
         protect(response)
         response["Cache-Control"] = "private, max-age=86400"

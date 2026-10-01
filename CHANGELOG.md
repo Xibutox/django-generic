@@ -13,6 +13,16 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Files in the wiki: the editor's paperclip - or a drop, or a paste -
+  uploads files into a page, where each becomes a block linking to its
+  download; images dropped or pasted land in the text the same way.
+  The arrows of the toolbar (Alt+Up / Alt+Down) move a line, an image
+  or a file up and down the page, and a page lists its attachments
+  under its text. *How we triage* holds a checklist file. The
+  framework's side: `generic_wiki.WikiFile` (migration `0003`),
+  `POST api/generic/wiki/files/`, `GET wiki/files/<id>/` (always a
+  download), the `wiki-file` block kept by the cleaning, and
+  `attachments` in the page's API. See docs/wiki.md.
 - Operations: the work behind a button, answered with a report. On the
   ticket list (or a ticket's page) **Check** looks at each selected
   ticket in the request and answers with a card holding a section per

@@ -5,6 +5,12 @@
  * rich-text editor - on the page's content and saves through the wiki
  * API as JSON. The server cleans the HTML before storing it and again
  * before showing it: the editor is a convenience, not a gatekeeper.
+ *
+ * Images and files are uploaded from the editor - its toolbar, a drop,
+ * a paste - and put where the cursor (or the drop) is: an image in the
+ * text, a file as a block of its own linking to it. Any line, block or
+ * image moves up and down the page with the toolbar's arrows or
+ * Alt+Up / Alt+Down, so the page is ordered the way its writer wants.
  */
 (function (window, document) {
   "use strict";
@@ -16,10 +22,18 @@
     [{ header: [2, 3, 4, false] }],
     ["bold", "italic", "underline", "strike", "code"],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-    ["blockquote", "code-block", "link", "image"],
+    ["blockquote", "code-block", "link", "image", "attach"],
     [{ align: [] }],
+    ["moveUp", "moveDown"],
     ["clean"]
   ];
+
+  //: The toolbar's own buttons, which Quill has no icon for.
+  var BUTTONS = {
+    attach: { icon: "attach_file", label: "Attach a file" },
+    moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
+    moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
+  };
 
   //: The images a page may hold, as the upload endpoint takes them.
   var IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
@@ -30,6 +44,154 @@
     node.setAttribute("aria-hidden", "true");
 
     return node;
+  }
+
+  /**
+   * A file in the page: a paragraph of its own, holding the link to
+   * it - ``<p class="wiki-file"><a href="/wiki/files/7/">plan.pdf</a>``
+   * - which the server's cleaning keeps. One block for the editor: it
+   * moves, and is deleted, as a whole.
+   */
+  function registerFileBlock(Quill) {
+    if (Quill.imports["formats/wikiFile"]) {
+      return;
+    }
+
+    var BlockEmbed = Quill.import("blots/block/embed");
+
+    // Quill's blots are classes; this is how ES5 extends one.
+    function FileBlock(scroll, node) {
+      return Reflect.construct(BlockEmbed, [scroll, node], FileBlock);
+    }
+
+    Object.setPrototypeOf(FileBlock.prototype, BlockEmbed.prototype);
+    Object.setPrototypeOf(FileBlock, BlockEmbed);
+    FileBlock.blotName = "wikiFile";
+    FileBlock.tagName = "P";
+    FileBlock.className = "wiki-file";
+
+    FileBlock.create = function (value) {
+      var node = BlockEmbed.create.call(this, value);
+      var link = document.createElement("a");
+
+      link.setAttribute("href", value.url);
+      link.textContent = value.name || value.url;
+      node.appendChild(link);
+      node.setAttribute("contenteditable", "false");
+
+      return node;
+    };
+
+    FileBlock.value = function (node) {
+      var link = node.querySelector("a");
+
+      return {
+        url: link ? link.getAttribute("href") : "",
+        name: link ? link.textContent : ""
+      };
+    };
+
+    // What the page stores: the block without the editor's attributes.
+    FileBlock.prototype.html = function () {
+      var node = this.domNode.cloneNode(true);
+
+      node.removeAttribute("contenteditable");
+
+      return node.outerHTML;
+    };
+
+    Quill.register(FileBlock);
+  }
+
+  /**
+   * Swap the line holding the cursor with the one above (`step` -1) or
+   * below (+1): a paragraph, a heading, a list item, an image on its
+   * line, a file. As the writer's own edit, so Ctrl+Z undoes it.
+   */
+  function moveLine(quill, step) {
+    var range = quill.getSelection(true);
+
+    if (!range) {
+      return;
+    }
+
+    var lines = quill.getLines(0, quill.getLength());
+    var line = quill.getLine(range.index)[0];
+    var at = lines.indexOf(line);
+    var other = lines[at + step];
+
+    if (at === -1 || !other) {
+      return;
+    }
+
+    // Moving a line down is moving the next one up.
+    var upper = step < 0 ? other : line;
+    var lower = step < 0 ? line : other;
+    var upperStart = quill.getIndex(upper);
+    var lowerStart = quill.getIndex(lower);
+    var lowerLength = lower.length();
+    var moved = quill.getContents(lowerStart, lowerLength);
+    var Delta = window.Quill.import("delta");
+    var offset = range.index - quill.getIndex(line);
+
+    quill.updateContents(
+      new Delta()
+        .retain(upperStart)
+        .concat(moved)
+        .retain(lowerStart - upperStart)
+        .delete(lowerLength),
+      "user"
+    );
+
+    var start = step < 0 ? upperStart : upperStart + lowerLength;
+
+    quill.setSelection(start + offset, range.length, "user");
+    quill.scrollSelectionIntoView();
+  }
+
+  /**
+   * Where a block goes for `index`: at the end of a line's text, the
+   * start of the next line, so that the line is not split and no empty
+   * one is left behind - except on the last line, where an empty one
+   * after the block is where the writer goes on.
+   */
+  function blockIndex(quill, index) {
+    var found = quill.getLine(index);
+    var line = found[0];
+
+    if (line && found[1] === line.length() - 1 && index + 1 < quill.getLength()) {
+      return index + 1;
+    }
+
+    return index;
+  }
+
+  /** Where in the text the point of a drop falls. */
+  function indexAt(quill, event) {
+    var native = null;
+
+    if (document.caretRangeFromPoint) {
+      native = document.caretRangeFromPoint(event.clientX, event.clientY);
+    } else if (document.caretPositionFromPoint) {
+      var position = document.caretPositionFromPoint(event.clientX, event.clientY);
+
+      if (position) {
+        native = document.createRange();
+        native.setStart(position.offsetNode, position.offset);
+        native.collapse(true);
+      }
+    }
+
+    var normalized = native && quill.selection.normalizeNative(native);
+    var range = normalized && quill.selection.normalizedToRange(normalized);
+
+    if (range) {
+      return range.index;
+    }
+
+    var selection = quill.getSelection();
+
+    return selection ? selection.index : quill.getLength() - 1;
   }
 
   function readJson(id) {
@@ -103,6 +265,8 @@
         editing: false,
         saving: false,
         uploading: false,
+        uploads: 0,
+        dropping: false,
         filter: "",
         form: {},
         original: "",
@@ -155,20 +319,7 @@
 
           this.$nextTick(function () {
             if (!quill) {
-              quill = new window.Quill(document.getElementById("wiki-editor"), {
-                theme: "snow",
-                placeholder: t("Write here\u2026"),
-                modules: {
-                  toolbar: {
-                    container: TOOLBAR,
-                    handlers: {
-                      image: function () {
-                        self.insertImage();
-                      }
-                    }
-                  }
-                }
-              });
+              quill = self.startEditor();
             }
 
             quill.setContents(
@@ -179,6 +330,244 @@
             self.original = htmlOf(quill);
             quill.focus();
           });
+        },
+
+        startEditor: function () {
+          var self = this;
+          var toolbar = TOOLBAR.map(function (group) {
+            // Without the upload endpoint, no file can be attached.
+            return group.filter(function (name) {
+              return name !== "attach" || config.filesUrl;
+            });
+          });
+
+          registerFileBlock(window.Quill);
+
+          var editor = new window.Quill(document.getElementById("wiki-editor"), {
+            theme: "snow",
+            placeholder: t("Write here\u2026"),
+            modules: {
+              toolbar: {
+                container: toolbar,
+                handlers: {
+                  image: function () {
+                    self.insertImage();
+                  },
+                  attach: function () {
+                    self.chooseFiles();
+                  },
+                  moveUp: function () {
+                    moveLine(editor, -1);
+                  },
+                  moveDown: function () {
+                    moveLine(editor, 1);
+                  }
+                }
+              },
+              keyboard: {
+                bindings: {
+                  moveUp: {
+                    key: "ArrowUp",
+                    altKey: true,
+                    handler: function () {
+                      moveLine(editor, -1);
+                      return false;
+                    }
+                  },
+                  moveDown: {
+                    key: "ArrowDown",
+                    altKey: true,
+                    handler: function () {
+                      moveLine(editor, 1);
+                      return false;
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          Object.keys(BUTTONS).forEach(function (name) {
+            var button = editor.getModule("toolbar").container.querySelector(".ql-" + name);
+
+            if (button) {
+              button.title = t(BUTTONS[name].label);
+              button.setAttribute("aria-label", t(BUTTONS[name].label));
+              button.appendChild(icon(BUTTONS[name].icon));
+            }
+          });
+
+          this.acceptFiles(editor);
+
+          return editor;
+        },
+
+        /**
+         * Files dropped on the editor, or pasted into it, are uploaded
+         * and put where they fell. Caught before Quill sees them: left
+         * to it, an image would be inlined in the page as data, which
+         * the server refuses, and any other file would be lost.
+         */
+        acceptFiles: function (editor) {
+          var self = this;
+          var container = editor.container;
+
+          function hasFiles(event) {
+            var types = event.dataTransfer && event.dataTransfer.types;
+
+            return Boolean(types && Array.prototype.indexOf.call(types, "Files") !== -1);
+          }
+
+          container.addEventListener("dragover", function (event) {
+            if (hasFiles(event)) {
+              event.preventDefault();
+              self.dropping = true;
+            }
+          });
+          container.addEventListener("dragleave", function (event) {
+            if (!container.contains(event.relatedTarget)) {
+              self.dropping = false;
+            }
+          });
+          container.addEventListener(
+            "drop",
+            function (event) {
+              var files = event.dataTransfer && event.dataTransfer.files;
+
+              self.dropping = false;
+
+              if (!files || !files.length) {
+                return;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+              self.uploadFiles(Array.prototype.slice.call(files), indexAt(editor, event));
+            },
+            true
+          );
+          container.addEventListener(
+            "paste",
+            function (event) {
+              var data = event.clipboardData;
+
+              // A copied piece of a page carries its HTML: Quill's own.
+              if (!data || !data.files || !data.files.length || data.getData("text/html")) {
+                return;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+
+              var range = editor.getSelection(true);
+
+              self.uploadFiles(Array.prototype.slice.call(data.files), range ? range.index : undefined);
+            },
+            true
+          );
+        },
+
+        /** The toolbar's paperclip: files from this computer. */
+        chooseFiles: function () {
+          var self = this;
+          var input = el("input");
+
+          input.type = "file";
+          input.multiple = true;
+          input.addEventListener("change", function () {
+            if (input.files && input.files.length) {
+              self.uploadFiles(Array.prototype.slice.call(input.files));
+            }
+          });
+          input.click();
+        },
+
+        /**
+         * Upload `files` one after the other, each put after the one
+         * before, from `index` (the cursor when not given): images as
+         * images, anything else as a file block.
+         */
+        uploadFiles: function (files, index) {
+          var self = this;
+
+          if (index === undefined) {
+            var range = quill.getSelection(true);
+
+            index = range ? range.index : quill.getLength() - 1;
+          }
+
+          files.reduce(function (previous, file) {
+            return previous.then(function (at) {
+              var isImage = config.imagesUrl && IMAGE_NAME.test(file.name || "");
+              var sent = isImage ? self.uploadImage(file, at) : self.uploadFile(file, at);
+
+              return sent.then(function (inserted) {
+                return at + (inserted || 0);
+              });
+            });
+          }, Promise.resolve(index));
+        },
+
+        /**
+         * Send one file to the upload endpoint and put a block linking
+         * to it at `index`. Resolves with the length inserted: 0 when it
+         * was refused, which a toast says.
+         */
+        uploadFile: function (file, index) {
+          var self = this;
+          var limit = Number(config.imageMaxSize) || 0;
+
+          if (!config.filesUrl) {
+            Generic.toast(t("Only images can be added to this wiki."), "error");
+            return Promise.resolve(0);
+          }
+
+          if (limit && file.size > limit) {
+            Generic.toast(
+              Generic.format(t("The file is too large: at most %(limit)s."), {
+                limit: Generic.formatSize(limit)
+              }),
+              "error"
+            );
+            return Promise.resolve(0);
+          }
+
+          var body = new FormData();
+
+          body.append("file", file, file.name);
+          this.uploads += 1;
+          this.uploading = true;
+
+          return Generic.api
+            .post(config.filesUrl, body)
+            .then(function (data) {
+              if (!data || !data.url) {
+                throw new Error(t("The file could not be uploaded."));
+              }
+
+              var at = blockIndex(quill, index);
+              var before = quill.getLength();
+
+              quill.insertEmbed(at, "wikiFile", { url: data.url, name: data.name || file.name }, "user");
+
+              // Past the block - and the line break a split may add.
+              var next = at + quill.getLength() - before;
+
+              quill.setSelection(next, 0, "user");
+
+              return next - index;
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The file could not be uploaded."), "error");
+
+              return 0;
+            })
+            .then(function (inserted) {
+              self.uploads -= 1;
+              self.uploading = self.uploads > 0;
+
+              return inserted;
+            });
         },
 
         /**
@@ -277,17 +666,17 @@
           });
         },
 
-        /** Put the image at `url` where the cursor is. */
+        /** Put the image at `url` where the cursor is; its length. */
         embedImage: function (value, index) {
           var url = value ? String(value).trim() : "";
 
           if (!url) {
-            return;
+            return 0;
           }
 
           if (!/^(https?:\/\/|\/)/i.test(url)) {
             Generic.toast(t("Give an address starting with https:// or /."), "error");
-            return;
+            return 0;
           }
 
           if (index === undefined) {
@@ -296,14 +685,18 @@
           }
 
           quill.insertEmbed(index, "image", url, "user");
+          quill.setSelection(index + 1, 0, "user");
+
+          return 1;
         },
 
         /**
          * Send one image to the upload endpoint, and put what it answers
-         * in the page. Checked here first - its type, its size - and by
-         * the server again, from its bytes.
+         * in the page, at `index` or the cursor. Checked here first - its
+         * type, its size - and by the server again, from its bytes.
+         * Resolves with the length inserted: 0 when it was refused.
          */
-        uploadImage: function (file) {
+        uploadImage: function (file, index) {
           var self = this;
           var limit = Number(config.imageMaxSize) || 0;
           var type = String(file.type || "").toLowerCase();
@@ -313,7 +706,7 @@
             (type && IMAGE_TYPES.indexOf(type) === -1)
           ) {
             Generic.toast(t("Only PNG, JPEG, GIF and WebP images can be added."), "error");
-            return;
+            return Promise.resolve(0);
           }
 
           if (limit && file.size > limit) {
@@ -323,30 +716,40 @@
               }),
               "error"
             );
-            return;
+            return Promise.resolve(0);
           }
 
-          var range = quill.getSelection(true);
-          var index = range ? range.index : quill.getLength();
+          if (index === undefined) {
+            var range = quill.getSelection(true);
+
+            index = range ? range.index : quill.getLength();
+          }
+
           var body = new FormData();
 
           body.append("file", file, file.name);
+          this.uploads += 1;
           this.uploading = true;
 
-          Generic.api
+          return Generic.api
             .post(config.imagesUrl, body)
             .then(function (data) {
-              self.uploading = false;
-
               if (!data || !data.url) {
                 throw new Error(t("The image could not be uploaded."));
               }
 
-              self.embedImage(data.url, index);
+              return self.embedImage(data.url, index);
             })
             .catch(function (error) {
-              self.uploading = false;
               Generic.toast(errorText(error) || t("The image could not be uploaded."), "error");
+
+              return 0;
+            })
+            .then(function (inserted) {
+              self.uploads -= 1;
+              self.uploading = self.uploads > 0;
+
+              return inserted;
             });
         },
 

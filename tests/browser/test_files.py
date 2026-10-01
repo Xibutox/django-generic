@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import struct
 import zlib
@@ -11,10 +12,11 @@ import pytest
 from django.core.files.base import ContentFile
 from playwright.sync_api import expect
 
-from generic.wiki.models import WikiImage, WikiPage
+from generic.wiki.models import WikiFile, WikiImage, WikiPage
 
 NOTES = b"The customer's notes: the reset link expired twice.\n"
 SECOND = b"Second thoughts: it was the mail filter.\n"
+SHOTS = Path(os.environ.get("WIKI_SHOTS", "/tmp"))
 
 
 def tiny_png() -> bytes:
@@ -335,3 +337,164 @@ def test_a_text_file_is_refused_as_an_image(page, handbook, admin, sign_in):
     expect(editor.locator("img")).to_have_count(0)
     assert sent == []
     assert not WikiImage.objects.exists()
+
+
+# -- the wiki's files, and the order of a page ----------------------------
+
+
+def edit_handbook(page):
+    page.goto("/wiki/handbook/")
+    page.get_by_role("button", name="Edit").click()
+    editor = page.locator("#wiki-editor .ql-editor")
+    expect(editor).to_contain_text("How the desk works.")
+
+    return editor
+
+
+def save_the_page(page):
+    page.locator(".wiki__editor-actions").get_by_role(
+        "button", name="Save"
+    ).click()
+    expect(page.locator(".toast")).to_contain_text("The page was saved.")
+
+
+def test_a_file_attached_from_the_toolbar_is_a_block_of_the_page(
+    page, handbook, admin, sign_in
+):
+    sign_in(admin)
+    editor = edit_handbook(page)
+    editor.click()
+
+    with page.expect_file_chooser() as chooser:
+        page.locator(".ql-toolbar .ql-attach").click()
+
+    with page.expect_response(
+        lambda response: response.url.endswith("/api/generic/wiki/files/")
+    ) as uploaded:
+        chooser.value.set_files(upload("notes.txt", NOTES))
+
+    assert uploaded.value.status == 201
+    attachment = WikiFile.objects.get()
+    address = f"/wiki/files/{attachment.pk}/"
+    expect(editor.locator("p.wiki-file a")).to_have_attribute("href", address)
+
+    save_the_page(page)
+
+    block = page.locator(".wiki-content p.wiki-file a")
+    expect(block).to_have_text("notes.txt")
+    expect(page.locator(".wiki-attachments")).to_contain_text("notes.txt")
+    handbook.refresh_from_db()
+    assert (
+        f'<p class="wiki-file"><a href="{address}" '
+        f'rel="noopener noreferrer">notes.txt</a></p>'
+    ) in handbook.content
+
+    # Downloaded as it was sent.
+    response = page.request.get(address)
+    assert response.body() == NOTES
+    assert "attachment" in response.headers["content-disposition"]
+
+    # Back in the editor, the block is still one.
+    page.get_by_role("button", name="Edit").click()
+    expect(editor.locator("p.wiki-file a")).to_have_text("notes.txt")
+
+
+def test_files_dropped_on_the_editor_land_where_they_fall(
+    page, handbook, admin, sign_in
+):
+    sign_in(admin)
+    editor = edit_handbook(page)
+
+    with page.expect_response(
+        lambda response: response.url.endswith("/api/generic/wiki/images/")
+    ):
+        with page.expect_response(
+            lambda response: response.url.endswith("/api/generic/wiki/files/")
+        ):
+            editor.evaluate(
+                """(root, files) => {
+                  const data = new DataTransfer();
+                  for (const [name, type, bytes] of files) {
+                    data.items.add(
+                      new File([new Uint8Array(bytes)], name, { type })
+                    );
+                  }
+                  const box = root.querySelector("p").getBoundingClientRect();
+                  root.dispatchEvent(new DragEvent("drop", {
+                    bubbles: true, cancelable: true, dataTransfer: data,
+                    clientX: box.right - 1, clientY: box.top + box.height / 2
+                  }));
+                }""",
+                [
+                    ["notes.txt", "text/plain", list(NOTES)],
+                    ["dot.png", "image/png", list(tiny_png())],
+                ],
+            )
+
+    expect(editor.locator("p.wiki-file")).to_have_count(1)
+    expect(editor.locator("img")).to_have_count(1)
+
+    save_the_page(page)
+
+    handbook.refresh_from_db()
+    content = handbook.content
+    # In the order they were dropped, after the text they fell on.
+    assert (
+        content.index("How the desk works.")
+        < content.index("/wiki/files/")
+        < content.index("/wiki/images/")
+    )
+    expect(page.locator(".wiki-attachments li")).to_have_count(2)
+
+
+def test_a_line_moves_up_and_down(page, handbook, admin, sign_in):
+    handbook.content = "<p>First.</p><p>Second.</p><p>Third.</p>"
+    handbook.save()
+    sign_in(admin)
+    page.goto("/wiki/handbook/")
+    page.get_by_role("button", name="Edit").click()
+    editor = page.locator("#wiki-editor .ql-editor")
+
+    editor.get_by_text("Third.").click()
+    page.locator(".ql-toolbar .ql-moveUp").click()
+    expect(editor.locator("p")).to_have_text(["First.", "Third.", "Second."])
+
+    # The cursor went with it: once more, and it is the first line.
+    page.keyboard.press("Alt+ArrowUp")
+    expect(editor.locator("p")).to_have_text(["Third.", "First.", "Second."])
+
+    page.locator(".ql-toolbar .ql-moveDown").click()
+    expect(editor.locator("p")).to_have_text(["First.", "Third.", "Second."])
+
+    save_the_page(page)
+
+    handbook.refresh_from_db()
+    assert handbook.content == ("<p>First.</p><p>Third.</p><p>Second.</p>")
+
+
+def test_a_file_block_moves_like_a_line(page, handbook, admin, sign_in):
+    handbook.content = (
+        '<p>First.</p><p class="wiki-file"><a href="/wiki/files/9/">'
+        "plan.pdf</a></p><p>Second.</p>"
+    )
+    handbook.save()
+    sign_in(admin)
+    page.goto("/wiki/handbook/")
+    page.get_by_role("button", name="Edit").click()
+    editor = page.locator("#wiki-editor .ql-editor")
+
+    editor.get_by_text("Second.").click()
+    page.keyboard.press("Alt+ArrowUp")
+    page.keyboard.press("Alt+ArrowUp")
+    expect(editor.locator("> *")).to_have_text(
+        ["Second.", "First.", "plan.pdf"]
+    )
+    page.screenshot(path=SHOTS / "wiki-editor.png", full_page=True)
+
+    save_the_page(page)
+
+    handbook.refresh_from_db()
+    assert handbook.content == (
+        '<p>Second.</p><p>First.</p><p class="wiki-file">'
+        '<a href="/wiki/files/9/" rel="noopener noreferrer">plan.pdf</a></p>'
+    )

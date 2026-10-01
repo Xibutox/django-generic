@@ -897,7 +897,29 @@ class Command(BaseCommand):
         if not apps.is_installed("generic.wiki"):
             return
 
-        from generic.wiki.models import WikiPage
+        from django.core.files.base import ContentFile
+
+        from generic.wiki.models import WikiFile, WikiPage
+
+        # A file attached to a page from its editor: a block of the
+        # page, linking to where readers download it.
+        checklist = WikiFile.objects.filter(
+            original_name="triage-checklist.txt"
+        ).first()
+
+        if checklist is None:
+            text = (
+                b"[ ] Customer opened\n[ ] Priority set\n"
+                b"[ ] Team set\n[ ] Assigned, or left to the lead\n"
+            )
+            checklist = WikiFile(
+                original_name="triage-checklist.txt",
+                size=len(text),
+                uploaded_by=users["admin"],
+            )
+            checklist.file.save(
+                "triage-checklist.txt", ContentFile(text), save=True
+            )
 
         pages = [
             (
@@ -925,7 +947,10 @@ class Command(BaseCommand):
                 "summary shows its open tickets and the time already "
                 "spent.</li><li>Set the priority and the team.</li><li>"
                 "Assign the ticket, or leave it to the team's lead.</li>"
-                "</ol><h2>Priorities</h2><p><strong>Urgent</strong> means "
+                "</ol><p>The same steps, to print:</p>"
+                '<p class="wiki-file"><a href="'
+                f'{checklist.get_absolute_url()}">triage-checklist.txt'
+                "</a></p><h2>Priorities</h2><p><strong>Urgent</strong> means "
                 "someone cannot work; <strong>high</strong> means they "
                 "work around it.</p><blockquote>When in doubt, ask the "
                 "team rather than guess.</blockquote>",

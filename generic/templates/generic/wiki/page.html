@@ -104,6 +104,29 @@
               <p class="wiki__blank">{% translate "This page is still empty." %}</p>
             {% endif %}
           </div>
+
+          {# The images and files the page shows, in its order. #}
+          {% if attachments %}
+            <section class="wiki-attachments" aria-labelledby="wiki-attachments-title">
+              <h2 class="wiki-attachments__title" id="wiki-attachments-title">
+                {% icon "attach_file" "icon--sm" %} {% translate "Attachments" %}
+              </h2>
+              <ul class="wiki-attachments__list">
+                {% for attachment in attachments %}
+                  <li class="wiki-attachments__item">
+                    {% if attachment.kind == "image" %}
+                      {% icon "image" "icon--sm" %}
+                      <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.name }}</a>
+                    {% else %}
+                      {% icon "description" "icon--sm" %}
+                      <a href="{{ attachment.url }}">{{ attachment.name }}</a>
+                      <span class="muted">{{ attachment.size|filesizeformat }}</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endif %}
         </div>
 
         {% if can.change %}
@@ -136,12 +159,19 @@
               </label>
             </div>
 
-            <div class="wiki__quill">
+            <div class="wiki__quill" :class="{ 'wiki__quill--drop': dropping }">
               <div id="wiki-editor"></div>
             </div>
+            <p class="sf-help wiki__editor-help">
+              {% if wiki_config.filesUrl %}
+                {% translate "Drop or paste images and files into the text to add them where they fall. The arrows move the line or block holding the cursor up and down (Alt+Up, Alt+Down)." %}
+              {% else %}
+                {% translate "The arrows move the line or block holding the cursor up and down (Alt+Up, Alt+Down)." %}
+              {% endif %}
+            </p>
 
             <div class="wiki__editor-actions">
-              <span class="muted" role="status" x-show="uploading">{% translate "Uploading the image…" %}</span>
+              <span class="muted" role="status" x-show="uploading">{% translate "Uploading…" %}</span>
               <button type="button" class="button button--ghost" @click="cancel()">
                 {% translate "Cancel" %}
               </button>

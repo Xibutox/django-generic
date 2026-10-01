@@ -1532,3 +1532,27 @@ msgstr "La suivre sur sa page"
 #: generic/static/generic/js/operations.js
 msgid "Something went wrong."
 msgstr "Quelque chose s'est mal passé."
+
+#: generic/static/generic/js/wiki.js
+msgid "Attach a file"
+msgstr "Joindre un fichier"
+
+#: generic/static/generic/js/wiki.js
+msgid "Move up (Alt+Up)"
+msgstr "Monter (Alt+Haut)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Move down (Alt+Down)"
+msgstr "Descendre (Alt+Bas)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Only images can be added to this wiki."
+msgstr "Seules des images peuvent être ajoutées à ce wiki."
+
+#: generic/static/generic/js/wiki.js
+msgid "The file is too large: at most %(limit)s."
+msgstr "Le fichier est trop volumineux : %(limit)s au plus."
+
+#: generic/static/generic/js/wiki.js
+msgid "The file could not be uploaded."
+msgstr "Le fichier n'a pas pu être envoyé."

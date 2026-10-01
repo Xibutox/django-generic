@@ -373,10 +373,10 @@ def check_media_root() -> list:
         }
     )
 
-    # The wiki's images are files too, whether or not a resource shows
-    # them.
+    # The wiki's images and files are files too, whether or not a
+    # resource shows them.
     if apps.is_installed("generic.wiki"):
-        labels.append("generic_wiki.WikiImage")
+        labels += ["generic_wiki.WikiImage", "generic_wiki.WikiFile"]
 
     if not labels:
         return []
