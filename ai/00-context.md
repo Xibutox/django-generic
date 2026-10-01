@@ -229,8 +229,13 @@ one model with `auto(Book)`, and `generic.wiki` (the `wiki` extra,
 `MEDIA_ROOT` for its images) - run from its folder (`cd minimal &&
 python manage.py runserver`) or in Docker (`minimal/Dockerfile`, one
 service in `minimal/compose.yaml`, SQLite and the images in a volume
-through `DJANGO_DB_PATH` and `DJANGO_MEDIA_ROOT`), kept working by `tests/test_minimal.py` and CI's
-`minimal-docker` job.
+through `DJANGO_DB_PATH` and `DJANGO_MEDIA_ROOT`), kept working by
+`tests/test_minimal.py` and CI's `minimal-docker` job. It also shows a
+real SSO provider: with `MICROSOFT_CLIENT_ID` (and `_SECRET`,
+`_TENANT_ID`) in the environment, its settings turn on django-allauth's
+Microsoft provider, mount `allauth.urls` under `accounts/` and declare
+the button in `GENERIC["SSO_PROVIDERS"]` (`route="microsoft_login"`);
+unset, allauth is neither needed nor loaded.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env

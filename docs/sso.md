@@ -139,3 +139,9 @@ people in without a password would be teaching the wrong thing.
 
 Open `/login/` signed out: the button first, the password form folded
 underneath, and `admin` / `demo` still works through it.
+
+The minimal example does it for real, with django-allauth and
+Microsoft Entra ID: given an app registration in its environment, its
+sign-in page leads with *Microsoft* and signs people in. The settings,
+the URLs and the Azure side are in
+[its README](../minimal/README.md#signing-in-with-microsoft).
