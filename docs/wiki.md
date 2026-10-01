@@ -6,9 +6,11 @@ everyone signed in, with a history of every version. A page can be
 pinned to the dashboard, which makes the wiki the natural home for
 announcements and how-tos.
 
-It is optional, and deliberately modest: no workflow, no comments, no
-attachments - only images, uploaded into a page from the editor
-([Images](#images)).
+It is optional, and deliberately modest: no workflow, no comments.
+Images and files are uploaded into a page from the editor - its
+toolbar, a drop, a paste - and land where the writer puts them
+([Images](#images), [Files](#files)); every line, image and file moves
+up and down the page ([Ordering a page](#ordering-a-page)).
 
 ## Enabling it
 
@@ -44,7 +46,7 @@ pinned pages, and the command palette finds pages by title and text.
 | Anyone signed in | Read every page, its menu and its history |
 | `generic_wiki.add_wikipage` | Create pages and subpages |
 | `generic_wiki.change_wikipage` | Edit a page, move it in the menu, pin it, restore a version |
-| `add_wikipage` or `change_wikipage` | Upload an image into a page |
+| `add_wikipage` or `change_wikipage` | Upload an image or a file into a page |
 | `generic_wiki.delete_wikipage` | Delete a page |
 
 Superusers hold all of them. For editors who are not superusers, give a
@@ -61,9 +63,12 @@ it was last changed and by whom, and - for editors - *Edit*, *Subpage*,
 position among its siblings, its address, whether it is pinned to the
 dashboard, and the text, in [Quill](https://quilljs.com): headings,
 bold and italics, lists, quotes, code, links, images - uploaded or
-by address - and alignment. *Save* sends everything to the API as JSON and reloads the
+by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
 page as the server draws it; *Cancel* and leaving the page ask first
 when something changed.
+
+Under its text, the page lists its **attachments** - the images and
+files it shows, in its order, a file with its size - each a link.
 
 **History** lists the earlier versions, newest first, with their author
 and size; *Restore* brings one back. Restoring saves the current text
@@ -88,6 +93,7 @@ shown - against an allowlist of what the editor produces:
 
 - tags: paragraphs, headings, emphasis, lists, quotes, code, links,
   images, rules, tables;
+- a file block: `<p class="wiki-file"><a href="/wiki/files/7/">plan.pdf</a></p>`;
 - no `script`, no `style`, no event handler, no inline style;
 - links and images to `http`, `https`, `mailto` and `tel` only, or
   relative - another wiki page, a record of the application; links get
@@ -95,8 +101,9 @@ shown - against an allowlist of what the editor produces:
 - no image data: an image is an address - an uploaded one under the
   wiki (`/wiki/images/<id>/`, relative, so it is kept), or on the
   web - never inlined in the page;
-- only the editor's own classes (alignment, indentation, code blocks),
-  so a page cannot borrow the application's styles.
+- only the editor's own classes (alignment, indentation, code blocks,
+  `wiki-file` on a paragraph), so a page cannot borrow the
+  application's styles.
 
 On the page, the content also sits under `x-ignore`: Alpine never reads
 anything in it as a directive.
@@ -109,13 +116,16 @@ Under `wiki/api/`, JSON, like every other screen:
 | --- | --- |
 | `GET pages/` | The menu: every page, without its text |
 | `POST pages/` | A new page; the address comes from the title when not given |
-| `GET pages/<id>/` | One page, with its text and its `version` |
+| `GET pages/<id>/` | One page, with its text, its `version` and its `attachments` |
 | `PATCH pages/<id>/` | Change it; send `version` to be protected from overwriting |
 | `DELETE pages/<id>/` | Delete it; its subpages move up |
 | `GET pages/<id>/revisions/` | Its earlier versions |
 | `POST pages/<id>/restore/` | Bring one back: `{"revision": <id>}` |
 
-A save against an old version answers `409 Conflict`. The address
+`attachments` is read from the text, never written: `[{"kind":
+"image" | "file", "id", "name", "size", "url"}]`, in the page's order,
+once each, leaving out an upload no longer in the database. A save
+against an old version answers `409 Conflict`. The address
 `api` is reserved; a page titled "API" gets `api-page`.
 
 ## Images
@@ -146,12 +156,58 @@ is put in the page as an ordinary image:
 - A refused file (its type, its size) is said in a toast, and nothing
   is inserted.
 
+Images can also be dropped on the editor or pasted into it (a
+screenshot): they are uploaded the same way and land where they fell
+- never inlined in the page as data.
+
 An image is a `generic_wiki.WikiImage` (`file`, `original_name`,
 `uploaded_by`, `uploaded_at`), not attached to a page: several pages -
 or earlier versions of one - may show it, so nothing deletes it when a
 page stops doing so. The files live in `MEDIA_ROOT`, which has to be
 set (`generic.W010`) and backed up with the database
 ([deployment](deployment.md#backups)).
+
+## Files
+
+The paperclip in the editor's toolbar attaches files - a PDF, a
+spreadsheet, an archive, several at once - and so does dropping them
+on the text or pasting them. Each is uploaded, then put in the page
+as a **block of its own** where the cursor (or the drop) was: a file
+icon and its name, linking to where readers download it. Dropped with
+images, each lands in turn, in the order they were dropped; an image
+goes in the text, any other file as a block.
+
+| Request | Does |
+| --- | --- |
+| `POST api/generic/wiki/files/` | Multipart, part `file`: answers `201 {"id", "url", "name", "size"}`, `url` being `/wiki/files/<id>/` wherever the wiki is mounted |
+| `GET wiki/files/<id>/` | The file, downloaded under the name it was sent with, for any signed-in reader of the wiki |
+
+- **Who**: like images - `add_wikipage` or `change_wikipage` to
+  upload, being signed in to download.
+- **What**: any kind of file, because it is never shown: always served
+  as an `attachment`, with `X-Content-Type-Options: nosniff`,
+  `Content-Security-Policy: sandbox` and `Cache-Control: private,
+  max-age=86400`. An HTML page or an SVG uploaded as a file is a
+  download, not a page of the site.
+- **How big**: up to `GENERIC["FILE_MAX_SIZE"]`, checked in the browser
+  and again by the server; an empty file is refused.
+- In the page, the block is `<p class="wiki-file"><a
+  href="/wiki/files/7/">plan.pdf</a></p>`, which the cleaning keeps.
+
+A file is a `generic_wiki.WikiFile` (`file`, `original_name`, `size`,
+`uploaded_by`, `uploaded_at`, stored under `wiki/files/%Y/%m/`). Like
+an image, it is not attached to a page but linked from it, so nothing
+deletes it when a page stops linking to it; a page's attachments are
+read from its text.
+
+## Ordering a page
+
+The editor's **up and down arrows** - or **Alt+Up** and **Alt+Down** -
+move the line holding the cursor above the one before it, or below
+the one after: a paragraph, a heading, a list item, a line with an
+image, a file block. The cursor moves with it, so pressing again keeps
+going; Ctrl+Z undoes a move like any other change. Moving a block is
+how a writer orders the page's images and files among its text.
 
 ## Why Quill
 
@@ -170,4 +226,7 @@ editors built on ProseMirror need a bundler.
   the `dashboard_pinned` block of `generic/site/index.html`.
 - The editor's toolbar is `TOOLBAR` in `generic/js/wiki.js`. Adding a
   format there means allowing its HTML in `generic/wiki/sanitize.py`
-  too - the server has the last word.
+  too - the server has the last word. The file block is the Quill blot
+  `wikiFile`, registered there too.
+- Without the framework's endpoints mounted (`generic.urls`), the
+  editor offers no upload: images by address only, no paperclip.

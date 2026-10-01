@@ -617,9 +617,10 @@ class TestTheCheck:
 
         assert [message.id for message in messages] == ["generic.W010"]
         assert "testapp.Document" in messages[0].msg
-        # The wiki's images are files too; a model without any is not
+        # The wiki's images and files are files too; a model without any is not
         # named.
         assert "generic_wiki.WikiImage" in messages[0].msg
+        assert "generic_wiki.WikiFile" in messages[0].msg
         assert "testapp.Manuscript" not in messages[0].msg
 
     def test_a_media_root_says_nothing(self, settings, tmp_path):

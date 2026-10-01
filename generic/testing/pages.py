@@ -55,9 +55,11 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     "site:auth_permission_delete": (403,),
     # A token is made by its owner on the account page, shown once.
     "site:generic_tokens_apitoken_add": (403,),
-    # The sweep's wiki image names a file it never writes - nothing is
-    # put in a project's MEDIA_ROOT: the storage's 404 is the answer.
+    # The sweep's wiki image and file name files it never writes -
+    # nothing is put in a project's MEDIA_ROOT: the storage's 404 is the
+    # answer.
     "generic_wiki:image": (200, 404),
+    "generic_wiki:file": (200, 404),
 }
 
 
@@ -283,12 +285,14 @@ class PageSweep:
             if page is not None:
                 return page.slug
 
-        # ... and its images by their key.
-        if url_name == "generic_wiki:image":
-            image = records.get("generic_wiki.wikiimage")
+        # ... and its images and files by their key.
+        if url_name in ("generic_wiki:image", "generic_wiki:file"):
+            upload = records.get(
+                "generic_wiki.wiki" + url_name.rpartition(":")[2]
+            )
 
-            if image is not None:
-                return image.pk
+            if upload is not None:
+                return upload.pk
 
         # A row that is no model's: the first its resource lists.
         if argument == "key":
@@ -598,7 +602,7 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
     }
 
     if apps.is_installed("generic.wiki"):
-        from generic.wiki.models import WikiImage, WikiPage
+        from generic.wiki.models import WikiFile, WikiImage, WikiPage
 
         records["generic_wiki.wikipage"] = WikiPage.objects.create(
             title="Page sweep", slug="page-sweep", content="<p>Hello.</p>"
@@ -606,6 +610,9 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
         # Named, not written: a sweep puts nothing in MEDIA_ROOT.
         records["generic_wiki.wikiimage"] = WikiImage.objects.create(
             file="wiki/images/page-sweep.png", original_name="page-sweep.png"
+        )
+        records["generic_wiki.wikifile"] = WikiFile.objects.create(
+            file="wiki/files/page-sweep.pdf", original_name="page-sweep.pdf"
         )
 
     if apps.is_installed("generic.tokens"):

@@ -222,7 +222,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
-- [The wiki](docs/wiki.md) — pages, editor, images uploaded into a page, history, the HTML it keeps
+- [The wiki](docs/wiki.md) — pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case

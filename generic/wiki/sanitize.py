@@ -68,8 +68,11 @@ _EDITOR_CLASSES = {
 CLASSES = {
     **{
         tag: _EDITOR_CLASSES
-        for tag in ("p", "h1", "h2", "h3", "h4", "li", "blockquote")
+        for tag in ("h1", "h2", "h3", "h4", "li", "blockquote")
     },
+    # A file attached from the editor is a paragraph of its own, holding
+    # the link to it: ``<p class="wiki-file"><a href=...>``.
+    "p": _EDITOR_CLASSES | {"wiki-file"},
     "pre": {"ql-syntax"},
 }
 

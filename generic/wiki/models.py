@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from typing import Any
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -92,6 +95,15 @@ class WikiPage(models.Model):
 
         return list(reversed(chain))
 
+    def attachments(self) -> list[dict[str, Any]]:
+        """The images and files this page shows, in the page's order.
+
+        Read from the text itself - an upload belongs to whichever page
+        links to it - once each, and only those still stored in the
+        database: ``{"kind", "id", "name", "size", "url"}``.
+        """
+        return attachments_in(self.content)
+
 
 class WikiRevision(models.Model):
     """A page as it was before a change: kept to compare and restore."""
@@ -178,3 +190,90 @@ class WikiImage(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("generic_wiki:image", kwargs={"pk": self.pk})
+
+
+class WikiFile(models.Model):
+    """A file attached from the editor - a PDF, a spreadsheet, an
+    archive - shown in a page as a block linking to its address.
+
+    Like :class:`WikiImage`, not attached to a page: a page holds
+    ``<p class="wiki-file"><a href="/wiki/files/7/">plan.pdf</a></p>``,
+    and the file stays while any version of any page may link to it.
+    """
+
+    file = models.FileField(_("file"), upload_to="wiki/files/%Y/%m/")
+    original_name = models.CharField(
+        _("original name"), max_length=255, blank=True, default=""
+    )
+    #: Bytes, kept so that a page lists its files without opening them.
+    size = models.PositiveBigIntegerField(_("size"), default=0)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("uploaded by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    uploaded_at = models.DateTimeField(_("uploaded at"), default=timezone.now)
+
+    class Meta:
+        ordering = ("-uploaded_at", "-pk")
+        verbose_name = _("wiki file")
+        verbose_name_plural = _("wiki files")
+
+    def __str__(self) -> str:
+        return self.original_name or self.file.name
+
+    def get_absolute_url(self) -> str:
+        return reverse("generic_wiki:file", kwargs={"pk": self.pk})
+
+
+def _address_pattern(kind: str) -> str:
+    """The address of a ``kind`` upload, wherever the wiki is mounted, as
+    a pattern whose group ``<kind>`` is its id."""
+    sample = reverse(f"generic_wiki:{kind}", kwargs={"pk": 4242})
+
+    return re.escape(sample).replace("4242", rf"(?P<{kind}>\d+)")
+
+
+def attachments_in(html: str | None) -> list[dict[str, Any]]:
+    """The uploads ``html`` links to or shows, in order, once each."""
+    if not html:
+        return []
+
+    kinds = {"image": WikiImage, "file": WikiFile}
+    addresses = "|".join(_address_pattern(kind) for kind in kinds)
+    pattern = re.compile(rf"""(?:src|href)=["'](?:{addresses})["']""")
+    found: list[tuple[str, int]] = []
+
+    for match in pattern.finditer(html):
+        kind = "image" if match.group("image") else "file"
+        key = (kind, int(match.group(kind)))
+
+        if key not in found:
+            found.append(key)
+
+    stored = {
+        kind: model.objects.in_bulk(
+            [pk for found_kind, pk in found if found_kind == kind]
+        )
+        for kind, model in kinds.items()
+    }
+    attachments = []
+
+    for kind, pk in found:
+        upload = stored[kind].get(pk)
+
+        if upload is not None:
+            attachments.append(
+                {
+                    "kind": kind,
+                    "id": pk,
+                    "name": str(upload),
+                    "size": upload.size if kind == "file" else None,
+                    "url": upload.get_absolute_url(),
+                }
+            )
+
+    return attachments

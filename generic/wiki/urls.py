@@ -22,5 +22,6 @@ urlpatterns = [
     # Before the pages: "api" is a reserved address.
     path("api/", include(router.urls)),
     path("images/<int:pk>/", views.WikiImageView.as_view(), name="image"),
+    path("files/<int:pk>/", views.WikiFileView.as_view(), name="file"),
     path("<str:slug>/", views.WikiPageView.as_view(), name="page"),
 ]

@@ -278,7 +278,11 @@ from.
 **In the wiki.** As `admin`, edit a page: headings, lists, links,
 quotes, code. *Insert an image*, then *Upload an image*: a PNG from
 your disk lands in the page, and stays there when you save - a `.png`
-that is really something else is refused. Save, then open *History*
+that is really something else is refused. Drag a PDF from your desktop onto
+the text: it lands there as a file block, and *How we triage* already
+holds one. Put the cursor on a line and press Alt+Up or Alt+Down - or
+the toolbar's arrows - to move it, a file or an image with it; once
+saved, the page lists its attachments under its text. Save, then open *History*
 and restore the earlier version — the text you replaced is kept too.
 Pin a page to the dashboard. As `viewer`, the same pages are there to read, without the
 buttons.

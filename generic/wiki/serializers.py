@@ -78,6 +78,8 @@ class WikiPageSerializer(serializers.ModelSerializer):
     #: refused rather than silently overwriting someone else's change.
     version = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
+    #: The images and files the page shows, in its order (read-only).
+    attachments = serializers.SerializerMethodField()
 
     class Meta:
         model = WikiPage
@@ -93,6 +95,7 @@ class WikiPageSerializer(serializers.ModelSerializer):
             "version",
             "updated_at",
             "updated_by_name",
+            "attachments",
         )
         read_only_fields = ("updated_at",)
         extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
@@ -105,6 +108,9 @@ class WikiPageSerializer(serializers.ModelSerializer):
 
     def get_updated_by_name(self, page: WikiPage) -> str:
         return display_name(page.updated_by) if page.updated_by_id else ""
+
+    def get_attachments(self, page: WikiPage) -> list[dict[str, Any]]:
+        return page.attachments() if page.pk else []
 
     def to_representation(self, page: WikiPage) -> dict[str, Any]:
         from generic.wiki.sanitize import clean_html

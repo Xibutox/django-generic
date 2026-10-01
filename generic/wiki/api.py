@@ -17,6 +17,9 @@ The editor's images are uploaded to ``api/generic/wiki/images/`` - in
 ``generic.urls``, beside the framework's other endpoints - by whoever
 may write a page (:class:`WikiImageUploadView`), and shown from the
 wiki's own ``images/<id>/`` (``generic.wiki.views.WikiImageView``).
+Its other files - a PDF, a spreadsheet - go to
+``api/generic/wiki/files/`` (:class:`WikiFileUploadView`) and are
+downloaded from ``files/<id>/``.
 """
 
 from __future__ import annotations
@@ -37,7 +40,7 @@ from rest_framework.views import APIView
 
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
-from generic.wiki.models import WikiImage, WikiPage, WikiRevision
+from generic.wiki.models import WikiFile, WikiImage, WikiPage, WikiRevision
 from generic.wiki.serializers import (
     WikiPageListSerializer,
     WikiPageSerializer,
@@ -262,4 +265,58 @@ class WikiImageUploadView(APIView):
     def refuse(message: str) -> Response:
         return Response(
             {"detail": message}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class WikiFileUploadView(APIView):
+    """``POST`` one file - multipart, part ``file`` - for a page.
+
+    Any kind of file, up to ``FILE_MAX_SIZE``: it is only ever
+    downloaded, never shown in the browser (see
+    ``generic.wiki.views.WikiFileView``). Answers ``{"id", "url",
+    "name", "size"}``, what the editor's file block shows.
+    """
+
+    schema = framework_schema()
+    #: What generic.openapi describes this body as.
+    openapi_request = "wiki_file_upload"
+    permission_classes = (WikiImagePermission,)
+    parser_classes = (MultiPartParser,)
+
+    def post(self, request: Any) -> Response:
+        upload = request.FILES.get("file")
+
+        if upload is None or not upload.name:
+            return WikiImageUploadView.refuse(
+                gettext("Choose a file to upload.")
+            )
+
+        if not upload.size:
+            return WikiImageUploadView.refuse(gettext("The file is empty."))
+
+        limit = generic_settings.FILE_MAX_SIZE
+
+        if limit and upload.size > limit:
+            return WikiImageUploadView.refuse(
+                gettext("The file is too large: at most %(limit)s.")
+                % {"limit": filesizeformat(limit)}
+            )
+
+        name = PurePath(upload.name.replace("\\", "/")).name[:255]
+        attachment = WikiFile(
+            original_name=name,
+            size=upload.size,
+            uploaded_by=request.user,
+        )
+        attachment.file.save(name or "file", upload, save=False)
+        attachment.save()
+
+        return Response(
+            {
+                "id": attachment.pk,
+                "url": attachment.get_absolute_url(),
+                "name": attachment.original_name,
+                "size": attachment.size,
+            },
+            status=status.HTTP_201_CREATED,
         )

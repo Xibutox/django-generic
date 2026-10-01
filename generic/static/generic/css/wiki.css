@@ -213,6 +213,72 @@
   border-radius: var(--border-radius-sm);
 }
 
+/* A file attached from the editor: a block of its own, in the page and
+   in the editor alike. */
+.wiki-content .wiki-file,
+.wiki__quill .ql-editor .wiki-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 32rem;
+  margin: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.wiki-content .wiki-file::before,
+.wiki__quill .ql-editor .wiki-file::before {
+  content: "description";
+  font-family: "Material Symbols Outlined";
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.wiki-content .wiki-file a,
+.wiki__quill .ql-editor .wiki-file a {
+  color: var(--text-link);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* The page's images and files, listed under its text. */
+.wiki-attachments {
+  max-width: 52rem;
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+}
+
+.wiki-attachments__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.wiki-attachments__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wiki-attachments__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.wiki-attachments__item a {
+  color: var(--text-link);
+}
+
 .wiki-content hr {
   margin: 1.5em 0;
   border: 0;
@@ -294,6 +360,28 @@
 .wiki__quill .ql-editor {
   min-height: 22rem;
   line-height: 1.65;
+}
+
+/* Files dragged over the editor: where they will land. */
+.wiki__quill--drop .ql-container.ql-snow {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+/* The toolbar's own buttons draw an icon of the application's font. */
+.wiki__quill .ql-snow .ql-toolbar button .icon,
+.wiki__quill .ql-toolbar.ql-snow button .icon {
+  font-size: 18px;
+  line-height: 18px;
+  color: var(--text-secondary);
+}
+
+.wiki__quill .ql-toolbar.ql-snow button:hover .icon {
+  color: var(--color-accent);
+}
+
+.wiki__editor-help {
+  margin: var(--space-1) 0 0;
 }
 
 .wiki__quill .ql-editor.ql-blank::before {

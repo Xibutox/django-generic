@@ -2881,3 +2881,53 @@ msgstr "rapport"
 #: generic/templates/generic/resource/generic/taskrun/detail.html
 msgid "Report"
 msgstr "Rapport"
+
+#: generic/wiki/models.py
+msgid "size"
+msgstr "taille"
+
+#: generic/wiki/models.py
+msgid "wiki file"
+msgstr "fichier du wiki"
+
+#: generic/wiki/models.py
+msgid "wiki files"
+msgstr "fichiers du wiki"
+
+#: generic/wiki/api.py
+msgid "Choose a file to upload."
+msgstr "Choisissez un fichier à envoyer."
+
+#: generic/wiki/api.py
+msgid "The file is empty."
+msgstr "Le fichier est vide."
+
+#: generic/wiki/api.py
+msgid "The file is too large: at most %(limit)s."
+msgstr "Le fichier est trop volumineux : %(limit)s au plus."
+
+#: generic/templates/generic/wiki/page.html
+msgid "Attachments"
+msgstr "Pièces jointes"
+
+#: generic/templates/generic/wiki/page.html
+msgid "Uploading…"
+msgstr "Envoi en cours…"
+
+#: generic/templates/generic/wiki/page.html
+msgid ""
+"Drop or paste images and files into the text to add them where they fall. "
+"The arrows move the line or block holding the cursor up and down (Alt+Up, "
+"Alt+Down)."
+msgstr ""
+"Déposez ou collez des images et des fichiers dans le texte pour les ajouter "
+"là où ils tombent. Les flèches montent ou descendent la ligne ou le bloc où "
+"se trouve le curseur (Alt+Haut, Alt+Bas)."
+
+#: generic/templates/generic/wiki/page.html
+msgid ""
+"The arrows move the line or block holding the cursor up and down (Alt+Up, "
+"Alt+Down)."
+msgstr ""
+"Les flèches montent ou descendent la ligne ou le bloc où se trouve le "
+"curseur (Alt+Haut, Alt+Bas)."

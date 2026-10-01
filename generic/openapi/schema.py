@@ -141,8 +141,22 @@ WIKI_IMAGE_UPLOAD = inline_serializer(
     },
 )
 
+#: What the wiki's file upload takes: one file, of any kind.
+WIKI_FILE_UPLOAD = inline_serializer(
+    name="WikiFileUpload",
+    fields={
+        "file": serializers.FileField(
+            help_text="Any file, up to GENERIC['FILE_MAX_SIZE'] bytes; "
+            "always served as a download."
+        ),
+    },
+)
+
 #: Bodies of hand-built views, by the ``openapi_request`` they name.
-REQUESTS = {"wiki_image_upload": WIKI_IMAGE_UPLOAD}
+REQUESTS = {
+    "wiki_image_upload": WIKI_IMAGE_UPLOAD,
+    "wiki_file_upload": WIKI_FILE_UPLOAD,
+}
 
 
 class ResourceAutoSchema(AutoSchema):

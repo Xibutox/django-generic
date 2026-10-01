@@ -161,7 +161,7 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning,
-│                           WikiImage (images uploaded from the editor)
+│                           WikiImage, WikiFile (images and files uploaded from the editor)
 ├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
 │                           its own table), TokenAuthentication (scope, last use),
 │                           api/generic/tokens/, the account section, the People screen
@@ -1147,6 +1147,18 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   reader (inline, nosniff, `Cache-Control: private, max-age=86400`).
   The editor's *Insert an image* offers *Upload an image* beside the
   address. See `docs/forms.md#files`, `docs/wiki.md#images`.
+- Wiki files: `POST api/generic/wiki/files/` (multipart `file`; same
+  permissions; any type, ≤ FILE_MAX_SIZE, not empty) → `{"id", "url":
+  "/wiki/files/<id>/", "name", "size"}`; `GET wiki/files/<id>/` always
+  `attachment` under its original name (nosniff, CSP sandbox). In a
+  page: `<p class="wiki-file"><a href=...>name</a></p>` (Quill blot
+  `wikiFile`, a block embed; `sanitize.py` allows `wiki-file` on `p`).
+  The editor uploads on the paperclip, a drop or a paste (images to the
+  image endpoint, the rest to files), at the drop point. Toolbar arrows
+  / Alt+Up/Down move the cursor's line (`moveLine` in `wiki.js`).
+  `WikiPage.attachments()` / `attachments_in(html)` read the uploads a
+  page links to, in order; `attachments` in the page's API and the
+  page's context (listed under the text). See `docs/wiki.md#files`.
 
 ---
 
