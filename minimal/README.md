@@ -2,7 +2,8 @@
 
 The least a Django project needs to run django-generic: one settings
 file, one URL module, one app with one model, and its screens in one
-line - plus the wiki. No real time, no Celery, no API tokens, no
+line - plus the wiki, and signing in with Microsoft through
+django-allauth once an app registration is given. No real time, no Celery, no API tokens, no
 production settings - for all of those, see the full example,
 `example/` and `example_project/` ([the example](../docs/example.md)).
 
@@ -11,7 +12,7 @@ minimal/
 ├── manage.py
 ├── mysite/
 │   ├── settings.py     startproject's, trimmed; the framework's lines marked
-│   ├── urls.py         jsi18n/, api/generic/, wiki/, then the site, last
+│   ├── urls.py         jsi18n/, api/generic/, wiki/, accounts/, the site last
 │   └── wsgi.py
 ├── Dockerfile          the same, in a container (optional)
 ├── compose.yaml
@@ -58,6 +59,67 @@ images are in the `data` volume (`DJANGO_DB_PATH=/data/db.sqlite3`,
 trying it locally: the production stack, with Postgres, Redis and a
 proxy in front, is [`docker/`](../docker/) and
 [Deployment](../docs/deployment.md).
+
+### Signing in with Microsoft
+
+The sign-in page can lead with a *Microsoft* button, the password form
+folded underneath ([Signing in through somebody else](../docs/sso.md)).
+django-allauth speaks to Microsoft; the framework only draws the
+button. It is off until the example is given an app registration, so
+without one nothing changes and nothing more is installed.
+
+1. **Register an app** in the [Microsoft Entra admin
+   center](https://entra.microsoft.com/): *Identity* > *Applications* >
+   *App registrations* > *New registration*.
+   - *Supported account types*: this organisation's accounts only, for
+     a work application.
+   - *Redirect URI*: platform **Web**,
+     `http://localhost:8000/accounts/microsoft/login/callback/`.
+     Microsoft accepts `http` only for `localhost`, so open the example
+     at `localhost`, not `127.0.0.1`; a deployed site registers its own
+     `https://` address with the same path.
+2. On the registration's *Overview*, copy the *Application (client) ID*
+   and the *Directory (tenant) ID*.
+3. Under *Certificates & secrets*, *New client secret*: copy its
+   *Value* (shown once).
+4. *API permissions* already has Microsoft Graph's `User.Read`, which
+   is all allauth asks for: the name and the address.
+
+Then, from a checkout:
+
+```bash
+pip install -e ".[wiki]" "django-allauth[socialaccount]"
+cd minimal
+export MICROSOFT_CLIENT_ID=<application id>
+export MICROSOFT_CLIENT_SECRET=<secret value>
+export MICROSOFT_TENANT_ID=<directory id>
+python manage.py migrate            # allauth's tables
+python manage.py runserver
+```
+
+or in Docker, the image already has allauth, with the three values in
+a `minimal/.env` file - beside `compose.yaml`, never committed - or the
+environment:
+
+```bash
+docker compose -f minimal/compose.yaml up --build
+```
+
+Open <http://localhost:8000/login/>: *Microsoft* first, then back here
+signed in. `MICROSOFT_TENANT_ID` left out means `organizations`, any
+work or school account; `common` adds personal Microsoft accounts.
+
+The first sign-in creates the account, with no permissions: it sees
+the dashboard and nothing in it until a superuser gives it a group, on
+the *People* pages. Its name and address are Microsoft's, shown
+read-only on its account page. The password form still works, for the
+superuser made with `createsuperuser`.
+
+What turns it on is the `if MICROSOFT_CLIENT_ID:` block at the end of
+`mysite/settings.py` - allauth's apps, its middleware and backend, the
+registration, and `GENERIC["SSO_PROVIDERS"]`, the button - and allauth's
+URLs under `accounts/` in `mysite/urls.py`. A project that always signs
+in with Microsoft writes the same lines without the `if`.
 
 ### Checks
 

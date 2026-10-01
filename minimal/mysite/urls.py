@@ -1,6 +1,8 @@
 """The minimal example's routes: the framework's endpoints, the wiki,
-then the site generated from library/resources.py, last."""
+allauth when Microsoft sign-in is on, then the site generated from
+library/resources.py, last."""
 
+from django.conf import settings
 from django.urls import include, path
 from django.views.i18n import JavaScriptCatalog
 
@@ -21,3 +23,8 @@ urlpatterns = [
     # pages and API.
     path("", site.urls),
 ]
+
+if settings.MICROSOFT_CLIENT_ID:
+    # Microsoft's sign-in and its callback, accounts/microsoft/login/
+    # and accounts/microsoft/login/callback/ - before the site, last.
+    urlpatterns.insert(-1, path("accounts/", include("allauth.urls")))

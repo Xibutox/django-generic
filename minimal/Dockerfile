@@ -18,11 +18,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_MEDIA_ROOT=/data/media
 
 # The framework, as its wheel installs it: the core - Django and Django
-# REST framework - and the wiki extra, nh3, which cleans its pages.
+# REST framework - and the wiki extra, nh3, which cleans its pages. Then
+# django-allauth, for signing in with Microsoft: on only when compose
+# passes MICROSOFT_CLIENT_ID.
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
-RUN pip install ".[wiki]" && rm -rf /src
+RUN pip install ".[wiki]" "django-allauth[socialaccount]>=65.0" \
+    && rm -rf /src
 
 # The database and the wiki's images live in /data, a volume, so it outlives the container.
 RUN useradd --create-home app && mkdir /data && chown app /data

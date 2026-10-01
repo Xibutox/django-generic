@@ -5,6 +5,13 @@
 #
 # then http://localhost:8000/. The full stack - Postgres, Redis, Celery,
 # Daphne behind Caddy - is ../docker/.
+#
+# Signing in with Microsoft too: the app registration's values in the
+# environment, or in a .env file beside this one (README.md) - never in
+# this file.
+#
+#   MICROSOFT_CLIENT_ID=... MICROSOFT_CLIENT_SECRET=... \
+#   MICROSOFT_TENANT_ID=... docker compose -f minimal/compose.yaml up
 
 name: django-generic-minimal
 
@@ -15,6 +22,11 @@ services:
       dockerfile: minimal/Dockerfile
     ports:
       - "8000:8000"
+    # Empty, Microsoft sign-in is off and the password form is all.
+    environment:
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
     volumes:
       - data:/data
 

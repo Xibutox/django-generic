@@ -1,10 +1,11 @@
 """The least a Django project needs to run django-generic.
 
 A ``django-admin startproject`` settings file, trimmed, with the
-framework's lines marked, and the wiki. For local use only: the secret
-key is written here and DEBUG is on. Everything the full example adds -
-real time, API tokens, Celery, production settings - is in
-``example_project/``.
+framework's lines marked, the wiki, and - when its environment variables
+are set - signing in with Microsoft through django-allauth. For local
+use only: the secret key is written here and DEBUG is on. Everything
+the full example adds - real time, API tokens, Celery, production
+settings - is in ``example_project/``.
 """
 
 import os
@@ -114,3 +115,60 @@ GENERIC = {
     "SITE_TITLE": "Library",
     "EVENTS_WEBSOCKET_URL": None,
 }
+
+# Signing in with Microsoft (Entra ID), through django-allauth - only
+# where an app registration is given, so without one the example runs
+# without allauth installed, and the sign-in page is the password form.
+# Needs pip install "django-allauth[socialaccount]"; the registration is
+# in README.md.
+MICROSOFT_CLIENT_ID = os.environ.get("MICROSOFT_CLIENT_ID", "")
+
+if MICROSOFT_CLIENT_ID:
+    INSTALLED_APPS += [
+        "allauth",
+        "allauth.account",
+        "allauth.socialaccount",
+        "allauth.socialaccount.providers.microsoft",
+    ]
+    MIDDLEWARE += ["allauth.account.middleware.AccountMiddleware"]
+    AUTHENTICATION_BACKENDS = [
+        # The password form, as before.
+        "django.contrib.auth.backends.ModelBackend",
+        # Accounts signed in by Microsoft.
+        "allauth.account.auth_backends.AuthenticationBackend",
+    ]
+    SOCIALACCOUNT_PROVIDERS = {
+        "microsoft": {
+            "APPS": [
+                {
+                    "client_id": MICROSOFT_CLIENT_ID,
+                    "secret": os.environ.get("MICROSOFT_CLIENT_SECRET", ""),
+                    # The directory's id for one organisation's
+                    # accounts; "organizations" or "common" for more.
+                    "settings": {
+                        "tenant": os.environ.get(
+                            "MICROSOFT_TENANT_ID", "organizations"
+                        ),
+                    },
+                }
+            ],
+        }
+    }
+    # The sign-in page's button is a link: follow it straight to
+    # Microsoft rather than to allauth's own "Continue" page.
+    SOCIALACCOUNT_LOGIN_ON_GET = True
+    # Microsoft has checked the address; an account is made at the first
+    # sign-in, with no permissions until it is given a group.
+    SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+    SOCIALACCOUNT_AUTO_SIGNUP = True
+
+    # The framework's part: the button, first on the sign-in page. The
+    # route is allauth's (mysite/urls.py mounts it under accounts/).
+    GENERIC["SSO_PROVIDERS"] = [
+        {
+            "label": "Microsoft",
+            "route": "microsoft_login",
+            "icon": "corporate_fare",
+            "description": "Use your work or school account.",
+        }
+    ]

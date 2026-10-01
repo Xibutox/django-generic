@@ -102,6 +102,8 @@ dev = [
     "django-fsm-2>=4.0",
     # The example project turns it on by itself when it is installed.
     "django-debug-toolbar>=6.0",
+    # The minimal example's Microsoft sign-in, tested when installed.
+    "django-allauth[socialaccount]>=65.0",
     "pytest>=8.0",
     "pytest-django>=4.8",
     "pytest-cov>=5.0",

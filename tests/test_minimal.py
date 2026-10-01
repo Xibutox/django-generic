@@ -47,7 +47,10 @@ PAGES = textwrap.dedent("""
     response = client.get("/")
     assert response.status_code == 302, response.status_code
     assert response["Location"].startswith("/login/"), response["Location"]
-    assert client.get("/login/").status_code == 200
+    response = client.get("/login/")
+    assert response.status_code == 200
+    # No app registration in the environment: no Microsoft button.
+    assert b"/accounts/microsoft/" not in response.content
 
     client.force_login(
         get_user_model().objects.create_superuser(
@@ -98,7 +101,50 @@ PAGES = textwrap.dedent("""
     """)
 
 
-def manage(*args: str) -> subprocess.CompletedProcess:
+#: Signing in with Microsoft, turned on by its environment variables:
+#: the button first on the sign-in page, carrying the destination, and
+#: allauth sending the reader on to the tenant's sign-in.
+MICROSOFT = textwrap.dedent("""
+    import os
+    from urllib.parse import parse_qs, urlsplit
+
+    os.environ["DJANGO_SETTINGS_MODULE"] = "mysite.settings"
+
+    import django
+    from django.conf import settings
+
+    django.setup()
+    settings.ALLOWED_HOSTS = ["testserver"]
+
+    from django.db import connection
+    from django.test import Client
+    from django.test.utils import setup_test_environment
+
+    setup_test_environment()
+    connection.creation.create_test_db(verbosity=0)
+
+    client = Client()
+    page = client.get("/login/?next=/library/book/").content.decode()
+    button = "/accounts/microsoft/login/?next=%2Flibrary%2Fbook%2F"
+    assert f'href="{button}"' in page, page
+    # The password form is still there, folded under the button.
+    assert 'name="password"' in page
+
+    response = client.get(button)
+    assert response.status_code == 302, response.status_code
+    location = urlsplit(response["Location"])
+    assert location.netloc == "login.microsoftonline.com", location
+    assert location.path == "/the-tenant/oauth2/v2.0/authorize", location
+    query = parse_qs(location.query)
+    assert query["client_id"] == ["the-client"], query
+    assert query["redirect_uri"] == [
+        "http://testserver/accounts/microsoft/login/callback/"
+    ], query
+    print("ok")
+    """)
+
+
+def manage(*args: str, **environ: str) -> subprocess.CompletedProcess:
     """A command run as the README runs it, from the example's folder.
 
     The suite's own settings module is left behind: the example must
@@ -108,7 +154,9 @@ def manage(*args: str) -> subprocess.CompletedProcess:
         name: value
         for name, value in os.environ.items()
         if name != "DJANGO_SETTINGS_MODULE"
+        and not name.startswith("MICROSOFT_")
     }
+    env.update(environ)
 
     return subprocess.run(
         [sys.executable, *args],
@@ -140,6 +188,22 @@ def test_every_page_answers():
     assert result.stdout.strip().endswith("ok")
 
 
+def test_microsoft_sign_in_is_offered_once_registered():
+    pytest.importorskip("allauth.socialaccount")
+    environ = {
+        "MICROSOFT_CLIENT_ID": "the-client",
+        "MICROSOFT_CLIENT_SECRET": "the-secret",
+        "MICROSOFT_TENANT_ID": "the-tenant",
+    }
+
+    result = manage("manage.py", "check", "--fail-level", "INFO", **environ)
+    assert result.returncode == 0, result.stderr
+
+    result = manage("-c", MICROSOFT, **environ)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
 def test_the_container_keeps_its_database_in_the_volume():
     """Built from the root, which holds the framework, with the SQLite
     file and the wiki's images in the volume: a ``down`` and ``up``
@@ -158,3 +222,12 @@ def test_the_container_keeps_its_database_in_the_volume():
     # The wiki's extra, and its images in the volume beside the database.
     assert 'pip install ".[wiki]"' in dockerfile
     assert "DJANGO_MEDIA_ROOT=/data/media" in dockerfile
+    # Microsoft sign-in: allauth installed, the registration passed
+    # through from the environment and never written down.
+    assert "django-allauth[socialaccount]" in dockerfile
+    for name in (
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "MICROSOFT_TENANT_ID",
+    ):
+        assert web["environment"][name] == f"${{{name}:-}}", name
