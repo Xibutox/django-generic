@@ -252,6 +252,7 @@ and installed again with `pip install -r requirements.txt`.
 | `tasks` | Celery, redis | declared tasks run in the background |
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |
 | `wiki` | nh3 | the wiki (`generic.wiki`) |
+| `docx` | python-docx, docxcompose | Word files merged with a template (`generic.docx`), see [Word files](docx.md) |
 | `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
 | `browser` | Playwright, pytest-playwright | its browser tests, with `python -m playwright install chromium` ([Testing](testing.md#browser-tests)) |
@@ -329,6 +330,7 @@ INSTALLED_APPS = [
     "rest_framework",                # the framework's
     "generic",                       # the framework's
     # "generic.wiki",                # optional: the wiki
+    # "generic.docx",                # optional: Word files merged
     # "generic.search",              # optional: searches ignore accents
     # "knox", "generic.tokens",      # optional: API tokens (docs/api.md)
     "library",                       # the project's own apps
@@ -431,6 +433,7 @@ urlpatterns = [
     # Notifications, preferences, watches, saved views.
     path("api/generic/", include("generic.urls", namespace="generic")),
     # path("wiki/", include("generic.wiki.urls")),   # with generic.wiki
+    # path("docx/", include("generic.docx.urls")),   # with generic.docx
     # Every page and endpoint the resources generate: last.
     path("", site.urls),
 ]
@@ -482,6 +485,7 @@ names what is missing, with the line to write:
 | `generic.E003` | DRF does not accept session authentication |
 | `generic.E004` | `site.urls` is not in the URLconf |
 | `generic.E005` | `generic.wiki` is installed without the `wiki` extra |
+| `generic.E009` | `generic.docx` is installed without the `docx` extra |
 | `generic.W001` | A framework middleware is missing |
 | `generic.W002` | Several languages but no `LocaleMiddleware` |
 | `generic.W003` | `generic.urls` is not mounted |
@@ -598,6 +602,13 @@ refreshes when it is reloaded. See [Events](events.md).
 The `wiki` extra, `"generic.wiki"` in `INSTALLED_APPS`, and its URLs:
 `path("wiki/", include("generic.wiki.urls"))` before `site.urls`. See
 [The wiki](wiki.md).
+
+### Word files merged
+
+The `docx` extra, `"generic.docx"` in `INSTALLED_APPS`, and its page:
+`path("docx/", include("generic.docx.urls"))` before `site.urls` (its
+endpoint comes with `generic.urls`). No migration. See
+[Word files](docx.md).
 
 ### Background tasks
 

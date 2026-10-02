@@ -163,6 +163,20 @@ class TestOptionalParts:
 
         assert "generic.E005" in ids(checks.check_optional_parts())
 
+    @pytest.mark.parametrize("module", ["docx", "docxcompose"])
+    def test_the_word_merge_needs_its_libraries(self, monkeypatch, module):
+        real = importlib.util.find_spec
+        monkeypatch.setattr(
+            checks.importlib.util,
+            "find_spec",
+            lambda name, *args: None if name == module else real(name, *args),
+        )
+
+        assert "generic.E009" in ids(checks.check_optional_parts())
+
+    def test_the_word_merge_with_its_libraries_is_fine(self):
+        assert "generic.E009" not in ids(checks.check_optional_parts())
+
     def test_a_socket_needs_asgi(self):
         with override_settings(ASGI_APPLICATION=None):
             found = ids(checks.check_optional_parts())

@@ -104,6 +104,13 @@ DEFAULTS: dict[str, Any] = {
     # The largest file a form field - or the wiki's editor - accepts, in
     # bytes. Checked in the browser before sending and by the server.
     "FILE_MAX_SIZE": 10 * 1024 * 1024,
+    # --- Word files (generic.docx) ----------------------------------
+    # Who may merge Word files on the merge page and its endpoint: None
+    # for any signed-in user, a permission string, several, or
+    # callable(user).
+    "DOCX_MERGE_PERMISSION": None,
+    # The most documents one merge takes, the template aside.
+    "DOCX_MERGE_MAX_FILES": 50,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

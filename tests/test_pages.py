@@ -23,6 +23,9 @@ class TestEveryPage(PageSweep):
     expected = {
         # Opens the first page of the menu, when there is one.
         "generic_wiki:index": (200, 302),
+        # The tickets' Word files as one download, or back to the list
+        # when none has any.
+        "site:example_ticket_word": (200, 302),
     }
 
     @pytest.fixture

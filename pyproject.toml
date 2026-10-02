@@ -93,8 +93,14 @@ api = [
 # The wiki (generic.wiki): cleaning the HTML its editor produces.
 wiki = ["nh3>=0.2.17"]
 
+# Word files merged with a template (generic.docx). Pure pip: lxml,
+# which they need, ships wheels for Windows, macOS and Linux.
+docx = ["python-docx>=1.1", "docxcompose>=1.4"]
+
 dev = [
     "nh3>=0.2.17",
+    "python-docx>=1.1",
+    "docxcompose>=1.4",
     "defusedxml>=0.7",
     "django-rest-knox>=5.0",
     "drf-spectacular>=0.28",
@@ -167,7 +173,7 @@ check_untyped_defs = true
 exclude = ["tests/testapp/migrations/"]
 
 [[tool.mypy.overrides]]
-module = ["openpyxl.*", "channels.*", "factory.*"]
+module = ["openpyxl.*", "channels.*", "factory.*", "docxcompose.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

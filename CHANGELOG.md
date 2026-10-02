@@ -13,6 +13,21 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Word files merged with a template. *Merge Word files*, in the
+  sidebar, takes an optional template (`.docx` or `.dotx`) and Word
+  documents, put in order with the arrows, and downloads them as one
+  `.docx`: the template's styles, headers and footers, each document
+  on a new page, or in place of a paragraph reading `{{ documents }}`
+  in the template. On the ticket list, *Word attachments* merges the
+  Word files attached to tickets (two seeded letters). The framework's
+  side: the optional app `generic.docx` (the `docx` extra:
+  python-docx and docxcompose, pure pip), `merge_docx()` and
+  `docx_response()` for any view and any files, `POST
+  api/generic/docx/merge/`, the page `docx/`, the settings
+  `DOCX_MERGE_PERMISSION` and `DOCX_MERGE_MAX_FILES`, the check
+  `generic.E009`, and `Generic.api.download()` in the browser: a POST
+  whose answer is a file, saved under the server's name. See
+  docs/docx.md.
 - Files in the wiki: the editor's paperclip - or a drop, or a paste -
   uploads files into a page, where each becomes a block linking to its
   download; images dropped or pasted land in the text the same way.

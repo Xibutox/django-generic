@@ -23,6 +23,9 @@ urlpatterns = [
     path("api/generic/", include("generic.urls", namespace="generic")),
     # The wiki: pages, their editor and their API.
     path("wiki/", include("generic.wiki.urls")),
+    # Word files merged with a template: the page; its endpoint is in
+    # generic.urls, under api/generic/docx/merge/.
+    path("docx/", include("generic.docx.urls")),
     # The API described for scripts: api/schema/ (OpenAPI) and
     # api/docs/ (Swagger UI), for signed-in readers, token or session.
     path("api/", include("generic.openapi.urls")),

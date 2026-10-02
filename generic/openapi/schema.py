@@ -152,10 +152,35 @@ WIKI_FILE_UPLOAD = inline_serializer(
     },
 )
 
+#: What the Word merge takes: the documents in order, and a template.
+DOCX_MERGE = inline_serializer(
+    name="DocxMerge",
+    fields={
+        "documents": serializers.ListField(
+            child=serializers.FileField(),
+            help_text="One part per .docx or .dotx file, in the order "
+            "they are merged.",
+        ),
+        "template": serializers.FileField(
+            required=False,
+            help_text="The .docx or .dotx the result is made from: its "
+            "styles, headers and footers.",
+        ),
+        "name": serializers.CharField(
+            required=False, help_text="The name of the file sent back."
+        ),
+        "page_breaks": serializers.BooleanField(
+            required=False,
+            help_text="Each document on a new page; true by default.",
+        ),
+    },
+)
+
 #: Bodies of hand-built views, by the ``openapi_request`` they name.
 REQUESTS = {
     "wiki_image_upload": WIKI_IMAGE_UPLOAD,
     "wiki_file_upload": WIKI_FILE_UPLOAD,
+    "docx_merge": DOCX_MERGE,
 }
 
 
@@ -217,7 +242,10 @@ class ResourceAutoSchema(AutoSchema):
     def get_response_serializers(self) -> Any:
         action = self.action
 
-        if action in FILE_ACTIONS:
+        # A file, not JSON: a download, or a hand-built view saying so.
+        if action in FILE_ACTIONS or getattr(
+            self.view, "openapi_binary", False
+        ):
             return OpenApiTypes.BINARY
 
         if action in OBJECT_ACTIONS:

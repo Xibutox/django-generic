@@ -1556,3 +1556,30 @@ msgstr "Le fichier est trop volumineux : %(limit)s au plus."
 #: generic/static/generic/js/wiki.js
 msgid "The file could not be uploaded."
 msgstr "Le fichier n'a pas pu être envoyé."
+
+#: generic/static/generic/js/docx.js
+msgid ""
+"Word files (.docx, .dotx), up to %(count)s documents of %(size)s each."
+msgstr ""
+"Fichiers Word (.docx, .dotx), jusqu'à %(count)s documents de %(size)s "
+"chacun."
+
+#: generic/static/generic/js/docx.js
+msgid "%(name)s is not a Word file (.docx or .dotx)."
+msgstr "%(name)s n'est pas un fichier Word (.docx ou .dotx)."
+
+#: generic/static/generic/js/docx.js
+msgid "%(name)s is too large: at most %(limit)s."
+msgstr "%(name)s est trop volumineux : %(limit)s au plus."
+
+#: generic/static/generic/js/docx.js
+msgid "At most %(count)s documents can be merged at once."
+msgstr "%(count)s documents au plus peuvent être fusionnés à la fois."
+
+#: generic/static/generic/js/docx.js
+msgid "%(name)s is ready."
+msgstr "%(name)s est prêt."
+
+#: generic/static/generic/js/docx.js
+msgid "The merge failed."
+msgstr "La fusion a échoué."

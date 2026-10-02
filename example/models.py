@@ -173,7 +173,7 @@ class Ticket(models.Model):
         blank=True,
         validators=[
             FileExtensionValidator(
-                ["pdf", "png", "jpg", "jpeg", "txt", "csv", "xlsx"]
+                ["pdf", "png", "jpg", "jpeg", "txt", "csv", "xlsx", "docx"]
             )
         ],
     )

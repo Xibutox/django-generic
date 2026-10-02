@@ -387,8 +387,96 @@
     });
   }
 
+  /** The file name a Content-Disposition header gives, or "". */
+  function dispositionName(header) {
+    var encoded = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(header || "");
+
+    if (encoded) {
+      try {
+        return decodeURIComponent(encoded[1].trim());
+      } catch (error) {
+        // Not percent-encoded after all: the plain name, if any.
+      }
+    }
+
+    var plain = /filename="?([^";]+)"?/.exec(header || "");
+
+    return plain ? plain[1].trim() : "";
+  }
+
+  /**
+   * Send a request whose answer is a file, and save that file.
+   *
+   * For what a link cannot do: a POST, files of the reader's own in a
+   * FormData. A refusal is read as JSON and thrown as an ApiError, like
+   * every other call; the file is named as the server names it, else
+   * fallbackName. Resolves with that name.
+   */
+  function download(url, body, options) {
+    options = options || {};
+
+    var init = {
+      method: options.method || "POST",
+      credentials: "same-origin",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRFToken": csrfToken()
+      }
+    };
+
+    if (body !== undefined) {
+      if (typeof FormData !== "undefined" && body instanceof FormData) {
+        init.body = body;
+      } else {
+        init.headers["Content-Type"] = "application/json";
+        init.body = JSON.stringify(body);
+      }
+    }
+
+    return window.fetch(url, init).then(function (response) {
+      if (!response.ok) {
+        return response
+          .json()
+          .catch(function () {
+            return null;
+          })
+          .then(function (data) {
+            throw new ApiError(
+              errorMessage(data, response.status),
+              response.status,
+              data
+            );
+          });
+      }
+
+      var name =
+        dispositionName(response.headers.get("Content-Disposition")) ||
+        options.fallbackName ||
+        "download";
+
+      return response.blob().then(function (blob) {
+        var link = document.createElement("a");
+        var address = window.URL.createObjectURL(blob);
+
+        link.href = address;
+        link.download = name;
+        link.hidden = true;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        // Revoked once the browser has started saving, not before.
+        window.setTimeout(function () {
+          window.URL.revokeObjectURL(address);
+        }, 1000);
+
+        return name;
+      });
+    });
+  }
+
   var api = {
     request: request,
+    download: download,
     buildUrl: buildUrl,
     errorMessage: errorMessage,
     ApiError: ApiError,

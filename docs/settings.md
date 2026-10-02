@@ -86,7 +86,14 @@ See [Imports](imports.md).
 | `FORM_RELATED_POPUP_WIDTH` | `980` | Related editor popup |
 | `FORM_RELATED_POPUP_HEIGHT` | `760` | Related editor popup |
 | `FORM_CHOICES_LIMIT` | `200` | Choices embedded in a relation field without an autocomplete |
-| `FILE_MAX_SIZE` | `10 * 1024 * 1024` | The largest file, in bytes, a form's file field or the wiki's editor takes: refused in the browser before sending, and by the server ([Files](forms.md#files)) |
+| `FILE_MAX_SIZE` | `10 * 1024 * 1024` | The largest file, in bytes, a form's file field or the wiki's editor takes: refused in the browser before sending, and by the server ([Files](forms.md#files)). Also each file of a Word merge |
+
+## Word files
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `DOCX_MERGE_PERMISSION` | `None` | Who may use the merge page and its endpoint: `None` for anyone signed in, a permission string, several, or `callable(user)` ([Word files](docx.md#who-may-merge)) |
+| `DOCX_MERGE_MAX_FILES` | `50` | The most documents one merge takes, the template aside |
 
 ## Events
 

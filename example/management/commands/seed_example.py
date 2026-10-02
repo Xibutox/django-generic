@@ -19,6 +19,7 @@ is missing without touching what is there.
 from __future__ import annotations
 
 import datetime
+import importlib.util
 import random
 from decimal import Decimal
 from typing import Any
@@ -274,6 +275,7 @@ class Command(BaseCommand):
         self.create_api_token(users)
         self.work_a_few_tickets(tickets, agents, users)
         self.attach_a_file(tickets, users)
+        self.attach_word_files(tickets, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
 
@@ -364,6 +366,58 @@ class Command(BaseCommand):
             ticket.attachment.save(
                 "customer-log.txt", ContentFile(log.encode()), save=True
             )
+
+    def attach_word_files(
+        self,
+        tickets: list[Ticket],
+        users: dict[str, Any],
+    ) -> None:
+        """Two customer letters in Word, for the tickets' *Word
+        attachments* page to merge (generic.docx).
+
+        Only where python-docx is installed - the framework's ``docx``
+        extra - and only once.
+        """
+        if importlib.util.find_spec("docx") is None or len(tickets) < 3:
+            return
+
+        import io
+
+        from django.core.files.base import ContentFile
+        from docx import Document
+
+        from generic.history import acting_as
+
+        letters = (
+            (
+                tickets[1],
+                "Request for a quote",
+                "We would like to extend the contract to our second site.",
+            ),
+            (
+                tickets[2],
+                "Incident report",
+                "The export failed three times on Monday morning.",
+            ),
+        )
+
+        for ticket, title, text in letters:
+            if ticket.attachment:
+                continue
+
+            document = Document()
+            document.add_heading(f"{ticket.reference} - {title}", level=1)
+            document.add_paragraph(text)
+            document.add_paragraph("Kind regards,")
+            content = io.BytesIO()
+            document.save(content)
+
+            with acting_as(users["viewer"]):
+                ticket.attachment.save(
+                    f"{ticket.reference.lower()}-letter.docx",
+                    ContentFile(content.getvalue()),
+                    save=True,
+                )
 
     # -- schedules -----------------------------------------------------
 

@@ -1966,3 +1966,11 @@ msgstr "Vérifier"
 #: example/tasks.py example/resources.py
 msgid "Review"
 msgstr "Passer en revue"
+
+#: example/resources.py
+msgid "Word attachments"
+msgstr "Pièces jointes Word"
+
+#: example/resources.py
+msgid "No ticket has a Word file."
+msgstr "Aucun ticket n'a de fichier Word."

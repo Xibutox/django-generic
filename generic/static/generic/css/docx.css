@@ -1,0 +1,88 @@
+/**
+ * The merge page (generic.docx). Tokens only, and rem throughout, so it
+ * follows the browser's text size like everything else.
+ */
+
+.docx-merge__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 6rem;
+  padding: var(--space-4);
+  margin-top: var(--space-3);
+  color: var(--text-secondary);
+  text-align: center;
+  background: var(--surface-sunken);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.docx-merge__drop:hover,
+.docx-merge__drop:focus-within,
+.docx-merge__drop--over {
+  color: var(--text-primary);
+  border-color: var(--color-accent);
+}
+
+.docx-merge__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docx-merge__file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius);
+}
+
+.docx-merge__list .docx-merge__file {
+  margin-top: 0;
+}
+
+.docx-merge__file strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docx-merge__position {
+  min-width: 1.5rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.docx-merge__tools {
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.docx-merge__limits {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.docx-merge__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  max-width: 40rem;
+}
+
+.docx-merge__actions {
+  align-items: center;
+  margin-top: var(--space-4);
+}

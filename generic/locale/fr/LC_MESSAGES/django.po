@@ -2931,3 +2931,114 @@ msgid ""
 msgstr ""
 "Les flèches montent ou descendent la ligne ou le bloc où se trouve le "
 "curseur (Alt+Haut, Alt+Bas)."
+
+#: generic/docx
+msgid "Word files"
+msgstr "Fichiers Word"
+
+#: generic/docx
+msgid "Merge Word files"
+msgstr "Fusionner des fichiers Word"
+
+#: generic/docx
+msgid "A document has no file."
+msgstr "Un document n'a pas de fichier."
+
+#: generic/docx
+msgid "a file"
+msgstr "un fichier"
+
+#: generic/docx
+msgid ""
+"%(name)s is not a Word file (.docx or .dotx). An older .doc file has to be "
+"saved as .docx first."
+msgstr ""
+"%(name)s n'est pas un fichier Word (.docx ou .dotx). Un ancien fichier .doc "
+"doit d'abord être enregistré en .docx."
+
+#: generic/docx
+msgid "%(name)s is too large once unpacked."
+msgstr "%(name)s est trop volumineux une fois décompressé."
+
+#: generic/docx
+msgid ""
+"%(name)s is not a Word file (.docx or .dotx); a file with macros (.docm, "
+".dotm) is not accepted either."
+msgstr ""
+"%(name)s n'est pas un fichier Word (.docx ou .dotx) ; un fichier avec des "
+"macros (.docm, .dotm) n'est pas accepté non plus."
+
+#: generic/docx
+msgid "%(name)s could not be read as a Word file."
+msgstr "%(name)s n'a pas pu être lu comme un fichier Word."
+
+#: generic/docx
+msgid "Choose at least one document."
+msgstr "Choisissez au moins un document."
+
+#: generic/docx
+msgid "%(name)s is empty."
+msgstr "%(name)s est vide."
+
+#: generic/docx
+msgid "%(name)s is too large: at most %(limit)s."
+msgstr "%(name)s est trop volumineux : %(limit)s au plus."
+
+#: generic/docx
+msgid "At most %(count)s documents can be merged at once."
+msgstr "%(count)s documents au plus peuvent être fusionnés à la fois."
+
+#: generic/docx
+msgid "Template"
+msgstr "Modèle"
+
+#: generic/docx
+msgid "Optional"
+msgstr "Facultatif"
+
+#: generic/docx
+msgid ""
+"The merged file is made from it: its styles, headers and footers. A "
+"paragraph reading %(marker)s in it marks where the documents go; otherwise "
+"they follow its text. Without a template, the first document is the base."
+msgstr ""
+"Le fichier fusionné est fait à partir de lui : ses styles, ses en-têtes et "
+"ses pieds de page. Un paragraphe contenant %(marker)s y marque l'endroit où "
+"vont les documents ; sinon, ils suivent son texte. Sans modèle, le premier "
+"document sert de base."
+
+#: generic/docx
+msgid "Drop a .docx or .dotx here, or choose one"
+msgstr "Déposez un .docx ou un .dotx ici, ou choisissez-en un"
+
+#: generic/docx
+msgid "Documents"
+msgstr "Documents"
+
+#: generic/docx
+msgid "Move up"
+msgstr "Monter"
+
+#: generic/docx
+msgid "Move down"
+msgstr "Descendre"
+
+#: generic/docx
+msgid "Drop Word files here, or choose them"
+msgstr "Déposez des fichiers Word ici, ou choisissez-les"
+
+#: generic/docx
+msgid "Merged file"
+msgstr "Fichier fusionné"
+
+#: generic/docx
+msgid "File name"
+msgstr "Nom du fichier"
+
+#: generic/docx
+msgid "Start each document on a new page"
+msgstr "Commencer chaque document sur une nouvelle page"
+
+#: generic/docx
+msgid "Merge and download"
+msgstr "Fusionner et télécharger"

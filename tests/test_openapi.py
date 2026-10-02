@@ -109,3 +109,21 @@ def test_the_check_names_a_missing_schema_class(settings):
     settings.REST_FRAMEWORK.pop("DEFAULT_SCHEMA_CLASS")
 
     assert [message.id for message in check_openapi()] == ["generic.E008"]
+
+
+def test_the_word_merge_takes_files_and_answers_one(admin_client):
+    schema = paths_for(admin_client)
+    operation = schema["paths"]["/api/generic/docx/merge/"]["post"]
+
+    body = operation["requestBody"]["content"]["multipart/form-data"]
+    assert body["schema"]["$ref"] == "#/components/schemas/DocxMerge"
+    fields = schema["components"]["schemas"]["DocxMerge"]["properties"]
+    assert fields["documents"]["type"] == "array"
+    assert schema["components"]["schemas"]["DocxMerge"]["required"] == [
+        "documents"
+    ]
+    answer = operation["responses"]["200"]["content"]
+    assert list(answer.values())[0]["schema"] == {
+        "type": "string",
+        "format": "binary",
+    }

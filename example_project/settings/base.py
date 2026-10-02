@@ -218,6 +218,8 @@ INSTALLED_APPS = [
     "generic",
     # --- optional: the wiki ---
     "generic.wiki",
+    # --- optional: Word files merged with a template (docs/docx.md) ---
+    "generic.docx",
     # --- optional: searches ignore accents (docs/search.md) ---
     "generic.search",
     # --- optional: the API for scripts (docs/api.md) ---

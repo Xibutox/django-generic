@@ -1,0 +1,133 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# Word files merged (generic.docx): a template, documents in order, #}
+{# one merged .docx downloaded. The files travel with the request    #}
+{# only; nothing is stored.                                           #}
+
+{% block bodyclass %}page-docx-merge{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'generic/css/docx.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/docx.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  {{ merge_config|json_script:"docx-merge-config" }}
+
+  <div class="docx-merge stack" x-data="docxMerge('docx-merge-config')">
+    <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+      <span x-text="error"></span>
+    </div>
+
+    {# 1. The template. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "description" %} {% translate "Template" %}</h2>
+        <span class="badge">{% translate "Optional" %}</span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed with marker=placeholder %}
+          The merged file is made from it: its styles, headers and footers.
+          A paragraph reading {{ marker }} in it marks where the documents go;
+          otherwise they follow its text. Without a template, the first document is the base.
+        {% endblocktranslate %}
+      </p>
+
+      <label class="docx-merge__drop"
+             :class="{ 'docx-merge__drop--over': dragging === 'template' }"
+             @dragover.prevent="dragging = 'template'"
+             @dragleave.prevent="dragging = ''"
+             @drop.prevent="dropped($event, 'template')"
+             x-show="!template">
+        {% icon "upload_file" %}
+        <span>{% translate "Drop a .docx or .dotx here, or choose one" %}</span>
+        <input type="file" class="sr-only" accept=".docx,.dotx" @change="picked($event, 'template')">
+      </label>
+
+      <div class="docx-merge__file" x-show="template" x-cloak>
+        {% icon "description" %}
+        <strong x-text="template && template.name"></strong>
+        <span class="muted" x-text="template && size(template)"></span>
+        <button type="button" class="icon-button icon-button--sm" @click="clearTemplate()"
+                title="{% translate 'Remove' %}" aria-label="{% translate 'Remove' %}">
+          {% icon "close" "icon--sm" %}
+        </button>
+      </div>
+    </section>
+
+    {# 2. The documents, in order. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "library_books" %} {% translate "Documents" %}</h2>
+        <span class="badge" x-text="documents.length"></span>
+      </div>
+
+      <ol class="docx-merge__list" x-show="documents.length" x-cloak>
+        <template x-for="(entry, index) in documents" :key="entry.key">
+          <li class="docx-merge__file">
+            <span class="docx-merge__position" x-text="index + 1"></span>
+            <strong x-text="entry.file.name"></strong>
+            <span class="muted" x-text="size(entry.file)"></span>
+            <span class="docx-merge__tools">
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, -1)" :disabled="index === 0"
+                      title="{% translate 'Move up' %}" aria-label="{% translate 'Move up' %}">
+                {% icon "arrow_upward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, 1)" :disabled="index === documents.length - 1"
+                      title="{% translate 'Move down' %}" aria-label="{% translate 'Move down' %}">
+                {% icon "arrow_downward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="remove(index)"
+                      title="{% translate 'Remove' %}" aria-label="{% translate 'Remove' %}">
+                {% icon "close" "icon--sm" %}
+              </button>
+            </span>
+          </li>
+        </template>
+      </ol>
+
+      <label class="docx-merge__drop"
+             :class="{ 'docx-merge__drop--over': dragging === 'documents' }"
+             @dragover.prevent="dragging = 'documents'"
+             @dragleave.prevent="dragging = ''"
+             @drop.prevent="dropped($event, 'documents')">
+        {% icon "note_add" %}
+        <span>{% translate "Drop Word files here, or choose them" %}</span>
+        <input type="file" class="sr-only" accept=".docx,.dotx" multiple @change="picked($event, 'documents')">
+      </label>
+
+      <p class="muted docx-merge__limits" x-text="limits()"></p>
+    </section>
+
+    {# 3. The result. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "merge_type" %} {% translate "Merged file" %}</h2>
+      </div>
+
+      <div class="docx-merge__options">
+        <div class="field-box">
+          <label for="docx-merge-name">{% translate "File name" %}</label>
+          <input id="docx-merge-name" type="text" class="input" maxlength="200"
+                 placeholder="merged.docx" x-model="name">
+        </div>
+        <div class="field-checkbox">
+          <input id="docx-merge-breaks" type="checkbox" x-model="pageBreaks">
+          <label for="docx-merge-breaks">{% translate "Start each document on a new page" %}</label>
+        </div>
+      </div>
+
+      <div class="cluster docx-merge__actions">
+        <button type="button" class="button button--primary" :disabled="!canMerge()" @click="merge()">
+          {% icon "download" "icon--sm" %} {% translate "Merge and download" %}
+        </button>
+        <span class="spinner" x-show="busy" x-cloak aria-hidden="true"></span>
+      </div>
+    </section>
+  </div>
+{% endblock %}

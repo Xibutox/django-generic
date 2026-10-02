@@ -130,6 +130,7 @@ urlpatterns = [
     ),
     path("api/generic/", include("generic.urls", namespace="generic")),
     path("wiki/", include("generic.wiki.urls")),
+    path("docx/", include("generic.docx.urls")),
     # The registry: every model the example's resources.py declares.
     # Last, so the fixtures above keep their paths.
     path("", site.urls),

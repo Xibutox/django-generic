@@ -93,3 +93,12 @@ if apps.is_installed("generic.wiki"):
             name="wiki-files",
         ),
     ]
+
+# Word files merged with a template, where generic.docx is installed;
+# its page, in generic.docx.urls, sends them here.
+if apps.is_installed("generic.docx"):
+    from generic.docx.api import DocxMergeView
+
+    urlpatterns[:0] = [
+        path("docx/merge/", DocxMergeView.as_view(), name="docx-merge"),
+    ]

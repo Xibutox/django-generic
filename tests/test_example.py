@@ -463,3 +463,62 @@ class TestTicketLinks:
 
         assert b'x-data="pageToolbar"' in page.content
         assert b"data-toolbar-more" in page.content
+
+
+class TestWordAttachments:
+    """*Word attachments*: the tickets' stored Word files, merged."""
+
+    URL = "/example/ticket/word/"
+
+    @pytest.fixture
+    def letters(self, desk, settings, tmp_path):
+        import io
+
+        from django.core.files.base import ContentFile
+        from docx import Document
+
+        settings.MEDIA_ROOT = str(tmp_path)
+        second = Ticket.objects.create(
+            reference="SD-1001", title="Quote", team=desk["team"]
+        )
+
+        for ticket, text in ((second, "Second"), (desk["ticket"], "First")):
+            document = Document()
+            document.add_paragraph(text)
+            content = io.BytesIO()
+            document.save(content)
+            ticket.attachment.save(
+                f"{ticket.reference}.docx", ContentFile(content.getvalue())
+            )
+
+        return desk
+
+    def test_they_come_as_one_file_in_reference_order(
+        self, admin_client, letters
+    ):
+        import io
+
+        from docx import Document
+
+        response = admin_client.get(self.URL)
+
+        assert response.status_code == 200
+        assert "ticket-attachments.docx" in response["Content-Disposition"]
+        merged = Document(io.BytesIO(response.content))
+        assert [p.text for p in merged.paragraphs if p.text] == [
+            "First",
+            "Second",
+        ]
+
+    def test_with_none_it_goes_back_to_the_list(self, admin_client, desk):
+        response = admin_client.get(self.URL)
+
+        assert response.status_code == 302
+        assert response["Location"] == "/example/ticket/"
+
+    def test_a_reader_without_the_tickets_is_refused(self, client, letters):
+        from tests.factories import UserFactory
+
+        client.force_login(UserFactory())
+
+        assert client.get(self.URL).status_code == 403

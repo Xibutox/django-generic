@@ -168,7 +168,7 @@ jobs:
       - name: Every extra, on the oldest Django accepted
         run: |
           python -m venv /tmp/full
-          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,import,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*" pytest pytest-django
+          /tmp/full/bin/pip install "$(ls dist/*.whl)[export,import,events,tasks,wiki,docx]" "Django==5.2.*" "djangorestframework==3.16.*" pytest pytest-django
           # --sweep: the project's own PageSweep, from the wheel.
           cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py" --sweep
       - uses: actions/upload-artifact@v4

@@ -94,6 +94,8 @@ record.
 | `/example/ticket/1/delete/` | the cascade preview |
 | `/example/team/1/delete/` | the protected case: refused, with the reason |
 | `/wiki/` | the wiki: menu, pages, editor, history |
+| `/docx/` | Word files merged with a template, in the order chosen, downloaded as one |
+| `/example/ticket/word/` | the Word letters attached to tickets, merged into one file by the resource's own page |
 | `/account/` | profile, appearance sliders, preferences, what you watch, password |
 | `/generic/historyentry/` | every recorded change, as an ordinary table |
 | `/auth/user/`, `/auth/group/` | accounts and groups, as `admin` only |
@@ -286,6 +288,17 @@ saved, the page lists its attachments under its text. Save, then open *History*
 and restore the earlier version — the text you replaced is kept too.
 Pin a page to the dashboard. As `viewer`, the same pages are there to read, without the
 buttons.
+
+**Merging Word files.** Open *Merge Word files* in the sidebar. Drop a
+`.dotx` (or a `.docx`) with a header as the template, then two or three
+Word files; reorder them with the arrows, name the result and press
+*Merge and download*: one file, with the template's header on every
+page and each document on a page of its own. Write a paragraph reading
+`{{ documents }}` between two lines of the template, and the documents
+land there. Drop a PDF instead and the page names it as no Word file.
+On the ticket list, *Word attachments* merges the two letters the seed
+attached to tickets SD-1001 and SD-1002 - stored files this time,
+nothing to upload; as `guest` the page is refused.
 
 **As `viewer`.** The pencil and plus beside *Team* are gone, and the
 team list has no *Add*: the schema only offers what the permissions

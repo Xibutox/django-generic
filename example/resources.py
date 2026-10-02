@@ -13,8 +13,10 @@ import datetime
 from decimal import Decimal
 from typing import Any
 
+from django.contrib import messages
 from django.db.models import Avg, Count, Q, QuerySet, Sum
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext
@@ -48,6 +50,7 @@ from generic.api import (
     IntegerColumn,
     TagsColumn,
 )
+from generic.docx import docx_response, merge_docx
 from generic.sites import (
     Chart,
     DataResource,
@@ -657,6 +660,27 @@ class TicketResource(ModelResource):
             "%(days)s days",
             ticket.age_in_days,
         ) % {"days": ticket.age_in_days}
+
+    @page(title=_("Word attachments"), icon="merge_type")
+    def word(self, request: Any) -> Any:
+        """Every Word attachment of the tickets this reader may see, as
+        one file (generic.docx): stored files merged, nothing to upload.
+        """
+        tickets = (
+            self.get_queryset(request)
+            .filter(attachment__iendswith=".docx")
+            .order_by("reference")
+        )
+
+        if not tickets:
+            messages.info(request, gettext("No ticket has a Word file."))
+
+            return redirect(self.get_list_url())
+
+        return docx_response(
+            merge_docx([ticket.attachment for ticket in tickets]),
+            "ticket-attachments.docx",
+        )
 
     @action(description=_("Check"), icon="fact_check")
     def check(self, request: Any, queryset: QuerySet) -> Any:

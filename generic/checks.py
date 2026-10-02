@@ -21,6 +21,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W009  (--deploy) ADMINS is empty: errors are mailed to nobody
     generic.E008  the OpenAPI pages without drf-spectacular
     generic.W010  a model with a file field, and MEDIA_ROOT is empty
+    generic.E009  generic.docx without python-docx or docxcompose
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -285,6 +286,28 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
                 id="generic.E005",
             )
         )
+
+    if apps.is_installed("generic.docx"):
+        missing = [
+            package
+            for package, module in (
+                ("python-docx", "docx"),
+                ("docxcompose", "docxcompose"),
+            )
+            if importlib.util.find_spec(module) is None
+        ]
+
+        if missing:
+            messages.append(
+                checks.Error(
+                    "generic.docx is installed but "
+                    + " and ".join(missing)
+                    + (" are" if len(missing) > 1 else " is")
+                    + " not: merging Word files fails.",
+                    hint="Install the framework's 'docx' extra. " + DOCS,
+                    id="generic.E009",
+                )
+            )
 
     if (
         importlib.util.find_spec("channels") is not None

@@ -104,6 +104,10 @@ generic/
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
 ├── wiki/                Optional: pages, editor, images and files, history, pinned pages
+├── docx/                Optional: Word files merged with a template
+│   ├── merge.py         merge_docx(), docx_response(): any files, in memory
+│   ├── api.py           POST api/generic/docx/merge/: uploads in, a .docx out
+│   └── views.py         The merge page (urls.py mounts it)
 ├── testing/             PageSweep: a project's pages and endpoints, swept by pytest
 ├── tokens/              Optional: personal API tokens on knox (ApiToken)
 ├── openapi/             The OpenAPI description: ResourceAutoSchema, pages

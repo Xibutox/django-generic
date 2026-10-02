@@ -162,6 +162,9 @@ generic/
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning,
 │                           WikiImage, WikiFile (images and files uploaded from the editor)
+├── docx/                   optional app generic.docx: merge.py merge_docx(), docx_response()
+│                           (Word files merged with a template, §13h), api.py the endpoint,
+│                           views.py + urls.py the merge page
 ├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
 │                           its own table), TokenAuthentication (scope, last use),
 │                           api/generic/tokens/, the account section, the People screen
@@ -350,6 +353,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "generic",
     "generic.wiki",                 # optional
+    "generic.docx",                 # optional: Word files merged (§13h)
     "generic.search",               # optional: searches ignore accents (§5.14)
     "myapp",
 ]
@@ -387,6 +391,7 @@ urlpatterns = [
     path("jsi18n/", JavaScriptCatalog.as_view(packages=["generic"]), name="javascript-catalog"),
     path("api/generic/", include("generic.urls", namespace="generic")),
     path("wiki/", include("generic.wiki.urls")),        # optional
+    path("docx/", include("generic.docx.urls")),        # optional, with generic.docx
     path("", site.urls),                                  # LAST: owns "/"
 ]
 ```
@@ -1280,6 +1285,10 @@ Tokens: `var(--color-accent)`, `--text-primary|secondary|muted`,
 - `Generic.api.get(url, params)`, `.post(url, body)`, `.patch`, `.put`,
   `.delete` → Promises of JSON; errors are `ApiError` with `.message`,
   `.status`, `.data`. CSRF handled.
+- `Generic.api.download(url, body, {fallbackName, method})`: a request
+  (POST by default; `FormData` or JSON) whose answer is a file, saved
+  under its `Content-Disposition` name; a refusal rejects with an
+  `ApiError`. Resolves with the name.
 - `Generic.operations.post(url, body)` / `.handle(answer)`: an answer
   carrying `operation` (§13g) drawn as a card with its report tree,
   followed until the run ends; anything else a toast.
@@ -1386,7 +1395,8 @@ strftime string fixes the text),
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
-`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`.
+`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
+`DOCX_MERGE_PERMISSION`, `DOCX_MERGE_MAX_FILES`.
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1648,6 +1658,41 @@ def recompute(self, request, queryset):
   alone register the runs (`runs_are_kept()`), not the Tasks page.
   Example: *Check* (tickets, in the request) and *Review* (customers,
   background) in `example/tasks.py`. See `docs/operations.md`.
+
+## 13h. Word files merged with a template (`generic.docx`)
+
+```python
+from generic.docx import DocxMergeError, docx_response, merge_docx
+
+content = merge_docx(                       # bytes of a .docx
+    [doc.file for doc in documents],        # in order: FieldFile, upload, path, bytes, file
+    template=letterhead.file,               # .docx or .dotx, or None (first document is the base)
+    page_breaks=True,                       # each document on a new page
+    placeholder="{{ documents }}",          # a template paragraph they replace
+)
+return docx_response(content, "dossier")    # attachment "dossier.docx", nosniff
+```
+
+- **Never hand-roll** Word merging (python-docx loops, zip surgery):
+  call `merge_docx`. Inside a resource, an `@page` returning
+  `docx_response(...)` over `self.get_queryset(request)` (example:
+  `TicketResource.word`, *Word attachments*). `DocxMergeError` (a
+  `ValueError`) carries a sentence naming the file: a `.doc`, a
+  `.docm`/`.dotm`, a non-Word file, > 256 MB unpacked.
+- Result: the template's styles (same-named styles follow the
+  template), headers, footers, page set-up; documents' pictures,
+  tables, lists, footnotes come along; their headers do not. Template
+  without `{{ documents }}`: after its text, or from the top when it
+  has none. A page break before each document unless nothing precedes.
+- App (`"generic.docx"`, the `docx` extra: python-docx + docxcompose,
+  pure pip; E009 without them): sidebar *Merge Word files* →
+  `docx/` (`generic_docx:merge`, `docx.js` Alpine `docxMerge`) and
+  `POST api/generic/docx/merge/` (`generic:docx-merge`; multipart
+  `documents` × n in order, `template`, `name`, `page_breaks`) →
+  the file, or 400 `{"detail"}`. Each file ≤ `FILE_MAX_SIZE`, at most
+  `DOCX_MERGE_MAX_FILES` (50). Who: `DOCX_MERGE_PERMISSION` (None =
+  signed in; permission string(s) or `callable(user)`), page + link +
+  endpoint. Nothing stored. See `docs/docx.md`.
 
 ## 13ter. Signing in through somebody else
 
