@@ -84,7 +84,15 @@ def follow(document: Document, version: DocumentVersion) -> None:
     document.file = version.file.name
     document.version = version.number
     document.file_size = version.file_size
-    document.save(update_fields=("file", "version", "file_size", "updated_at"))
+    document.save(
+        update_fields=(
+            "file",
+            "version",
+            "file_size",
+            "file_format",
+            "updated_at",
+        )
+    )
 
 
 @transaction.atomic
@@ -98,7 +106,13 @@ def complete(version: DocumentVersion, *, upload: Any) -> DocumentVersion:
         setattr(version, name, value)
 
     version.save(
-        update_fields=("file_name", "file_size", "content_type", "checksum")
+        update_fields=(
+            "file_name",
+            "file_size",
+            "file_format",
+            "content_type",
+            "checksum",
+        )
     )
     follow(document, version)
 

@@ -457,7 +457,22 @@ Tick rows, or tick the header box and choose *every matching row*.
 The menu lists the actions the user may run; an action with `confirm`
 asks first. An action receives a plain queryset of the chosen rows —
 never the annotated list queryset — and may return nothing, a message,
-`{"message": ..., "level": ...}`, or a DRF `Response`.
+`{"message": ..., "level": ...}`, a [report](operations.md), or a DRF
+`Response`.
+
+An action may also open a page of the site with the selection in it —
+a form the chosen rows fill in, say — by returning `{"redirect":
+"/path/?..."}`. The browser goes there instead of drawing a toast. Only
+a path of the site is accepted: `https://...` or `//host` is a
+declaration error (`ValueError`), never sent to the browser. The
+document manager's *Merge into Word* opens its merge page this way:
+
+```python
+@action(description=_("Merge into Word"), permissions=("view",))
+def merge_word(self, request, queryset):
+    keys = ",".join(str(pk) for pk in queryset.values_list("pk", flat=True))
+    return {"redirect": f"{self.get_page_url('merge')}?items={keys}"}
+```
 
 ```python
 @action(

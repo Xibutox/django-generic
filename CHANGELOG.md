@@ -17,8 +17,18 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   with their folders and documents, every file a document has had kept
   as a version - who sent it, when, why, its size and SHA-256 - and
   downloaded under the name it was sent with; *Restore* makes an old
-  version current again as a new one. `seed_documents` makes three
-  teams and six accounts. See docmanager/README.md.
+  version current again as a new one. Lists search and filter by
+  format (`DOCX`, `PDF`...), with a *Word files* preset. *Merge Word
+  files*, in the navigation, puts documents and versions together into
+  one `.docx` made from a `.docx`/`.dotx` template - downloaded, or
+  kept as a new document - and the lists' *Merge into Word* action
+  opens it with the selection. The merge is the example's own
+  (`docmanager/requirements.txt`: python-docx, docxcompose).
+  `seed_documents` makes three teams and six accounts. See
+  docmanager/README.md.
+- A bulk action may open a page of the site: `{"redirect": "/path/"}`
+  sends the browser there (`Generic.operations.handle`); another
+  site's address is refused. See docs/sites.md.
 - Teams in the framework, `generic.teams` (migration `0001`): a `Team`
   of members, and `team_field` on a resource - `"team"`,
   `"folder__team"`, `"teams"` - narrows its lists, pages, searches,

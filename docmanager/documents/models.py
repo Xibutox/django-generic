@@ -38,7 +38,7 @@ def file_path(instance: models.Model, filename: str) -> str:
 
 def extension_of(name: str) -> str:
     """``"DOCX"`` for ``report.docx``; ``""`` for a name without one."""
-    return PurePosixPath(name or "").suffix.lstrip(".").upper()
+    return PurePosixPath(name or "").suffix.lstrip(".").upper()[:10]
 
 
 class Folder(models.Model):
@@ -114,6 +114,11 @@ class Document(models.Model):
     file_size = models.PositiveBigIntegerField(
         _("size"), default=0, editable=False
     )
+    #: The file's extension, upper case - ``DOCX``, ``PDF`` - kept as a
+    #: field so that lists filter, search and count by it.
+    file_format = models.CharField(
+        _("format"), max_length=10, blank=True, db_index=True, editable=False
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_("created by"),
@@ -140,6 +145,7 @@ class Document(models.Model):
         return f"{self.reference} {self.title}"
 
     def save(self, *args, **kwargs) -> None:
+        self.file_format = extension_of(self.file.name)
         super().save(*args, **kwargs)
 
         # Numbered by its key, once it has one.
@@ -148,10 +154,6 @@ class Document(models.Model):
             type(self).objects.filter(pk=self.pk).update(
                 reference=self.reference
             )
-
-    @property
-    def format(self) -> str:
-        return extension_of(self.file.name)
 
     @property
     def team(self) -> Team:
@@ -178,6 +180,11 @@ class DocumentVersion(models.Model):
     )
     file_size = models.PositiveBigIntegerField(
         _("size"), default=0, editable=False
+    )
+    #: The file's extension, upper case - ``DOCX``, ``PDF`` - kept as a
+    #: field so that lists filter, search and count by it.
+    file_format = models.CharField(
+        _("format"), max_length=10, blank=True, db_index=True, editable=False
     )
     content_type = models.CharField(
         _("content type"), max_length=120, blank=True, editable=False
@@ -212,6 +219,6 @@ class DocumentVersion(models.Model):
     def __str__(self) -> str:
         return f"{self.document.reference} v{self.number}"
 
-    @property
-    def format(self) -> str:
-        return extension_of(self.file_name or self.file.name)
+    def save(self, *args, **kwargs) -> None:
+        self.file_format = extension_of(self.file_name or self.file.name)
+        super().save(*args, **kwargs)

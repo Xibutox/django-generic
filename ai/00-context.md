@@ -253,11 +253,21 @@ like the minimal one, plus `generic.teams`, two languages, a 50 MB
 `Document` (its current `file`, `version`, `reference` DOC-00001),
 `DocumentVersion` (number, file, original `file_name`, size, type,
 SHA-256, change note, sender), each resource scoped by `team_field`;
-`documents/versions.py` records, numbers (row lock) and restores
-versions; the document form's change note is a `form_extra_fields`
-entry; `seed_documents` makes three teams, six accounts (password
-`demo`) and Word/PDF/text samples (`samples.py`, no library). Kept
-working by `tests/test_docmanager.py`, run in its own process.
+`file_format` (`DOCX`, `PDF`: the extension, a field so lists search,
+filter and preset on it - "Word files"); `documents/versions.py`
+records, numbers (row lock) and restores versions; the document form's
+change note is a `form_extra_fields` entry. The Word merge is the
+example's own, not the framework's: `documents/merge.py` (`merge_docx`,
+`docx_response`, on python-docx + docxcompose,
+`docmanager/requirements.txt`), the page `DocumentResource.merge`
+(`@page`, sidebar entry, GET/POST, `documents/merging.py`: items
+`d<pk>`/`v<pk>` resolved through the resources' team-scoped querysets,
+a template, downloaded or kept as a new document) and the *Merge into
+Word* actions of documents and versions, which open it with
+`{"redirect": ...}`. `seed_documents` makes three teams, six accounts
+(password `demo`) and Word/PDF/text samples (`samples.py`; a `.dotx`
+holds `{{ documents }}`). Kept working by `tests/test_docmanager.py`,
+run in its own process.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -608,6 +618,7 @@ def column(self, obj): ...
 def run(self, request, queryset):
     return None | "message" | {"message": ..., "level": "success|info|warning|error"} | Response
            | Report | {"message": ..., "report": Report} | an operation's run   # §13g
+           | {"redirect": "/a/path/of/the/site/?..."}   # opens it; another site is a ValueError
 ```
 
 A computed column is **not sortable or filterable** unless `ordering` /

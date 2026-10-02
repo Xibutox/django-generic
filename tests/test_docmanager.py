@@ -13,11 +13,12 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 DOCMANAGER = Path(__file__).resolve().parent.parent / "docmanager"
 
-#: Seeded, then walked by each kind of person: what they see, what they
-#: may send, and every version a file goes through.
-SCENARIO = textwrap.dedent("""
+#: A test database, seeded twice, and a client per person.
+PRELUDE = textwrap.dedent("""
     import json
     import os
     import tempfile
@@ -58,8 +59,13 @@ SCENARIO = textwrap.dedent("""
         ).json()["data"]
         return sorted({row["folder__team"] for row in rows})
 
+    """)
+
+#: Seeded, then walked by each kind of person: what they see, what they
+#: may send, and every version a file goes through.
+SCENARIO = PRELUDE + textwrap.dedent("""
     # Seeded once, whatever the number of runs.
-    assert Document.objects.count() == 7, Document.objects.count()
+    assert Document.objects.count() == 8, Document.objects.count()
     framework = Document.objects.get(title="Supplier framework agreement")
     assert framework.version == 3
     assert framework.versions.count() == 3
@@ -185,6 +191,7 @@ SCENARIO = textwrap.dedent("""
         f"/documents/documentversion/{third.pk}/",
         f"/documents/documentversion/add/?document={spec.pk}",
         "/documents/tag/",
+        "/documents/document/merge/",
         "/generic_teams/team/",
         f"/api/documents/document/{spec.pk}/summary/",
         "/api/documents/document/charts/by_status/",
@@ -200,6 +207,140 @@ SCENARIO = textwrap.dedent("""
     assert zipfile.ZipFile(word.open("rb")).read("word/document.xml")
     pdf = Document.objects.get(title="Salary grid").file
     assert pdf.open("rb").read(5) == b"%PDF-"
+    print("ok")
+    """)
+
+#: Formats found, Word files picked in the lists and merged: downloaded,
+#: or kept as a new document - each person within their teams only.
+MERGE_SCENARIO = PRELUDE + textwrap.dedent("""
+    import io
+
+    from docx import Document as WordFile
+
+    def rows(client, url, **params):
+        return client.get(url, {"draw": 1, "length": 100, **params}).json()[
+            "data"
+        ]
+
+    def paragraphs(content):
+        return [p.text for p in WordFile(io.BytesIO(content)).paragraphs]
+
+    def run(client, model, name, ids):
+        return client.post(
+            f"/api/documents/{model}/actions/",
+            json.dumps({"action": name, "ids": ids}),
+            content_type="application/json",
+        )
+
+    alice, bob = signed_in("alice"), signed_in("bob")
+    MERGE = "/documents/document/merge/"
+
+    # The format: a field, searched, filtered, and filled on old rows.
+    found = rows(bob, "/api/documents/document/", **{"search[value]": "pdf"})
+    assert [row["title"] for row in found] == ["Release procedure"], found
+    word = rows(
+        alice,
+        "/api/documents/document/",
+        filters=json.dumps({"match": "all", "conditions": [{
+            "column": "file_format", "operator": "equals",
+            "value": ["DOCX", "DOTX"],
+        }]}),
+    )
+    assert sorted(row["file_format"] for row in word) == [
+        "DOCX", "DOCX", "DOTX", "DOTX"
+    ], word
+    assert set(
+        DocumentVersion.objects.values_list("file_format", flat=True)
+    ) == {"DOCX", "DOTX", "PDF", "MD"}
+
+    framework = Document.objects.get(title="Supplier framework agreement")
+    nda = Document.objects.get(title="Non-disclosure agreement")
+    letter = Document.objects.get(title="Letter template")
+    guide = Document.objects.get(title="Welcome guide")
+    pdf = Document.objects.get(title="Release procedure")
+    first = framework.versions.get(number=1)
+
+    # The actions open the page with the selection's Word files.
+    opened = run(alice, "document", "merge_word", [nda.pk, pdf.pk])
+    assert opened.status_code == 200, opened.content
+    assert opened.json()["redirect"] == f"{MERGE}?items=d{nda.pk}", opened.json()
+    from_versions = run(alice, "documentversion", "merge_word", [first.pk])
+    assert from_versions.json()["redirect"] == f"{MERGE}?items=v{first.pk}"
+    none = run(bob, "document", "merge_word", [pdf.pk]).json()
+    assert none["level"] == "warning" and "redirect" not in none, none
+    # Another team's record is not even selected.
+    assert run(bob, "document", "merge_word", [nda.pk]).status_code == 400
+
+    page = alice.get(MERGE, {"items": f"d{nda.pk},v{first.pk},d{guide.pk}"})
+    assert page.status_code == 200
+    config = page.context["merge_config"]
+    assert [item["key"] for item in config["items"]] == [
+        f"d{nda.pk}", f"v{first.pk}"
+    ], config
+    assert "left out" in page.context["error"]
+    assert f"d{guide.pk}" not in {c["key"] for c in config["choices"]}
+    assert letter in page.context["templates"]
+
+    # Merged in the order sent, into the template, downloaded.
+    merged = alice.post(MERGE, {
+        "items": [f"v{first.pk}", f"d{nda.pk}"],
+        "template": letter.pk,
+        "name": "Pack",
+        "page_breaks": "on",
+    })
+    assert merged.status_code == 200, merged.content[:500]
+    assert 'filename="Pack.docx"' in merged["Content-Disposition"]
+    text = [line for line in paragraphs(merged.content) if line]
+    assert text[0] == "Letter template", text
+    assert "{{ documents }}" not in text, text
+    assert text.index("First draft.") < text.index(
+        "From the legal template."
+    ), text
+
+    # Kept as a new document instead: version 1, in the folder chosen.
+    contracts = Folder.objects.get(name="Contracts")
+    kept = alice.post(MERGE, {
+        "items": [f"d{nda.pk}"], "folder": contracts.pk, "title": "Kept",
+    })
+    assert kept.status_code == 302, kept.content[:500]
+    document = Document.objects.get(title="Kept")
+    assert kept["Location"] == f"/documents/document/{document.pk}/"
+    assert (document.version, document.file_format) == (1, "DOCX")
+    assert document.versions.get().file_name == "merged.docx"
+
+    # Nothing of another team's, whatever the form says.
+    for data in (
+        {"items": [f"d{nda.pk}"]},
+        {"items": [f"d{pdf.pk}"]},
+        {"items": [], "template": letter.pk},
+    ):
+        refused = bob.post(MERGE, data)
+        assert refused.status_code == 200, data
+        assert refused.context["error"], data
+        assert refused["Content-Type"].startswith("text/html"), data
+
+    for data in ({"template": "x"}, {"folder": "1 OR 1=1"}):
+        refused = alice.post(MERGE, {"items": [f"d{nda.pk}"], **data})
+        assert refused.status_code == 200, data
+        assert "not available" in refused.context["error"], data
+
+    report = Document.objects.get(title="Report template")
+    refused = bob.post(MERGE, {
+        "items": [f"d{report.pk}"], "template": letter.pk,
+    })
+    assert refused.context["error"] == "This template is not available."
+    refused = bob.post(MERGE, {
+        "items": [f"d{report.pk}"], "folder": contracts.pk,
+    })
+    assert refused.context["error"] == "This folder is not available."
+
+    # A reader downloads, and keeps nothing.
+    viewer = signed_in("viewer")
+    assert not viewer.get(MERGE).context["folders"]
+    assert viewer.post(MERGE, {
+        "items": [f"d{nda.pk}"], "folder": contracts.pk,
+    }).context["error"] == "This folder is not available."
+    assert viewer.post(MERGE, {"items": [f"d{nda.pk}"]}).status_code == 200
     print("ok")
     """)
 
@@ -236,6 +377,15 @@ def test_the_migrations_are_up_to_date():
 
 def test_teams_documents_and_versions_work_together():
     result = manage("-c", SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_word_files_are_found_by_format_and_merged():
+    pytest.importorskip("docx")
+    pytest.importorskip("docxcompose")
+    result = manage("-c", MERGE_SCENARIO)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")

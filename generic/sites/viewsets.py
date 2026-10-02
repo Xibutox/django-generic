@@ -39,6 +39,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404, HttpResponse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -73,6 +74,13 @@ MAX_SELECTED = 5000
 TABLE_ACTIONS = frozenset(
     {"list", "export", "export_csv", "run_action", "chart", "facets"}
 )
+
+
+def is_local_path(url: str) -> bool:
+    """``/documents/merge/``, not ``//elsewhere`` nor ``https://...``."""
+    return url.startswith("/") and url_has_allowed_host_and_scheme(
+        url, allowed_hosts=None
+    )
 
 
 class ResourcePermission(BasePermission):
@@ -709,11 +717,25 @@ class ResourceViewSet(
             return {**payload, "count": count}
 
         if isinstance(result, dict):
-            return {
+            payload = {
                 "message": str(result.get("message", "")),
                 "level": result.get("level", "success"),
                 "count": count,
             }
+            redirect = str(result.get("redirect") or "")
+
+            # A page of this site to open next - a form the selection
+            # fills in, say. Never another site's.
+            if redirect and not is_local_path(redirect):
+                raise ValueError(
+                    f"Action {entry.name!r} redirects to {redirect!r}: "
+                    f"an action opens a page of this site only."
+                )
+
+            if redirect:
+                payload["redirect"] = redirect
+
+            return payload
 
         message = (
             str(result)

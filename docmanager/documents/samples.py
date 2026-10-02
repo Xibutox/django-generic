@@ -35,10 +35,18 @@ Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/\
 officeDocument" Target="word/document.xml"/>
 </Relationships>"""
 
+#: An A4 page with Word's usual margins: what any saved document ends
+#: with, and what a merge copies its page set-up from.
+SECTION = (
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'
+    '<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" '
+    'w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>'
+)
+
 DOCUMENT = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document \
 xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:body>{paragraphs}</w:body>
+<w:body>{paragraphs}{section}</w:body>
 </w:document>"""
 
 
@@ -64,7 +72,10 @@ def docx(title: str, lines: list[str], template: bool = False) -> bytes:
             ),
         )
         archive.writestr("_rels/.rels", RELATIONSHIPS)
-        archive.writestr("word/document.xml", DOCUMENT.format(paragraphs=body))
+        archive.writestr(
+            "word/document.xml",
+            DOCUMENT.format(paragraphs=body, section=SECTION),
+        )
 
     return buffer.getvalue()
 
@@ -132,7 +143,8 @@ def make(name: str, title: str, lines: list[str]) -> bytes:
         return docx(title, lines)
 
     if name.endswith(".dotx"):
-        return docx(title, lines, template=True)
+        # Where the merge puts the documents (documents/merge.py).
+        return docx(title, [*lines, "{{ documents }}"], template=True)
 
     if name.endswith(".pdf"):
         return pdf(title, lines)

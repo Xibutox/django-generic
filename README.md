@@ -294,12 +294,15 @@ minimal/compose.yaml up --build`. See [its README](minimal/README.md) for what e
 teams, each with its own folders and documents, and every file a
 document has had kept as a version with its sender, date, size,
 checksum and change note - restore one and it is current again, as a
-new version. Six demonstration accounts in three teams show who sees
-what:
+new version. Lists search and filter by format, and *Merge Word files*
+puts documents and versions together into one `.docx` made from a
+template - picked in the lists with *Merge into Word*. Six
+demonstration accounts in three teams show who sees what:
 
 ```bash
 pip install -e ".[export,wiki]"
 cd docmanager
+pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_documents
 python manage.py runserver

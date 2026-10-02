@@ -514,6 +514,47 @@ class TestAnswering:
         assert response.json()["count"] == 1
         assert response.json()["operation"]["report"][0]["title"] == "SD-1"
 
+    @pytest.mark.parametrize(
+        ("redirect", "allowed"),
+        [
+            ("/example/ticket/merge/?items=1,2", True),
+            ("https://elsewhere.test/", False),
+            ("//elsewhere.test/", False),
+            ("/\\elsewhere.test/", False),
+            ("relative/", False),
+        ],
+    )
+    def test_an_action_may_open_a_page_of_this_site(
+        self, monkeypatch, worker_client, support_desk, redirect, allowed
+    ):
+        from generic.sites import action, site
+
+        resource = site.get_resource(Ticket)
+
+        @action(description="Open", permissions=("view",))
+        def opens(self, request, queryset):
+            return {"redirect": redirect}
+
+        monkeypatch.setattr(type(resource), "check", opens)
+
+        def send():
+            return worker_client.post(
+                TICKETS,
+                {"action": "check", "ids": [support_desk["login"].pk]},
+                content_type="application/json",
+            )
+
+        if not allowed:
+            # A declaration error, not something a reader could cause.
+            with pytest.raises(ValueError, match="this site only"):
+                send()
+            return
+
+        response = send()
+
+        assert response.status_code == 200
+        assert response.json()["redirect"] == redirect
+
 
 # -- the run's page -----------------------------------------------------------
 

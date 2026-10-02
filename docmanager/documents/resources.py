@@ -14,7 +14,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from documents import versions
+from documents import merging, versions
 from documents.models import Document, DocumentVersion, Folder, Tag
 from generic.sites import (
     Chart,
@@ -23,11 +23,26 @@ from generic.sites import (
     TagStyle,
     action,
     display,
+    page,
     register,
     site,
 )
 
 GROUP = _("Documents")
+
+#: The format column, holding Word files only - a preset of the lists.
+WORD_FILES = {
+    "filters": {
+        "match": "all",
+        "conditions": [
+            {
+                "column": "file_format",
+                "operator": "equals",
+                "value": list(merging.WORD_FORMATS),
+            }
+        ],
+    },
+}
 
 STATUS_COLORS = {
     Document.Status.DRAFT: "#64748b",
@@ -102,7 +117,13 @@ class DocumentResource(ModelResource):
         "version",
         "updated_at",
     )
-    search_fields = ("reference", "title", "description", "folder__name")
+    search_fields = (
+        "reference",
+        "title",
+        "description",
+        "folder__name",
+        "file_format",
+    )
     ordering = ("-updated_at", "-pk")
     tag_fields = {
         "status": TagStyle(colors=STATUS_COLORS),
@@ -121,8 +142,9 @@ class DocumentResource(ModelResource):
                 ],
             },
         },
+        _("Word files"): WORD_FILES,
     }
-    actions = ("approve", "delete_selected")
+    actions = ("approve", "merge_word", "delete_selected")
 
     fieldsets = (
         (None, {"fields": ("title", ("folder", "status"), "tags")}),
@@ -190,10 +212,6 @@ class DocumentResource(ModelResource):
     )
     list_charts = ("by_status", "by_team")
 
-    @display(description=_("Format"))
-    def file_format(self, document: Document) -> str:
-        return document.format
-
     @display(description=_("Size"))
     def size(self, document: Document) -> str:
         return human_size(document.file_size)
@@ -240,6 +258,31 @@ class DocumentResource(ModelResource):
 
         return gettext("%(count)s approved.") % {"count": count}
 
+    @action(
+        description=_("Merge into Word"),
+        icon="merge_type",
+        permissions=("view",),
+    )
+    def merge_word(self, request: Any, queryset: Any) -> dict:
+        return merge_page_for(queryset, "d")
+
+    @page(
+        title=_("Merge Word files"),
+        icon="merge_type",
+        description=_(
+            "Documents and versions put together into one Word file, "
+            "with a template."
+        ),
+        navigation=True,
+        methods=("get", "post"),
+        template="documents/merge.html",
+    )
+    def merge(self, request: Any) -> Any:
+        if request.method == "POST":
+            return merging.merge(request)
+
+        return merging.page_context(request, request.GET)
+
 
 @register(DocumentVersion)
 class DocumentVersionResource(ModelResource):
@@ -261,7 +304,13 @@ class DocumentVersionResource(ModelResource):
         "file_format",
         "size",
     )
-    search_fields = ("document__reference", "document__title", "comment")
+    search_fields = (
+        "document__reference",
+        "document__title",
+        "comment",
+        "file_name",
+        "file_format",
+    )
     ordering = ("-created_at", "-number")
     fields = ("document", "file", "comment")
     form_overrides = {"comment": {"rows": 3}}
@@ -289,13 +338,10 @@ class DocumentVersionResource(ModelResource):
         "created_by",
         "created_at",
     )
-    actions = ("restore",)
+    presets = {_("Word files"): WORD_FILES}
+    actions = ("restore", "merge_word")
     # A version is what was sent: the document's history says the rest.
     history = False
-
-    @display(description=_("Format"))
-    def file_format(self, version: DocumentVersion) -> str:
-        return version.format
 
     @display(description=_("Size"), ordering="file_size")
     def size(self, version: DocumentVersion) -> str:
@@ -341,6 +387,35 @@ class DocumentVersionResource(ModelResource):
             "level": "success",
         }
 
+    @action(
+        description=_("Merge into Word"),
+        icon="merge_type",
+        permissions=("view",),
+    )
+    def merge_word(self, request: Any, queryset: Any) -> dict:
+        return merge_page_for(queryset, "v")
+
+
+def merge_page_for(queryset: Any, kind: str) -> dict:
+    """The *Merge into Word* actions: the merge page, opened with the
+    selection's Word files chosen, in the list's order."""
+    keys = [
+        f"{kind}{pk}"
+        for pk in queryset.filter(
+            file_format__in=merging.WORD_FORMATS
+        ).values_list("pk", flat=True)[: merging.MAX_ITEMS]
+    ]
+
+    if not keys:
+        return {
+            "message": gettext("None of the selected files is a Word file."),
+            "level": "warning",
+        }
+
+    url = site.get_resource(Document).get_page_url("merge")
+
+    return {"redirect": f"{url}?items={','.join(keys)}"}
+
 
 site.add_shortcut(
     _("Documents in review"),
@@ -352,5 +427,12 @@ site.add_shortcut(
     .get_queryset(request)
     .filter(status=Document.Status.REVIEW)
     .count(),
+    permission="documents.view_document",
+)
+site.add_shortcut(
+    _("Merge Word files"),
+    url="/documents/document/merge/",
+    icon="merge_type",
+    description=_("Documents and versions put together with a template."),
     permission="documents.view_document",
 )

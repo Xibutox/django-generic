@@ -93,6 +93,14 @@ DOCUMENTS = {
                 [("architecture.md", "Started.")],
             ),
         ],
+        "Templates": [
+            (
+                "Report template",
+                Document.Status.APPROVED,
+                ("template",),
+                [("report.dotx", "Engineering report cover.")],
+            ),
+        ],
     },
     "Human resources": {
         "Onboarding": [
