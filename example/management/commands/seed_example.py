@@ -890,7 +890,8 @@ class Command(BaseCommand):
             )
 
     def create_wiki_pages(self, users: dict[str, Any]) -> None:
-        """A few wiki pages, the first one pinned to the dashboard."""
+        """Two wikis: the desk's handbook, its first page pinned to the
+        dashboard, and the infrastructure team's runbooks."""
         from django.apps import apps
 
         # The wiki is optional: a project without it seeds without it.
@@ -899,7 +900,28 @@ class Command(BaseCommand):
 
         from django.core.files.base import ContentFile
 
-        from generic.wiki.models import WikiFile, WikiPage
+        from generic.wiki.models import Wiki, WikiFile, WikiPage
+
+        # The first wiki, made by the migration, named for the desk.
+        handbook = Wiki.objects.default()
+
+        if handbook.name == "Wiki":
+            handbook.name = "Desk handbook"
+            handbook.description = (
+                "What everyone on the desk should know: triage, "
+                "escalation, shortcuts."
+            )
+            handbook.save()
+
+        runbooks, _created = Wiki.objects.get_or_create(
+            slug="infrastructure",
+            defaults={
+                "name": "Infrastructure runbooks",
+                "description": "How the infrastructure team keeps the "
+                "service running.",
+                "position": 1,
+            },
+        )
 
         # A file attached to a page from its editor: a block of the
         # page, linking to where readers download it.
@@ -931,7 +953,7 @@ class Command(BaseCommand):
                 "<p>This wiki holds what everyone on the desk should "
                 "know. This page is pinned to the dashboard, so it is the "
                 "first thing people see.</p><ul><li>Read "
-                '<a href="/wiki/triage/">how we triage</a> before taking '
+                '<a href="/wiki/main/triage/">how we triage</a> before taking '
                 "your first ticket.</li><li>Press <strong>Ctrl+K</strong> "
                 "anywhere to find a page, a ticket or a customer.</li>"
                 "<li>Admins change any page with its <em>Edit</em> "
@@ -984,13 +1006,40 @@ class Command(BaseCommand):
             ),
         ]
 
-        for slug, title, parent, position, pinned, content in pages:
+        pages = [(handbook, *page) for page in pages] + [
+            (
+                runbooks,
+                "on-call",
+                "On call",
+                None,
+                0,
+                False,
+                "<p>One engineer is on call each week, named in the "
+                "Infrastructure team's summary.</p><ol><li>Acknowledge "
+                "within fifteen minutes.</li><li>Open a ticket for every "
+                "incident, even one fixed at once.</li></ol>",
+            ),
+            (
+                runbooks,
+                "restarting-a-service",
+                "Restarting a service",
+                "on-call",
+                0,
+                False,
+                "<p>Say it in the incident's ticket first, then:</p>"
+                '<pre class="ql-syntax">systemctl restart desk-web'
+                "</pre><p>Check the dashboard's charts move again.</p>",
+            ),
+        ]
+
+        for wiki, slug, title, parent, position, pinned, content in pages:
             WikiPage.objects.get_or_create(
+                wiki=wiki,
                 slug=slug,
                 defaults={
                     "title": title,
                     "parent": (
-                        WikiPage.objects.filter(slug=parent).first()
+                        WikiPage.objects.filter(wiki=wiki, slug=parent).first()
                         if parent
                         else None
                     ),

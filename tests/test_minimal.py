@@ -88,10 +88,13 @@ PAGES = textwrap.dedent("""
     page = response.json()
     assert "script" not in page["content"], page
 
-    assert client.get("/wiki/")["Location"] == f"/wiki/{page['slug']}/"
+    # The pages written so far are in the first wiki, "main".
+    assert client.get("/wiki/main/")["Location"] == page["url"]
+    assert page["url"] == f"/wiki/main/{page['slug']}/"
 
     for url in (
-        f"/wiki/{page['slug']}/",
+        page["url"],
+        "/wiki/main/export.pdf",
         "/wiki/api/pages/",
         f"/wiki/api/pages/{page['id']}/revisions/",
     ):

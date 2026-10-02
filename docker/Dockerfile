@@ -39,6 +39,12 @@ WORKDIR /app
 
 RUN useradd --create-home --uid 1000 app
 
+# A Unicode font for the wiki's PDF: without one it falls back on
+# Latin-1 (docs/wiki.md#pdf).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # The dependencies are installed from the metadata alone - pyproject,
 # the files it names, and a stub of the package holding the version - so
 # a change to the source reuses this layer.

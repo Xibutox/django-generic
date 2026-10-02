@@ -1556,3 +1556,33 @@ msgstr "Le fichier est trop volumineux : %(limit)s au plus."
 #: generic/static/generic/js/wiki.js
 msgid "The file could not be uploaded."
 msgstr "Le fichier n'a pas pu être envoyé."
+
+msgid "Description"
+msgstr "Description"
+
+msgid "New wiki"
+msgstr "Nouveau wiki"
+
+msgid "Edit the wiki"
+msgstr "Modifier le wiki"
+
+msgid "The wiki could not be created."
+msgstr "Le wiki n’a pas pu être créé."
+
+msgid "The wiki was saved."
+msgstr "Le wiki a été enregistré."
+
+msgid "The wiki could not be saved."
+msgstr "Le wiki n’a pas pu être enregistré."
+
+msgid "Delete this wiki?"
+msgstr "Supprimer ce wiki ?"
+
+msgid "“%(name)s” and its %(count)s pages, with their history, will be deleted."
+msgstr "« %(name)s » et ses %(count)s pages, avec leur historique, seront supprimés."
+
+msgid "The wiki was deleted."
+msgstr "Le wiki a été supprimé."
+
+msgid "The wiki could not be deleted."
+msgstr "Le wiki n’a pas pu être supprimé."

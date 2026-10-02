@@ -11,6 +11,9 @@
  * text, a file as a block of its own linking to it. Any line, block or
  * image moves up and down the page with the toolbar's arrows or
  * Alt+Up / Alt+Down, so the page is ordered the way its writer wants.
+ *
+ * The list of wikis (`wikiList`) creates, renames and deletes them,
+ * through the same API.
  */
 (function (window, document) {
   "use strict";
@@ -846,7 +849,12 @@
               }
 
               Generic.api
-                .post(config.api, { title: title, parent: parent || null, content: "" })
+                .post(config.api, {
+                  title: title,
+                  wiki: config.wiki,
+                  parent: parent || null,
+                  content: ""
+                })
                 .then(function (data) {
                   window.location.assign(data.url + "?edit=1");
                 })
@@ -974,6 +982,108 @@
                 })
                 .catch(function (error) {
                   Generic.toast(errorText(error) || t("The version could not be restored."), "error");
+                });
+            });
+        }
+      };
+    });
+
+    /** The list of wikis: a new one, its name and description, deleting it. */
+    window.Alpine.data("wikiList", function (configId) {
+      var config = readJson(configId) || {};
+
+      function find(id) {
+        return (config.wikis || []).find(function (wiki) {
+          return wiki.id === id;
+        });
+      }
+
+      function ask(title, wiki, confirmLabel) {
+        return Generic.dialogs.fields({
+          title: title,
+          icon: "auto_stories",
+          confirmLabel: confirmLabel,
+          fields: [
+            { name: "name", label: t("Name"), value: wiki ? wiki.name : "", required: true, maxLength: 200 },
+            { name: "description", label: t("Description"), value: wiki ? wiki.description : "", multiline: true }
+          ]
+        });
+      }
+
+      return {
+        config: config,
+
+        create: function () {
+          ask(t("New wiki"), null, t("Create")).then(function (values) {
+            if (!values) {
+              return;
+            }
+
+            Generic.api
+              .post(config.api, values)
+              .then(function (data) {
+                window.location.assign(data.url);
+              })
+              .catch(function (error) {
+                Generic.toast(errorText(error) || t("The wiki could not be created."), "error");
+              });
+          });
+        },
+
+        edit: function (id) {
+          var wiki = find(id);
+
+          if (!wiki) {
+            return;
+          }
+
+          ask(t("Edit the wiki"), wiki, t("Save")).then(function (values) {
+            if (!values) {
+              return;
+            }
+
+            Generic.api
+              .patch(config.api + id + "/", values)
+              .then(function () {
+                Generic.flash(t("The wiki was saved."), "success");
+                window.location.reload();
+              })
+              .catch(function (error) {
+                Generic.toast(errorText(error) || t("The wiki could not be saved."), "error");
+              });
+          });
+        },
+
+        remove: function (id) {
+          var wiki = find(id);
+
+          if (!wiki) {
+            return;
+          }
+
+          Generic.dialogs
+            .confirm({
+              title: t("Delete this wiki?"),
+              message: Generic.format(
+                t("\u201c%(name)s\u201d and its %(count)s pages, with their history, will be deleted."),
+                { name: wiki.name, count: wiki.page_count }
+              ),
+              confirmLabel: t("Delete"),
+              variant: "danger"
+            })
+            .then(function (confirmed) {
+              if (!confirmed) {
+                return;
+              }
+
+              Generic.api
+                .delete(config.api + id + "/")
+                .then(function () {
+                  Generic.flash(t("The wiki was deleted."), "success");
+                  window.location.reload();
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The wiki could not be deleted."), "error");
                 });
             });
         }

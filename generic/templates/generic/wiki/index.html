@@ -1,0 +1,89 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# The wikis: one card each, with its pages' count and its PDF. Override #}
+{# per project with a template of the same name.                        #}
+
+{% block bodyclass %}page-wiki-index{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/wiki.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/wiki.js' %}" defer></script>
+{% endblock %}
+
+{% block object_tools %}
+  {% if can.add %}
+    <button type="button" class="button button--primary" x-data @click="$dispatch('wiki-create')">
+      {% icon "add" %} {% translate "New wiki" %}
+    </button>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ wikis_config|json_script:"wikis-config" }}
+
+  <div x-data="wikiList('wikis-config')" @wiki-create.window="create()">
+    {% if wikis %}
+      <div class="wiki-list">
+        {% for wiki in wikis %}
+          <section class="card wiki-list__card">
+            <div class="card__header">
+              <h2 class="card__title">
+                {% icon "auto_stories" %}
+                <a href="{{ wiki.get_absolute_url }}">{{ wiki.name }}</a>
+              </h2>
+              {% if can.change or can.delete %}
+                <div class="wiki-list__tools">
+                  {% if can.change %}
+                    <button type="button" class="icon-button icon-button--sm" title="{% translate 'Edit' %}" @click="edit({{ wiki.pk }})">
+                      {% translate "Edit" as edit_label %}
+                      {% icon "edit" "icon--sm" edit_label %}
+                    </button>
+                  {% endif %}
+                  {% if can.delete %}
+                    <button type="button" class="icon-button icon-button--sm" title="{% translate 'Delete' %}" @click="remove({{ wiki.pk }})">
+                      {% translate "Delete" as delete_label %}
+                      {% icon "delete" "icon--sm" delete_label %}
+                    </button>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+            {% if wiki.description %}
+              <p class="wiki-list__description">{{ wiki.description|linebreaksbr }}</p>
+            {% endif %}
+            <div class="wiki-list__footer">
+              <span class="muted">
+                {% blocktranslate count counter=wiki.page_count %}{{ counter }} page{% plural %}{{ counter }} pages{% endblocktranslate %}
+              </span>
+              <span class="wiki-list__actions">
+                {% if pdf_available and wiki.page_count %}
+                  <a class="button button--ghost button--sm" href="{{ wiki.get_pdf_url }}">
+                    {% icon "picture_as_pdf" "icon--sm" %} {% translate "PDF" %}
+                  </a>
+                {% endif %}
+                <a class="button button--sm" href="{{ wiki.get_absolute_url }}">
+                  {% translate "Open" %}
+                </a>
+              </span>
+            </div>
+          </section>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state wiki__empty">
+        {% icon "auto_stories" %}
+        <p>{% translate "There is no wiki yet." %}</p>
+        {% if can.add %}
+          <button type="button" class="button button--primary" @click="create()">
+            {% icon "add" %} {% translate "New wiki" %}
+          </button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

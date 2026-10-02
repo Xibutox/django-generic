@@ -25,6 +25,33 @@
 
   <div class="wiki" x-data="wikiPage('wiki-config')">
     <aside class="card wiki__menu" aria-label="{% translate 'Wiki pages' %}">
+      {# Which wiki this is, its PDF, and the way to the others. #}
+      <div class="wiki__menu-wiki">
+        <a class="wiki__menu-name" href="{{ wiki.get_absolute_url }}">
+          {% icon "auto_stories" "icon--sm" %} <span>{{ wiki.name }}</span>
+        </a>
+        {% if pdf_url and menu %}
+          <a class="icon-button icon-button--sm" href="{{ pdf_url }}" title="{% translate 'Download the wiki as a PDF' %}">
+            {% translate "Download the wiki as a PDF" as pdf_label %}
+            {% icon "picture_as_pdf" "icon--sm" pdf_label %}
+          </a>
+        {% endif %}
+      </div>
+      {% if other_wikis %}
+        <details class="wiki__switch">
+          <summary>{% translate "Other wikis" %}</summary>
+          <ul class="wiki-tree">
+            {% for other in other_wikis %}
+              <li class="wiki-tree__item">
+                <a class="wiki-tree__link" href="{{ other.get_absolute_url }}">{{ other.name }}</a>
+              </li>
+            {% endfor %}
+            <li class="wiki-tree__item">
+              <a class="wiki-tree__link" href="{% url 'generic_wiki:index' %}">{% translate "All wikis" %}</a>
+            </li>
+          </ul>
+        </details>
+      {% endif %}
       <div class="wiki__menu-head">
         <label class="input-with-icon">
           {% icon "search" "icon--sm" %}
@@ -184,7 +211,7 @@
       {% else %}
         <div class="empty-state wiki__empty">
           {% icon "auto_stories" %}
-          <p>{% translate "The wiki has no page yet." %}</p>
+          <p>{% blocktranslate with name=wiki.name %}{{ name }} has no page yet.{% endblocktranslate %}</p>
           {% if can.add %}
             <button type="button" class="button button--primary" @click="create(null)">
               {% icon "add" %} {% translate "Write the first page" %}

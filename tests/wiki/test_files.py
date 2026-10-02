@@ -225,7 +225,7 @@ class TestInAPage:
         author.force_login(admin_user)
 
         data = author.get(f"/wiki/api/pages/{page.pk}/").json()
-        response = author.get("/wiki/plans/")
+        response = author.get("/wiki/main/plans/")
 
         assert [item["name"] for item in data["attachments"]] == ["plan.pdf"]
         assert response.context["attachments"] == data["attachments"]
