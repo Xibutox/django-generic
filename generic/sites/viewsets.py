@@ -397,7 +397,10 @@ class ResourceViewSet(
             raise NotFound(gettext("There is no such file."))
 
         try:
-            return file_response(value)
+            return file_response(
+                value,
+                self.resource.get_download_name(request, record, field),
+            )
         except OSError:
             # Gone between the check and the opening.
             raise NotFound(gettext("There is no such file."))

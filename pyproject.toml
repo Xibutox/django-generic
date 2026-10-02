@@ -154,8 +154,9 @@ target-version = ["py310"]
 profile = "black"
 line_length = 79
 known_first_party = ["generic"]
-# The minimal example is a project of its own: its apps are first party.
-src_paths = [".", "minimal"]
+# The minimal example and the document manager are projects of their
+# own: their apps are first party.
+src_paths = [".", "minimal", "docmanager"]
 
 [tool.mypy]
 python_version = "3.10"

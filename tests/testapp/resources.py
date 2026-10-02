@@ -1,7 +1,16 @@
-"""The test app's own screens: a state machine, and files."""
+"""The test app's own screens: a state machine, files and teams."""
+
+from rest_framework import serializers
 
 from generic.sites import ModelResource, TabularInline, register
-from tests.testapp.models import Document, DocumentNote, Manuscript
+from tests.testapp.models import (
+    Binder,
+    BinderSheet,
+    Document,
+    DocumentNote,
+    Manuscript,
+    SharedNote,
+)
 
 
 @register(Manuscript)
@@ -35,3 +44,42 @@ class DocumentResource(ModelResource):
             return queryset
 
         return queryset.exclude(title__startswith="Restricted")
+
+
+@register(Binder)
+class BinderResource(ModelResource):
+    """Scoped to its team; asks a question the model does not keep."""
+
+    list_display = ("title", "team", "attachment")
+    search_fields = ("title",)
+    team_field = "team"
+    fields = ("title", "team", "attachment", "reason")
+    form_extra_fields = {
+        "reason": serializers.CharField(required=False, allow_blank=True)
+    }
+
+    def save_model(self, request, serializer, change):
+        upload = serializer.validated_data.get("attachment")
+        extra = {"note": serializer.extra_values.get("reason", "")}
+
+        if upload:
+            extra["attachment_name"] = upload.name
+
+        return serializer.save(**extra)
+
+    def get_download_name(self, request, obj, field):
+        return obj.attachment_name
+
+
+@register(BinderSheet)
+class BinderSheetResource(ModelResource):
+    list_display = ("title", "binder")
+    search_fields = ("title",)
+    team_field = "binder__team"
+
+
+@register(SharedNote)
+class SharedNoteResource(ModelResource):
+    list_display = ("title", "teams")
+    search_fields = ("title",)
+    team_field = "teams"

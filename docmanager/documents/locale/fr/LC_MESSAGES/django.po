@@ -1,0 +1,177 @@
+# French translation of the document manager example.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "team"
+msgstr "équipe"
+
+msgid "name"
+msgstr "nom"
+
+msgid "description"
+msgstr "description"
+
+msgid "folder"
+msgstr "dossier"
+
+msgid "folders"
+msgstr "dossiers"
+
+msgid "colour"
+msgstr "couleur"
+
+msgid "tag"
+msgstr "étiquette"
+
+msgid "tags"
+msgstr "étiquettes"
+
+msgid "Draft"
+msgstr "Brouillon"
+
+msgid "In review"
+msgstr "En relecture"
+
+msgid "Approved"
+msgstr "Approuvé"
+
+msgid "Obsolete"
+msgstr "Obsolète"
+
+msgid "reference"
+msgstr "référence"
+
+msgid "title"
+msgstr "titre"
+
+msgid "status"
+msgstr "statut"
+
+msgid "file"
+msgstr "fichier"
+
+msgid "version"
+msgstr "version"
+
+msgid "size"
+msgstr "taille"
+
+msgid "created by"
+msgstr "créé par"
+
+msgid "created at"
+msgstr "créé le"
+
+msgid "updated at"
+msgstr "modifié le"
+
+msgid "document"
+msgstr "document"
+
+msgid "documents"
+msgstr "documents"
+
+msgid "change note"
+msgstr "note de modification"
+
+msgid "What changed, and why."
+msgstr "Ce qui a changé, et pourquoi."
+
+msgid "file name"
+msgstr "nom du fichier"
+
+msgid "content type"
+msgstr "type de contenu"
+
+msgid "SHA-256"
+msgstr "SHA-256"
+
+msgid "sent by"
+msgstr "envoyé par"
+
+msgid "sent at"
+msgstr "envoyé le"
+
+msgid "versions"
+msgstr "versions"
+
+msgid "Where each team files its documents."
+msgstr "Où chaque équipe range ses documents."
+
+msgid "Every document, with each version of its file."
+msgstr "Tous les documents, avec chaque version de leur fichier."
+
+msgid "To review"
+msgstr "À relire"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "Replacing the file keeps the old one as a version."
+msgstr "Remplacer le fichier garde l'ancien comme version."
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Change note"
+msgstr "Note de modification"
+
+msgid "What changed in the file, and why."
+msgstr "Ce qui a changé dans le fichier, et pourquoi."
+
+msgid "Record"
+msgstr "Fiche"
+
+msgid "Newest first."
+msgstr "Les plus récentes d'abord."
+
+msgid "By status"
+msgstr "Par statut"
+
+msgid "By team"
+msgstr "Par équipe"
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Size"
+msgstr "Taille"
+
+msgid "Approve"
+msgstr "Approuver"
+
+msgid "Approve the selected documents?"
+msgstr "Approuver les documents sélectionnés ?"
+
+msgid "%(count)s approved."
+msgstr "%(count)s approuvé(s)."
+
+msgid "Every file sent, in every document."
+msgstr "Chaque fichier envoyé, dans chaque document."
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Make this version the document's file again?"
+msgstr "Refaire de cette version le fichier du document ?"
+
+msgid "Choose one version to restore."
+msgstr "Choisissez une seule version à restaurer."
+
+msgid "%(document)s is at version %(number)s."
+msgstr "%(document)s est à la version %(number)s."
+
+msgid "Documents in review"
+msgstr "Documents en relecture"
+
+msgid "Waiting for someone to approve them."
+msgstr "En attente d'approbation."
+
+msgid "Restored from version %(number)s."
+msgstr "Restauré depuis la version %(number)s."

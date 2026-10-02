@@ -116,17 +116,20 @@ def exposed_file_fields(resource: Any, request: Any = None) -> frozenset:
     )
 
 
-def file_response(value: Any) -> FileResponse:
+def file_response(value: Any, filename: str = "") -> FileResponse:
     """``value``, a stored file, as a download - or an image, shown.
 
     Opened through the field's own storage, whatever it is. The type is
-    read from the name; a raster image is shown inline, anything else -
-    a page, an SVG, a script - is an attachment, never displayed.
+    read from the stored name; a raster image is shown inline, anything
+    else - a page, an SVG, a script - is an attachment, never displayed.
+    ``filename`` is the name the browser saves it under, when it is not
+    the stored one.
     """
-    name = file_name(value)
-    shown = RASTER_IMAGES.get(posixpath.splitext(name)[1].lower())
+    stored = file_name(value)
+    name = filename or stored
+    shown = RASTER_IMAGES.get(posixpath.splitext(stored)[1].lower())
     content_type = shown or (
-        mimetypes.guess_type(name)[0] or "application/octet-stream"
+        mimetypes.guess_type(stored)[0] or "application/octet-stream"
     )
     response = FileResponse(
         value.open("rb"),

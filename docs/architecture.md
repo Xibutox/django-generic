@@ -104,6 +104,7 @@ generic/
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
 ├── wiki/                Optional: pages, editor, images and files, history, pinned pages
+├── teams/               Optional: Team, team_field scoping, scope_to_teams()
 ├── testing/             PageSweep: a project's pages and endpoints, swept by pytest
 ├── tokens/              Optional: personal API tokens on knox (ApiToken)
 ├── openapi/             The OpenAPI description: ResourceAutoSchema, pages
