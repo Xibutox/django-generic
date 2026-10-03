@@ -1087,3 +1087,6 @@ msgstr "Version %(label)s, publiée"
 
 msgid "Version %(label)s, a draft"
 msgstr "Version %(label)s, brouillon"
+
+msgid "A folder of this name is already there."
+msgstr "Un dossier de ce nom existe déjà à cet endroit."

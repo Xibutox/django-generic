@@ -975,6 +975,10 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     assert created.status_code == 201, created.content
     drafts = Folder.objects.get(name="Drafts")
     assert drafts.path == "Contracts / Suppliers / Drafts", drafts.path
+    twice = call(alice, "POST", "/api/documents/folder/", {
+        "name": "Drafts", "team": legal.pk, "parent": suppliers.pk,
+    })
+    assert twice.status_code == 400 and "name" in twice.json(), twice.content
     elsewhere = call(alice, "POST", "/api/documents/folder/", {
         "name": "Mixed", "team": legal.pk,
         "parent": Folder.objects.get(name="Archive").pk,

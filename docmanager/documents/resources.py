@@ -161,6 +161,14 @@ class FolderResource(ModelResource):
     def document_count(self, folder: Folder) -> int:
         return folder.documents.filter(deleted_at__isnull=True).count()
 
+    def get_form_serializer_class(self) -> Any:
+        if getattr(self, "_folder_serializer", None) is None:
+            self._folder_serializer = unique_name_serializer(
+                super().get_form_serializer_class()
+            )
+
+        return self._folder_serializer
+
     def save_model(self, request: Any, serializer: Any, change: bool) -> Any:
         parent = serializer.validated_data.get("parent")
         team = serializer.validated_data.get("team")
@@ -201,6 +209,53 @@ class FolderResource(ModelResource):
             ).update(team=saved.team_id)
 
         return saved
+
+
+def unique_name_serializer(base: Any) -> Any:
+    """``base`` checking a folder's name is free where it goes - in place
+    of the validators DRF writes from the model's conditional unique
+    constraints, which a partial update without ``parent`` breaks (a
+    KeyError in DRF 3.16)."""
+
+    class FolderSerializer(base):
+        class Meta(base.Meta):
+            validators: list = []
+
+        def validate(self, attrs: dict) -> dict:
+            attrs = super().validate(attrs)
+            folder = self.instance
+
+            def value(name: str) -> Any:
+                if name in attrs:
+                    return attrs[name]
+
+                return getattr(folder, name, None)
+
+            parent = value("parent")
+            others = Folder.objects.filter(name=value("name"))
+
+            if parent is not None:
+                others = others.filter(parent=parent)
+            else:
+                others = others.filter(team=value("team"), parent__isnull=True)
+
+            if folder is not None:
+                others = others.exclude(pk=folder.pk)
+
+            if others.exists():
+                raise serializers.ValidationError(
+                    {
+                        "name": [
+                            gettext("A folder of this name is already there.")
+                        ]
+                    }
+                )
+
+            return attrs
+
+    FolderSerializer.__name__ = base.__name__
+
+    return FolderSerializer
 
 
 @register(TeamWiki)
