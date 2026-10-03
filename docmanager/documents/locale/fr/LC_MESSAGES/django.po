@@ -985,6 +985,9 @@ msgstr "Version publiée"
 msgid "Preview"
 msgstr "Aperçu"
 
+msgid "Download"
+msgstr "Télécharger"
+
 msgid "Previewed file"
 msgstr "Fichier affiché"
 

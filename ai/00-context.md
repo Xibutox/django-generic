@@ -651,7 +651,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 ```python
 @display(description=_("Label"), ordering="annotation_or_path",
          boolean=True, filter_field="orm__path", filter_type="integer",
-         search_field="orm__path", tags=TagStyle(...) or True)
+         search_field="orm__path", tags=TagStyle(...) or True,
+         icons=True)   # icons: return [{"icon", "url", "label", "target"?}] - clickable icons (§5.9)
 def column(self, obj): ...
 
 @action(description=_("Label"), permissions=("change",),   # view/add/change/delete or "app.codename"
@@ -731,6 +732,14 @@ model as `CharField(max_length=30, blank=True, default="")` and use
 
 Low-level (hand-written serializer): `TagsColumn(tag_style=TagStyle(...),
 choices=..., reader=callable, tag_url="/x/{id}/", filter_type=...)`.
+
+Row shortcuts as clickable icons - a download, a preview - are a method
+column too: `@display(description=_("File"), icons=True)` returning
+`[{"icon": "download", "label": _("Download"), "url":
+self.get_file_url(obj.pk, "attachment")}]` (Material Symbols name;
+`"target": "_blank"` optional; no `url` = left out). Not filtered,
+ordered or exported. The method gets the row only: what depends on the
+reader is annotated in `get_list_queryset(request)`.
 
 ### 5.10 Editing in the table
 

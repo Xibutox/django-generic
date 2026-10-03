@@ -65,6 +65,7 @@ def display(
     filter_type: str | None = None,
     search_field: str | None = None,
     tags: Any = None,
+    icons: bool = False,
 ) -> Any:
     """Describe a computed column of ``list_display``.
 
@@ -82,7 +83,14 @@ def display(
     ``filter_field`` gives it a filter control on one. ``tags`` draws
     what the method returns - records, values, or dicts with
     ``label``, ``color`` and ``background`` - as coloured tags: a
-    ``TagStyle``, or ``True`` for dicts and plain values.
+    ``TagStyle``, or ``True`` for dicts and plain values. ``icons``
+    draws the dicts it returns - ``{"icon", "url", "label"}``, and
+    ``"target"`` - as icons one clicks, shortcuts of the row::
+
+        @display(description=_("File"), icons=True)
+        def shortcuts(self, ticket):
+            return [{"icon": "download", "label": _("Download"),
+                     "url": self.get_file_url(ticket.pk, "attachment")}]
     """
 
     def decorate(func: Function) -> Function:
@@ -104,6 +112,9 @@ def display(
 
         if tags:
             func.tags = tags  # type: ignore[attr-defined]
+
+        if icons:
+            func.icons = True  # type: ignore[attr-defined]
 
         return func
 

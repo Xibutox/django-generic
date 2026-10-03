@@ -884,6 +884,32 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     ).json()
     assert "Pineapple" not in json.dumps(summary)
 
+    # The list's shortcuts: Preview, and the file its reader reads.
+    def shortcuts(client, title):
+        row = next(
+            row
+            for row in rows(client, "/api/documents/document/")
+            if row["title"] == title
+        )
+        return [
+            (icon["icon"], icon["url"]) for icon in row["shortcuts"]
+        ]
+
+    preview_url = f"/documents/document/{framework.pk}/preview/"
+    assert shortcuts(alice, framework.title) == [
+        ("visibility", preview_url), ("download", f"{files}/file/"),
+    ], shortcuts(alice, framework.title)
+    assert shortcuts(viewer, framework.title) == [
+        ("visibility", preview_url),
+        ("download", f"{files}/published_file/"),
+    ], shortcuts(viewer, framework.title)
+    for row in rows(viewer, "/api/documents/document/"):
+        for icon in row["shortcuts"]:
+            assert viewer.get(icon["url"]).status_code == 200, icon
+    without = Document.objects.filter(file="").first()
+    if without is not None:
+        assert shortcuts(alice, without.title) == []
+
     # The readers' list of versions: the published ones.
     def labels_seen(client):
         return {

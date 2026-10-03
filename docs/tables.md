@@ -60,7 +60,7 @@ Every option below is accepted by any column class.
 | `position` | `0` | Sort key; ties keep declaration order |
 | `width` | auto | CSS width |
 | `class_name` | — | Extra CSS class on the cells |
-| `display_type` | inferred | `link` renders an anchor, `tags` coloured labels |
+| `display_type` | inferred | `link` renders an anchor, `tags` coloured labels, `icons` a list of `{"icon", "url", "label"}` as icons one clicks |
 | `link_url` | — | `"/books/{id}/"`, interpolated from the row |
 | `link_field` | — | Row field holding the URL |
 | `link_target` | `_self` | |

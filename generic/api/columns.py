@@ -48,10 +48,11 @@ FILTER_TYPES = frozenset(
 )
 
 #: Display types the client knows how to render. ``link`` renders an
-#: anchor, ``tags`` coloured labels and ``file`` a stored file's name
-#: linking to its download; all still filter as text unless the column
-#: forces another filter.
-DISPLAY_TYPES = FILTER_TYPES | {"link", "tags", "file"}
+#: anchor, ``tags`` coloured labels, ``file`` a stored file's name
+#: linking to its download and ``icons`` a list of ``{"icon", "url",
+#: "label"}`` as icons one clicks; all still filter as text unless the
+#: column forces another filter.
+DISPLAY_TYPES = FILTER_TYPES | {"link", "tags", "file", "icons"}
 
 
 def prettify_field_name(field_name: str) -> str:

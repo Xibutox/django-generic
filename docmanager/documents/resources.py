@@ -12,7 +12,17 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import BooleanField, Case, Q, QuerySet, Value, When
+from django.db.models import (
+    BooleanField,
+    Case,
+    CharField,
+    Exists,
+    OuterRef,
+    Q,
+    QuerySet,
+    Value,
+    When,
+)
 from django.utils import timezone
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
@@ -412,6 +422,7 @@ class DocumentResource(ModelResource):
         "code",
         "reference",
         "title",
+        "shortcuts",
         "document_type",
         "folder",
         "folder__team",
@@ -614,6 +625,59 @@ class DocumentResource(ModelResource):
             super().scope_to_teams(request, queryset),
             Q(reviews__tasks__assignee=getattr(user, "pk", None)),
         )
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        # Which file each row's reader reads: the working one for its
+        # authors and whoever a review asks, the published one for
+        # everyone else (preview.readable, for the whole page at once).
+        user = getattr(request, "user", None)
+        has_file = ~Q(file="")
+
+        if versions.sees_all_drafts(user):
+            drafts: Any = has_file
+        else:
+            drafts = has_file & Exists(
+                ReviewTask.objects.filter(
+                    document=OuterRef("pk"),
+                    assignee=getattr(user, "pk", None),
+                )
+            )
+
+        return (
+            super()
+            .get_list_queryset(request)
+            .annotate(
+                reads=Case(
+                    When(drafts, then=Value("file")),
+                    When(
+                        published_version__isnull=False,
+                        then=Value("published_file"),
+                    ),
+                    default=Value(""),
+                    output_field=CharField(),
+                )
+            )
+        )
+
+    @display(description=_("File"), icons=True)
+    def shortcuts(self, document: Document) -> list[dict]:
+        field = getattr(document, "reads", "")
+
+        if not field:
+            return []
+
+        return [
+            {
+                "icon": "visibility",
+                "label": gettext("Preview"),
+                "url": self.get_page_url("preview", document),
+            },
+            {
+                "icon": "download",
+                "label": gettext("Download"),
+                "url": self.get_file_url(document.pk, field),
+            },
+        ]
 
     @display(description=_("Size"))
     def size(self, document: Document) -> str:

@@ -812,6 +812,8 @@
 
     if (column.displayType === "tags") {
       value = columnsModule.tagLabels(value);
+    } else if (column.displayType === "icons") {
+      value = columnsModule.iconLabels(value);
     } else if (column.choices && column.choices.length) {
       var labels = columnsModule.choiceLabels(column);
 

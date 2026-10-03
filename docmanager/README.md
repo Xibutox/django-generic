@@ -192,6 +192,10 @@ guide), and `manager` will sign the NDA off once Quentin has read it.
 - **Preview.** *Preview* on a document's page (or its row's menu)
   shows the file in the page: PDF and images as they are, Word as
   text, text files as text.
+- **Shortcuts.** The list's *File* column has two icons on each row:
+  the eye opens the preview, the arrow downloads the latest version its
+  reader may read - the working file for its authors, the published
+  one for everyone else (`@display(icons=True)`).
 - **Trash.** Delete a document: it goes to the *Trash* page of the
   list, its open review is cancelled, and *Restore* brings it back.
   Older than 30 days, `python manage.py empty_trash` deletes it for

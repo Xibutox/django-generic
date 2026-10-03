@@ -179,6 +179,37 @@ def make_getter(
     return getter
 
 
+def make_icons_getter(
+    function: Callable[[Any], Any],
+) -> Callable[[Any, Any], list[dict[str, str]]]:
+    """A ``get_<name>`` method for a column of ``@display(icons=True)``:
+    the dicts the method returns, as ``{"icon", "url", "label"}`` - and
+    ``"target"`` - the client draws. One without an address is left
+    out."""
+
+    def getter(serializer: Any, instance: Any) -> list[dict[str, str]]:
+        icons = []
+
+        for item in function(instance) or ():
+            if not item or not item.get("url"):
+                continue
+
+            icon = {
+                "icon": force_str(item.get("icon") or "link"),
+                "url": force_str(item["url"]),
+                "label": force_str(item.get("label") or ""),
+            }
+
+            if item.get("target"):
+                icon["target"] = force_str(item["target"])
+
+            icons.append(icon)
+
+        return icons
+
+    return getter
+
+
 def model_attribute_reader(
     model: type[models.Model],
     name: str,
@@ -196,7 +227,13 @@ def model_attribute_reader(
 
         return value() if callable(value) else value
 
-    for key in ("short_description", "boolean", "admin_order_field", "tags"):
+    for key in (
+        "short_description",
+        "boolean",
+        "admin_order_field",
+        "tags",
+        "icons",
+    ):
         if hasattr(target, key):
             setattr(read, key, getattr(target, key))
 
@@ -394,6 +431,13 @@ class TableSerializerBuilder:
                     **options,
                 ),
             )
+            return
+
+        if getattr(function, "icons", False):
+            # Shortcuts of the row: nothing an export could write.
+            options.update(display_type="icons", exportable=False)
+            self.register(entry, name, MethodColumn(**options))
+            self.methods[f"get_{name}"] = make_icons_getter(function)
             return
 
         boolean = bool(getattr(function, "boolean", False))

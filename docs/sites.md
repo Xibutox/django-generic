@@ -278,6 +278,26 @@ to that record's page when the user may open it. Exports and copies get
 the labels, comma separated. On the summary page, the same fields are
 drawn as the same tags.
 
+A method may instead give the row its shortcuts, icons one clicks, with
+`icons=True` — a list of `{"icon", "url", "label"}`, and `"target":
+"_blank"` for another tab:
+
+```python
+@display(description=_("File"), icons=True)
+def shortcuts(self, ticket):
+    if not ticket.attachment:
+        return []
+
+    return [{"icon": "download", "label": _("Download"),
+             "url": self.get_file_url(ticket.pk, "attachment")}]
+```
+
+`icon` is a Material Symbols name, `label` what a pointer and a screen
+reader say. An entry without a `url` is left out, so is one whose
+address is not a safe one. The column is not filtered, ordered or
+exported; give addresses the server checks again — a record's page, its
+permission-checked file download — never a storage URL.
+
 Colours reach a `style` attribute in the browser, so each one is checked
 on the server and again in the browser against a strict pattern — a hex
 value, a named colour, `rgb()`, `hsl()`, `oklch()` and their kin — and
