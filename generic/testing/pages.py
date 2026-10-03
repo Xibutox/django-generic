@@ -51,6 +51,9 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     # a permission is declared by a model: nobody adds one by hand.
     "site:generic_taskrun_add": (403,),
     "site:generic_historyentry_add": (403,),
+    # An access is recorded when it happens, and kept as it was.
+    "site:generic_accessentry_add": (403,),
+    "site:generic_accessentry_delete": (403,),
     "site:auth_permission_add": (403,),
     "site:auth_permission_delete": (403,),
     # A token is made by its owner on the account page, shown once.
@@ -666,5 +669,17 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
     # Written by the saves above, since saving anything records a
     # version of it.
     records["generic.historyentry"] = HistoryEntry.objects.first()
+
+    from django.contrib.contenttypes.models import ContentType
+
+    from generic.access.models import AccessEntry
+
+    message = records["generic.message"]
+    records["generic.accessentry"] = AccessEntry.objects.create(
+        content_type=ContentType.objects.get_for_model(message),
+        object_id=str(message.pk),
+        record_key=f"generic.message:{message.pk}",
+        label="Page sweep",
+    )
 
     return records

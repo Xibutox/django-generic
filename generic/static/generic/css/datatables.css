@@ -186,6 +186,22 @@ table.dataTable td.dt-empty {
   color: var(--text-muted);
 }
 
+/* A row's shortcuts: icons one clicks. */
+.dt-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  vertical-align: middle;
+}
+
+.dt-icons__link {
+  color: var(--color-accent);
+}
+
+.dt-icons__link .icon {
+  font-size: 1.25rem;
+}
+
 /* Columns added by the features. */
 table.dataTable th.dt-select,
 table.dataTable td.dt-select {

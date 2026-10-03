@@ -320,6 +320,68 @@
     };
   }
 
+  /** The icons of a cell whose address may be followed. */
+  function iconItems(data) {
+    return (Array.isArray(data) ? data : [])
+      .filter(function (item) {
+        return (
+          item !== null &&
+          typeof item === "object" &&
+          item.url &&
+          core.isSafeUrl(item.url)
+        );
+      });
+  }
+
+  function iconLabels(data) {
+    return iconItems(data)
+      .map(function (item) {
+        return String(item.label || "");
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  /**
+   * Shortcuts of the row, `[{icon, url, label, target}]`: each an icon
+   * one clicks, named by its label for a pointer and a screen reader.
+   */
+  function buildIconsRenderer() {
+    return function (data, renderingType) {
+      if (renderingType !== "display") {
+        return iconLabels(data);
+      }
+
+      var icons = iconItems(data);
+
+      if (!icons.length) {
+        return "";
+      }
+
+      return (
+        '<span class="dt-icons">' +
+        icons
+          .map(function (item) {
+            var label = core.escapeHtml(item.label || "");
+            var blank = item.target === "_blank";
+
+            return (
+              '<a class="icon-button icon-button--sm dt-icons__link" href="' +
+              core.escapeHtml(item.url) +
+              '"' +
+              (blank ? ' target="_blank" rel="noopener"' : "") +
+              (label ? ' title="' + label + '" aria-label="' + label + '"' : "") +
+              '><span class="icon material-symbols-outlined" aria-hidden="true">' +
+              core.escapeHtml(item.icon || "link") +
+              "</span></a>"
+            );
+          })
+          .join("") +
+        "</span>"
+      );
+    };
+  }
+
   /** Render a boolean as a word rather than `true` / `false`. */
   function buildBooleanRenderer() {
     return function (data, renderingType) {
@@ -420,6 +482,8 @@
           result.render = buildTagsRenderer(result);
         } else if (displayType === "file") {
           result.render = buildFileRenderer();
+        } else if (displayType === "icons") {
+          result.render = buildIconsRenderer();
         } else if (displayType === "link") {
           result.render = buildLinkRenderer(result);
         } else if (
@@ -497,6 +561,8 @@
     buildDateRenderer: buildDateRenderer,
     buildChoiceRenderer: buildChoiceRenderer,
     buildFileRenderer: buildFileRenderer,
+    buildIconsRenderer: buildIconsRenderer,
+    iconLabels: iconLabels,
     buildLinkRenderer: buildLinkRenderer,
     buildTagsRenderer: buildTagsRenderer,
     tagHtml: renderTag,

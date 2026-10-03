@@ -345,6 +345,13 @@ GET api/<app>/<model>/<pk>/files/<field>/        site:api_<app>_<model>-file
   its form, its summary page (sections and figures) or its list;
   `resource.get_file_fields(request)` says which. Anything else, an
   empty field and a file the storage no longer holds are a 404.
+- `resource.may_download(request, obj, field)` may refuse a reader a
+  file the record still shows them (default: allowed) - a draft kept
+  for its authors, say. Refused, the download is a 404, and the summary
+  page and the tables draw the name without a link.
+- With `access_log = True` on the resource, every download is written
+  in the access log, with the file's name ([Trash and access
+  log](trash.md#the-access-log)).
 - The file is opened through the field's own storage - any storage,
   not only the file system - and answered with `FileResponse`, its
   type guessed from its name (`application/octet-stream` otherwise).

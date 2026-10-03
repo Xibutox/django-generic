@@ -23,7 +23,14 @@ docmanager/
     │                   Document, DocumentVersion, Comment, TeamWiki,
     │                   Workflow, WorkflowStep, Review, ReviewStep, ReviewTask
     ├── resources.py    the screens, each scoped to its team (team_field)
-    ├── versions.py     how a version is recorded, numbered and restored
+    ├── versions.py     how a version is recorded, labelled (0.1, 1.0, 1.1...),
+    │                   published and restored
+    ├── text.py         the text of a file, for the search (docx, pptx,
+    │                   xlsx, odt... with the standard library; PDF with pypdf)
+    ├── stamping.py     an approved PDF stamped on every page (fpdf2 + pypdf)
+    ├── preview.py      the Preview page: PDF, images, Word (mammoth), text
+    ├── periodic.py     reminders before a document's review date, and the
+    │                   review started on the day (tasks.py, a daily task)
     ├── codification.py a document's number, from its team's pattern
     ├── workflows.py    the review circuits: steps, tasks, who is told what
     ├── merge.py        Word files merged with a template (python-docx)
@@ -32,7 +39,8 @@ docmanager/
     │                   (GENERIC["WIKI_ACCESS"], ["WIKI_EDIT_ACCESS"])
     ├── templates/documents/merge.html, static/documents/   that page
     ├── samples.py      small Word, PDF and text files for the demo
-    └── management/commands/seed_documents.py
+    └── management/commands/   seed_documents, run_periodic_reviews,
+                               extract_text
 ```
 
 ## Run it
@@ -42,7 +50,7 @@ From a checkout of the repository:
 ```bash
 pip install -e ".[export,wiki]"
 cd docmanager
-pip install -r requirements.txt     # the Word merge
+pip install -r requirements.txt     # Word merge, PDF text and stamps, preview
 python manage.py migrate
 python manage.py seed_documents
 python manage.py runserver
@@ -50,7 +58,13 @@ python manage.py runserver
 
 Already ran it? `git pull`, `pip install -e "..[export,wiki]"` from
 this folder, then `migrate` and `seed_documents` again: what is there
-stays, what is new is added (types, numbers, workflows, reviews).
+stays, what is new is added (types, numbers, workflows, reviews,
+subfolders, periodic reviews). `python manage.py extract_text` reads
+the text of files sent before the search inside files existed.
+
+Each of `requirements.txt`'s libraries is optional: without `pypdf`,
+PDFs are neither searched nor stamped; without `mammoth`, a Word
+preview shows its paragraphs only.
 
 The e-mails of the reviews are printed in the terminal running
 `runserver` (Django's console backend): set `EMAIL_BACKEND` - or
@@ -164,6 +178,39 @@ guide), and `manager` will sign the NDA off once Quentin has read it.
   *Checked out* view lists them - without stopping anyone: whoever
   sends a version meanwhile is let through and the holder is told;
   *Check in* gives it back, anyone may.
+- **Search inside files.** The list's search reads the files' text
+  too: search `Signed version` as `alice`. Word, PowerPoint, Excel,
+  OpenDocument, text and PDF files are read when they are sent.
+- **Published and working versions.** Versions are labelled `0.1`,
+  `0.2` while a draft, `1.0` once approved, then `1.1` for the next
+  draft and `2.0` at the next approval. Readers who change nothing
+  (`viewer`) read the published version only - its file, its preview,
+  its row in *Versions* - while the authors work on the next; someone a
+  review asks reads the draft too. An approved PDF is stamped on every
+  page with its number, version, date and approvers (*Release
+  procedure*'s *Published file*).
+- **Preview.** *Preview* on a document's page (or its row's menu)
+  shows the file in the page: PDF and images as they are, Word as
+  text, text files as text.
+- **Shortcuts.** The list's *File* column has two icons on each row:
+  the eye opens the preview, the arrow downloads the latest version its
+  reader may read - the working file for its authors, the published
+  one for everyone else (`@display(icons=True)`).
+- **Trash.** Delete a document: it goes to the *Trash* page of the
+  list, its open review is cancelled, and *Restore* brings it back.
+  Older than 30 days, `python manage.py empty_trash` deletes it for
+  good.
+- **Access log.** A document's *Access log* link says who opened it,
+  previewed it and downloaded which file.
+- **Folders in folders.** A folder's *In folder* puts it inside another
+  of its team's (*Contracts / Suppliers*); its documents are found by
+  the whole path.
+- **Periodic reviews.** A document type reviewed every so many months
+  (*Procedure*: 12) sets an approved document's next review date. Run
+  `python manage.py run_periodic_reviews` (or the *Periodic reviews*
+  task, daily): the authors and team leaders are reminded 30 days
+  before (*Release procedure* is due in 10), and on the day the type's
+  workflow starts on its own.
 - **Also.** *Comments* on a document's page, *Related documents* in
   its form, a *Next review on* date (the *Due for a review* view), a
   *Make obsolete* action, *Not numbered* and *Without a file* views.
@@ -193,7 +240,10 @@ What the framework gives this project, and where to read about it:
   asked as a step's people ([Teams](../docs/teams.md#team-leaders)).
 - `generic.delivery.deliver` - the reviews' notifications and e-mails,
   each in its reader's language ([Events](../docs/events.md)).
-- `@page` - the merge page, a page of the documents' resource with its
+- `trash`, `access_log` and `may_download` - deleted documents kept to
+  be restored, who opened and downloaded what, drafts kept from
+  readers ([Trash and access log](../docs/trash.md)).
+- `@page` - the merge page, the preview, a page of the documents' resource with its
   entry in the navigation ([Pages](../docs/pages.md)).
 - Everything else - lists, forms, files, related tables, charts,
   history, actions - is declared in `documents/resources.py` like any

@@ -6,6 +6,7 @@ from generic.sites import ModelResource, TabularInline, register
 from tests.testapp.models import (
     Binder,
     BinderSheet,
+    Contract,
     Document,
     DocumentNote,
     Manuscript,
@@ -83,3 +84,18 @@ class SharedNoteResource(ModelResource):
     list_display = ("title", "teams")
     search_fields = ("title",)
     team_field = "teams"
+
+
+@register(Contract)
+class ContractResource(ModelResource):
+    """A trash, an access log, and a file refused once signed."""
+
+    list_display = ("title", "author", "signed")
+    search_fields = ("title",)
+    fields = ("title", "file", "signed", "author")
+    detail_fieldsets = ((None, {"fields": ("title", "file", "signed")}),)
+    trash = True
+    access_log = True
+
+    def may_download(self, request, obj, field):
+        return request.user.is_superuser or not obj.signed

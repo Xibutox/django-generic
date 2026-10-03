@@ -47,12 +47,13 @@ PROTECTIVE_HEADERS = {
 }
 
 
-def file_url(site: Any, value: Any) -> str | None:
+def file_url(site: Any, value: Any, request: Any = None) -> str | None:
     """Where ``value`` - a stored file of a record - is downloaded.
 
     Worked out from the record the file belongs to, which may be
     another model's than the table showing it (``ticket__attachment``).
-    ``None`` when that model has no resource on ``site``.
+    ``None`` when that model has no resource on ``site``, or when its
+    ``may_download`` refuses ``request``'s reader.
     """
     instance = getattr(value, "instance", None)
     field = getattr(value, "field", None)
@@ -67,13 +68,20 @@ def file_url(site: Any, value: Any) -> str | None:
     if resource is None:
         return None
 
+    if request is not None and not resource.may_download(
+        request, instance, field.name
+    ):
+        return None
+
     return resource.get_file_url(instance.pk, field.name) or None
 
 
-def file_url_resolver(site: Any) -> Callable[[Any], str | None]:
+def file_url_resolver(
+    site: Any, request: Any = None
+) -> Callable[[Any], str | None]:
     """What a serializer context carries under ``generic.api.files``'s
     ``FILE_URL``."""
-    return partial(file_url, site)
+    return partial(file_url, site, request=request)
 
 
 def is_file_field(model: Any, name: Any) -> bool:

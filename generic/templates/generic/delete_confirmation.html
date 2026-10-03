@@ -5,7 +5,31 @@
 
 {% block content %}
   <div class="module">
-    {% if deletion.can_delete %}
+    {% if deletion.can_delete and trash %}
+      <p class="lead">
+        {% blocktranslate with name=object trimmed %}
+          Move “{{ name }}” to the trash? It can be restored from there.
+        {% endblocktranslate %}
+      </p>
+
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        {% if is_popup %}
+          <input type="hidden" name="{{ popup_param }}" value="1">
+        {% endif %}
+        <div class="submit-row">
+          <div class="submit-row__start"></div>
+          <div class="submit-row__end">
+            <a class="button button--ghost" href="{{ cancel_url }}">
+              {% translate "Cancel" %}
+            </a>
+            <button type="submit" class="button button--danger">
+              {% translate "Move to the trash" %}
+            </button>
+          </div>
+        </div>
+      </form>
+    {% elif deletion.can_delete %}
       <p class="lead">
         {% blocktranslate with name=object %}
           Are you sure you want to delete “{{ name }}”?
