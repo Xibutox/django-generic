@@ -112,6 +112,39 @@ rather than producing a dead button.
 Overrides merge along the MRO, so a subclass restates only what it
 changes.
 
+## Questions that are not fields
+
+A form may ask something the record does not keep - why a file was
+replaced, a confirmation - with `form_extra_fields` on the resource:
+DRF fields, placed by `fieldsets` like any field (after the model's
+fields when there are none), **write only**, never saved on the
+record, and handed to `save_model`:
+
+```python
+from rest_framework import serializers
+
+
+class DocumentResource(ModelResource):
+    fieldsets = ((None, {"fields": ("title", "file", "version_note")}),)
+    form_extra_fields = {
+        "version_note": serializers.CharField(
+            label=_("Change note"), required=False, allow_blank=True
+        )
+    }
+
+    def save_model(self, request, serializer, change):
+        note = serializer.extra_values.get("version_note", "")
+        document = serializer.save()
+        record_version(document, comment=note)
+        return document
+```
+
+`serializer.extra_values` holds the validated answers; the record is
+created or updated without them. They are left out of the summary
+page's default sections and never sent back. A name that is a field of
+the model, or a value that is not a DRF field, raises
+`ImproperlyConfigured`.
+
 ## Sections
 
 A field whose `section` names an undeclared section would silently
@@ -317,7 +350,11 @@ GET api/<app>/<model>/<pk>/files/<field>/        site:api_<app>_<model>-file
   type guessed from its name (`application/octet-stream` otherwise).
 - A PNG, JPEG, GIF or WebP image is shown in the browser (`inline`);
   everything else is `attachment; filename=...`, with the RFC 6266
-  form for a name outside ASCII. An HTML page or an SVG is **never**
+  form for a name outside ASCII. The name is the stored one - which
+  the storage may have suffixed to keep two files apart - unless
+  `resource.get_download_name(request, obj, field)` gives another:
+  the name the file was sent with, kept on the record. The type is
+  always read from the stored name. An HTML page or an SVG is **never**
   shown: an uploaded file must not run script in the site's origin.
 - Every answer, refusals included, carries `X-Content-Type-Options:
   nosniff` and `Content-Security-Policy: sandbox`.

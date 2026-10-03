@@ -1,0 +1,309 @@
+# French translation of the document manager example.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "team"
+msgstr "équipe"
+
+msgid "name"
+msgstr "nom"
+
+msgid "description"
+msgstr "description"
+
+msgid "folder"
+msgstr "dossier"
+
+msgid "folders"
+msgstr "dossiers"
+
+msgid "colour"
+msgstr "couleur"
+
+msgid "tag"
+msgstr "étiquette"
+
+msgid "tags"
+msgstr "étiquettes"
+
+msgid "Draft"
+msgstr "Brouillon"
+
+msgid "In review"
+msgstr "En relecture"
+
+msgid "Approved"
+msgstr "Approuvé"
+
+msgid "Obsolete"
+msgstr "Obsolète"
+
+msgid "reference"
+msgstr "référence"
+
+msgid "title"
+msgstr "titre"
+
+msgid "status"
+msgstr "statut"
+
+msgid "file"
+msgstr "fichier"
+
+msgid "version"
+msgstr "version"
+
+msgid "size"
+msgstr "taille"
+
+msgid "created by"
+msgstr "créé par"
+
+msgid "created at"
+msgstr "créé le"
+
+msgid "updated at"
+msgstr "modifié le"
+
+msgid "document"
+msgstr "document"
+
+msgid "documents"
+msgstr "documents"
+
+msgid "change note"
+msgstr "note de modification"
+
+msgid "What changed, and why."
+msgstr "Ce qui a changé, et pourquoi."
+
+msgid "file name"
+msgstr "nom du fichier"
+
+msgid "content type"
+msgstr "type de contenu"
+
+msgid "SHA-256"
+msgstr "SHA-256"
+
+msgid "sent by"
+msgstr "envoyé par"
+
+msgid "sent at"
+msgstr "envoyé le"
+
+msgid "versions"
+msgstr "versions"
+
+msgid "Where each team files its documents."
+msgstr "Où chaque équipe range ses documents."
+
+msgid "Every document, with each version of its file."
+msgstr "Tous les documents, avec chaque version de leur fichier."
+
+msgid "To review"
+msgstr "À relire"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "Replacing the file keeps the old one as a version."
+msgstr "Remplacer le fichier garde l'ancien comme version."
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Change note"
+msgstr "Note de modification"
+
+msgid "What changed in the file, and why."
+msgstr "Ce qui a changé dans le fichier, et pourquoi."
+
+msgid "Record"
+msgstr "Fiche"
+
+msgid "Newest first."
+msgstr "Les plus récentes d'abord."
+
+msgid "By status"
+msgstr "Par statut"
+
+msgid "By team"
+msgstr "Par équipe"
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Size"
+msgstr "Taille"
+
+msgid "Approve"
+msgstr "Approuver"
+
+msgid "Approve the selected documents?"
+msgstr "Approuver les documents sélectionnés ?"
+
+msgid "%(count)s approved."
+msgstr "%(count)s approuvé(s)."
+
+msgid "Every file sent, in every document."
+msgstr "Chaque fichier envoyé, dans chaque document."
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Make this version the document's file again?"
+msgstr "Refaire de cette version le fichier du document ?"
+
+msgid "Choose one version to restore."
+msgstr "Choisissez une seule version à restaurer."
+
+msgid "%(document)s is at version %(number)s."
+msgstr "%(document)s est à la version %(number)s."
+
+msgid "Documents in review"
+msgstr "Documents en relecture"
+
+msgid "Waiting for someone to approve them."
+msgstr "En attente d'approbation."
+
+msgid "Restored from version %(number)s."
+msgstr "Restauré depuis la version %(number)s."
+
+msgid "format"
+msgstr "format"
+
+msgid "Word files"
+msgstr "Fichiers Word"
+
+msgid "Merge into Word"
+msgstr "Fusionner en Word"
+
+msgid "Merge Word files"
+msgstr "Fusionner des fichiers Word"
+
+msgid "Documents and versions put together into one Word file, with a template."
+msgstr "Des documents et des versions réunis en un seul fichier Word, avec un modèle."
+
+msgid "None of the selected files is a Word file."
+msgstr "Aucun des fichiers sélectionnés n'est un fichier Word."
+
+msgid "Documents and versions put together with a template."
+msgstr "Des documents et des versions réunis avec un modèle."
+
+#, python-format
+msgid "%(folder)s, version %(number)s, %(format)s"
+msgstr "%(folder)s, version %(number)s, %(format)s"
+
+#, python-format
+msgid "%(document)s, version %(number)s"
+msgstr "%(document)s, version %(number)s"
+
+#, python-format
+msgid "%(count)s chosen file(s) are not Word files, or not yours to see: they were left out."
+msgstr "%(count)s fichier(s) choisi(s) ne sont pas des fichiers Word, ou ne vous sont pas visibles : ils ont été écartés."
+
+#, python-format
+msgid "%(count)s chosen file(s) are not Word files, or not yours to see."
+msgstr "%(count)s fichier(s) choisi(s) ne sont pas des fichiers Word, ou ne vous sont pas visibles."
+
+msgid "Choose at least one document."
+msgstr "Choisissez au moins un document."
+
+#, python-format
+msgid "At most %(count)s files can be merged at once."
+msgstr "Au plus %(count)s fichiers peuvent être fusionnés à la fois."
+
+msgid "This template is not available."
+msgstr "Ce modèle n'est pas disponible."
+
+msgid "This folder is not available."
+msgstr "Ce dossier n'est pas disponible."
+
+#, python-format
+msgid "Merged from: %(files)s"
+msgstr "Fusion de : %(files)s"
+
+#, python-format
+msgid "Merged from %(count)s file(s)."
+msgstr "Fusion de %(count)s fichier(s)."
+
+msgid "A document has no file."
+msgstr "Un document n'a pas de fichier."
+
+msgid "a file"
+msgstr "un fichier"
+
+#, python-format
+msgid "%(name)s is not a Word file (.docx or .dotx). An older .doc file has to be saved as .docx first."
+msgstr "%(name)s n'est pas un fichier Word (.docx ou .dotx). Un ancien fichier .doc doit d'abord être enregistré en .docx."
+
+#, python-format
+msgid "%(name)s is too large once unpacked."
+msgstr "%(name)s est trop volumineux une fois décompressé."
+
+#, python-format
+msgid "%(name)s is not a Word file (.docx or .dotx); a file with macros (.docm, .dotm) is not accepted either."
+msgstr "%(name)s n'est pas un fichier Word (.docx ou .dotx) ; un fichier avec macros (.docm, .dotm) n'est pas accepté non plus."
+
+#, python-format
+msgid "%(name)s could not be read as a Word file."
+msgstr "%(name)s n'a pas pu être lu comme un fichier Word."
+
+msgid "Files to merge"
+msgstr "Fichiers à fusionner"
+
+msgid "Move up"
+msgstr "Monter"
+
+msgid "Move down"
+msgstr "Descendre"
+
+msgid "Add a document"
+msgstr "Ajouter un document"
+
+msgid "Add a document..."
+msgstr "Ajouter un document..."
+
+msgid "Template"
+msgstr "Modèle"
+
+msgid "Optional"
+msgstr "Facultatif"
+
+msgid "None: the first file is the base"
+msgstr "Aucun : le premier fichier sert de base"
+
+msgid "Merged file"
+msgstr "Fichier fusionné"
+
+msgid "File name"
+msgstr "Nom du fichier"
+
+msgid "Start each file on a new page"
+msgstr "Commencer chaque fichier sur une nouvelle page"
+
+msgid "Keep it as a new document in"
+msgstr "Le garder comme nouveau document dans"
+
+msgid "Nowhere: download it only"
+msgstr "Nulle part : seulement le télécharger"
+
+msgid "Merge and download"
+msgstr "Fusionner et télécharger"
+
+msgid "Merge and keep"
+msgstr "Fusionner et garder"
+
+msgid "Word documents and versions, in the order they will follow each other. Select some in the documents' or the versions' list and choose \"Merge into Word\", or add documents here."
+msgstr "Des documents et des versions Word, dans l'ordre où ils se suivront. Sélectionnez-en dans la liste des documents ou des versions et choisissez « Fusionner en Word », ou ajoutez des documents ici."
+
+#, python-format
+msgid "The merged file is made from it: its styles, headers and footers. A paragraph reading %(marker)s in it marks where the files go; otherwise they follow its text. Without a template, the first file is the base."
+msgstr "Le fichier fusionné est fait à partir de lui : ses styles, en-têtes et pieds de page. Un paragraphe contenant %(marker)s y marque l'endroit où vont les fichiers ; sinon, ils suivent son texte. Sans modèle, le premier fichier sert de base."

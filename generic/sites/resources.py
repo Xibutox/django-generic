@@ -36,6 +36,7 @@ from generic.sites.serializers import (
     default_form_fields,
     flatten_fieldsets,
     with_row_key,
+    without_fields,
 )
 from generic.views.datatable import filter_row_option
 
@@ -184,6 +185,13 @@ class ModelResource(PagesMixin):
     #: A field that must never be read back belongs here, because the
     #: record's own endpoint returns everything else.
     form_field_kwargs: dict[str, dict[str, Any]] = {}
+    #: Questions the form asks that are not fields of the model - a
+    #: change note, a confirmation - as DRF fields:
+    #: ``{"note": serializers.CharField(required=False)}``. Each is
+    #: write only, placed by ``fieldsets`` like any field, never saved
+    #: on the record, and handed to ``save_model`` as
+    #: ``serializer.extra_values``.
+    form_extra_fields: dict[str, Any] = {}
     #: A hand-written form serializer, replacing the generated one.
     form_serializer: Any = None
     inlines: Sequence[type] = ()
@@ -238,6 +246,21 @@ class ModelResource(PagesMixin):
     #: should read twice - a token, a secret - belongs here: the tab
     #: shows what was recorded, whatever the form shows.
     history_exclude: Sequence[str] = ()
+
+    # -- teams (generic.teams) ---------------------------------------------
+
+    #: The path from this model to the team a record belongs to -
+    #: ``"team"``, ``"folder__team"``, ``"teams"`` - or None. Set, every
+    #: screen and endpoint shows a reader only their teams' records
+    #: (``get_queryset``), watches tell only them, and forms of other
+    #: models offer and accept only those (``scope_relations``). Needs
+    #: ``generic.teams`` installed.
+    team_field: str | None = None
+    #: Whether forms of other models pointing at this one offer and
+    #: accept only the records ``get_queryset(request)`` gives their
+    #: reader. None: when ``team_field`` is set. True for a resource
+    #: restricting its rows another way.
+    scope_relations: bool | None = None
 
     #: The DRF viewset class the endpoint is built from.
     viewset_class: Any = None
@@ -544,7 +567,58 @@ class ModelResource(PagesMixin):
         if ordering:
             queryset = queryset.order_by(*ordering)
 
+        if self.team_field:
+            queryset = self.scope_to_teams(request, queryset)
+
         return queryset
+
+    def scope_to_teams(self, request: Any, queryset: QuerySet) -> QuerySet:
+        """``queryset`` narrowed to the reader's teams (``team_field``)."""
+        from generic.teams.scoping import scope_to_teams
+
+        return scope_to_teams(
+            queryset,
+            getattr(request, "user", None),
+            self.team_field or "",
+        )
+
+    def get_relation_queryset(self, request: Any) -> QuerySet | None:
+        """What a form of another model may point at, or None for all.
+
+        Read by every form field relating to this model - the choices
+        it offers and the values it accepts - when ``scope_relations``
+        says so.
+        """
+        scoped = self.scope_relations
+
+        if scoped is None:
+            scoped = bool(self.team_field)
+
+        if not scoped or request is None:
+            return None
+
+        return self.get_queryset(request)
+
+    def get_initial(self, request: Any) -> dict[str, Any]:
+        """Values an add form opens with, before the query string's.
+
+        By default, the reader's team when the record's team is a field
+        of its own and the reader works in exactly one.
+        """
+        field = self.team_field
+
+        if not field or field == "pk" or "__" in field:
+            return {}
+
+        from generic.teams.scoping import teams_of
+
+        teams = list(
+            teams_of(getattr(request, "user", None)).values_list(
+                "pk", flat=True
+            )[:2]
+        )
+
+        return {field: str(teams[0])} if len(teams) == 1 else {}
 
     def get_list_queryset(self, request: Any) -> QuerySet:
         """What the table pages through: related rows loaded up front."""
@@ -661,7 +735,14 @@ class ModelResource(PagesMixin):
         restricted per user: a signal has no request, so
         ``get_queryset`` cannot be replayed here, and a watch must
         never become a way to learn that a record exists.
+
+        A resource with a ``team_field`` tells only the record's teams.
         """
+        if self.team_field and obj is not None:
+            from generic.teams.scoping import in_teams_of
+
+            return in_teams_of(user, obj, self.team_field)
+
         return True
 
     def get_object_description(self, obj: Any) -> str:
@@ -931,10 +1012,15 @@ class ModelResource(PagesMixin):
 
         fieldsets = self.get_fieldsets(request)
 
-        if fieldsets:
-            return fieldsets
+        extra = set(self.form_extra_fields)
 
-        names = list(self.get_fields(request))
+        if fieldsets:
+            # A question of the form is not a value of the record.
+            return without_fields(fieldsets, extra) if extra else fieldsets
+
+        names = [
+            name for name in self.get_fields(request) if name not in extra
+        ]
         names += [
             name
             for name in self.get_readonly_fields(request)
@@ -956,6 +1042,15 @@ class ModelResource(PagesMixin):
         from generic.sites.files import exposed_file_fields
 
         return exposed_file_fields(self, request)
+
+    def get_download_name(self, request: Any, obj: Any, field: str) -> str:
+        """The name a file of ``obj`` is downloaded under.
+
+        Empty: the stored name, which the storage may have changed to
+        keep two files apart. Override to give back the name it was
+        sent with, kept on the record.
+        """
+        return ""
 
     def get_related_tables(self, request: Any = None) -> list[Any]:
         """The related tables, resolved once against this resource."""
@@ -1114,6 +1209,7 @@ class ModelResource(PagesMixin):
                 fieldsets=self.get_fieldsets(),
                 overrides=self.form_overrides,
                 extra_kwargs=self.form_field_kwargs,
+                extra_fields=self.form_extra_fields,
                 source=self,
             )
 

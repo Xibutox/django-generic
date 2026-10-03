@@ -77,6 +77,27 @@ def get_resource_for(model: type[models.Model] | None) -> Any:
     return site.get_resource(model)
 
 
+def narrow_relation(field: serializers.Field, request: Any) -> None:
+    """Offer and accept only what the related resource lets ``request``
+    reach, where that resource says so (``scope_relations``).
+
+    The choices a form embeds and the values it validates come from the
+    same queryset, so a record of another team is neither listed nor
+    taken when its key is sent by hand.
+    """
+    relation = relation_of(field)
+    queryset = getattr(relation, "queryset", None)
+    resource = get_resource_for(getattr(queryset, "model", None))
+
+    if resource is None:
+        return
+
+    scoped = resource.get_relation_queryset(request)
+
+    if scoped is not None:
+        relation.queryset = scoped
+
+
 def embedded_choices(
     relation: serializers.RelatedField,
     limit: int,

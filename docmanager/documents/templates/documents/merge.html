@@ -1,0 +1,155 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# DocumentResource.merge (documents/merging.py): Word documents and    #}
+{# versions in order, a template, one .docx - downloaded, or kept as a  #}
+{# new document. A plain form: the list's order is the hidden inputs'.  #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'documents/merge.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'documents/merge.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  {{ merge_config|json_script:"merge-config" }}
+
+  <form method="post" class="merge stack" x-data="documentsMerge('merge-config')">
+    {% csrf_token %}
+
+    {% if error %}
+      <div class="callout callout--danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    {# 1. The files, in order. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "library_books" %} {% translate "Files to merge" %}</h2>
+        <span class="badge" x-text="items.length"></span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          Word documents and versions, in the order they will follow each other.
+          Select some in the documents' or the versions' list and choose
+          "Merge into Word", or add documents here.
+        {% endblocktranslate %}
+      </p>
+
+      <ol class="merge__list" x-show="items.length" x-cloak>
+        <template x-for="(item, index) in items" :key="item.key">
+          <li class="merge__item">
+            <input type="hidden" name="items" :value="item.key">
+            <span class="merge__position" x-text="index + 1"></span>
+            <span class="merge__name">
+              <strong x-text="item.label"></strong>
+              <span class="muted" x-text="item.detail"></span>
+            </span>
+            <span class="merge__tools">
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, -1)" :disabled="index === 0"
+                      title="{% translate 'Move up' %}" aria-label="{% translate 'Move up' %}">
+                {% icon "arrow_upward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, 1)" :disabled="index === items.length - 1"
+                      title="{% translate 'Move down' %}" aria-label="{% translate 'Move down' %}">
+                {% icon "arrow_downward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="remove(index)"
+                      title="{% translate 'Remove' %}" aria-label="{% translate 'Remove' %}">
+                {% icon "close" "icon--sm" %}
+              </button>
+            </span>
+          </li>
+        </template>
+      </ol>
+
+      <div class="merge__add">
+        <label for="merge-add" class="sr-only">{% translate "Add a document" %}</label>
+        <select id="merge-add" class="input" x-model="adding">
+          <option value="">{% translate "Add a document..." %}</option>
+          <template x-for="choice in available()" :key="choice.key">
+            <option :value="choice.key" x-text="choice.label + ' (' + choice.detail + ')'"></option>
+          </template>
+        </select>
+        <button type="button" class="button" @click="add()" :disabled="!adding || full()">
+          {% icon "add" "icon--sm" %} {% translate "Add" %}
+        </button>
+      </div>
+    </section>
+
+    {# 2. The template. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "description" %} {% translate "Template" %}</h2>
+        <span class="badge">{% translate "Optional" %}</span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed with marker=placeholder %}
+          The merged file is made from it: its styles, headers and footers.
+          A paragraph reading {{ marker }} in it marks where the files go;
+          otherwise they follow its text. Without a template, the first file is the base.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="merge__options">
+        <div class="field-box merge__field">
+          <label for="merge-template">{% translate "Template" %}</label>
+          <select id="merge-template" name="template" class="input">
+            <option value="">{% translate "None: the first file is the base" %}</option>
+            {% for document in templates %}
+              <option value="{{ document.pk }}"{% if values.template == document.pk|stringformat:"s" %} selected{% endif %}>{{ document }} ({{ document.file_format }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </section>
+
+    {# 3. The result. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "merge_type" %} {% translate "Merged file" %}</h2>
+      </div>
+
+      <div class="merge__options">
+        <div class="field-box merge__field">
+          <label for="merge-name">{% translate "File name" %}</label>
+          <input id="merge-name" name="name" type="text" class="input" maxlength="200"
+                 placeholder="merged.docx" value="{{ values.name }}">
+        </div>
+        <div class="field-checkbox">
+          <input id="merge-breaks" name="page_breaks" type="checkbox"{% if values.page_breaks %} checked{% endif %}>
+          <label for="merge-breaks">{% translate "Start each file on a new page" %}</label>
+        </div>
+      </div>
+
+      {% if folders %}
+        <div class="merge__options">
+          <div class="field-box merge__field">
+            <label for="merge-folder">{% translate "Keep it as a new document in" %}</label>
+            <select id="merge-folder" name="folder" class="input" x-model="folder">
+              <option value="">{% translate "Nowhere: download it only" %}</option>
+              {% for folder in folders %}
+                <option value="{{ folder.pk }}"{% if values.folder == folder.pk|stringformat:"s" %} selected{% endif %}>{{ folder }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-box merge__field" x-show="folder" x-cloak>
+            <label for="merge-title">{% translate "Title" %}</label>
+            <input id="merge-title" name="title" type="text" class="input" maxlength="200" value="{{ values.title }}">
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="cluster merge__actions">
+        <button type="submit" class="button button--primary" :disabled="!items.length">
+          <span x-show="!folder">{% icon "download" "icon--sm" %} {% translate "Merge and download" %}</span>
+          <span x-show="folder" x-cloak>{% icon "save" "icon--sm" %} {% translate "Merge and keep" %}</span>
+        </button>
+      </div>
+    </section>
+  </form>
+{% endblock %}

@@ -222,7 +222,7 @@ class PageSweep:
         feed them: an account that is not the one opening the pages - so
         the pages refusing to manage yourself are exercised too - a
         group, a permission, a message, a run, a mailing, a token, a wiki
-        page, the schedules, and a version of something.
+        page, a team, the schedules, and a version of something.
         """
         return framework_records(django_user_model, self.get_site())
 
@@ -614,6 +614,11 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
         records["generic_wiki.wikifile"] = WikiFile.objects.create(
             file="wiki/files/page-sweep.pdf", original_name="page-sweep.pdf"
         )
+
+    if apps.is_installed("generic.teams"):
+        from generic.teams.models import Team
+
+        records["generic_teams.team"] = Team.objects.create(name="Page sweep")
 
     if apps.is_installed("generic.tokens"):
         from generic.tokens.models import ApiToken

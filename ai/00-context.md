@@ -162,6 +162,10 @@ generic/
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning,
 │                           WikiImage, WikiFile (images and files uploaded from the editor)
+├── teams/                  optional app generic.teams: Team (members, colour), the
+│                           see_every_team permission, scoping.py (scope_to_teams,
+│                           teams_of, in_teams_of), the People › Teams screen;
+│                           a resource's team_field narrows everything (§13h)
 ├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
 │                           its own table), TokenAuthentication (scope, last use),
 │                           api/generic/tokens/, the account section, the People screen
@@ -242,6 +246,28 @@ real SSO provider: with `MICROSOFT_CLIENT_ID` (and `_SECRET`,
 Microsoft provider, mount `allauth.urls` under `accounts/` and declare
 the button in `GENERIC["SSO_PROVIDERS"]` (`route="microsoft_login"`);
 unset, allauth is neither needed nor loaded.
+
+`docmanager/` is a third, self-contained project (`docsite/settings.py`
+like the minimal one, plus `generic.teams`, two languages, a 50 MB
+`FILE_MAX_SIZE`): a document manager - `Folder` (a team's), `Tag`,
+`Document` (its current `file`, `version`, `reference` DOC-00001),
+`DocumentVersion` (number, file, original `file_name`, size, type,
+SHA-256, change note, sender), each resource scoped by `team_field`;
+`file_format` (`DOCX`, `PDF`: the extension, a field so lists search,
+filter and preset on it - "Word files"); `documents/versions.py`
+records, numbers (row lock) and restores versions; the document form's
+change note is a `form_extra_fields` entry. The Word merge is the
+example's own, not the framework's: `documents/merge.py` (`merge_docx`,
+`docx_response`, on python-docx + docxcompose,
+`docmanager/requirements.txt`), the page `DocumentResource.merge`
+(`@page`, sidebar entry, GET/POST, `documents/merging.py`: items
+`d<pk>`/`v<pk>` resolved through the resources' team-scoped querysets,
+a template, downloaded or kept as a new document) and the *Merge into
+Word* actions of documents and versions, which open it with
+`{"redirect": ...}`. `seed_documents` makes three teams, six accounts
+(password `demo`) and Word/PDF/text samples (`samples.py`; a `.dotx`
+holds `{{ documents }}`). Kept working by `tests/test_docmanager.py`,
+run in its own process.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -535,6 +561,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | all editable | form, admin style; a tuple in `fields` or a fieldset shares a row |
 | `form_overrides` | `{}` | per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText`, `widget` (`textarea`, `select`, `json`, `color`, `password`) |
 | `form_field_kwargs` | `{}` | per field, DRF `extra_kwargs`: `{"token": {"write_only": True, "required": False}}`. What the field does; `form_overrides` is how it is drawn |
+| `form_extra_fields` | `{}` | questions the form asks that are not model fields (`{"note": serializers.CharField(required=False)}`): write only, placed by `fieldsets`, stripped before the save, read in `save_model` as `serializer.extra_values` |
 | `form_serializer` | None | hand-written `FormModelSerializer` |
 | `inlines` | `()` | `TabularInline` / `StackedInline` classes |
 | `view_on_site` | True | link to `get_absolute_url()` |
@@ -550,6 +577,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
 | `history` | True | keep a version of every record, read back by its History tab (§13c) |
 | `history_exclude` | `()` | fields left out of that version, by name |
+| `team_field` | None | path to the record's `generic_teams.Team` (`"team"`, `"folder__team"`, `"teams"`): every screen and endpoint narrowed to the reader's teams (§13h) |
+| `scope_relations` | None (= `team_field` set) | forms of other models offer and accept only this resource's `get_queryset(request)` rows |
 | `viewset_class` | `ResourceViewSet` | base viewset for the endpoint |
 
 ### 5.2 Hooks to override
@@ -565,6 +594,9 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `save_model(request, serializer, change)` | stamp author: `return serializer.save(created_by=request.user)` |
 | `delete_model(request, obj)` | soft delete, audit |
 | `get_object_label(obj)`, `get_object_description(obj)` | palette and autocomplete labels |
+| `get_initial(request)` | values an add form opens with (the query string wins); default: the reader's only team when `team_field` is a plain field |
+| `get_download_name(request, obj, field)` | the name a file downloads under (default `""`: the stored name) - the name it was sent with, kept on the record |
+| `get_relation_queryset(request)` | what forms pointing at this model may choose; None = all (default unless `scope_relations`) |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
 | `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
@@ -586,6 +618,7 @@ def column(self, obj): ...
 def run(self, request, queryset):
     return None | "message" | {"message": ..., "level": "success|info|warning|error"} | Response
            | Report | {"message": ..., "report": Report} | an operation's run   # §13g
+           | {"redirect": "/a/path/of/the/site/?..."}   # opens it; another site is a ValueError
 ```
 
 A computed column is **not sortable or filterable** unless `ordering` /
@@ -1648,6 +1681,43 @@ def recompute(self, request, queryset):
   alone register the runs (`runs_are_kept()`), not the Tasks page.
   Example: *Check* (tickets, in the request) and *Review* (customers,
   background) in `example/tasks.py`. See `docs/operations.md`.
+
+## 13h. Teams (`generic.teams`)
+
+```python
+INSTALLED_APPS += ["generic.teams"]                 # then migrate
+
+team = models.ForeignKey("generic_teams.Team", on_delete=models.PROTECT,
+                         related_name="folders")
+
+class FolderResource(ModelResource):
+    team_field = "team"
+class DocumentResource(ModelResource):
+    team_field = "folder__team"                     # or "teams" (M2M)
+
+from generic.teams import scope_to_teams, teams_of, in_teams_of, sees_every_team
+scope_to_teams(Document.objects.all(), user, "folder__team")
+```
+
+- Groups say what a person may do, teams which records: a member of
+  several teams sees all of theirs. `get_queryset` narrows (so the
+  list, search, facets, exports, charts, summary, history tab, files,
+  related tables, palette, autocompletes, transitions, imports);
+  another team's record is a 404. Superusers and holders of
+  `generic_teams.see_every_team` see everything; nobody signed in,
+  nothing.
+- Relations: `FormModelSerializer.get_fields` narrows every writable
+  relation whose related resource's `get_relation_queryset(request)`
+  is not None (`narrow_relation` in `api/relations.py`) - embedded
+  choices and validation alike, a key sent by hand is a 400. On for
+  `team_field`, or `scope_relations = True` on any restricted resource;
+  off otherwise (unchanged behaviour).
+- `may_watch` asks `in_teams_of`; `get_initial` opens an add form on
+  the reader's only team. A path through a many-valued relation is
+  filtered by subquery (no duplicates); a path not ending at `Team`
+  raises `ImproperlyConfigured`. `TeamResource` (People, `team_field
+  = "pk"`). Not narrowed: *History › Changes* (an administrator's
+  page), `update()`. See `docs/teams.md`; example `docmanager/`.
 
 ## 13ter. Signing in through somebody else
 
