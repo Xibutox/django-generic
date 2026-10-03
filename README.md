@@ -127,7 +127,7 @@ API tokens and the OpenAPI description (django-rest-knox,
 drf-spectacular), `fsm` state machines (django-fsm-2), `events` live
 updates over WebSocket (Channels, Daphne), `tasks` background tasks
 (Celery, Redis), `beat` schedules managed from the pages, `wiki` the
-wiki (nh3), `postgres` psycopg.
+wiki (nh3, fpdf2 for its PDF), `postgres` psycopg.
 
 [Installation](docs/installation.md) walks through both cases, a new
 project from nothing and an existing one, and covers Docker, updating,
@@ -223,7 +223,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams
-- [The wiki](docs/wiki.md) — pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
+- [The wiki](docs/wiki.md) — several wikis, each exported as a PDF; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case

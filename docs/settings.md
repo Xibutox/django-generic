@@ -88,6 +88,13 @@ See [Imports](imports.md).
 | `FORM_CHOICES_LIMIT` | `200` | Choices embedded in a relation field without an autocomplete |
 | `FILE_MAX_SIZE` | `10 * 1024 * 1024` | The largest file, in bytes, a form's file field or the wiki's editor takes: refused in the browser before sending, and by the server ([Files](forms.md#files)) |
 
+## Wiki
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `WIKI_ACCESS` | `None` | Which wikis a user reads: a function `(user, wikis) -> wikis`, or its dotted path, narrowing the queryset it is given. `None`: every wiki for anyone signed in ([Who sees which wiki](wiki.md#who-sees-which-wiki)) |
+| `WIKI_PDF_FONTS` | `None` | The TrueType fonts a wiki's PDF is written with, `{"regular", "bold", "italic", "bold_italic", "mono": path}`. `None` looks for DejaVu, Liberation or Arial on the system, then falls back on Latin-1 ([PDF](wiki.md#pdf)) |
+
 ## Events
 
 | Setting | Default | Meaning |

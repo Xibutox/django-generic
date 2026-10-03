@@ -196,10 +196,13 @@ SCENARIO = PRELUDE + textwrap.dedent("""
         f"/api/documents/document/{spec.pk}/summary/",
         "/api/documents/document/charts/by_status/",
         "/api/documents/document/charts/by_team/",
-        "/wiki/",
     ):
         status = bob.get(url).status_code
         assert status == 200, f"{url}: {status}"
+
+    # A reader of one wiki goes from the list straight into it.
+    response = bob.get("/wiki/", follow=True)
+    assert response.status_code == 200, response.redirect_chain
 
     # Seeded samples open as what they claim to be.
     import zipfile

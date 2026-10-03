@@ -94,7 +94,7 @@ record.
 | `/example/team/1/change/` | a stacked inline: the team's agents as cards |
 | `/example/ticket/1/delete/` | the cascade preview |
 | `/example/team/1/delete/` | the protected case: refused, with the reason |
-| `/wiki/` | the wiki: menu, pages, editor, history |
+| `/wiki/` | the wikis - the desk's handbook and the infrastructure runbooks - each with its menu, pages, editor, history and PDF |
 | `/account/` | profile, appearance sliders, preferences, what you watch, password |
 | `/generic/historyentry/` | every recorded change, as an ordinary table |
 | `/auth/user/`, `/auth/group/` | accounts and groups, as `admin` only |
@@ -287,6 +287,14 @@ saved, the page lists its attachments under its text. Save, then open *History*
 and restore the earlier version — the text you replaced is kept too.
 Pin a page to the dashboard. As `viewer`, the same pages are there to read, without the
 buttons.
+
+**Several wikis.** `/wiki/` lists two: the *Desk handbook* and the
+*Infrastructure runbooks*. As `admin`, *New wiki* adds a third, the
+pencil renames one; open one and its menu holds only its pages, with
+the other wikis folded under its name. *PDF* downloads a wiki as one
+document: a cover, a table of contents, every page in the menu's
+order, the images drawn, the files named. The old address
+`/wiki/triage/` still leads to the page, now `/wiki/main/triage/`.
 
 **As `viewer`.** The pencil and plus beside *Team* are gone, and the
 team list has no *Add*: the schema only offers what the permissions

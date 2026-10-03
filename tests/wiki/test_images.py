@@ -203,7 +203,7 @@ class TestInAPage:
         client.force_login(admin_user)
         WikiPage.objects.create(title="Diagrams", slug="diagrams")
 
-        response = client.get("/wiki/diagrams/")
+        response = client.get("/wiki/main/diagrams/")
         config = response.context["wiki_config"]
 
         assert config["imagesUrl"] == UPLOAD

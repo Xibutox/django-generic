@@ -60,6 +60,8 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     # answer.
     "generic_wiki:image": (200, 404),
     "generic_wiki:file": (200, 404),
+    # A wiki opens on its first page.
+    "generic_wiki:wiki": (302,),
 }
 
 
@@ -144,7 +146,14 @@ class PageSweep:
     skipped: dict[str, str] = {}
     expected: dict[str, tuple[int, ...]] = {}
     languages: tuple[str, ...] = ()
-    arguments: tuple[str, ...] = ("pk", "slug", "object_id", "argument", "key")
+    arguments: tuple[str, ...] = (
+        "pk",
+        "slug",
+        "object_id",
+        "argument",
+        "key",
+        "wiki",
+    )
     urlconf: Any = None
     site: Any = None
     excluded_namespaces: tuple[str, ...] = FOREIGN_NAMESPACES
@@ -278,7 +287,13 @@ class PageSweep:
         Override for the addresses of a project's own pages; call
         ``super()`` for the rest.
         """
-        # The wiki finds its pages by their slug.
+        # The wiki finds a wiki, and its pages, by their slug.
+        if argument == "wiki" and url_name.startswith("generic_wiki:"):
+            page = records.get("generic_wiki.wikipage")
+
+            if page is not None:
+                return page.wiki.slug
+
         if argument == "slug" and url_name.startswith("generic_wiki:"):
             page = records.get("generic_wiki.wikipage")
 

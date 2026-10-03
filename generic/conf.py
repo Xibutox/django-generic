@@ -104,6 +104,16 @@ DEFAULTS: dict[str, Any] = {
     # The largest file a form field - or the wiki's editor - accepts, in
     # bytes. Checked in the browser before sending and by the server.
     "FILE_MAX_SIZE": 10 * 1024 * 1024,
+    # --- Wiki --------------------------------------------------------
+    # Which wikis a user may read: a function ``(user, wikis) ->
+    # wikis`` narrowing the queryset it is given, or its dotted path.
+    # None: every wiki, for anyone signed in.
+    "WIKI_ACCESS": None,
+    # The TrueType fonts a wiki's PDF is written with: {"regular":
+    # path, "bold": ..., "italic": ..., "bold_italic": ..., "mono":
+    # ...}. None looks for DejaVu, Liberation or Arial where the system
+    # keeps them, and falls back on the PDF's own fonts (Latin-1 only).
+    "WIKI_PDF_FONTS": None,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

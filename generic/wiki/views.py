@@ -1,4 +1,5 @@
-"""The wiki's pages: the menu, one page, and its editor.
+"""The wikis' pages: the list of wikis, a wiki's menu, one page, its
+editor, and the whole wiki as a PDF.
 
 A page is rendered by the server, with HTML cleaned on the way in and
 on the way out, and edited in the browser: the editor saves through the
@@ -12,9 +13,11 @@ from pathlib import PurePath
 from typing import Any
 
 from django.contrib.auth.views import redirect_to_login
-from django.http import FileResponse, Http404
+from django.db.models import Count
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse
+from django.utils.http import content_disposition_header
 from django.utils.translation import gettext
 from django.views import View
 from django.views.generic import TemplateView
@@ -25,10 +28,11 @@ from generic.sites import site
 from generic.sites.files import is_stored, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki.api import IMAGE_TYPES, can
-from generic.wiki.models import WikiFile, WikiImage, WikiPage
+from generic.wiki import pdf
+from generic.wiki.api import IMAGE_TYPES, can, readable_pages
+from generic.wiki.models import Wiki, WikiFile, WikiImage, WikiPage
 from generic.wiki.sanitize import safe_html
-from generic.wiki.serializers import WikiPageSerializer
+from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
 
 
 def upload_url(name: str) -> str:
@@ -43,6 +47,14 @@ def upload_url(name: str) -> str:
 def image_upload_url() -> str:
     """Where the editor uploads an image; empty when not mounted."""
     return upload_url("wiki-images")
+
+
+def page_url(page: WikiPage) -> str:
+    """A page's address, from a page loaded with its wiki's slug."""
+    return reverse(
+        "generic_wiki:page",
+        kwargs={"wiki": page.wiki.slug, "slug": page.slug},
+    )
 
 
 def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
@@ -75,7 +87,7 @@ def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
                 {
                     "id": page.pk,
                     "title": page.title,
-                    "url": page.get_absolute_url(),
+                    "url": page_url(page),
                     "depth": depth,
                     "is_current": current is not None
                     and page.pk == current.pk,
@@ -113,13 +125,80 @@ def descendants_of(pages: list[WikiPage], root: WikiPage) -> set[Any]:
     return found
 
 
+def wiki_rights(user: Any) -> dict[str, bool]:
+    """What ``user`` may do to the wikis themselves."""
+    return {
+        name: can(user, name, "wiki") for name in ("add", "change", "delete")
+    }
+
+
+class WikiListView(SiteViewMixin, TemplateView):
+    """The wikis, each with its pages' count and its PDF.
+
+    A reader who sees one wiki and may not add another goes straight
+    to it: one wiki reads as it did before there could be several.
+    """
+
+    site = site
+    template_name = "generic/wiki/index.html"
+
+    def get_page_title(self) -> str:
+        return gettext("Wikis")
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [Breadcrumb(label=gettext("Wiki"))]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        wikis = list(self.wikis())
+
+        if len(wikis) == 1 and not can(request.user, "add", "wiki"):
+            return redirect(wikis[0].get_absolute_url())
+
+        self.wiki_list = wikis
+
+        return super().get(request, *args, **kwargs)
+
+    def wikis(self) -> Any:
+        return (
+            Wiki.objects.readable_by(self.request.user)
+            .annotate(page_count=Count("pages"))
+            .order_by("position", "name")
+        )
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        request = self.request
+        rights = wiki_rights(request.user)
+
+        context.update(
+            wikis=self.wiki_list,
+            can=rights,
+            pdf_available=pdf.available(),
+            wikis_config={
+                "api": reverse("generic_wiki:wiki-list"),
+                "wikis": WikiSerializer(
+                    self.wiki_list, many=True, context={"request": request}
+                ).data,
+                "can": rights,
+            },
+        )
+
+        return context
+
+
 class WikiViewMixin(SiteViewMixin, TemplateView):
     site = site
     template_name = "generic/wiki/page.html"
+    wiki: Wiki
     page: WikiPage | None = None
 
+    def get_wiki(self, slug: str) -> Wiki:
+        return get_object_or_404(
+            Wiki.objects.readable_by(self.request.user), slug=slug
+        )
+
     def get_page_title(self) -> str:
-        return self.page.title if self.page is not None else gettext("Wiki")
+        return self.page.title if self.page is not None else self.wiki.name
 
     def get_breadcrumbs(self) -> list[Breadcrumb]:
         crumbs = [
@@ -128,39 +207,50 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             )
         ]
 
-        if self.page is not None:
-            crumbs += [
-                Breadcrumb(
-                    label=ancestor.title, url=ancestor.get_absolute_url()
-                )
-                for ancestor in self.page.get_ancestors()
-            ]
-            crumbs.append(Breadcrumb(label=self.page.title))
+        if self.page is None:
+            crumbs.append(Breadcrumb(label=self.wiki.name))
+            return crumbs
+
+        crumbs.append(
+            Breadcrumb(label=self.wiki.name, url=self.wiki.get_absolute_url())
+        )
+        crumbs += [
+            Breadcrumb(label=ancestor.title, url=ancestor.get_absolute_url())
+            for ancestor in self.page.get_ancestors()
+        ]
+        crumbs.append(Breadcrumb(label=self.page.title))
 
         return crumbs
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         request = self.request
+        wiki = self.wiki
         page = self.page
         pages = list(
-            WikiPage.objects.only(
-                "id", "title", "slug", "parent_id", "position"
-            ).order_by("position", "title")
+            WikiPage.objects.filter(wiki=wiki)
+            .select_related("wiki")
+            .only("id", "title", "slug", "parent_id", "position", "wiki__slug")
+            .order_by("position", "title")
         )
         rights = {
             name: can(request.user, name)
             for name in ("add", "change", "delete")
         }
         excluded = descendants_of(pages, page) if page is not None else set()
+        others = Wiki.objects.readable_by(request.user).exclude(pk=wiki.pk)
 
         context.update(
+            wiki=wiki,
+            other_wikis=list(others.order_by("position", "name")),
+            pdf_url=wiki.get_pdf_url() if pdf.available() else "",
             page=page,
             menu=build_menu(pages, page),
             content=safe_html(page.content) if page else "",
             attachments=page.attachments() if page else [],
             can=rights,
             wiki_config={
+                "wiki": wiki.pk,
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None
@@ -168,9 +258,10 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                 ),
                 "api": reverse("generic_wiki:page-list"),
                 "pageUrl": reverse(
-                    "generic_wiki:page", kwargs={"slug": "__slug__"}
+                    "generic_wiki:page",
+                    kwargs={"wiki": wiki.slug, "slug": "__slug__"},
                 ),
-                "indexUrl": reverse("generic_wiki:index"),
+                "indexUrl": wiki.get_absolute_url(),
                 # Images uploaded from the editor, when the framework's
                 # endpoints are mounted; the address is offered anyway.
                 "imagesUrl": image_upload_url(),
@@ -191,11 +282,36 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
 
 
 class WikiIndexView(WikiViewMixin):
-    """The first page of the menu, or an invitation to write it."""
+    """A wiki's first page, or an invitation to write it.
+
+    The address of a page from before there were several wikis -
+    ``wiki/<page>/`` - is no wiki's: it leads to that page, in the
+    first wiki holding one by that address.
+    """
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        slug = kwargs["wiki"]
+        readable = Wiki.objects.readable_by(request.user)
+        wiki = readable.filter(slug=slug).first()
+
+        if wiki is None:
+            page = (
+                readable_pages(request.user)
+                .filter(slug=slug)
+                .select_related("wiki")
+                .order_by("wiki__position", "wiki__name", "wiki__pk")
+                .first()
+            )
+
+            if page is None:
+                raise Http404
+
+            return redirect(page.get_absolute_url(), permanent=True)
+
+        self.wiki = wiki
         first = (
-            WikiPage.objects.filter(parent__isnull=True)
+            WikiPage.objects.filter(wiki=wiki, parent__isnull=True)
+            .select_related("wiki")
             .order_by("position", "title")
             .first()
         )
@@ -208,12 +324,44 @@ class WikiIndexView(WikiViewMixin):
 
 class WikiPageView(WikiViewMixin):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        self.wiki = self.get_wiki(kwargs["wiki"])
         self.page = get_object_or_404(
-            WikiPage.objects.select_related("parent", "updated_by"),
+            WikiPage.objects.select_related("wiki", "parent", "updated_by"),
+            wiki=self.wiki,
             slug=kwargs["slug"],
         )
 
         return super().get(request, *args, **kwargs)
+
+
+class WikiPdfView(View):
+    """A whole wiki as one PDF, for whoever may read it.
+
+    Downloaded, never cached by a shared cache, and written each time:
+    it is the wiki as it stands.
+    """
+
+    def get(self, request: Any, wiki: str) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        if not pdf.available():
+            raise Http404
+
+        found = get_object_or_404(
+            Wiki.objects.readable_by(request.user), slug=wiki
+        )
+        content = pdf.render(found, base_url=request.build_absolute_uri("/"))
+        response = HttpResponse(content, content_type="application/pdf")
+        response["Content-Disposition"] = content_disposition_header(
+            True, f"{found.slug}.pdf"
+        )
+        protect(response)
+        response["Cache-Control"] = "private, no-cache"
+
+        return response
 
 
 class WikiImageView(View):

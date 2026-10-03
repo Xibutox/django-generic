@@ -50,7 +50,7 @@ pages, charts, filters, exports or permissions.
 | Tables | jQuery DataTables 3 (server-side), Select2 4.1 |
 | Charts | Apache ECharts 6.1 (lazy-loaded) |
 | UI state | Alpine.js 3 |
-| Wiki editor | Quill 2, HTML cleaned by nh3 |
+| Wiki editor | Quill 2, HTML cleaned by nh3; PDF export by fpdf2 (pure Python) |
 | Icons | Material Symbols Outlined (font) — any glyph name works |
 | Colours | CSS custom properties in OKLCH, computed from 5 parameters |
 | Tests | pytest, pytest-django, factory-boy; Playwright for the opt-in browser tests |
@@ -160,8 +160,8 @@ generic/
 ├── help/                   help page and changelog, read from the project's
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
-├── wiki/                   optional app generic.wiki: pages, revisions, Quill editor, nh3 cleaning,
-│                           WikiImage, WikiFile (images and files uploaded from the editor)
+├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
+│                           nh3 cleaning, WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
 ├── teams/                  optional app generic.teams: Team (members, colour), the
 │                           see_every_team permission, scoping.py (scope_to_teams,
 │                           teams_of, in_teams_of), the People › Teams screen;
@@ -1192,6 +1192,27 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   `WikiPage.attachments()` / `attachments_in(html)` read the uploads a
   page links to, in order; `attachments` in the page's API and the
   page's context (listed under the text). See `docs/wiki.md#files`.
+- Several wikis: `generic_wiki.Wiki` (`name`, `slug` unique, not
+  `api`/`images`/`files`, `description`, `position`); `WikiPage.wiki`
+  (FK, CASCADE; `(wiki, slug)` unique; saved without one: the parent's,
+  else `Wiki.objects.default()`, the first - migration 0005 made
+  "Wiki" at `main` and put every old page in it). Routes: `wiki/`
+  (`index`: the list, or straight into the only wiki for a reader
+  without `add_wiki`), `wiki/<wiki>/` (`wiki`: its first page; an
+  unknown slug that is a page's slug 301s to it - old addresses),
+  `wiki/<wiki>/<slug>/` (`page`), `wiki/<wiki>/export.pdf` (`pdf`).
+  API `wiki/api/wikis/` (add/change/delete_wiki; `page_count`,
+  `pdf_url`), `pages/?wiki=<id>`; a page's `wiki` is set on create
+  only, its parent must share it. Every read goes through
+  `Wiki.objects.readable_by(user)`, narrowed by
+  `GENERIC["WIKI_ACCESS"]` (`(user, wikis) -> wikis`). Never build a
+  page's URL without its wiki: `page.get_absolute_url()`.
+- Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=)` -> bytes;
+  cover, table of contents (bookmarks), pages depth-first; uploaded
+  images embedded (data URIs), web images named and never fetched,
+  files listed. Fonts: `WIKI_PDF_FONTS` or DejaVu/Liberation/Arial
+  found on disk, else Latin-1 core fonts. `pdf.available()` false
+  without fpdf2: no button, `export.pdf` 404. See `docs/wiki.md#pdf`.
 
 ---
 
@@ -1419,7 +1440,8 @@ strftime string fixes the text),
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
-`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`.
+`MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
+`WIKI_ACCESS`, `WIKI_PDF_FONTS`.
 Read them via `from generic.conf import generic_settings`.
 
 ---

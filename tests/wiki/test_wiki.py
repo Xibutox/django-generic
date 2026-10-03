@@ -128,7 +128,7 @@ class TestApi:
 
         assert taken.status_code == 201, taken.json()
         assert taken.json()["slug"] == "welcome-2"
-        assert taken.json()["url"] == "/wiki/welcome-2/"
+        assert taken.json()["url"] == "/wiki/main/welcome-2/"
         assert reserved.json()["slug"] == "api-page"
 
     def test_changed_words_keep_the_previous_version(
@@ -219,13 +219,16 @@ class TestApi:
 
 class TestPages:
     def test_the_wiki_opens_on_its_first_page(self, auth_client, handbook):
-        response = auth_client.get("/wiki/")
+        # One wiki, and no right to add one: straight into it.
+        response = auth_client.get("/wiki/", follow=True)
 
-        assert response.status_code == 302
-        assert response.url == "/wiki/welcome/"
+        assert response.redirect_chain == [
+            ("/wiki/main/", 302),
+            ("/wiki/main/welcome/", 302),
+        ]
 
     def test_an_empty_wiki_invites_the_first_page(self, admin_client, db):
-        response = admin_client.get("/wiki/")
+        response = admin_client.get("/wiki/main/")
 
         assert response.status_code == 200
         assert b"Write the first page" in response.content
@@ -236,7 +239,7 @@ class TestPages:
             content="<p>Hi<script>steal()</script></p>"
         )
 
-        response = auth_client.get("/wiki/welcome/")
+        response = auth_client.get("/wiki/main/welcome/")
         menu = response.context["menu"]
 
         assert response.status_code == 200
@@ -247,7 +250,7 @@ class TestPages:
         assert "escalation" in menu[1]["search"]
 
     def test_the_editor_is_for_editors(self, auth_client, handbook):
-        response = auth_client.get("/wiki/welcome/")
+        response = auth_client.get("/wiki/main/welcome/")
 
         assert response.context["can"] == {
             "add": False,
@@ -257,10 +260,10 @@ class TestPages:
         assert b'id="wiki-editor"' not in response.content
 
     def test_an_unknown_page_is_not_found(self, auth_client, db):
-        assert auth_client.get("/wiki/nothing/").status_code == 404
+        assert auth_client.get("/wiki/main/nothing/").status_code == 404
 
     def test_an_anonymous_visitor_is_sent_to_sign_in(self, client, handbook):
-        response = client.get("/wiki/welcome/")
+        response = client.get("/wiki/main/welcome/")
 
         assert response.status_code == 302
         assert response.url.startswith("/login/")
@@ -285,7 +288,7 @@ class TestSite:
         ]
         wiki = next(group for group in groups if group["label"] == "Wiki")
 
-        assert wiki["items"][0]["url"] == "/wiki/triage/"
+        assert wiki["items"][0]["url"] == "/wiki/main/triage/"
 
     def test_the_sidebar_links_to_the_wiki(self, rf, user):
         request = rf.get("/")

@@ -2967,3 +2967,71 @@ msgstr "Peut voir les enregistrements de toutes les équipes"
 #: generic/teams/resources.py
 msgid "Who works on which records."
 msgstr "Qui travaille sur quels enregistrements."
+
+msgid "The part of the URL naming the wiki."
+msgstr "La partie de l’URL qui nomme le wiki."
+
+msgid "Order among the wikis."
+msgstr "Ordre parmi les wikis."
+
+msgid "wiki"
+msgstr "wiki"
+
+msgid "wikis"
+msgstr "wikis"
+
+msgid "Another page of this wiki has this address."
+msgstr "Une autre page de ce wiki a déjà cette adresse."
+
+msgid "A page cannot move to another wiki."
+msgstr "Une page ne peut pas changer de wiki."
+
+msgid "The parent page is in another wiki."
+msgstr "La page parente est dans un autre wiki."
+
+msgid "Wikis"
+msgstr "Wikis"
+
+msgid "File:"
+msgstr "Fichier :"
+
+msgid "Image: %(name)s"
+msgstr "Image : %(name)s"
+
+msgid "%(count)s pages - %(date)s"
+msgstr "%(count)s pages - %(date)s"
+
+msgid "This wiki has no page yet."
+msgstr "Ce wiki n’a pas encore de page."
+
+msgid "Contents"
+msgstr "Sommaire"
+
+msgid "Attached files"
+msgstr "Fichiers joints"
+
+msgid "New wiki"
+msgstr "Nouveau wiki"
+
+msgid "%(counter)s page"
+msgid_plural "%(counter)s pages"
+msgstr[0] "%(counter)s page"
+msgstr[1] "%(counter)s pages"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "There is no wiki yet."
+msgstr "Il n’y a pas encore de wiki."
+
+msgid "Download the wiki as a PDF"
+msgstr "Télécharger le wiki en PDF"
+
+msgid "Other wikis"
+msgstr "Autres wikis"
+
+msgid "All wikis"
+msgstr "Tous les wikis"
+
+msgid "%(name)s has no page yet."
+msgstr "%(name)s n’a pas encore de page."

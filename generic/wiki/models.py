@@ -1,4 +1,4 @@
-"""Wiki pages, and the versions they went through."""
+"""Wikis, their pages, and the versions the pages went through."""
 
 from __future__ import annotations
 
@@ -9,20 +9,108 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
+from generic.conf import generic_settings
 from generic.wiki.sanitize import clean_html
 
 #: Versions kept per page; older ones are dropped as new ones come.
 MAX_REVISIONS = 50
 
+#: Addresses of the wiki's own routes: no wiki may take them.
+RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files"})
 
-class WikiPage(models.Model):
-    title = models.CharField(_("title"), max_length=200)
+#: The wiki the pages written before there were several land in.
+DEFAULT_WIKI_SLUG = "main"
+
+
+class WikiQuerySet(models.QuerySet):
+    def readable_by(self, user: Any) -> "WikiQuerySet":
+        """The wikis ``user`` may read: every one, for anyone signed in,
+        unless ``GENERIC["WIKI_ACCESS"]`` narrows them.
+
+        The one place the wikis a reader sees are decided: the menu,
+        the pages, the API, the search, the dashboard and the PDF all
+        go through it.
+        """
+        if not getattr(user, "is_authenticated", False):
+            return self.none()
+
+        access = generic_settings.WIKI_ACCESS
+
+        if not access:
+            return self
+
+        if isinstance(access, str):
+            access = import_string(access)
+
+        return access(user, self)
+
+    def default(self) -> "Wiki":
+        """The first wiki, made when there is none: where a page saved
+        without a wiki goes."""
+        wiki = self.model.objects.order_by("position", "name", "pk").first()
+
+        if wiki is None:
+            wiki, _created = self.model.objects.get_or_create(
+                slug=DEFAULT_WIKI_SLUG, defaults={"name": "Wiki"}
+            )
+
+        return wiki
+
+
+class Wiki(models.Model):
+    """A set of pages with a menu of its own: a team's handbook, a
+    product's documentation, the procedures of a site."""
+
+    name = models.CharField(_("name"), max_length=200)
     slug = models.SlugField(
         _("address"),
         max_length=120,
         unique=True,
+        allow_unicode=True,
+        help_text=_("The part of the URL naming the wiki."),
+    )
+    description = models.TextField(_("description"), blank=True, default="")
+    position = models.PositiveIntegerField(
+        _("position"),
+        default=0,
+        help_text=_("Order among the wikis."),
+    )
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+
+    objects = WikiQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("position", "name")
+        verbose_name = _("wiki")
+        verbose_name_plural = _("wikis")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_absolute_url(self) -> str:
+        return reverse("generic_wiki:wiki", kwargs={"wiki": self.slug})
+
+    def get_pdf_url(self) -> str:
+        return reverse("generic_wiki:pdf", kwargs={"wiki": self.slug})
+
+
+class WikiPage(models.Model):
+    #: Left empty, the first wiki: what code written before there were
+    #: several wikis keeps doing.
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="pages",
+    )
+    title = models.CharField(_("title"), max_length=200)
+    #: Unique within its wiki.
+    slug = models.SlugField(
+        _("address"),
+        max_length=120,
         allow_unicode=True,
         help_text=_("The end of the page's URL."),
     )
@@ -68,14 +156,30 @@ class WikiPage(models.Model):
         ordering = ("position", "title")
         verbose_name = _("wiki page")
         verbose_name_plural = _("wiki pages")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("wiki", "slug"), name="generic_wiki_page_slug"
+            )
+        ]
 
     def __str__(self) -> str:
         return self.title
 
     def get_absolute_url(self) -> str:
-        return reverse("generic_wiki:page", kwargs={"slug": self.slug})
+        return reverse(
+            "generic_wiki:page",
+            kwargs={"wiki": self.wiki.slug, "slug": self.slug},
+        )
 
     def save(self, *args, **kwargs) -> None:
+        if self.wiki_id is None:
+            # A subpage lives in its parent's wiki.
+            self.wiki = (
+                self.parent.wiki
+                if self.parent is not None
+                else Wiki.objects.default()
+            )
+
         # Whatever the way in - the API, the admin, a script - only
         # clean HTML is stored.
         self.content = clean_html(self.content)

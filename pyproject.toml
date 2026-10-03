@@ -90,11 +90,15 @@ api = [
     "drf-spectacular-sidecar>=2025.1",
 ]
 
-# The wiki (generic.wiki): cleaning the HTML its editor produces.
-wiki = ["nh3>=0.2.17"]
+# The wiki (generic.wiki): cleaning the HTML its editor produces, and
+# writing a wiki as a PDF - fpdf2, pure Python (with Pillow, which has
+# wheels everywhere): nothing to install on the system, Windows
+# included.
+wiki = ["nh3>=0.2.17", "fpdf2>=2.8"]
 
 dev = [
     "nh3>=0.2.17",
+    "fpdf2>=2.8",
     "defusedxml>=0.7",
     "django-rest-knox>=5.0",
     "drf-spectacular>=0.28",

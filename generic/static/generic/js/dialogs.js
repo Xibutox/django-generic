@@ -221,7 +221,7 @@
 
   /**
    * A few values asked for at once - a transition's resolution note:
-   * `fields` = [{name, label, required, multiline, maxLength}]. Resolves
+   * `fields` = [{name, label, value, required, multiline, maxLength}]. Resolves
    * to {name: value}, or null when cancelled.
    */
   function fields(options) {
@@ -245,6 +245,7 @@
       input.id = id;
       input.name = spec.name;
       input.required = Boolean(spec.required);
+      input.value = spec.value || "";
 
       if (spec.multiline) {
         input.rows = 4;

@@ -1,6 +1,9 @@
 # The wiki
 
-`generic.wiki` is a small wiki inside the application: pages in a menu,
+`generic.wiki` is a small wiki inside the application - or several:
+each wiki has its own pages in its own menu
+([Several wikis](#several-wikis)), and downloads as one PDF
+([PDF](#pdf)). Pages in a menu,
 written with a rich-text editor by the people allowed to, read by
 everyone signed in, with a history of every version. A page can be
 pinned to the dashboard, which makes the wiki the natural home for
@@ -14,7 +17,8 @@ up and down the page ([Ordering a page](#ordering-a-page)).
 
 ## Enabling it
 
-The `wiki` extra - nh3, which cleans the pages' HTML - in the brackets
+The `wiki` extra - nh3, which cleans the pages' HTML, and fpdf2, which
+writes a wiki as a PDF - in the brackets
 after the framework's wheel in `requirements.txt` (see
 [Extras](installation.md#extras)), then:
 
@@ -39,6 +43,62 @@ python manage.py migrate
 That is all: the sidebar gets a *Wiki* entry, the dashboard shows the
 pinned pages, and the command palette finds pages by title and text.
 
+## Several wikis
+
+A **wiki** (`generic_wiki.Wiki`: `name`, `slug`, `description`,
+`position`) is a set of pages with a menu of its own - a team's
+handbook, a product's documentation, the runbooks of a site. Every page
+belongs to one wiki, and its address is unique within it.
+
+| Address | Shows |
+| --- | --- |
+| `wiki/` | The wikis, as cards: name, description, page count, *PDF*, *Open*; *New wiki*, *Edit* and *Delete* for those allowed |
+| `wiki/<wiki>/` | The wiki's first page, or an invitation to write it |
+| `wiki/<wiki>/<page>/` | A page, with its wiki's menu |
+| `wiki/<wiki>/export.pdf` | The whole wiki as a PDF ([PDF](#pdf)) |
+
+- A reader who sees **one** wiki and may not add one goes from `wiki/`
+  straight into it: a site with one wiki reads as before.
+- The menu of a page shows its wiki's name, the PDF button and, folded,
+  the **other wikis** and *All wikis*.
+- **Upgrading**: the migration puts every existing page in a first
+  wiki, *Wiki*, at `main` - rename it from the list. An address from
+  before, `wiki/<page>/`, leads (`301`) to the page in the first wiki
+  holding it, so links in pages, bookmarks and e-mails keep working;
+  a wiki whose address is the same takes precedence.
+- A page saved without a wiki - from code written before there were
+  several - goes to its parent's wiki, or to the first one.
+- A page stays in the wiki it was created in; its subpages are in the
+  same wiki. Deleting a wiki deletes its pages and their history,
+  after a confirmation that counts them.
+- `api`, `images` and `files` are the wiki's own routes: no wiki takes
+  them (a wiki named "Files" gets `files-wiki`).
+
+### Who sees which wiki
+
+Anyone signed in reads every wiki, unless `GENERIC["WIKI_ACCESS"]`
+narrows them: a function `(user, wikis) -> wikis`, or its dotted path,
+given the queryset of wikis and returning the part of it the user may
+read.
+
+```python
+# myproject/wikis.py
+def wikis_of_my_teams(user, wikis):
+    if user.is_superuser:
+        return wikis
+
+    return wikis.filter(team__members=user)  # a field the project adds
+
+
+GENERIC = {"WIKI_ACCESS": "myproject.wikis.wikis_of_my_teams"}
+```
+
+Everything goes through it (`Wiki.objects.readable_by(user)`): the
+list, the pages (a hidden wiki's page answers `404`), the API, the
+dashboard's pinned pages, the command palette and the PDF. Writing is
+still decided by the model permissions below, in the wikis the user
+sees.
+
 ## Who may do what
 
 | Who | May |
@@ -48,9 +108,13 @@ pinned pages, and the command palette finds pages by title and text.
 | `generic_wiki.change_wikipage` | Edit a page, move it in the menu, pin it, restore a version |
 | `add_wikipage` or `change_wikipage` | Upload an image or a file into a page |
 | `generic_wiki.delete_wikipage` | Delete a page |
+| `generic_wiki.add_wiki` | Create a wiki |
+| `generic_wiki.change_wiki` | Rename a wiki, change its description |
+| `generic_wiki.delete_wiki` | Delete a wiki, with its pages |
 
 Superusers hold all of them. For editors who are not superusers, give a
-group the three permissions.
+group the three page permissions; the wiki permissions are for whoever
+organises the wikis.
 
 ## The page
 
@@ -114,15 +178,22 @@ Under `wiki/api/`, JSON, like every other screen:
 
 | Request | Does |
 | --- | --- |
-| `GET pages/` | The menu: every page, without its text |
-| `POST pages/` | A new page; the address comes from the title when not given |
+| `GET wikis/` | The wikis: `id`, `name`, `slug`, `description`, `position`, `url`, `pdf_url`, `page_count` |
+| `POST wikis/` | A new wiki; the address comes from the name when not given |
+| `PATCH wikis/<id>/` | Rename it, describe it, move it among the wikis |
+| `DELETE wikis/<id>/` | Delete it, with its pages |
+| `GET pages/` | The menu: every page, without its text; `?wiki=<id>` for one wiki's |
+| `POST pages/` | A new page in `wiki` (left out: its parent's wiki, or the first); the address comes from the title when not given |
 | `GET pages/<id>/` | One page, with its text, its `version` and its `attachments` |
 | `PATCH pages/<id>/` | Change it; send `version` to be protected from overwriting |
 | `DELETE pages/<id>/` | Delete it; its subpages move up |
 | `GET pages/<id>/revisions/` | Its earlier versions |
 | `POST pages/<id>/restore/` | Bring one back: `{"revision": <id>}` |
 
-`attachments` is read from the text, never written: `[{"kind":
+A page carries its `wiki`; naming another one in a `PATCH`, or a
+`parent` from another wiki, answers `400`, and so does an address
+another page of the wiki has. `attachments` is read from the text,
+never written: `[{"kind":
 "image" | "file", "id", "name", "size", "url"}]`, in the page's order,
 once each, leaving out an upload no longer in the database. A save
 against an old version answers `409 Conflict`. The address
@@ -200,6 +271,58 @@ an image, it is not attached to a page but linked from it, so nothing
 deletes it when a page stops linking to it; a page's attachments are
 read from its text.
 
+## PDF
+
+*PDF* on a wiki's card, or the PDF button beside its name in the menu,
+downloads the whole wiki as one PDF, `<wiki>.pdf`, written there and
+then from the pages as they stand:
+
+- a **cover** - the wiki's name, its description, its number of pages
+  and the date - then a **table of contents**, the PDF's bookmarks
+  following the same tree;
+- every **page**, from its own page of paper, in the menu's order: a
+  page, then its subpages, siblings by position and title; the title's
+  size says its depth;
+- the text with its headings, emphasis, lists, quotes, code, tables and
+  alignment; links stay links, made absolute;
+- the **images** uploaded into a page, drawn where the page shows them
+  (scaled down to what the page needs); an image on the web is named,
+  `[Image: ...]`, never downloaded - writing a PDF never makes the
+  server call an address a page holds;
+- each **file** block as *File: plan.pdf*, and the page's files listed
+  by name and size under *Attached files*.
+
+Who may read the wiki may download it; signed out, the sign-in page.
+The answer is an `attachment`, `X-Content-Type-Options: nosniff`,
+`Cache-Control: private, no-cache`.
+
+It is written by [fpdf2](https://py-pdf.github.io/fpdf2/), pure Python
+with Pillow: `pip install` is all it needs, on Windows as on Linux, no
+system library. Without it installed, no PDF is offered and
+`export.pdf` answers `404`.
+
+**Fonts.** Any character a page holds is drawn with a TrueType font:
+the first of DejaVu Sans, Liberation Sans (Linux) or Arial (Windows,
+macOS) found where the system keeps it, or those named by
+`GENERIC["WIKI_PDF_FONTS"]`:
+
+```python
+GENERIC = {
+    "WIKI_PDF_FONTS": {
+        "regular": BASE_DIR / "fonts/Inter-Regular.ttf",
+        "bold": BASE_DIR / "fonts/Inter-Bold.ttf",
+        "italic": BASE_DIR / "fonts/Inter-Italic.ttf",
+        "bold_italic": BASE_DIR / "fonts/Inter-BoldItalic.ttf",
+        "mono": BASE_DIR / "fonts/JetBrainsMono-Regular.ttf",
+    },
+}
+```
+
+With none found, the PDF's own fonts are used: Latin-1 only - French,
+Spanish, German are whole; typographic quotes and dashes become plain
+ones, and other characters `?`. The Docker image installs DejaVu
+(`fonts-dejavu-core`).
+
 ## Ordering a page
 
 The editor's **up and down arrows** - or **Alt+Up** and **Alt+Down** -
@@ -220,8 +343,12 @@ editors built on ProseMirror need a bundler.
 
 ## Changing it
 
-- The page is `generic/wiki/page.html`; a project overrides it like any
+- The page is `generic/wiki/page.html`, the list of wikis
+  `generic/wiki/index.html`; a project overrides them like any
   template.
+- The PDF is written by `generic/wiki/pdf.py`: `render(wiki,
+  base_url=...)` returns its bytes, for a script or a scheduled task
+  that files it somewhere.
 - The pinned pages are drawn by `generic/wiki/includes/pinned.html`, in
   the `dashboard_pinned` block of `generic/site/index.html`.
 - The editor's toolbar is `TOOLBAR` in `generic/js/wiki.js`. Adding a

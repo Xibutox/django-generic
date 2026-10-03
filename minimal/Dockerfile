@@ -17,8 +17,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_DB_PATH=/data/db.sqlite3 \
     DJANGO_MEDIA_ROOT=/data/media
 
+# A Unicode font for the wiki's PDF: without one it falls back on
+# Latin-1 (docs/wiki.md#pdf).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # The framework, as its wheel installs it: the core - Django and Django
-# REST framework - and the wiki extra, nh3, which cleans its pages. Then
+# REST framework - and the wiki extra, nh3, which cleans its pages, and
+# fpdf2, which writes a wiki as a PDF. Then
 # django-allauth, for signing in with Microsoft: on only when compose
 # passes MICROSOFT_CLIENT_ID.
 WORKDIR /src

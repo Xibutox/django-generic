@@ -13,6 +13,54 @@
   }
 }
 
+/* -- The wikis -------------------------------------------------------- */
+
+.wiki-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--space-4);
+}
+
+.wiki-list__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Side by side in the grid, not stacked. */
+.wiki-list__card + .wiki-list__card {
+  margin-top: 0;
+}
+
+.wiki-list__card .card__header {
+  margin-bottom: 0;
+}
+
+.wiki-list__card .card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.wiki-list__tools,
+.wiki-list__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.wiki-list__description {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.wiki-list__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
 /* -- Menu --------------------------------------------------------------- */
 
 .wiki__menu {
@@ -21,6 +69,40 @@
   max-height: calc(100vh - var(--header-height) - 2 * var(--space-4));
   padding: var(--space-3);
   overflow: auto;
+}
+
+.wiki__menu-wiki {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.wiki__menu-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.wiki__menu-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wiki__switch {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.wiki__switch summary {
+  cursor: pointer;
+  color: var(--text-muted);
 }
 
 .wiki__menu-head {

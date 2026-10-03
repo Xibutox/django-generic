@@ -1,8 +1,13 @@
 """The wiki's REST endpoint.
 
 ================================  ====================================
-``GET    pages/``                  the menu: every page, no content
-``POST   pages/``                  a new page
+``GET    wikis/``                  the wikis, with their page counts
+``POST   wikis/``                  a new wiki
+``PATCH  wikis/<id>/``             rename it, describe it, move it
+``DELETE wikis/<id>/``             delete it, with its pages
+``GET    pages/``                  the menu: every page, no content;
+                                   ``?wiki=<id>`` for one wiki's
+``POST   pages/``                  a new page, in ``wiki``
 ``GET    pages/<id>/``             one page, with its content
 ``PATCH  pages/<id>/``             change it; ``version`` guards it
 ``DELETE pages/<id>/``             delete it; its subpages move up
@@ -10,8 +15,10 @@
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
 ================================  ====================================
 
-Reading is for any signed-in user; writing needs the model permissions
-``add``, ``change`` and ``delete`` on wiki pages.
+Reading is for any signed-in user, in the wikis
+``Wiki.objects.readable_by`` lets them see; writing needs the model
+permissions ``add``, ``change`` and ``delete`` on wiki pages - on
+wikis, for the wikis themselves.
 
 The editor's images are uploaded to ``api/generic/wiki/images/`` - in
 ``generic.urls``, beside the framework's other endpoints - by whoever
@@ -28,6 +35,7 @@ from pathlib import PurePath
 from typing import Any
 
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import filesizeformat
 from django.utils.translation import gettext
@@ -40,11 +48,18 @@ from rest_framework.views import APIView
 
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
-from generic.wiki.models import WikiFile, WikiImage, WikiPage, WikiRevision
+from generic.wiki.models import (
+    Wiki,
+    WikiFile,
+    WikiImage,
+    WikiPage,
+    WikiRevision,
+)
 from generic.wiki.serializers import (
     WikiPageListSerializer,
     WikiPageSerializer,
     WikiRevisionSerializer,
+    WikiSerializer,
 )
 
 #: The images a page may show: what their first bytes are, the name
@@ -96,17 +111,26 @@ WRITE_PERMISSIONS = {
 }
 
 
-def can(user: Any, action_name: str) -> bool:
+def can(user: Any, action_name: str, model: str = "wikipage") -> bool:
     return bool(
         user
         and user.is_authenticated
-        and user.has_perm(f"generic_wiki.{action_name}_wikipage")
+        and user.has_perm(f"generic_wiki.{action_name}_{model}")
     )
 
 
+def readable_pages(user: Any) -> Any:
+    """The pages ``user`` may read: those of the wikis they see."""
+    return WikiPage.objects.filter(wiki__in=Wiki.objects.readable_by(user))
+
+
 class WikiPermission(BasePermission):
+    """Reading for anyone signed in; writing by the model permissions
+    of the view's ``permission_model``."""
+
     def has_permission(self, request: Any, view: Any) -> bool:
         user = request.user
+        model = getattr(view, "permission_model", "wikipage")
 
         if not (user and user.is_authenticated):
             return False
@@ -116,9 +140,27 @@ class WikiPermission(BasePermission):
 
         # Restoring a version changes the page.
         if view.action == "restore":
-            return can(user, "change")
+            return can(user, "change", model)
 
-        return can(user, WRITE_PERMISSIONS.get(request.method, "change"))
+        return can(
+            user, WRITE_PERMISSIONS.get(request.method, "change"), model
+        )
+
+
+class WikiViewSet(viewsets.ModelViewSet):
+    """The wikis: each a menu of pages of its own."""
+
+    permission_classes = (WikiPermission,)
+    permission_model = "wiki"
+    serializer_class = WikiSerializer
+    pagination_class = None
+
+    def get_queryset(self) -> Any:
+        return (
+            Wiki.objects.readable_by(self.request.user)
+            .annotate(page_count=Count("pages"))
+            .order_by("position", "name")
+        )
 
 
 class WikiPageViewSet(viewsets.ModelViewSet):
@@ -126,9 +168,17 @@ class WikiPageViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def get_queryset(self) -> Any:
-        return WikiPage.objects.select_related("updated_by").order_by(
-            "position", "title"
+        pages = (
+            readable_pages(self.request.user)
+            .select_related("wiki", "updated_by")
+            .order_by("position", "title")
         )
+        wiki = self.request.query_params.get("wiki")
+
+        if self.action == "list" and wiki:
+            pages = pages.filter(wiki_id=wiki if wiki.isdigit() else None)
+
+        return pages
 
     def get_serializer_class(self) -> Any:
         if self.action == "list":

@@ -9,9 +9,14 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import APIException
 
-from generic.wiki.models import WikiPage, WikiRevision
+from generic.wiki.models import (
+    RESERVED_WIKI_SLUGS,
+    Wiki,
+    WikiPage,
+    WikiRevision,
+)
 
-#: Addresses the wiki's own routes need.
+#: Page addresses the wiki's own routes need.
 RESERVED_SLUGS = frozenset({"api"})
 
 
@@ -28,14 +33,17 @@ def display_name(user: Any) -> str:
     return user.get_full_name() or user.get_username()
 
 
-def unique_slug(title: str, exclude_pk: Any = None) -> str:
-    """An address for ``title`` no other page uses."""
+def unique_slug(title: str, exclude_pk: Any = None, wiki: Any = None) -> str:
+    """An address for ``title`` no other page of ``wiki`` uses."""
     base = slugify(title, allow_unicode=True)[:100] or "page"
 
     if base in RESERVED_SLUGS:
         base = f"{base}-page"
 
     pages = WikiPage.objects.all()
+
+    if wiki is not None:
+        pages = pages.filter(wiki=wiki)
 
     if exclude_pk is not None:
         pages = pages.exclude(pk=exclude_pk)
@@ -50,6 +58,77 @@ def unique_slug(title: str, exclude_pk: Any = None) -> str:
     return slug
 
 
+def unique_wiki_slug(name: str) -> str:
+    """An address for a wiki called ``name`` no other wiki uses."""
+    base = slugify(name, allow_unicode=True)[:100] or "wiki"
+
+    if base in RESERVED_WIKI_SLUGS:
+        base = f"{base}-wiki"
+
+    slug = base
+    index = 2
+
+    while Wiki.objects.filter(slug=slug).exists():
+        slug = f"{base}-{index}"
+        index += 1
+
+    return slug
+
+
+class WikiSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    #: Where the whole wiki is downloaded as a PDF; empty when it cannot.
+    pdf_url = serializers.SerializerMethodField()
+    page_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Wiki
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "position",
+            "url",
+            "pdf_url",
+            "page_count",
+        )
+        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
+
+    def get_url(self, wiki: Wiki) -> str:
+        return wiki.get_absolute_url() if wiki.pk else ""
+
+    def get_pdf_url(self, wiki: Wiki) -> str:
+        from generic.wiki.pdf import available
+
+        return wiki.get_pdf_url() if wiki.pk and available() else ""
+
+    def get_page_count(self, wiki: Wiki) -> int:
+        count = getattr(wiki, "page_count", None)
+
+        if count is None:
+            count = wiki.pages.count() if wiki.pk else 0
+
+        return count
+
+    def validate_slug(self, value: str) -> str:
+        value = (value or "").strip()
+
+        if value in RESERVED_WIKI_SLUGS:
+            raise serializers.ValidationError(_("This address is reserved."))
+
+        return value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if not attrs.get("slug"):
+            if self.instance is None:
+                attrs["slug"] = unique_wiki_slug(attrs.get("name", ""))
+            else:
+                attrs.pop("slug", None)
+
+        return attrs
+
+
 class WikiPageListSerializer(serializers.ModelSerializer):
     """A page in the menu: no content."""
 
@@ -59,6 +138,7 @@ class WikiPageListSerializer(serializers.ModelSerializer):
         model = WikiPage
         fields = (
             "id",
+            "wiki",
             "title",
             "slug",
             "parent",
@@ -85,6 +165,7 @@ class WikiPageSerializer(serializers.ModelSerializer):
         model = WikiPage
         fields = (
             "id",
+            "wiki",
             "title",
             "slug",
             "parent",
@@ -98,7 +179,24 @@ class WikiPageSerializer(serializers.ModelSerializer):
             "attachments",
         )
         read_only_fields = ("updated_at",)
-        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
+        extra_kwargs = {
+            "slug": {"required": False, "allow_blank": True},
+            # Left out, the parent's wiki, or the first one.
+            "wiki": {"required": False},
+        }
+        # An address is unique within its wiki: checked in validate(),
+        # where the wiki a new page goes to is known.
+        validators: list = []
+
+    def get_fields(self) -> dict[str, Any]:
+        fields = super().get_fields()
+        request = self.context.get("request")
+
+        # Only the wikis the writer sees can be named.
+        if request is not None and "wiki" in fields:
+            fields["wiki"].queryset = Wiki.objects.readable_by(request.user)
+
+        return fields
 
     def get_url(self, page: WikiPage) -> str:
         return page.get_absolute_url() if page.pk else ""
@@ -167,11 +265,41 @@ class WikiPageSerializer(serializers.ModelSerializer):
                 }
             )
 
+        instance = self.instance
+        parent = attrs.get("parent", instance.parent if instance else None)
+        wiki = attrs.get("wiki")
+
+        if instance is not None:
+            if wiki is not None and wiki.pk != instance.wiki_id:
+                raise serializers.ValidationError(
+                    {"wiki": _("A page cannot move to another wiki.")}
+                )
+
+            wiki = instance.wiki
+        elif wiki is None:
+            wiki = (
+                parent.wiki if parent is not None else Wiki.objects.default()
+            )
+            attrs["wiki"] = wiki
+
+        if parent is not None and parent.wiki_id != wiki.pk:
+            raise serializers.ValidationError(
+                {"parent": _("The parent page is in another wiki.")}
+            )
+
         if not attrs.get("slug"):
-            if self.instance is None:
-                attrs["slug"] = unique_slug(attrs.get("title", ""))
+            if instance is None:
+                attrs["slug"] = unique_slug(attrs.get("title", ""), wiki=wiki)
             else:
                 attrs.pop("slug", None)
+        elif (
+            WikiPage.objects.filter(wiki=wiki, slug=attrs["slug"])
+            .exclude(pk=instance.pk if instance else None)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                {"slug": _("Another page of this wiki has this address.")}
+            )
 
         return attrs
 

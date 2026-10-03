@@ -26,7 +26,8 @@ minimal/
 
 From a checkout of the repository, the framework with the `wiki`
 extra - Django and Django REST framework come with the framework, the
-extra adds nh3, which cleans the wiki's pages:
+extra adds nh3, which cleans the wiki's pages, and fpdf2, which writes
+a wiki as a PDF:
 
 ```bash
 pip install -e ".[wiki]"
@@ -40,7 +41,8 @@ Sign in at <http://127.0.0.1:8000/>: the dashboard, and *Books* in the
 navigation - the list with its search, filters and export, the form, a
 page per book, the REST endpoint at `/api/library/book/` - and *Wiki*,
 at <http://127.0.0.1:8000/wiki/>: write its first page, with its
-editor, its menu, its history and its images ([The wiki](../docs/wiki.md)).
+editor, its menu, its history and its images, add other wikis, and
+download one as a PDF ([The wiki](../docs/wiki.md)).
 
 ### In Docker
 
