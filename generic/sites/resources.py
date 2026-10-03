@@ -40,6 +40,27 @@ from generic.sites.serializers import (
 )
 from generic.views.datatable import filter_row_option
 
+#: The bulk actions of a trash's table.
+TRASH_ACTIONS = ("restore_from_trash", "delete_selected")
+
+#: *Delete selected*, said of a trash: outside it, then inside it.
+TRASH_DELETE = {
+    False: (
+        _("Move to the trash"),
+        _(
+            "Move the selected %(verbose_name_plural)s to the trash? They "
+            "can be restored from there."
+        ),
+    ),
+    True: (
+        _("Delete for good"),
+        _(
+            "Delete the selected %(verbose_name_plural)s for good? This "
+            "cannot be undone."
+        ),
+    ),
+}
+
 #: Placeholder reversed into URLs, then swapped for a client template
 #: token. Must survive the ``<path:pk>`` converter.
 PK_PLACEHOLDER = "__pk__"
@@ -247,6 +268,18 @@ class ModelResource(PagesMixin):
     #: shows what was recorded, whatever the form shows.
     history_exclude: Sequence[str] = ()
 
+    # -- trash and access log --------------------------------------------
+
+    #: Delete moves a record to the resource's trash - its *Trash* page,
+    #: where it is restored or deleted for good - instead of deleting
+    #: it (generic.trash). Needs a ``deleted_at`` field on the model:
+    #: ``generic.trash.Trashable`` holds it, with ``deleted_by``.
+    trash: bool = False
+    #: Record who opens a record's page and who downloads its files
+    #: (generic.access): the *Access log* screen, and a button on the
+    #: record's page for whoever may read it.
+    access_log: bool = False
+
     # -- teams (generic.teams) ---------------------------------------------
 
     #: The path from this model to the team a record belongs to -
@@ -274,6 +307,16 @@ class ModelResource(PagesMixin):
         self._inline_instances: list[Any] | None = None
         self._editable_columns: dict[str, Any] | None = None
         self._transitions: dict[str, Any] | None = None
+
+        if self.trash:
+            from generic.trash import DELETED_AT, has_field
+
+            if not has_field(model, DELETED_AT):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.trash needs a '{DELETED_AT}' "
+                    f"field on {model._meta.label}: inherit "
+                    f"generic.trash.Trashable."
+                )
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} for {self.opts.label}>"
@@ -570,7 +613,23 @@ class ModelResource(PagesMixin):
         if self.team_field:
             queryset = self.scope_to_teams(request, queryset)
 
+        if self.trash:
+            queryset = self.filter_trash(request, queryset)
+
         return queryset
+
+    def filter_trash(self, request: Any, queryset: QuerySet) -> QuerySet:
+        """The live rows - or, for the trash's table and actions, the
+        rows in the trash, to whoever may delete (``trash``)."""
+        from generic.trash import DELETED_AT, in_trash
+
+        if not in_trash(request):
+            return queryset.filter(**{f"{DELETED_AT}__isnull": True})
+
+        if not self.has_delete_permission(request):
+            return queryset.none()
+
+        return queryset.filter(**{f"{DELETED_AT}__isnull": False})
 
     def scope_to_teams(self, request: Any, queryset: QuerySet) -> QuerySet:
         """``queryset`` narrowed to the reader's teams (``team_field``)."""
@@ -623,7 +682,7 @@ class ModelResource(PagesMixin):
     def get_list_queryset(self, request: Any) -> QuerySet:
         """What the table pages through: related rows loaded up front."""
         queryset = self.get_queryset(request)
-        serializer = self.get_table_serializer_class()
+        serializer = self.get_rows_serializer_class(request)
 
         select = {
             *getattr(serializer, "generic_select_related", ()),
@@ -707,6 +766,20 @@ class ModelResource(PagesMixin):
     def get_page_object_key(self, obj: Any) -> Any:
         return getattr(obj, "pk", obj)
 
+    def get_page_declarations(self) -> list[Any]:
+        """The pages declared, and the *Trash* when ``trash`` keeps one
+        and nothing else is called that."""
+        declared = super().get_page_declarations()
+
+        if not self.trash or any(page.name == "trash" for page in declared):
+            return declared
+
+        from generic.sites.pages import trash_page
+
+        declared.append(trash_page())
+
+        return declared
+
     def get_record_links(self, request: Any, obj: Any) -> list[Any]:
         """Pages built around one record, offered on its summary.
 
@@ -757,6 +830,47 @@ class ModelResource(PagesMixin):
         """How the field ``name`` is drawn as tags, or ``None``."""
         return self.tag_fields.get(name)
 
+    def get_trash_columns(self) -> tuple[Any, ...]:
+        """The trash's table: the list's columns, then when each record
+        was deleted and by whom."""
+        from generic.trash import DELETED_AT, DELETED_BY, has_field
+
+        extra = [
+            name
+            for name in (DELETED_AT, DELETED_BY)
+            if has_field(self.model, name)
+        ]
+
+        return (
+            *(
+                entry
+                for entry in self.get_list_display()
+                if entry not in extra
+            ),
+            *extra,
+        )
+
+    def get_trash_serializer_class(self) -> Any:
+        cached = self.__dict__.get("_trash_serializer_class")
+
+        if cached is None:
+            cached = build_table_serializer(
+                self, self.get_trash_columns(), links=False
+            )
+            self.__dict__["_trash_serializer_class"] = cached
+
+        return cached
+
+    def get_rows_serializer_class(self, request: Any) -> Any:
+        """The table's serializer for ``request``: the list's, or the
+        trash's."""
+        from generic.trash import in_trash
+
+        if self.trash and in_trash(request):
+            return self.get_trash_serializer_class()
+
+        return self.get_table_serializer_class()
+
     def get_table_serializer_class(self) -> Any:
         if self._table_serializer_class is None:
             if self.table_serializer is not None:
@@ -783,6 +897,13 @@ class ModelResource(PagesMixin):
         }
 
     def get_row_actions(self, request: Any) -> list[dict[str, Any]]:
+        from generic.trash import in_trash
+
+        # A record in the trash has no page to open: its bulk actions
+        # restore it or delete it for good.
+        if self.trash and in_trash(request):
+            return []
+
         actions = []
         row = "{" + ROW_KEY + "}"
         can_change = self.has_change_permission(request)
@@ -826,7 +947,11 @@ class ModelResource(PagesMixin):
             actions.append(
                 {
                     "name": "delete",
-                    "label": gettext("Delete"),
+                    "label": (
+                        gettext("Move to the trash")
+                        if self.trash
+                        else gettext("Delete")
+                    ),
                     "icon": "delete",
                     "variant": "danger",
                     "apiUrl": self.get_object_api_url_template(token),
@@ -909,6 +1034,7 @@ class ModelResource(PagesMixin):
         self,
         request: Any,
         editable: bool | None = None,
+        serializer: Any = None,
     ) -> dict[str, Any]:
         """This resource's table, for whoever is drawing one.
 
@@ -916,9 +1042,9 @@ class ModelResource(PagesMixin):
         list page reads, a page built for correcting rows writes, and
         the same resource serves both. ``None`` leaves it to
         ``list_editable``, which is what the resource's own list page
-        passes.
+        passes. ``serializer`` draws other columns than the list's.
         """
-        serializer = self.get_table_serializer_class()
+        serializer = serializer or self.get_table_serializer_class()
         declared = getattr(serializer, "_declared_fields", {})
         tag_links = getattr(serializer, "generic_tag_links", {})
         columns = [
@@ -978,6 +1104,34 @@ class ModelResource(PagesMixin):
             options["gridAdd"] = added
 
         return as_grid(config)
+
+    def get_trash_table_config(self, request: Any) -> dict[str, Any]:
+        """The trash's table: the records in it, with *Restore* and
+        *Delete for good*, nothing to open (``trash``)."""
+        from generic.trash import TRASH_PARAM
+
+        config = self.get_table_config(
+            request,
+            editable=False,
+            serializer=self.get_trash_serializer_class(),
+        )
+        options = dict(config["options"])
+        options.update(
+            stateKey=f"{options.get('stateKey', '')}.trash",
+            syncUrl=False,
+            presets={},
+            rowActions=[],
+            mailingUrl="",
+            extraParams={TRASH_PARAM: "1"},
+            bulkActionsUrl=f"{self.get_actions_url()}?{TRASH_PARAM}=1",
+        )
+
+        options["bulkActions"] = [
+            entry.as_client()
+            for entry in self.get_actions(request, trashing=True).values()
+        ]
+
+        return {**config, "options": options}
 
     def get_related_url_template(
         self,
@@ -1042,6 +1196,16 @@ class ModelResource(PagesMixin):
         from generic.sites.files import exposed_file_fields
 
         return exposed_file_fields(self, request)
+
+    def may_download(self, request: Any, obj: Any, field: str) -> bool:
+        """Whether this reader may download ``obj``'s file ``field``.
+
+        Asked once the record is found and the field is one the reader
+        is shown: override it for a rule of the record's - a draft only
+        its authors download. A refusal is a 404, and the file's link
+        is left out of the record's page and its table.
+        """
+        return True
 
     def get_download_name(self, request: Any, obj: Any, field: str) -> str:
         """The name a file of ``obj`` is downloaded under.
@@ -1248,11 +1412,26 @@ class ModelResource(PagesMixin):
             "verbose_name_plural": self.opts.verbose_name_plural,
         }
 
-    def get_actions(self, request: Any) -> dict[str, ResourceAction]:
-        """The bulk actions this user may run, by name."""
+    def get_actions(
+        self,
+        request: Any,
+        trashing: bool | None = None,
+    ) -> dict[str, ResourceAction]:
+        """The bulk actions this user may run, by name - in the trash's
+        table, with ``trashing``: by default, when ``request`` is the
+        trash's."""
+        from generic.trash import in_trash
+
         actions: dict[str, ResourceAction] = {}
 
-        for entry in self.actions:
+        # The trash's table offers its own two, whatever the list's are.
+        if trashing is None:
+            trashing = in_trash(request)
+
+        trashing = self.trash and trashing
+        declared = TRASH_ACTIONS if trashing else self.actions
+
+        for entry in declared:
             if isinstance(entry, str):
                 function = getattr(self, entry, None)
 
@@ -1280,6 +1459,9 @@ class ModelResource(PagesMixin):
             description = getattr(function, "short_description", None)
             confirm = getattr(function, "confirmation", None)
 
+            if self.trash and name == "delete_selected":
+                description, confirm = TRASH_DELETE[trashing]
+
             actions[name] = ResourceAction(
                 name=name,
                 function=call,
@@ -1291,7 +1473,7 @@ class ModelResource(PagesMixin):
                 variant=getattr(function, "variant", "default") or "default",
             )
 
-        if self.transition_actions:
+        if self.transition_actions and not trashing:
             actions.update(self.get_transition_actions(request))
 
         return actions
@@ -1356,8 +1538,11 @@ class ModelResource(PagesMixin):
         """The admin's built-in action, with the same safety net.
 
         Nothing is deleted when any row is protected by a relation, and
-        the answer names what stands in the way.
+        the answer names what stands in the way. With a trash, the rows
+        go to it - and from it, for good.
         """
+        from generic.trash import in_trash
+
         collector = NestedObjects(using=router.db_for_write(self.model))
         collector.collect(list(queryset))
 
@@ -1379,6 +1564,21 @@ class ModelResource(PagesMixin):
             for instance in queryset:
                 self.delete_model(request, instance)
                 count += 1
+
+        if self.trash and not in_trash(request):
+            return {
+                "level": "success",
+                "message": ngettext(
+                    "%(count)s %(name)s moved to the trash.",
+                    "%(count)s %(name_plural)s moved to the trash.",
+                    count,
+                )
+                % {
+                    "count": count,
+                    "name": self.opts.verbose_name,
+                    "name_plural": self.opts.verbose_name_plural,
+                },
+            }
 
         return {
             "level": "success",
@@ -1488,7 +1688,47 @@ class ModelResource(PagesMixin):
         return create(self, request, values, fixed)
 
     def delete_model(self, request: Any, obj: Any) -> None:
+        """Delete ``obj`` - into the trash, with ``trash``, unless it is
+        the trash's own *Delete for good*."""
+        from generic.trash import in_trash, is_trashed, move_to_trash
+
+        if self.trash and not (in_trash(request) and is_trashed(obj)):
+            move_to_trash(obj, getattr(request, "user", None))
+
+            return
+
         obj.delete()
+
+    @action(
+        description=_("Restore"),
+        permissions=("delete",),
+        confirm=_("Put the selected %(verbose_name_plural)s back?"),
+        icon="restore_from_trash",
+    )
+    def restore_from_trash(self, request: Any, queryset: QuerySet) -> dict:
+        """The trash's: the selected records, back where they were."""
+        from generic.trash import restore
+
+        count = 0
+
+        with transaction.atomic():
+            for instance in queryset:
+                restore(instance)
+                count += 1
+
+        return {
+            "level": "success",
+            "message": ngettext(
+                "%(count)s %(name)s restored.",
+                "%(count)s %(name_plural)s restored.",
+                count,
+            )
+            % {
+                "count": count,
+                "name": self.opts.verbose_name,
+                "name_plural": self.opts.verbose_name_plural,
+            },
+        }
 
     # -- imports ------------------------------------------------------------
 

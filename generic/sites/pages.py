@@ -691,6 +691,37 @@ class ResourcePageView(SiteViewMixin, TemplateView):
         return context
 
 
+class TrashPageView(ResourcePageView):
+    """A resource's trash (``ModelResource.trash``): what was deleted,
+    restored or deleted for good from its table."""
+
+    template_name = "generic/resource/trash.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        from generic.conf import generic_settings
+
+        context = super().get_context_data(**kwargs)
+        context["table"] = self.resource.get_trash_table_config(self.request)
+        context["days"] = generic_settings.TRASH_DAYS
+
+        return context
+
+
+def trash_page() -> ResourcePage:
+    """The *Trash* page a resource keeping one gets, for whoever may
+    delete its records."""
+    from django.utils.translation import gettext_lazy as _
+
+    return ResourcePage(
+        "trash",
+        view=TrashPageView,
+        title=_("Trash"),
+        icon="delete",
+        description=_("Deleted records, until restored or deleted for good."),
+        permission="delete",
+    )
+
+
 def build_page_view(site: Any, resource: Any, page: ResourcePage) -> Any:
     """The callable a page's route calls."""
     view = page.view

@@ -131,7 +131,9 @@ generic/
 │                           profile, SavedView; login/account/notifications
 │                           pages, set-language; resources.py: the People
 │                           screens (users, groups, permissions) and
-│                           guard.py, which refuses privilege escalation
+│                           guard.py, which refuses privilege escalation;
+│                           throttle.py: failed sign-ins lock an account
+│                           for a while (§13ter)
 ├── i18n.py                 offered_languages(), language_menu(), is_offered()
 ├── middleware.py           UserLanguageMiddleware: a user's saved language wins
 │                           CurrentUserMiddleware: who the history records
@@ -154,6 +156,11 @@ generic/
 │                           registered model; actor (who), recording (signals
 │                           -> versions), reading (versions -> changes), and
 │                           the Changes page
+├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
+│                           restore, empty: a resource's trash (§13j)
+├── access/                 AccessEntry: who opened which record, who
+│                           downloaded which file; record(), the Access log
+│                           page (§13j)
 ├── watch/                  Watch: a user follows a record or a model; the
 │                           messages, the endpoints and the Watching page
 ├── delivery.py             one message, some people, the channels they chose
@@ -608,6 +615,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
 | `history` | True | keep a version of every record, read back by its History tab (§13c) |
 | `history_exclude` | `()` | fields left out of that version, by name |
+| `trash` | False | delete moves records to a trash (the model inherits `generic.trash.Trashable`): a *Trash* page lists them to who may delete, *Restore* puts them back, *Delete for good* deletes; `empty_trash` deletes what is older than `TRASH_DAYS` (§13j) |
+| `access_log` | False | record who opens a record's summary page and who downloads its files; an *Access log* link on the summary page (§13j) |
 | `team_field` | None | path to the record's `generic_teams.Team` (`"team"`, `"folder__team"`, `"teams"`): every screen and endpoint narrowed to the reader's teams (§13h) |
 | `scope_relations` | None (= `team_field` set) | forms of other models offer and accept only this resource's `get_queryset(request)` rows |
 | `viewset_class` | `ResourceViewSet` | base viewset for the endpoint |
@@ -627,6 +636,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `get_object_label(obj)`, `get_object_description(obj)` | palette and autocomplete labels |
 | `get_initial(request)` | values an add form opens with (the query string wins); default: the reader's only team when `team_field` is a plain field |
 | `get_download_name(request, obj, field)` | the name a file downloads under (default `""`: the stored name) - the name it was sent with, kept on the record |
+| `may_download(request, obj, field)` | whether the reader may download that file field (default True): refused, the download 404s and the summary and tables show no link |
 | `get_relation_queryset(request)` | what forms pointing at this model may choose; None = all (default unless `scope_relations`) |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
@@ -1476,7 +1486,10 @@ strftime string fixes the text),
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
 `MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
-`WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`.
+`WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`, `TRASH_DAYS` (30;
+None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
+`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
+`LOGIN_LOCKOUT_MINUTES` (15).
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1898,6 +1911,42 @@ history_of(ticket)                 # every version, newest first
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
   `generic.history.prune()` deletes what is older. See
   `docs/history.md`.
+
+## 13j. Trash and access log
+
+```python
+# models.py
+from generic.trash import Trashable
+
+class Contract(Trashable):          # adds deleted_at, deleted_by
+    ...
+
+# resources.py
+class ContractResource(ModelResource):
+    trash = True                    # ImproperlyConfigured without the fields
+    access_log = True
+
+    def may_download(self, request, obj, field):
+        return field != "file" or request.user.has_perm("app.change_contract")
+```
+
+- With `trash`, every delete - the row's, the bulk action's, the
+  delete page's, the API's `DELETE` - sets `deleted_at` instead. Every
+  screen and endpoint shows live rows only; relations still point at
+  the record. The *Trash* page (`ResourcePage` "trash", behind the
+  delete permission) is the list with `?_trash=1`: *Restore* and
+  *Delete for good*, nothing else. `generic.trash.empty(days)`,
+  the `empty_trash` command and the managed task `generic.empty_trash`
+  (declared when some resource has a trash) delete for good what is
+  older than `TRASH_DAYS`; protected records stay.
+- With `access_log`, `generic.access.record(request, obj, action,
+  detail)` runs on the summary page (`viewed`, once per ten minutes per
+  person) and on every file download (`downloaded`, with the name).
+  Call it from a page of your own too. `AccessEntry` keeps the record
+  as `app.model:pk`, so the entries outlive it; *History > Access log*
+  lists them, behind `generic.view_accessentry`;
+  `generic.access.prune()` applies `ACCESS_LOG_RETENTION_DAYS`.
+- See `docs/trash.md`.
 
 ## 13e. The API for scripts (`generic.tokens`, `generic.openapi`)
 

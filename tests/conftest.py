@@ -32,6 +32,19 @@ if not (
     collect_ignore_glob = ["browser/*"]
 
 
+@pytest.fixture(autouse=True)
+def fresh_cache():
+    """Each test starts with an empty cache: the failed sign-ins one
+    test counts never lock another out."""
+    from django.core.cache import cache
+
+    cache.clear()
+
+    yield
+
+    cache.clear()
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     return APIClient()

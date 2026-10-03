@@ -1,5 +1,10 @@
 # The document manager's own needs, beside the framework
-# (pip install -e "..[export,wiki]" from this folder's parent):
-# the Word merge, documents/merge.py. Pure Python, pip only.
+# (pip install -e "..[export,wiki]" from this folder's parent).
+# Pure Python, pip only, each optional.
+# The Word merge, documents/merge.py:
 python-docx>=1.1
 docxcompose>=1.4
+# The text of PDFs for the search, and approved PDFs stamped:
+pypdf>=4.0
+# Word files previewed as HTML (cleaned with nh3, from the wiki extra):
+mammoth>=1.6

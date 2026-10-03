@@ -40,6 +40,7 @@ class TestEveryPage(PageSweep):
         from tests.testapp.models import (
             Binder,
             BinderSheet,
+            Contract,
             Document,
             Manuscript,
             SharedNote,
@@ -74,6 +75,7 @@ class TestEveryPage(PageSweep):
             "example.equipment": workshop["laptop"],
             "example.maintenance": workshop["visit"],
             "testapp.manuscript": Manuscript.objects.create(title="Pooled"),
+            "testapp.contract": Contract.objects.create(title="Pooled"),
             # Its file is named, not written: the storage has none.
             "testapp.document": Document.objects.create(
                 title="Pooled", file="documents/pooled.txt"

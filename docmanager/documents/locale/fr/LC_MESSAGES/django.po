@@ -919,3 +919,174 @@ msgstr "Version %(number)s du fichier."
 #, python-format
 msgid "Due on %(date)s."
 msgstr "Échéance le %(date)s."
+
+msgid "path"
+msgstr "chemin"
+
+msgid "reviewed every (months)"
+msgstr "relu tous les (mois)"
+
+msgid "text"
+msgstr "texte"
+
+msgid "published file"
+msgstr "fichier publié"
+
+msgid "published version"
+msgstr "version publiée"
+
+msgid "published at"
+msgstr "publié le"
+
+msgid "reminded of the review on"
+msgstr "rappel envoyé pour la relecture du"
+
+msgid "stamped copy"
+msgstr "copie tamponnée"
+
+msgid "in folder"
+msgstr "dans le dossier"
+
+msgid "Empty: at the top of its team's folders."
+msgstr "Vide : à la racine des dossiers de son équipe."
+
+msgid ""
+"Once approved, a document's next review is set this many months ahead. Empty:"
+" no periodic review."
+msgstr ""
+"Une fois approuvé, la prochaine relecture d’un document est fixée autant de "
+"mois plus tard. Vide : pas de relecture périodique."
+
+msgid "periodic review workflow"
+msgstr "circuit de relecture périodique"
+
+msgid ""
+"Started on its own when a document is due for its review. Empty: its author "
+"and team leaders are only reminded."
+msgstr ""
+"Lancé de lui-même quand un document doit être relu. Vide : son auteur et les "
+"chefs d’équipe reçoivent seulement un rappel."
+
+msgid "published by"
+msgstr "publié par"
+
+msgid "Never published"
+msgstr "Jamais publiés"
+
+msgid "Published"
+msgstr "Publiées"
+
+msgid "Periodic review"
+msgstr "Relecture périodique"
+
+msgid "Published version"
+msgstr "Version publiée"
+
+msgid "Preview"
+msgstr "Aperçu"
+
+msgid "Previewed file"
+msgstr "Fichier affiché"
+
+msgid "The folders inside it."
+msgstr "Les dossiers qu’il contient."
+
+msgid ""
+"Documents of this type are read again every so many months after their "
+"approval: their authors and team leaders are reminded beforehand, and on the "
+"day the workflow starts on its own."
+msgstr ""
+"Les documents de ce type sont relus tous les tant de mois après leur "
+"approbation : leurs auteurs et les chefs d’équipe reçoivent un rappel avant, "
+"et le jour venu le circuit démarre de lui-même."
+
+msgid ""
+"The last approved version: what readers who change nothing read, while the "
+"authors work on the next."
+msgstr ""
+"La dernière version approuvée : celle que lisent les lecteurs, pendant que "
+"les auteurs préparent la suivante."
+
+msgid "A folder is in a folder of its own team."
+msgstr "Un dossier se range dans un dossier de sa propre équipe."
+
+msgid ""
+"A folder cannot be put inside itself, nor inside one of its own folders."
+msgstr ""
+"Un dossier ne peut être rangé ni en lui-même, ni dans l’un de ses propres "
+"dossiers."
+
+msgid ""
+"Uncontrolled once printed or downloaded: the current version is in the "
+"document manager."
+msgstr ""
+"Copie non maîtrisée une fois imprimée ou téléchargée : la version en vigueur "
+"est dans le gestionnaire de documents."
+
+msgid "version %(label)s"
+msgstr "version %(label)s"
+
+msgid "approved on %(date)s"
+msgstr "approuvée le %(date)s"
+
+msgid "by %(names)s"
+msgstr "par %(names)s"
+
+msgid ""
+"The document was due for its periodic review: the review started on its own."
+msgstr ""
+"Le document devait être relu : la relecture périodique a démarré d’elle-même."
+
+msgid "%(who)s moved the document to the trash: the review is cancelled."
+msgstr "%(who)s a mis le document à la corbeille : la relecture est annulée."
+
+msgid "%(reminded)s reminded, %(started)s reviews started."
+msgstr "%(reminded)s rappels, %(started)s relectures lancées."
+
+msgid "%(document)s is due for its review"
+msgstr "%(document)s doit être relu"
+
+msgid "Its next review is on %(date)s."
+msgstr "Sa prochaine relecture est le %(date)s."
+
+msgid "Periodic review, due on %(date)s."
+msgstr "Relecture périodique, prévue le %(date)s."
+
+msgid "review started"
+msgstr "relecture lancée"
+
+msgid "reminded"
+msgstr "rappel envoyé"
+
+msgid "Periodic reviews"
+msgstr "Relectures périodiques"
+
+msgid ""
+"Reminds the authors and team leaders of the documents due for a review soon, "
+"and starts the periodic review workflow of those due today. Run it once a "
+"day."
+msgstr ""
+"Rappelle aux auteurs et chefs d’équipe les documents bientôt à relire, et "
+"lance le circuit de relecture périodique de ceux à relire aujourd’hui. À "
+"lancer une fois par jour."
+
+msgid "This kind of file is not shown in the page: download it to open it."
+msgstr ""
+"Ce type de fichier ne s’affiche pas dans la page : téléchargez-le pour "
+"l’ouvrir."
+
+msgid ""
+"Nothing to show yet: the document has no file - or no published version, and "
+"you read published versions only."
+msgstr ""
+"Rien à afficher : le document n’a pas de fichier - ou pas de version publiée,"
+" et vous ne lisez que les versions publiées."
+
+msgid "Version %(label)s, published"
+msgstr "Version %(label)s, publiée"
+
+msgid "Version %(label)s, a draft"
+msgstr "Version %(label)s, brouillon"
+
+msgid "A folder of this name is already there."
+msgstr "Un dossier de ce nom existe déjà à cet endroit."

@@ -1586,3 +1586,9 @@ msgstr "Le wiki a été supprimé."
 
 msgid "The wiki could not be deleted."
 msgstr "Le wiki n’a pas pu être supprimé."
+
+msgid "“%(name)s” goes to the trash. It can be restored from there."
+msgstr "« %(name)s » va à la corbeille. Il pourra y être restauré."
+
+msgid "Move to the trash"
+msgstr "Mettre à la corbeille"

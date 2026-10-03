@@ -33,6 +33,7 @@ from django.utils.translation import gettext_lazy as _
 
 from generic.numbering import Pattern
 from generic.teams.models import Team
+from generic.trash import Trashable
 from generic.wiki.models import Wiki
 
 #: What a team's numbers look like until it says otherwise.
@@ -63,6 +64,10 @@ def extension_of(name: str) -> str:
     return PurePosixPath(name or "").suffix.lstrip(".").upper()[:10]
 
 
+#: Between a folder's name and its parent's, in its path.
+PATH_SEPARATOR = " / "
+
+
 class Folder(models.Model):
     team = models.ForeignKey(
         Team,
@@ -71,21 +76,96 @@ class Folder(models.Model):
         on_delete=models.PROTECT,
         related_name="folders",
     )
+    #: The folder it is in - its team's - or none, at the top.
+    parent = models.ForeignKey(
+        "self",
+        verbose_name=_("in folder"),
+        # A folder with subfolders stays until they are moved.
+        on_delete=models.PROTECT,
+        related_name="children",
+        null=True,
+        blank=True,
+        help_text=_("Empty: at the top of its team's folders."),
+    )
     name = models.CharField(_("name"), max_length=120)
+    #: ``Contracts / 2026 / Suppliers``: its parents' names and its own,
+    #: kept on save - for sorting, searching and showing where it is.
+    path = models.CharField(
+        _("path"), max_length=500, blank=True, editable=False
+    )
     description = models.TextField(_("description"), blank=True, default="")
 
     class Meta:
-        ordering = ("team__name", "name")
+        ordering = ("team__name", "path")
         verbose_name = _("folder")
         verbose_name_plural = _("folders")
         constraints = (
+            # Two folders of one name never sit side by side.
             models.UniqueConstraint(
-                fields=("team", "name"), name="documents_folder_unique_name"
+                fields=("team", "name"),
+                condition=models.Q(parent__isnull=True),
+                name="documents_folder_unique_name",
+            ),
+            models.UniqueConstraint(
+                fields=("parent", "name"),
+                condition=models.Q(parent__isnull=False),
+                name="documents_folder_unique_name_in_parent",
             ),
         )
 
     def __str__(self) -> str:
-        return f"{self.team} / {self.name}"
+        return f"{self.team}{PATH_SEPARATOR}{self.path or self.name}"
+
+    def save(self, *args, **kwargs) -> None:
+        # A subfolder is its parent's team's, wherever it is moved.
+        if self.parent_id:
+            self.team_id = self.parent.team_id
+
+        moved = self.pk and self.path != self.full_path()
+        self.path = self.full_path()
+
+        if kwargs.get("update_fields"):
+            kwargs["update_fields"] = {*kwargs["update_fields"], "path"}
+
+        super().save(*args, **kwargs)
+
+        # Renamed or moved: the paths below follow.
+        if moved:
+            for child in self.children.all():
+                child.save()
+
+    def full_path(self) -> str:
+        if self.parent_id is None:
+            return self.name
+
+        parent = self.parent.path or self.parent.name
+
+        return f"{parent}{PATH_SEPARATOR}{self.name}"
+
+    def ancestors(self) -> list["Folder"]:
+        """Its parent, its parent's parent... nearest first."""
+        found, seen, folder = [], {self.pk}, self.parent
+
+        while folder is not None and folder.pk not in seen:
+            found.append(folder)
+            seen.add(folder.pk)
+            folder = folder.parent
+
+        return found
+
+    def descendants(self) -> list["Folder"]:
+        """Every folder under it, at any depth."""
+        found, level = [], [self]
+
+        while level:
+            level = list(
+                Folder.objects.filter(parent__in=level).exclude(
+                    pk__in=[folder.pk for folder in found] + [self.pk]
+                )
+            )
+            found.extend(level)
+
+        return found
 
 
 class Tag(models.Model):
@@ -114,6 +194,29 @@ class DocumentType(models.Model):
     )
     color = models.CharField(_("colour"), max_length=30, blank=True)
     description = models.TextField(_("description"), blank=True, default="")
+    #: How often a document of the type is read again, and through
+    #: which circuit - started on its own on the date (``tasks.py``).
+    review_months = models.PositiveIntegerField(
+        _("reviewed every (months)"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Once approved, a document's next review is set this many "
+            "months ahead. Empty: no periodic review."
+        ),
+    )
+    review_workflow = models.ForeignKey(
+        "Workflow",
+        verbose_name=_("periodic review workflow"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+        help_text=_(
+            "Started on its own when a document is due for its review. "
+            "Empty: its author and team leaders are only reminded."
+        ),
+    )
 
     class Meta:
         ordering = ("name",)
@@ -174,7 +277,7 @@ class Codification(models.Model):
         super().save(*args, **kwargs)
 
 
-class Document(models.Model):
+class Document(Trashable):
     class Status(models.TextChoices):
         DRAFT = "draft", _("Draft")
         REVIEW = "review", _("In review")
@@ -229,6 +332,10 @@ class Document(models.Model):
     version = models.PositiveIntegerField(
         _("version"), default=0, editable=False
     )
+    #: ``0.2`` while a draft, ``1.0`` once published (``versions.py``).
+    version_label = models.CharField(
+        _("version"), max_length=12, blank=True, editable=False
+    )
     file_size = models.PositiveBigIntegerField(
         _("size"), default=0, editable=False
     )
@@ -237,11 +344,40 @@ class Document(models.Model):
     file_format = models.CharField(
         _("format"), max_length=10, blank=True, db_index=True, editable=False
     )
+    #: The current file's text, for the search (``text.py``).
+    content = models.TextField(
+        _("text"), blank=True, default="", editable=False
+    )
+    #: The last approved version: what readers who write nothing read,
+    #: while the authors work on the next one.
+    published_version = models.ForeignKey(
+        "DocumentVersion",
+        verbose_name=_("published version"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    #: Its file - the stamped PDF, when there is one.
+    published_file = models.FileField(
+        _("published file"), max_length=255, blank=True, editable=False
+    )
+    published_label = models.CharField(
+        _("published version"), max_length=12, blank=True, editable=False
+    )
+    published_at = models.DateTimeField(
+        _("published at"), null=True, blank=True, editable=False
+    )
     review_on = models.DateField(
         _("next review on"),
         null=True,
         blank=True,
         help_text=_("When the document should be read again."),
+    )
+    #: The review date its author and leaders were last reminded of.
+    review_notice_for = models.DateField(
+        _("reminded of the review on"), null=True, blank=True, editable=False
     )
     related = models.ManyToManyField(
         "self",
@@ -335,6 +471,36 @@ class DocumentVersion(models.Model):
     checksum = models.CharField(
         _("SHA-256"), max_length=64, blank=True, editable=False
     )
+    #: ``0.1``, ``0.2``... drafts; ``1.0`` once approved - then ``1.1``
+    #: for the next draft (``versions.py``).
+    label = models.CharField(
+        _("version"), max_length=12, blank=True, editable=False
+    )
+    #: Set when the version was approved and became the published one.
+    published_at = models.DateTimeField(
+        _("published at"), null=True, blank=True, editable=False
+    )
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("published by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    #: The approved PDF, stamped with its number, version and approvers.
+    stamped = models.FileField(
+        _("stamped copy"),
+        upload_to=file_path,
+        max_length=255,
+        blank=True,
+        editable=False,
+    )
+    #: The file's text, for the search and the comparison.
+    content = models.TextField(
+        _("text"), blank=True, default="", editable=False
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_("sent by"),
@@ -360,7 +526,11 @@ class DocumentVersion(models.Model):
         )
 
     def __str__(self) -> str:
-        return f"{self.document.reference} v{self.number}"
+        return f"{self.document.reference} v{self.label or self.number}"
+
+    @property
+    def is_published(self) -> bool:
+        return self.published_at is not None
 
     def save(self, *args, **kwargs) -> None:
         self.file_format = extension_of(self.file_name or self.file.name)

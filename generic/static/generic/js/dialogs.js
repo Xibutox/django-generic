@@ -399,7 +399,22 @@
 
         var label = (preview.object && preview.object.label) || options.label || "";
 
-        if (preview.canDelete) {
+        if (preview.canDelete && preview.trash) {
+          // A trash keeps it, and what hangs on it: nothing to list.
+          dialog.body.appendChild(
+            el(
+              "p",
+              "lead",
+              Generic.format(
+                t("\u201c%(name)s\u201d goes to the trash. It can be restored from there."),
+                { name: label }
+              )
+            )
+          );
+          accept.lastChild.textContent = t("Move to the trash");
+          accept.disabled = false;
+          accept.focus();
+        } else if (preview.canDelete) {
           dialog.body.appendChild(
             el(
               "p",

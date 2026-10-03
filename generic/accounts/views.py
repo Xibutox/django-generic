@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from django import forms
 from django.conf import global_settings, settings
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 from django.urls import NoReverseMatch, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.utils.translation import gettext
+from django.utils.translation import gettext, ngettext
 from django.views.generic import TemplateView, View
 
 from generic.accounts.models import UserPreferences
@@ -42,9 +44,45 @@ class SitePageMixin(PageMixin):
         return context
 
 
+class ThrottledAuthenticationForm(AuthenticationForm):
+    """Django's sign-in form, refusing an account or an address after
+    too many failed passwords (``generic.accounts.throttle``)."""
+
+    def clean(self) -> dict[str, Any]:
+        from generic.accounts import throttle
+
+        username = self.data.get("username", "") or ""
+
+        if throttle.is_locked(self.request, username):
+            _attempts, seconds = throttle.limits()
+
+            raise forms.ValidationError(
+                ngettext(
+                    "Too many failed attempts. Try again in %(minutes)s "
+                    "minute.",
+                    "Too many failed attempts. Try again in %(minutes)s "
+                    "minutes.",
+                    seconds // 60,
+                )
+                % {"minutes": seconds // 60},
+                code="locked",
+            )
+
+        try:
+            cleaned = super().clean()
+        except forms.ValidationError:
+            throttle.failed(self.request, username)
+            raise
+
+        throttle.succeeded(self.request, username)
+
+        return cleaned
+
+
 class LoginView(SitePageMixin, auth_views.LoginView):
     template_name = "generic/auth/login.html"
     redirect_authenticated_user = True
+    authentication_form = ThrottledAuthenticationForm
 
     def get_default_redirect_url(self) -> str:
         # Django's own default points at /accounts/profile/, which no

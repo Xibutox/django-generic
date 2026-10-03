@@ -210,14 +210,20 @@ def describe_stored_file(
     obj: Any,
     field: Any,
     value: Any,
+    request: Any = None,
 ) -> dict[str, Any]:
     """A file of the record: its name, linking to its download.
 
     ``value`` is ``{"name", "url", "size"}``, as the form reads it; the
     link is the resource's permission-checked endpoint, never the
-    storage's own URL.
+    storage's own URL - and no link where ``may_download`` refuses.
     """
-    described = describe_file(value, resource.get_file_url(obj.pk, field.name))
+    url = (
+        resource.get_file_url(obj.pk, field.name)
+        if request is None or resource.may_download(request, obj, field.name)
+        else None
+    )
+    described = describe_file(value, url)
 
     if described is None:
         return {"type": "file", "empty": True}
@@ -297,7 +303,7 @@ def describe_field(
         return describe_value(site, request, value, boolean=True)
 
     if isinstance(field, models.FileField):
-        return describe_stored_file(resource, obj, field, value)
+        return describe_stored_file(resource, obj, field, value, request)
 
     if value is None or value == "":
         return {"type": "text", "empty": True}

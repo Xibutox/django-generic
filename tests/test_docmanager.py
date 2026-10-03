@@ -147,7 +147,7 @@ SCENARIO = PRELUDE + textwrap.dedent("""
     spec.refresh_from_db()
     story = list(spec.versions.values_list("number", "comment", "file_size"))
     assert story == [
-        (4, "Restored from version 1.", 3),
+        (4, "Restored from version 0.1.", 3),
         (3, "Third", 5),
         (2, "Second", 4),
         (1, "First", 3),
@@ -789,6 +789,244 @@ WIKI_SCENARIO = PRELUDE + textwrap.dedent("""
     """)
 
 
+#: Search inside files, published and working versions, the preview,
+#: the access log, the trash, folders in folders and periodic reviews.
+FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
+    import datetime
+    import importlib.util
+
+    from django.utils import timezone
+    from documents import periodic, samples, versions
+    from documents.models import (
+        DocumentType, Review, ReviewTask, Workflow,
+    )
+    from generic.access.models import AccessEntry
+    from generic.models import Notification
+    from generic.sites import site
+    from generic.teams.models import Team
+
+    User = get_user_model()
+    alice, bob, viewer = (
+        signed_in("alice"), signed_in("bob"), signed_in("viewer")
+    )
+    quentin = signed_in("quentin")
+
+    def call(client, method, url, payload=None):
+        return client.generic(
+            method, url, json.dumps(payload or {}),
+            content_type="application/json",
+        )
+
+    def rows(client, url, **params):
+        return client.get(url, {"draw": 1, "length": 100, **params}).json()[
+            "data"
+        ]
+
+    def titles(client, **params):
+        return sorted(
+            row["title"]
+            for row in rows(client, "/api/documents/document/", **params)
+        )
+
+    # -- search inside files ----------------------------------------
+    assert titles(bob, **{"search[value]": "Engineering report cover"}) == [
+        "Report template"
+    ]
+    if importlib.util.find_spec("pypdf"):
+        assert titles(bob, **{"search[value]": "Rollback added"}) == [
+            "Release procedure"
+        ]
+    assert titles(alice, **{"search[value]": "Liability capped"}) == []
+    assert titles(alice, **{"search[value]": "Signed version"}) == [
+        "Supplier framework agreement"
+    ]
+    # The command reads again what has no text yet.
+    Document.objects.update(content="")
+    out = __import__("io").StringIO()
+    call_command("extract_text", "--all", stdout=out)
+    assert Document.objects.exclude(content="").exists(), out.getvalue()
+
+    # -- published and working versions -----------------------------
+    framework = Document.objects.get(title="Supplier framework agreement")
+    labels = list(
+        framework.versions.order_by("number").values_list("label", flat=True)
+    )
+    assert labels == ["0.1", "0.2", "1.0"], labels
+    assert (framework.version_label, framework.published_label) == (
+        "1.0", "1.0"
+    )
+
+    # A new draft: 1.1, the readers still read 1.0.
+    framework.file.save(
+        "framework-agreement.docx",
+        __import__("django.core.files.base", fromlist=["x"]).ContentFile(
+            samples.make("framework-agreement.docx", "Framework",
+                         ["Pineapple clause."])
+        ),
+    )
+    versions.record_version(framework, user=User.objects.get(
+        username="alice"))
+    framework.refresh_from_db()
+    assert framework.version_label == "1.1", framework.version_label
+    assert framework.published_label == "1.0"
+    assert titles(alice, **{"search[value]": "Pineapple"}) == [
+        "Supplier framework agreement"
+    ]
+
+    files = f"/api/documents/document/{framework.pk}/files"
+    assert viewer.get(f"{files}/file/").status_code == 404
+    published = viewer.get(f"{files}/published_file/")
+    assert published.status_code == 200, published.status_code
+    assert b"Pineapple" not in b"".join(published.streaming_content)
+    assert alice.get(f"{files}/file/").status_code == 200
+    summary = viewer.get(
+        f"/api/documents/document/{framework.pk}/summary/"
+    ).json()
+    assert "Pineapple" not in json.dumps(summary)
+
+    # The readers' list of versions: the published ones.
+    def labels_seen(client):
+        return {
+            row["label"]
+            for row in rows(client, "/api/documents/documentversion/")
+        }
+
+    assert "1.1" in labels_seen(alice)
+    assert "1.1" not in labels_seen(viewer), labels_seen(viewer)
+    assert "1.0" in labels_seen(viewer)
+
+    # Approved: 2.0, published.
+    approved = call(
+        alice, "POST", "/api/documents/document/actions/",
+        {"action": "approve", "ids": [framework.pk]},
+    )
+    assert approved.status_code == 200, approved.content
+    framework.refresh_from_db()
+    assert (framework.version_label, framework.published_label) == (
+        "2.0", "2.0"
+    ), framework.version_label
+    published = viewer.get(f"{files}/published_file/")
+    assert published.status_code == 200
+
+    # An approved PDF is stamped, when pypdf is there.
+    release = Document.objects.get(title="Release procedure")
+    if importlib.util.find_spec("pypdf"):
+        stamped = release.published_version.stamped
+        assert stamped and stamped.name.endswith("-1.0.pdf"), stamped
+        assert release.published_file == stamped.name
+
+    # -- preview ----------------------------------------------------
+    documents = site.get_resource(Document)
+    page = bob.get(documents.get_page_url("preview", release))
+    assert page.status_code == 200, page.status_code
+    inline = bob.get(documents.get_page_url("preview-file", release))
+    assert inline.status_code == 200, inline.status_code
+    assert inline["Content-Disposition"].startswith("inline")
+    assert inline["X-Content-Type-Options"] == "nosniff"
+    page = viewer.get(documents.get_page_url("preview", framework))
+    assert page.status_code == 200 and b"2.0" in page.content
+    assert viewer.get(
+        documents.get_page_url("preview-file", framework)
+    ).status_code == 404
+
+    # -- access log -------------------------------------------------
+    logged = AccessEntry.objects.filter(
+        user__username="viewer", object_id=str(framework.pk)
+    )
+    assert set(logged.values_list("action", flat=True)) == {
+        "viewed", "downloaded"
+    }, list(logged.values_list("action", "detail"))
+    assert logged.filter(detail__startswith="preview").exists()
+
+    # -- trash ------------------------------------------------------
+    nda = Document.objects.get(title="Non-disclosure agreement")
+    assert ReviewTask.objects.filter(
+        document=nda, assignee__username="quentin",
+        status=ReviewTask.Status.PENDING,
+    ).exists()
+    gone = alice.delete(f"/api/documents/document/{nda.pk}/")
+    assert gone.status_code == 204, gone.content
+    nda.refresh_from_db()
+    assert nda.deleted_at is not None
+    assert not ReviewTask.objects.filter(
+        document=nda, status=ReviewTask.Status.PENDING
+    ).exists()
+    assert "Non-disclosure agreement" not in titles(alice)
+    assert titles(alice, _trash="1") == ["Non-disclosure agreement"]
+    assert titles(viewer, _trash="1") == []
+    assert "Non-disclosure" not in json.dumps(
+        rows(quentin, "/api/documents/reviewtask/")
+    )
+    restored = call(
+        alice, "POST", "/api/documents/document/actions/?_trash=1",
+        {"action": "restore_from_trash", "ids": [nda.pk]},
+    )
+    assert restored.status_code == 200, restored.content
+    assert "Non-disclosure agreement" in titles(alice)
+
+    # -- folders in folders -----------------------------------------
+    legal = Team.objects.get(name="Legal")
+    suppliers = Folder.objects.get(name="Suppliers")
+    contracts = Folder.objects.get(name="Contracts")
+    assert suppliers.path == "Contracts / Suppliers", suppliers.path
+    created = call(alice, "POST", "/api/documents/folder/", {
+        "name": "Drafts", "team": legal.pk, "parent": suppliers.pk,
+    })
+    assert created.status_code == 201, created.content
+    drafts = Folder.objects.get(name="Drafts")
+    assert drafts.path == "Contracts / Suppliers / Drafts", drafts.path
+    twice = call(alice, "POST", "/api/documents/folder/", {
+        "name": "Drafts", "team": legal.pk, "parent": suppliers.pk,
+    })
+    assert twice.status_code == 400 and "name" in twice.json(), twice.content
+    elsewhere = call(alice, "POST", "/api/documents/folder/", {
+        "name": "Mixed", "team": legal.pk,
+        "parent": Folder.objects.get(name="Archive").pk,
+    })
+    assert elsewhere.status_code == 400, elsewhere.content
+    cycle = call(
+        alice, "PATCH", f"/api/documents/folder/{contracts.pk}/",
+        {"parent": drafts.pk},
+    )
+    assert cycle.status_code == 400, cycle.content
+    renamed = call(
+        alice, "PATCH", f"/api/documents/folder/{contracts.pk}/",
+        {"name": "Agreements"},
+    )
+    assert renamed.status_code == 200, renamed.content
+    drafts.refresh_from_db()
+    assert drafts.path == "Agreements / Suppliers / Drafts", drafts.path
+
+    # -- periodic reviews -------------------------------------------
+    today = timezone.localdate()
+    assert release.review_on == today + datetime.timedelta(days=10)
+    Notification.objects.all().delete()
+    first = periodic.run(today)
+    assert first.reminded >= 1, first
+    told = Notification.objects.filter(user__username="bob")
+    assert told.filter(title__contains="Release procedure").exists()
+    again = periodic.run(today)
+    assert again.reminded == 0, again
+
+    # On the day, the type's workflow starts - unless one is open.
+    procedure = DocumentType.objects.get(code="PRC")
+    assert procedure.review_workflow is not None
+    spec = Document.objects.create(
+        title="Deployment checklist",
+        folder=Folder.objects.get(name="Procedures"),
+        document_type=procedure,
+        created_by=User.objects.get(username="bob"),
+        review_on=today,
+    )
+    later = periodic.run(today)
+    assert later.started == 1, later
+    review = Review.objects.get(document=spec)
+    assert review.status == Review.Status.IN_PROGRESS, review.status
+    assert periodic.run(today).started == 0
+    print("ok")
+    """)
+
+
 def manage(*args: str) -> subprocess.CompletedProcess:
     env = {
         name: value
@@ -844,6 +1082,13 @@ def test_word_files_are_found_by_format_and_merged():
     pytest.importorskip("docx")
     pytest.importorskip("docxcompose")
     result = manage("-c", MERGE_SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_files_are_searched_published_previewed_and_trashed():
+    result = manage("-c", FEATURES_SCENARIO)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")

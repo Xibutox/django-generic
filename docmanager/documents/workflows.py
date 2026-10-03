@@ -30,6 +30,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext
 
+from documents import versions
 from documents.models import (
     Document,
     Review,
@@ -319,6 +320,25 @@ def has_approval(review: Review) -> bool:
     return review.steps.filter(kind=StepKind.APPROVAL).exists()
 
 
+def approvers(review: Review) -> list[str]:
+    """Who approved, at the approval steps - each once, in order."""
+    names: list[str] = []
+
+    for task in (
+        review.tasks.filter(
+            step__kind=StepKind.APPROVAL, status=ReviewTask.Status.APPROVED
+        )
+        .select_related("assignee", "decided_by")
+        .order_by("decided_at", "pk")
+    ):
+        name = name_of(task.assignee)
+
+        if name not in names:
+            names.append(name)
+
+    return names
+
+
 @transaction.atomic
 def start(review: Review, *, user: Any) -> Review:
     """Start a prepared review: its first step asks its people."""
@@ -348,12 +368,19 @@ def start(review: Review, *, user: Any) -> Review:
         set_status(document, Document.Status.REVIEW)
 
     advance(review)
-    announce(
-        review,
-        lambda: gettext("%(who)s started the review.")
-        % {"who": name_of(review.started_by)},
-        actor=user,
-    )
+
+    def started() -> str:
+        if review.started_by is None:
+            return gettext(
+                "The document was due for its periodic review: the "
+                "review started on its own."
+            )
+
+        return gettext("%(who)s started the review.") % {
+            "who": name_of(review.started_by)
+        }
+
+    announce(review, started, actor=user)
 
     return review
 
@@ -436,6 +463,11 @@ def finish(review: Review, status: str) -> None:
 
     if status == Review.Status.APPROVED and has_approval(review):
         set_status(document, Document.Status.APPROVED)
+        # Its current version is the published one now, stamped with
+        # the names of whoever approved it.
+        versions.publish(
+            document, user=review.started_by, approvers=approvers(review)
+        )
     elif status == Review.Status.REJECTED:
         set_status(document, Document.Status.DRAFT)
     elif document.status == Document.Status.REVIEW:
@@ -605,6 +637,35 @@ def cancel(review: Review, *, user: Any) -> Review:
 
 
 @transaction.atomic
+def close_for(document: Document, *, user: Any = None) -> int:
+    """Cancel every open review of ``document`` - moved to the trash:
+    nobody is asked about it any more. Returns how many."""
+    count = 0
+
+    for review in document.reviews.filter(
+        status__in=(Review.Status.PREPARING, Review.Status.IN_PROGRESS)
+    ):
+        review = lock(review)
+        started = review.status == Review.Status.IN_PROGRESS
+        finish(review, Review.Status.CANCELLED)
+        count += 1
+
+        if started:
+            announce(
+                review,
+                lambda: gettext(
+                    "%(who)s moved the document to the trash: the review "
+                    "is cancelled."
+                )
+                % {"who": name_of(user)},
+                actor=user,
+                level=NotificationLevel.WARNING,
+            )
+
+    return count
+
+
+@transaction.atomic
 def delegate(task: ReviewTask, *, user: Any, to: Any) -> ReviewTask:
     """Hand a task to someone else: the same step, their task now."""
     review = lock(task.review)
@@ -692,6 +753,7 @@ __all__ = [
     "WorkflowError",
     "advance",
     "cancel",
+    "close_for",
     "copy_steps",
     "decide",
     "delegate",

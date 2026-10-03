@@ -19,6 +19,7 @@ from typing import Any, Iterable
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.utils.translation import gettext
 
@@ -56,13 +57,37 @@ def resource_of(model: type) -> Any:
 
 
 def reachable_documents(request: Any) -> Any:
-    """The reader's Word documents: their teams' only."""
-    return (
+    """The reader's Word documents: their teams' only - and, for a
+    reader who changes nothing, their published versions (or the drafts
+    a review asks them about)."""
+    user = getattr(request, "user", None)
+    queryset = (
         resource_of(Document)
         .get_queryset(request)
-        .filter(file_format__in=WORD_FORMATS)
-        .select_related("folder__team")
+        .select_related("folder__team", "published_version")
     )
+
+    if versions.sees_all_drafts(user):
+        return queryset.filter(file_format__in=WORD_FORMATS)
+
+    return queryset.filter(
+        Q(
+            file_format__in=WORD_FORMATS,
+            tasks__assignee=getattr(user, "pk", None),
+        )
+        | Q(published_version__file_format__in=WORD_FORMATS)
+    ).distinct()
+
+
+def readable_file(document: Document, user: Any) -> Any:
+    """The file of ``document`` that ``user`` reads: its current one, or
+    its published version's."""
+    if versions.sees_drafts(user, document):
+        return document.file
+
+    published = document.published_version
+
+    return published.file if published is not None else document.file
 
 
 def reachable_versions(request: Any) -> Any:
@@ -80,17 +105,25 @@ def reachable_versions(request: Any) -> Any:
     )
 
 
-def document_item(document: Document) -> Item:
+def document_item(document: Document, user: Any = None) -> Item:
+    drafts = versions.sees_drafts(user, document)
+    published = document.published_version
+
     return Item(
         key=f"d{document.pk}",
         label=str(document),
         detail=gettext("%(folder)s, version %(number)s, %(format)s")
         % {
             "folder": document.folder,
-            "number": document.version,
+            "number": (
+                document.version_label
+                if drafts or published is None
+                else published.label
+            )
+            or document.version,
             "format": document.file_format,
         },
-        file=document.file,
+        file=readable_file(document, user),
     )
 
 
@@ -98,7 +131,10 @@ def version_item(version: DocumentVersion) -> Item:
     return Item(
         key=f"v{version.pk}",
         label=gettext("%(document)s, version %(number)s")
-        % {"document": version.document, "number": version.number},
+        % {
+            "document": version.document,
+            "number": version.label or version.number,
+        },
         detail=version.file_name,
         file=version.file,
     )
@@ -142,7 +178,7 @@ def resolve(request: Any, raw: Iterable[str]) -> tuple[list[Item], int]:
 
     for kind, pk in keys:
         if kind == "d" and pk in documents:
-            items.append(document_item(documents[pk]))
+            items.append(document_item(documents[pk], request.user))
         elif kind == "v" and pk in found_versions:
             items.append(version_item(found_versions[pk]))
         else:
@@ -185,7 +221,9 @@ def page_context(request: Any, data: Any, error: str = "") -> dict:
     return {
         "merge_config": {
             "items": [item.as_json() for item in chosen],
-            "choices": [document_item(d).as_json() for d in documents],
+            "choices": [
+                document_item(d, request.user).as_json() for d in documents
+            ],
             "maxItems": MAX_ITEMS,
         },
         "templates": templates,
@@ -243,7 +281,11 @@ def merge(request: Any) -> Any:
             return again(gettext("This template is not available."))
 
     try:
-        content = merge_files(items, template, data.get("page_breaks"))
+        content = merge_files(
+            items,
+            readable_file(template, request.user) if template else None,
+            data.get("page_breaks"),
+        )
     except DocxMergeError as error:
         return again(str(error))
 
@@ -277,14 +319,13 @@ def merge(request: Any) -> Any:
     )
 
 
-def merge_files(
-    items: list[Item], template: Document | None, page_breaks: Any
-) -> bytes:
+def merge_files(items: list[Item], template: Any, page_breaks: Any) -> bytes:
+    """``template`` is the template's file, or ``None``."""
     from documents.merge import merge_docx
 
     return merge_docx(
         [item.file for item in items],
-        template=template.file if template is not None else None,
+        template=template,
         page_breaks=bool(page_breaks),
     )
 

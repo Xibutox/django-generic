@@ -1,0 +1,51 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# DocumentResource.preview (documents/preview.py): the version the     #}
+{# reader may read, shown in the page - a PDF in the browser's viewer,  #}
+{# a picture, a Word file as HTML, a text as text.                      #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'documents/preview.css' %}">
+{% endblock %}
+
+{% block page_content %}
+  <section class="card preview">
+    {% if shown.version %}
+      <div class="card__header preview__header">
+        <h2 class="card__title">
+          {% icon "visibility" %}
+          {% if shown.published %}
+            {% blocktranslate with label=shown.version.label %}Version {{ label }}, published{% endblocktranslate %}
+          {% else %}
+            {% blocktranslate with label=shown.version.label %}Version {{ label }}, a draft{% endblocktranslate %}
+          {% endif %}
+        </h2>
+        <span class="muted">{{ shown.name }}</span>
+      </div>
+    {% endif %}
+
+    {% if shown.kind == "pdf" %}
+      <iframe class="preview__frame" src="{{ file_url }}" title="{{ shown.name }}"></iframe>
+    {% elif shown.kind == "image" %}
+      <img class="preview__image" src="{{ file_url }}" alt="{{ shown.name }}">
+    {% elif shown.kind == "html" %}
+      <div class="prose preview__document">{{ shown.html|safe }}</div>
+    {% elif shown.kind == "paragraphs" %}
+      <div class="prose preview__document">
+        {% for paragraph in shown.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+      </div>
+    {% elif shown.kind == "text" %}
+      <pre class="preview__text">{{ shown.text }}</pre>
+    {% elif shown.kind == "download" %}
+      <div class="callout callout--info">
+        {% translate "This kind of file is not shown in the page: download it to open it." %}
+      </div>
+    {% else %}
+      <div class="callout callout--info">
+        {% translate "Nothing to show yet: the document has no file - or no published version, and you read published versions only." %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
