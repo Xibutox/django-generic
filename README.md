@@ -296,7 +296,8 @@ document has had kept as a version with its sender, date, size,
 checksum and change note - restore one and it is current again, as a
 new version. Lists search and filter by format, and *Merge Word files*
 puts documents and versions together into one `.docx` made from a
-template - picked in the lists with *Merge into Word*. Six
+template - picked in the lists with *Merge into Word*. Each team has
+its own wiki, exported to PDF. Six
 demonstration accounts in three teams show who sees what:
 
 ```bash

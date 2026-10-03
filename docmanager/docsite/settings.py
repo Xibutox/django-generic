@@ -117,4 +117,6 @@ GENERIC = {
     "EVENTS_WEBSOCKET_URL": None,
     # Office files are larger than the framework's 10 MB default.
     "FILE_MAX_SIZE": 50 * 1024 * 1024,
+    # A team's wiki is its members' only; a wiki of no team, everyone's.
+    "WIKI_ACCESS": "documents.wikis.wikis_of_my_teams",
 }

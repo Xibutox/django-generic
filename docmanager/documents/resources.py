@@ -15,7 +15,13 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from documents import merging, versions
-from documents.models import Document, DocumentVersion, Folder, Tag
+from documents.models import (
+    Document,
+    DocumentVersion,
+    Folder,
+    Tag,
+    TeamWiki,
+)
 from generic.sites import (
     Chart,
     ModelResource,
@@ -84,6 +90,30 @@ class FolderResource(ModelResource):
     @display(description=_("Documents"))
     def document_count(self, folder: Folder) -> int:
         return folder.documents.count()
+
+
+@register(TeamWiki)
+class TeamWikiResource(ModelResource):
+    icon = "auto_stories"
+    group = _("People")
+    order = 5
+    label_plural = _("team wikis")
+    description = _(
+        "Which wikis are a team's: only its members read them. A wiki "
+        "of no team is everyone's."
+    )
+
+    team_field = "team"
+
+    list_display = ("wiki", "team", "page_count")
+    search_fields = ("wiki__name", "team__name")
+    tag_fields = {"team": TagStyle(color="color")}
+    fields = ("wiki", "team")
+    history = False
+
+    @display(description=_("Pages"))
+    def page_count(self, link: TeamWiki) -> int:
+        return link.wiki.pages.count()
 
 
 @register(Tag)

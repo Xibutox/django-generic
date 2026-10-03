@@ -264,7 +264,9 @@ example's own, not the framework's: `documents/merge.py` (`merge_docx`,
 `d<pk>`/`v<pk>` resolved through the resources' team-scoped querysets,
 a template, downloaded or kept as a new document) and the *Merge into
 Word* actions of documents and versions, which open it with
-`{"redirect": ...}`. `seed_documents` makes three teams, six accounts
+`{"redirect": ...}`. Team wikis: `TeamWiki` (wiki one-to-one, team
+PROTECT) and `documents/wikis.py` as `GENERIC["WIKI_ACCESS"]` - a
+wiki of no team is everyone's. `seed_documents` makes three teams, six accounts
 (password `demo`) and Word/PDF/text samples (`samples.py`; a `.dotx`
 holds `{{ documents }}`). Kept working by `tests/test_docmanager.py`,
 run in its own process.

@@ -13,6 +13,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- The document manager gives each team its wiki: `TeamWiki` links a
+  wiki to a team, and `documents/wikis.py`, plugged in as
+  `GENERIC["WIKI_ACCESS"]`, lets only its members - and whoever sees
+  every team - read it, its pages and its PDF. `seed_documents` makes
+  *Company* (everyone's) and three teams' handbooks.
 - A document manager beside the examples, `docmanager/`: teams each
   with their folders and documents, every file a document has had kept
   as a version - who sent it, when, why, its size and SHA-256 - and
