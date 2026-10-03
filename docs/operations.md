@@ -205,6 +205,7 @@ operation by themselves. Anywhere else:
 ```js
 Generic.operations.post(url, body);      // POST, then draw the answer
 Generic.operations.handle(answer);       // draw an answer already had
+                                         // ({redirect: "/path/"} opens it)
 Generic.operations.show(answer);         // the card, whatever it holds
 ```
 

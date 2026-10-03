@@ -15,6 +15,7 @@
  *
  *   Generic.operations.post(url, body)     // send, then draw the answer
  *   Generic.operations.handle(answer)      // draw an answer already had
+ *                                          // ({redirect: "/path/"} opens it)
  *
  * Every value reaches the page through textContent: a report line is
  * text, never HTML, and a link is followed only when isSafeUrl agrees.
@@ -311,11 +312,23 @@
     return card;
   }
 
+  function isLocalPath(value) {
+    return typeof value === "string" && /^\/(?![\/\\])/.test(value);
+  }
+
   /**
    * Whatever an endpoint answered: an operation is drawn as one, any
    * other answer as the toast its message and level make.
    */
   function handle(answer) {
+    // A page of this site to open next: an action that opens a form
+    // with the selection filled in. Only a path, never another site.
+    if (answer && isLocalPath(answer.redirect)) {
+      window.location.assign(answer.redirect);
+
+      return answer;
+    }
+
     if (answer && answer.operation) {
       show(answer);
     } else if (answer && answer.message) {

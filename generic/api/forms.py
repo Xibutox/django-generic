@@ -34,6 +34,7 @@ from generic.api.relations import (
     build_display_labels,
     describe_relation,
     is_related_field,
+    narrow_relation,
 )
 from generic.conf import generic_settings
 
@@ -516,6 +517,46 @@ class FormModelSerializer(
         models.FileField: FormFileField,
         models.ImageField: FormImageField,
     }
+
+    #: Write-only fields that are not the model's (a resource's
+    #: ``form_extra_fields``): read through ``extra_values``, taken out
+    #: before the record is created or updated.
+    generic_extra_fields: tuple[str, ...] = ()
+
+    @property
+    def extra_values(self) -> dict[str, Any]:
+        """The validated answers to the form's extra questions."""
+        data = getattr(self, "_validated_data", None) or {}
+
+        return {
+            name: data[name]
+            for name in self.generic_extra_fields
+            if name in data
+        }
+
+    def without_extra(self, validated_data: dict[str, Any]) -> dict:
+        return {
+            name: value
+            for name, value in validated_data.items()
+            if name not in self.generic_extra_fields
+        }
+
+    def create(self, validated_data: dict[str, Any]) -> Any:
+        return super().create(self.without_extra(validated_data))
+
+    def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
+        return super().update(instance, self.without_extra(validated_data))
+
+    def get_fields(self) -> dict[str, serializers.Field]:
+        fields = super().get_fields()
+        request = self.context.get("request")
+
+        if request is not None:
+            for field in fields.values():
+                if is_related_field(field) and not field.read_only:
+                    narrow_relation(field, request)
+
+        return fields
 
     def build_standard_field(
         self,

@@ -76,7 +76,14 @@ def test_french_from_the_account_menu_translates_the_navigation(signed_in):
     expect(
         navigation.get_by_role("link", name="Tableau de bord")
     ).to_be_visible()
-    expect(navigation.get_by_role("link", name="Équipes")).to_be_visible()
+    # The example's teams; the framework's own (generic.teams, installed
+    # in the suite) are translated the same.
+    expect(navigation.locator('a[href="/example/team/"]')).to_contain_text(
+        "Équipes"
+    )
+    expect(
+        navigation.locator('a[href="/generic_teams/team/"]')
+    ).to_contain_text("Équipes")
     expect(navigation.get_by_role("link", name="Dashboard")).to_have_count(0)
 
 

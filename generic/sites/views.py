@@ -449,9 +449,12 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
         """Values pre-filled from the query string, admin style.
 
         Only real model fields are taken, so an arbitrary parameter
-        cannot reach the form.
+        cannot reach the form. The resource's own ``get_initial`` comes
+        first, and the query string wins over it.
         """
-        initial: dict[str, Any] = {}
+        initial: dict[str, Any] = dict(
+            self.resource.get_initial(self.request) or {}
+        )
         model = self.resource.model
 
         for name, values in self.request.GET.lists():

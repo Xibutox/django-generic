@@ -207,3 +207,52 @@ class DocumentNote(models.Model):
 
     def __str__(self) -> str:
         return self.text
+
+
+class Binder(models.Model):
+    """A team's record (``generic.teams``), with a file kept under the
+    name it was sent with."""
+
+    team = models.ForeignKey(
+        "generic_teams.Team", on_delete=models.PROTECT, related_name="binders"
+    )
+    title = models.CharField(max_length=200)
+    attachment = models.FileField(upload_to="binders/", blank=True)
+    attachment_name = models.CharField(max_length=200, blank=True)
+    note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class BinderSheet(models.Model):
+    """A team's record two steps away: its binder's team."""
+
+    binder = models.ForeignKey(
+        Binder, on_delete=models.CASCADE, related_name="sheets"
+    )
+    title = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class SharedNote(models.Model):
+    """A record of several teams at once."""
+
+    title = models.CharField(max_length=200)
+    teams = models.ManyToManyField(
+        "generic_teams.Team", related_name="shared_notes", blank=True
+    )
+
+    class Meta:
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title

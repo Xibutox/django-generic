@@ -36,7 +36,14 @@ class TestEveryPage(PageSweep):
         from django.utils import timezone
 
         from example.models import Customer, TimeEntry
-        from tests.testapp.models import Document, Manuscript
+        from generic.teams.models import Team
+        from tests.testapp.models import (
+            Binder,
+            BinderSheet,
+            Document,
+            Manuscript,
+            SharedNote,
+        )
 
         customer = Customer.objects.create(
             name="Northwind Traders",
@@ -48,6 +55,10 @@ class TestEveryPage(PageSweep):
             agent=support_desk["camille"],
             hours="1.50",
             spent_on=timezone.localdate(),
+        )
+
+        binder = Binder.objects.create(
+            team=Team.objects.create(name="Pooled"), title="Pooled"
         )
 
         return {
@@ -67,6 +78,12 @@ class TestEveryPage(PageSweep):
             "testapp.document": Document.objects.create(
                 title="Pooled", file="documents/pooled.txt"
             ),
+            # Team-scoped: a superuser reaches them all.
+            "testapp.binder": binder,
+            "testapp.bindersheet": BinderSheet.objects.create(
+                binder=binder, title="Pooled"
+            ),
+            "testapp.sharednote": SharedNote.objects.create(title="Pooled"),
             # The hand-written pages of tests/testapp and the example.
             "book": library["emma"],
             "publisher": library["publisher"],

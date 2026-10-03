@@ -13,6 +13,7 @@ comma-separated list filtered without duplicating rows.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Callable, Sequence
 
 from django.contrib.admin.utils import NotRelationField, get_fields_from_path
@@ -766,6 +767,28 @@ def flatten_fieldsets(fieldsets: Any) -> list[str]:
     return names
 
 
+def without_fields(fieldsets: Any, names: set[str]) -> Any:
+    """``fieldsets`` with ``names`` taken out, rows and sections kept."""
+    result = []
+
+    for title, options in fieldsets or ():
+        entries = []
+
+        for entry in options.get("fields", ()):
+            if isinstance(entry, (list, tuple)):
+                row = tuple(name for name in entry if name not in names)
+
+                if row:
+                    entries.append(row if len(row) > 1 else row[0])
+            elif entry not in names:
+                entries.append(entry)
+
+        if entries:
+            result.append((title, {**options, "fields": tuple(entries)}))
+
+    return tuple(result)
+
+
 def sections_from_fieldsets(
     fieldsets: Any,
 ) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
@@ -877,10 +900,15 @@ def build_form_serializer(
     fieldsets: Any = None,
     overrides: dict[str, dict[str, Any]] | None = None,
     extra_kwargs: dict[str, dict[str, Any]] | None = None,
+    extra_fields: dict[str, Any] | None = None,
     source: Any = None,
     name: str | None = None,
 ) -> type[FormModelSerializer]:
-    """A ``FormModelSerializer`` for ``fields`` of ``model``."""
+    """A ``FormModelSerializer`` for ``fields`` of ``model``.
+
+    ``extra_fields`` are questions the form asks that are not the
+    model's: write only, and taken out before the record is saved.
+    """
     opts = model._meta
     model_fields = {field.name for field in [*opts.fields, *opts.many_to_many]}
 
@@ -893,6 +921,28 @@ def build_form_serializer(
         if field_name in model_fields
     ]
 
+    extra_fields = dict(extra_fields or {})
+
+    for field_name, field in extra_fields.items():
+        if field_name in model_fields:
+            raise ImproperlyConfigured(
+                f"form_extra_fields of {model.__name__}: '{field_name}' "
+                f"is a field of the model already."
+            )
+
+        if not isinstance(field, serializers.Field):
+            raise ImproperlyConfigured(
+                f"form_extra_fields of {model.__name__}: '{field_name}' "
+                f"must be a DRF serializer field."
+            )
+
+    if not fieldsets:
+        # Laid out by nobody: after the model's own fields.
+        fields = [
+            *fields,
+            *(name for name in extra_fields if name not in fields),
+        ]
+
     for field_name in fields:
         if field_name in meta_fields:
             continue
@@ -900,6 +950,16 @@ def build_form_serializer(
         meta_fields.append(field_name)
 
         if field_name in model_fields:
+            continue
+
+        if field_name in extra_fields:
+            # Built again, write only: DRF copies a declared field from
+            # its arguments for each serializer, so the flag must be one.
+            field = extra_fields[field_name]
+            declared[field_name] = type(field)(
+                *deepcopy(field._args),
+                **{**deepcopy(field._kwargs), "write_only": True},
+            )
             continue
 
         function = resolve_display_callable(field_name, source, model)
@@ -958,6 +1018,9 @@ def build_form_serializer(
         "Meta": meta,
         "form_sections": tuple(sections),
         "form_overrides": merged,
+        "generic_extra_fields": tuple(
+            field_name for field_name in extra_fields if field_name in declared
+        ),
         "__module__": __name__,
     }
 

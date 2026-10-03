@@ -1,0 +1,78 @@
+/**
+ * The "Merge Word files" page. Tokens only, and rem throughout, so it
+ * follows the theme and the browser's text size.
+ */
+
+.merge__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.merge__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius);
+}
+
+.merge__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.merge__name strong,
+.merge__name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge__position {
+  min-width: 1.5rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.merge__tools {
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.merge__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.merge__add select {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.merge__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.merge__field {
+  flex: 1 1 18rem;
+  max-width: 32rem;
+}
+
+.merge__actions {
+  align-items: center;
+  margin-top: var(--space-4);
+}

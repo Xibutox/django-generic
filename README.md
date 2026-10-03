@@ -222,6 +222,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
+- [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams
 - [The wiki](docs/wiki.md) — several wikis, each exported as a PDF; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines
@@ -286,6 +287,28 @@ python manage.py runserver
 
 Or in a container, from the repository's root: `docker compose -f
 minimal/compose.yaml up --build`. See [its README](minimal/README.md) for what each line is for.
+
+### The document manager
+
+`docmanager/` is a document management system built on the framework:
+teams, each with its own folders and documents, and every file a
+document has had kept as a version with its sender, date, size,
+checksum and change note - restore one and it is current again, as a
+new version. Lists search and filter by format, and *Merge Word files*
+puts documents and versions together into one `.docx` made from a
+template - picked in the lists with *Merge into Word*. Six
+demonstration accounts in three teams show who sees what:
+
+```bash
+pip install -e ".[export,wiki]"
+cd docmanager
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_documents
+python manage.py runserver
+```
+
+See [its README](docmanager/README.md).
 
 ### The full example
 

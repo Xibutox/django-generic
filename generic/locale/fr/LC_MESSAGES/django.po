@@ -2932,11 +2932,44 @@ msgstr ""
 "Les flèches montent ou descendent la ligne ou le bloc où se trouve le "
 "curseur (Alt+Haut, Alt+Bas)."
 
-msgid "The part of the URL naming the wiki."
-msgstr "La partie de l’URL qui nomme le wiki."
+#: generic/teams/apps.py
+msgid "Teams"
+msgstr "Équipes"
 
+#: generic/teams/models.py
 msgid "description"
 msgstr "description"
+
+#: generic/teams/models.py
+msgid "colour"
+msgstr "couleur"
+
+#: generic/teams/models.py
+msgid "How the team's tag is drawn."
+msgstr "La couleur de l'étiquette de l'équipe."
+
+#: generic/teams/models.py
+msgid "members"
+msgstr "membres"
+
+#: generic/teams/models.py
+msgid "team"
+msgstr "équipe"
+
+#: generic/teams/models.py
+msgid "teams"
+msgstr "équipes"
+
+#: generic/teams/models.py
+msgid "Can see the records of every team"
+msgstr "Peut voir les enregistrements de toutes les équipes"
+
+#: generic/teams/resources.py
+msgid "Who works on which records."
+msgstr "Qui travaille sur quels enregistrements."
+
+msgid "The part of the URL naming the wiki."
+msgstr "La partie de l’URL qui nomme le wiki."
 
 msgid "Order among the wikis."
 msgstr "Ordre parmi les wikis."
