@@ -41,6 +41,7 @@ from django.template.defaultfilters import filesizeformat
 from django.utils.translation import gettext
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
@@ -124,9 +125,16 @@ def readable_pages(user: Any) -> Any:
     return WikiPage.objects.filter(wiki__in=Wiki.objects.readable_by(user))
 
 
+def may_write_in(user: Any, wiki_id: Any) -> bool:
+    """Whether ``user`` may write pages in this wiki
+    (``GENERIC["WIKI_EDIT_ACCESS"]``)."""
+    return Wiki.objects.writable_by(user).filter(pk=wiki_id).exists()
+
+
 class WikiPermission(BasePermission):
     """Reading for anyone signed in; writing by the model permissions
-    of the view's ``permission_model``."""
+    of the view's ``permission_model`` - and, for a page, in a wiki the
+    user may write in."""
 
     def has_permission(self, request: Any, view: Any) -> bool:
         user = request.user
@@ -145,6 +153,12 @@ class WikiPermission(BasePermission):
         return can(
             user, WRITE_PERMISSIONS.get(request.method, "change"), model
         )
+
+    def has_object_permission(self, request: Any, view: Any, obj: Any) -> bool:
+        if request.method in SAFE_METHODS or not isinstance(obj, WikiPage):
+            return True
+
+        return may_write_in(request.user, obj.wiki_id)
 
 
 class WikiViewSet(viewsets.ModelViewSet):
@@ -188,7 +202,16 @@ class WikiPageViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer: Any) -> None:
         user = self.request.user
-        serializer.save(created_by=user, updated_by=user)
+
+        with transaction.atomic():
+            page = serializer.save(created_by=user, updated_by=user)
+
+            # Wherever it landed - the wiki sent, its parent's, the
+            # first - it must be a wiki the user writes in.
+            if not may_write_in(user, page.wiki_id):
+                raise PermissionDenied(
+                    gettext("You may not write in this wiki.")
+                )
 
     def perform_update(self, serializer: Any) -> None:
         page = serializer.instance

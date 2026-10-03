@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
-from django.db.models import Model, QuerySet
+from django.db.models import Model, Q, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 
 from generic.teams.models import SEE_EVERY_TEAM, Team
@@ -37,15 +37,47 @@ def sees_every_team(user: Any) -> bool:
     return is_member(user) and bool(user.has_perm(SEE_EVERY_TEAM))
 
 
+def own_teams(user: Any) -> QuerySet:
+    """The teams ``user`` is a member or a leader of - only those,
+    whatever their permissions."""
+    if not is_member(user):
+        return Team.objects.none()
+
+    return Team.objects.filter(
+        pk__in=Team.objects.filter(Q(members=user) | Q(leaders=user)).values(
+            "pk"
+        )
+    )
+
+
 def teams_of(user: Any) -> QuerySet:
-    """The teams ``user`` works in: all of them, for who sees every team."""
+    """The teams ``user`` works in - a member or a leader: all of them,
+    for who sees every team."""
     if not is_member(user):
         return Team.objects.none()
 
     if sees_every_team(user):
         return Team.objects.all()
 
-    return Team.objects.filter(members=user)
+    return own_teams(user)
+
+
+def leaders_of(teams: Any) -> QuerySet:
+    """The active leaders of a team, or of several (a queryset or a
+    list of teams), each once."""
+    from django.contrib.auth import get_user_model
+
+    if isinstance(teams, Team):
+        teams = [teams]
+
+    keys = [getattr(team, "pk", team) for team in teams]
+
+    return get_user_model()._default_manager.filter(
+        pk__in=Team.leaders.through.objects.filter(team_id__in=keys).values(
+            "user_id"
+        ),
+        is_active=True,
+    )
 
 
 def crosses_many(model: type[Model], path: str) -> bool:
@@ -110,9 +142,7 @@ def scope_to_teams(queryset: QuerySet, user: Any, path: str) -> QuerySet:
     if sees_every_team(user):
         return queryset
 
-    lookup = {
-        f"{path}{LOOKUP_SEP}in": Team.objects.filter(members=user).values("pk")
-    }
+    lookup = {f"{path}{LOOKUP_SEP}in": own_teams(user).values("pk")}
 
     if many:
         return queryset.filter(

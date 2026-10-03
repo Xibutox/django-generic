@@ -29,7 +29,7 @@ from generic.sites.files import is_stored, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
 from generic.wiki import pdf
-from generic.wiki.api import IMAGE_TYPES, can, readable_pages
+from generic.wiki.api import IMAGE_TYPES, can, may_write_in, readable_pages
 from generic.wiki.models import Wiki, WikiFile, WikiImage, WikiPage
 from generic.wiki.sanitize import safe_html
 from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
@@ -233,8 +233,9 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             .only("id", "title", "slug", "parent_id", "position", "wiki__slug")
             .order_by("position", "title")
         )
+        writes = may_write_in(request.user, wiki.pk)
         rights = {
-            name: can(request.user, name)
+            name: writes and can(request.user, name)
             for name in ("add", "change", "delete")
         }
         excluded = descendants_of(pages, page) if page is not None else set()

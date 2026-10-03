@@ -1,9 +1,10 @@
 """Teams: who works on which records.
 
-A team is a set of people. A record belongs to a team through a field
-its resource names (``ModelResource.team_field``), and a person sees
-the records of the teams they are a member of - several teams, if they
-are in several. Groups still say what a person may *do* (the model
+A team is a set of people, some of whom lead it. A record belongs to
+a team through a field its resource names
+(``ModelResource.team_field``), and a person sees the records of the
+teams they are a member - or a leader - of: several teams, if they are
+in several. Groups still say what a person may *do* (the model
 permissions); teams say *which records* they do it to.
 """
 
@@ -34,6 +35,15 @@ class Team(models.Model):
         verbose_name=_("members"),
         related_name="generic_teams",
         blank=True,
+    )
+    #: Who leads the team: told how its work goes (a review's progress,
+    #: say), and - members or not - they see its records.
+    leaders = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("leaders"),
+        related_name="generic_led_teams",
+        blank=True,
+        help_text=_("Team leaders: they see its records too."),
     )
     created_at = models.DateTimeField(_("created at"), default=timezone.now)
 

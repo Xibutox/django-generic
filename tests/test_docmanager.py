@@ -65,7 +65,7 @@ PRELUDE = textwrap.dedent("""
 #: may send, and every version a file goes through.
 SCENARIO = PRELUDE + textwrap.dedent("""
     # Seeded once, whatever the number of runs.
-    assert Document.objects.count() == 8, Document.objects.count()
+    assert Document.objects.count() == 9, Document.objects.count()
     framework = Document.objects.get(title="Supplier framework agreement")
     assert framework.version == 3
     assert framework.versions.count() == 3
@@ -237,7 +237,7 @@ SCENARIO = PRELUDE + textwrap.dedent("""
     rows = signed_in("manager").get(
         "/api/documents/teamwiki/", {"draw": 1}
     ).json()["data"]
-    assert len(rows) == 3, rows
+    assert len(rows) == 4, rows
 
     # Seeded samples open as what they claim to be.
     import zipfile
@@ -383,6 +383,412 @@ MERGE_SCENARIO = PRELUDE + textwrap.dedent("""
     """)
 
 
+#: Numbers given by each team's pattern, documents without a file,
+#: review circuits run step by step with their messages, check-outs, and
+#: the teams writing in each wiki.
+GED_SCENARIO = PRELUDE + textwrap.dedent("""
+    from django.core import mail
+    from documents.models import (
+        Codification, DocumentType, Review, ReviewStep, ReviewTask,
+        Workflow,
+    )
+    from generic.models import Notification
+    from generic.teams.models import Team
+
+    User = get_user_model()
+
+    def user(name):
+        return User.objects.get(username=name)
+
+    def call(client, method, url, payload=None):
+        return client.generic(
+            method, url, json.dumps(payload or {}),
+            content_type="application/json",
+        )
+
+    def action(client, model, name, ids):
+        return call(
+            client, "POST", f"/api/documents/{model}/actions/",
+            {"action": name, "ids": ids},
+        )
+
+    def rows(client, url, **params):
+        return client.get(url, {"draw": 1, "length": 100, **params}).json()[
+            "data"
+        ]
+
+    def told(name):
+        return list(
+            Notification.objects.filter(user__username=name)
+            .order_by("-pk").values_list("title", flat=True)
+        )
+
+    alice, bob, carol = signed_in("alice"), signed_in("bob"), signed_in("carol")
+    quentin, viewer = signed_in("quentin"), signed_in("viewer")
+    manager = signed_in("manager")
+    legal, engineering = (
+        Team.objects.get(name="Legal"), Team.objects.get(name="Engineering")
+    )
+
+    # -- numbers ----------------------------------------------------
+    numbered = dict(Document.objects.values_list("title", "code"))
+    assert numbered["Supplier framework agreement"].startswith("LEG-CTR-")
+    assert numbered["Release procedure"] == "ENG/PRC/00001", numbered
+    assert len(set(numbered.values())) == len(numbered), numbered
+    placeholder = Document.objects.get(title="Supplier contract 2027")
+    assert (placeholder.version, placeholder.file.name) == (0, "")
+    assert placeholder.code.startswith("LEG-CTR-")
+
+    contracts = Folder.objects.get(name="Contracts")
+    procedures = Folder.objects.get(name="Procedures")
+    contract = DocumentType.objects.get(code="CTR")
+    note = DocumentType.objects.get(code="NOT")
+
+    # Legal numbers every new document, without a file too.
+    created = call(alice, "POST", "/api/documents/document/", {
+        "title": "Lease", "folder": contracts.pk,
+        "document_type": contract.pk,
+    })
+    assert created.status_code == 201, created.content
+    lease = Document.objects.get(title="Lease")
+    assert lease.code and lease.code.startswith("LEG-CTR-"), lease.code
+    assert lease.version == 0
+
+    # Engineering numbers when asked: in the form, or by the action.
+    call(bob, "POST", "/api/documents/document/", {
+        "title": "Idea", "folder": procedures.pk, "document_type": note.pk,
+    })
+    idea = Document.objects.get(title="Idea")
+    assert idea.code is None
+    assert action(bob, "document", "codify", [idea.pk]).status_code == 200
+    idea.refresh_from_db()
+    assert idea.code == "ENG/NOT/00002", idea.code
+    again = action(bob, "document", "codify", [idea.pk]).json()
+    idea.refresh_from_db()
+    assert idea.code == "ENG/NOT/00002" and again["level"] == "info"
+    call(bob, "POST", "/api/documents/document/", {
+        "title": "Spec", "folder": procedures.pk, "codify": True,
+    })
+    assert Document.objects.get(title="Spec").code == "ENG/DOC/00001"
+
+    # A team's pattern is checked; its next number shown, not taken.
+    rules = Codification.objects.get(team=engineering)
+    bad = call(manager, "PATCH", f"/api/documents/codification/{rules.pk}/",
+               {"pattern": "ENG-{nope}"})
+    assert bad.status_code == 400, bad.content
+    row = rows(manager, "/api/documents/codification/")
+    assert {"ENG/DOC/00002"} & {r["next_number"] for r in row}, row
+    assert Document.objects.get(title="Spec").code == "ENG/DOC/00001"
+    assert bob.get("/documents/codification/").status_code == 200
+
+    # The list finds the numbers and the documents without a file.
+    found = rows(alice, "/api/documents/document/", **{
+        "search[value]": "LEG-CTR"
+    })
+    assert "Lease" in [r["title"] for r in found], found
+    empty = rows(alice, "/api/documents/document/", filters=json.dumps(
+        {"match": "all", "conditions": [
+            {"column": "file_format", "operator": "empty"}]}
+    ))
+    assert {r["title"] for r in empty} == {
+        "Lease", "Supplier contract 2027", "Idea", "Spec"
+    }, empty
+
+    # -- a review from a workflow -----------------------------------
+    nda = Document.objects.get(title="Non-disclosure agreement")
+    running = Review.objects.get(document=nda)
+    pending = ReviewTask.objects.get(review=running, status="pending")
+    assert pending.assignee.username == "quentin"
+
+    # Quentin is in no team, yet reads what he is asked to review.
+    assert quentin.get(f"/documents/document/{nda.pk}/").status_code == 200
+    assert quentin.get(
+        f"/api/documents/document/{nda.pk}/files/file/"
+    ).status_code == 200
+    framework = Document.objects.get(title="Supplier framework agreement")
+    assert quentin.get(
+        f"/documents/document/{framework.pk}/"
+    ).status_code == 404
+    mine = rows(quentin, "/api/documents/reviewtask/", filters=json.dumps(
+        {"match": "all", "conditions": [
+            {"column": "mine", "operator": "is_true"},
+            {"column": "status", "operator": "any_of", "value": ["pending"]},
+        ]}
+    ))
+    assert len(mine) == 2, mine
+
+    # Nobody else answers it - but its starter may, for him.
+    refused = call(bob, "PATCH", f"/api/documents/reviewtask/{pending.pk}/",
+                   {"decision": "approve"})
+    assert refused.status_code == 404, refused.status_code
+    refused = call(viewer, "PATCH",
+                   f"/api/documents/reviewtask/{pending.pk}/",
+                   {"decision": "approve"})
+    assert refused.status_code == 403, refused.status_code
+    assert call(quentin, "PATCH",
+                f"/api/documents/reviewtask/{pending.pk}/",
+                {"comment": "No answer"}).status_code == 400
+
+    mail.outbox = []
+    answered = call(quentin, "PATCH",
+                    f"/api/documents/reviewtask/{pending.pk}/",
+                    {"decision": "approve", "comment": "Quality OK"})
+    assert answered.status_code == 200, answered.content
+    pending.refresh_from_db()
+    assert (pending.status, pending.comment) == ("approved", "Quality OK")
+
+    # The second step asks the manager: a notification and a mail.
+    step = running.steps.get(status="active")
+    assert step.name == "Sign-off"
+    assert "Review requested" not in told("manager")[0]
+    assert told("manager")[0].startswith("Approval requested"), told(
+        "manager"
+    )
+    assert [
+        message.to for message in mail.outbox
+        if message.subject.startswith("Approval requested")
+    ] == [["manager@example.com"]], [m.subject for m in mail.outbox]
+    # Alice started it, and leads Legal: told how it goes.
+    assert told("alice")[0].startswith("Review of"), told("alice")
+    body = Notification.objects.filter(user__username="alice").latest(
+        "pk"
+    ).body
+    assert "step 2 of 2" in body, body
+
+    sign = ReviewTask.objects.get(step=step)
+    assert call(manager, "PATCH", f"/api/documents/reviewtask/{sign.pk}/",
+                {"decision": "approve"}).status_code == 200
+    running.refresh_from_db()
+    nda.refresh_from_db()
+    assert running.status == "approved", running.status
+    assert nda.status == "approved"
+    assert "Every step is done." in Notification.objects.filter(
+        user__username="alice"
+    ).latest("pk").body
+
+    # -- a review drawn on the spot ---------------------------------
+    lease_review = call(alice, "POST", "/api/documents/review/", {
+        "document": lease.pk,
+        "message": "Read it before Friday.",
+        "start": True,
+        "_inlines": {"steps": [
+            {"position": 1, "name": "Check", "kind": "review",
+             "rule": "all", "users": [user("viewer").pk, user("bob").pk],
+             "groups": [], "team_leaders": False, "team_members": False},
+            {"position": 2, "name": "Nobody", "kind": "approval",
+             "rule": "any", "users": [], "groups": [],
+             "team_leaders": False, "team_members": False},
+            {"position": 3, "name": "Read", "kind": "acknowledgement",
+             "rule": "any", "users": [], "groups": [],
+             "team_leaders": False, "team_members": True, "days": 2},
+        ]},
+    })
+    assert lease_review.status_code == 201, lease_review.content
+    review = Review.objects.get(document=lease)
+    assert review.status == "in_progress", review.status
+    lease.refresh_from_db()
+    assert lease.status == "review"
+    first = review.steps.get(position=1)
+    assert sorted(first.tasks.values_list("assignee__username", flat=True)) \
+        == ["bob", "viewer"]
+    # Started, its form is closed; its steps are steered from their tab.
+    assert call(alice, "PATCH", f"/api/documents/review/{review.pk}/",
+                {"message": "x"}).status_code == 403
+
+    # Each of them: one answer is not enough.
+    bobs = first.tasks.get(assignee__username="bob")
+    victors = first.tasks.get(assignee__username="viewer")
+    assert action(bob, "reviewtask", "approve_tasks",
+                  [bobs.pk]).status_code == 200
+    first.refresh_from_db()
+    assert first.status == "active"
+
+    # Victor hands his task to Carol, who is in no Legal folder.
+    handed = call(viewer, "PATCH", f"/api/documents/reviewtask/{victors.pk}/",
+                  {"delegate_to": user("carol").pk})
+    assert handed.status_code == 200, handed.content
+    carols = first.tasks.get(assignee__username="carol")
+    assert carol.get(f"/documents/document/{lease.pk}/").status_code == 200
+    assert told("carol")[0].startswith("Review requested"), told("carol")
+
+    # The step nobody can answer is skipped; the team reads.
+    assert call(carol, "PATCH", f"/api/documents/reviewtask/{carols.pk}/",
+                {"decision": "approve"}).status_code == 200
+    statuses = dict(review.steps.values_list("name", "status"))
+    assert statuses == {
+        "Check": "done", "Nobody": "skipped", "Read": "active"
+    }, statuses
+    reading = review.steps.get(name="Read")
+    assert set(reading.tasks.values_list("assignee__username", flat=True)) \
+        == {"alice", "viewer"}
+    assert reading.due_on is not None
+    victor_reads = reading.tasks.get(assignee__username="viewer")
+    # A document to read is only read.
+    assert call(viewer, "PATCH",
+                f"/api/documents/reviewtask/{victor_reads.pk}/",
+                {"decision": "reject"}).status_code == 400
+
+    # The starter adds a step while it runs, then skips the reading.
+    added = call(alice, "POST", "/api/documents/reviewstep/", {
+        "review": review.pk, "position": 4, "name": "Final",
+        "kind": "approval", "rule": "any", "users": [user("alice").pk],
+        "groups": [],
+    })
+    assert added.status_code == 201, added.content
+    assert action(viewer, "review", "skip_step", [review.pk]).json()[
+        "level"
+    ] == "error"
+    assert action(alice, "review", "skip_step", [review.pk]).json()[
+        "level"
+    ] == "success"
+    final = review.steps.get(name="Final")
+    assert final.status == "active"
+    # Alice rejects it at the last step: the document is a draft again.
+    last = final.tasks.get()
+    assert call(alice, "PATCH", f"/api/documents/reviewtask/{last.pk}/",
+                {"decision": "reject", "comment": "Clause 2."}
+                ).status_code == 200
+    review.refresh_from_db()
+    lease.refresh_from_db()
+    assert (review.status, lease.status) == ("rejected", "draft")
+
+    # -- prepared, then started; cancelled --------------------------
+    spec = Document.objects.get(title="Spec")
+    quick = Workflow.objects.get(name="Quick approval")
+    prepared = call(bob, "POST", "/api/documents/review/", {
+        "document": spec.pk, "workflow": quick.pk, "start": False,
+    })
+    assert prepared.status_code == 201, prepared.content
+    later = Review.objects.get(document=spec)
+    assert later.status == "preparing" and later.steps.count() == 1
+    assert action(bob, "review", "start_review", [later.pk]).json()[
+        "level"
+    ] == "success"
+    later.refresh_from_db()
+    assert later.status == "in_progress"
+    assert action(bob, "review", "cancel_review", [later.pk]).json()[
+        "level"
+    ] == "success"
+    later.refresh_from_db()
+    spec.refresh_from_db()
+    assert later.status == "cancelled" and spec.status == "draft"
+    assert not ReviewTask.objects.filter(review=later, status="pending")
+
+    # Reminders, and the dashboard's count.
+    welcome = Review.objects.get(document__title="Welcome guide")
+    count = action(carol, "review", "remind", [welcome.pk]).json()
+    assert count["message"].startswith("1"), count
+    assert carol.get("/").status_code == 200
+
+    # -- check-out: a notice, never a lock --------------------------
+    letter = Document.objects.get(title="Letter template")
+    assert action(alice, "document", "check_out",
+                  [letter.pk]).status_code == 200
+    letter.refresh_from_db()
+    assert letter.checked_out_by.username == "alice"
+    held = action(manager, "document", "check_out", [letter.pk]).json()
+    assert held["level"] == "warning", held
+    data = {"_payload": json.dumps({"version_note": "Mine"}),
+            "file": SimpleUploadedFile("letter.dotx", b"new")}
+    sent = manager.generic(
+        "PATCH", f"/api/documents/document/{letter.pk}/",
+        encode_multipart(BOUNDARY, data), content_type=MULTIPART_CONTENT,
+    )
+    assert sent.status_code == 200, sent.content
+    assert told("alice")[0].startswith("New version of"), told("alice")
+    assert action(manager, "document", "check_in",
+                  [letter.pk]).status_code == 200
+    letter.refresh_from_db()
+    assert letter.checked_out_by is None
+    assert told("alice")[0].endswith("was checked in"), told("alice")
+
+    # -- comments ---------------------------------------------------
+    said = call(viewer, "POST", "/api/documents/comment/", {
+        "document": letter.pk, "body": "Logo is old."})
+    assert said.status_code == 403, said.status_code
+    said = call(alice, "POST", "/api/documents/comment/", {
+        "document": letter.pk, "body": "Logo is old."})
+    assert said.status_code == 201, said.content
+
+    # -- pages ------------------------------------------------------
+    task = ReviewTask.objects.filter(assignee__username="quentin").first()
+    for client, url in (
+        (quentin, "/"),
+        (quentin, "/documents/reviewtask/"),
+        (quentin, f"/documents/reviewtask/{task.pk}/"),
+        (alice, "/documents/review/"),
+        (alice, f"/documents/review/{review.pk}/"),
+        (alice, f"/documents/review/add/?document={lease.pk}"),
+        (alice, "/documents/workflow/"),
+        (alice, f"/documents/workflow/{quick.pk}/"),
+        (alice, "/documents/workflow/add/"),
+        (alice, f"/documents/reviewstep/{final.pk}/"),
+        (alice, "/documents/documenttype/"),
+        (alice, "/documents/codification/"),
+        (manager, "/documents/teamwiki/"),
+        (alice, f"/documents/document/{lease.pk}/"),
+        (alice, f"/api/documents/review/{review.pk}/summary/"),
+        (alice, "/api/documents/review/charts/by_status/"),
+    ):
+        status = client.get(url).status_code
+        assert status == 200, f"{url}: {status}"
+    print("ok")
+    """)
+
+#: Who writes in which wiki: its editing teams, or whoever reads it.
+WIKI_SCENARIO = PRELUDE + textwrap.dedent("""
+    from generic.wiki.models import Wiki, WikiPage
+
+    User = get_user_model()
+
+    def writes(name):
+        return sorted(
+            Wiki.objects.writable_by(User.objects.get(username=name))
+            .values_list("slug", flat=True)
+        )
+
+    def reads(name):
+        return sorted(
+            Wiki.objects.readable_by(User.objects.get(username=name))
+            .values_list("slug", flat=True)
+        )
+
+    # Company: everyone reads, Human resources write.
+    assert writes("bob") == ["engineering-handbook"], writes("bob")
+    assert writes("carol") == ["hr-handbook", "main"], writes("carol")
+    assert writes("alice") == ["engineering-handbook", "legal-handbook"]
+    assert len(writes("manager")) == 4
+    assert len(writes("admin")) == 4
+
+    bob = signed_in("bob")
+    welcome = WikiPage.objects.get(wiki__slug="main", slug="welcome")
+    page = bob.get("/wiki/main/welcome/")
+    assert page.status_code == 200
+    assert page.context["can"]["change"] is False
+    refused = bob.patch(
+        f"/wiki/api/pages/{welcome.pk}/",
+        json.dumps({"title": "Mine"}), content_type="application/json",
+    )
+    assert refused.status_code == 403, refused.status_code
+    assert bob.get("/wiki/engineering-handbook/releases/").context["can"][
+        "change"
+    ]
+
+    # An editing team reads the wiki it writes in.
+    from documents.models import TeamWiki
+    from generic.teams.models import Team
+
+    link = TeamWiki.objects.get(wiki__slug="legal-handbook")
+    link.editing_teams.add(Team.objects.get(name="Engineering"))
+    assert "legal-handbook" in reads("bob")
+    assert writes("bob") == ["engineering-handbook", "legal-handbook"]
+    # Then Legal's own members read it, and no longer write in it.
+    assert "legal-handbook" in reads("viewer")
+    assert "legal-handbook" not in writes("viewer")
+    print("ok")
+    """)
+
+
 def manage(*args: str) -> subprocess.CompletedProcess:
     env = {
         name: value
@@ -415,6 +821,20 @@ def test_the_migrations_are_up_to_date():
 
 def test_teams_documents_and_versions_work_together():
     result = manage("-c", SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_documents_are_numbered_and_reviewed_through_workflows():
+    result = manage("-c", GED_SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_editing_teams_write_in_their_wikis():
+    result = manage("-c", WIKI_SCENARIO)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")

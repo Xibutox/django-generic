@@ -24,6 +24,7 @@ from typing import Any
 
 __all__ = [
     "in_teams_of",
+    "leaders_of",
     "scope_to_teams",
     "sees_every_team",
     "teams_of",
@@ -40,6 +41,12 @@ def teams_of(user: Any) -> Any:
     from generic.teams.scoping import teams_of
 
     return teams_of(user)
+
+
+def leaders_of(teams: Any) -> Any:
+    from generic.teams.scoping import leaders_of
+
+    return leaders_of(teams)
 
 
 def sees_every_team(user: Any) -> bool:

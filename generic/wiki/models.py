@@ -47,6 +47,24 @@ class WikiQuerySet(models.QuerySet):
 
         return access(user, self)
 
+    def writable_by(self, user: Any) -> "WikiQuerySet":
+        """The wikis ``user`` may write pages in: those they read, unless
+        ``GENERIC["WIKI_EDIT_ACCESS"]`` narrows them further.
+
+        Only *where*: what they may do there - add, change, delete a
+        page - is still the model permissions'.
+        """
+        readable = self.readable_by(user)
+        access = generic_settings.WIKI_EDIT_ACCESS
+
+        if not access or not getattr(user, "is_authenticated", False):
+            return readable
+
+        if isinstance(access, str):
+            access = import_string(access)
+
+        return access(user, readable)
+
     def default(self) -> "Wiki":
         """The first wiki, made when there is none: where a page saved
         without a wiki goes."""

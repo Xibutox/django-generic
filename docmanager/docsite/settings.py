@@ -119,4 +119,11 @@ GENERIC = {
     "FILE_MAX_SIZE": 50 * 1024 * 1024,
     # A team's wiki is its members' only; a wiki of no team, everyone's.
     "WIKI_ACCESS": "documents.wikis.wikis_of_my_teams",
+    # And its editing teams write in it - nobody else.
+    "WIKI_EDIT_ACCESS": "documents.wikis.wikis_my_teams_write",
 }
+
+# Where a review's messages go: the bell and an e-mail - printed by the
+# console backend above, until EMAIL_HOST / MAILERS name a real server.
+DOCUMENT_REVIEW_CHANNELS = ["notification", "mail"]
+DEFAULT_FROM_EMAIL = "documents@localhost"

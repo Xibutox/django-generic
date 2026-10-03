@@ -100,15 +100,46 @@ is everyone's.
 Everything goes through it (`Wiki.objects.readable_by(user)`): the
 list, the pages (a hidden wiki's page answers `404`), the API, the
 dashboard's pinned pages, the command palette and the PDF. Writing is
-still decided by the model permissions below, in the wikis the user
-sees.
+decided by the model permissions below, in the wikis the user may
+write in.
+
+### Who writes in which wiki
+
+By default whoever reads a wiki may write in it - with the page
+permissions. `GENERIC["WIKI_EDIT_ACCESS"]` narrows that, wiki by wiki:
+the same kind of function, given the wikis the user **reads** and
+returning those they may **write** in.
+
+```python
+# myproject/wikis.py
+def wikis_my_teams_write(user, wikis):
+    if user.is_superuser:
+        return wikis
+
+    return wikis.filter(editors__members=user)  # a field the project adds
+
+
+GENERIC = {"WIKI_EDIT_ACCESS": "myproject.wikis.wikis_my_teams_write"}
+```
+
+In a wiki the user may not write in, the page has no *Edit*,
+*Subpage* or *Delete*, and the API refuses with `403` every change to
+one of its pages - created (in the wiki, or under one of its pages),
+changed, moved, deleted, restored. `Wiki.objects.writable_by(user)`
+answers the question anywhere; it is always a part of `readable_by`.
+The wikis themselves - created, renamed, deleted - keep answering to
+the wiki permissions alone.
+
+The document manager gives each wiki its **editing teams**
+(`TeamWiki.editing_teams`): they read and write it, nobody else
+writes in it; a wiki with none is written by whoever reads it.
 
 ## Who may do what
 
 | Who | May |
 | --- | --- |
 | Anyone signed in | Read every page, its menu and its history |
-| `generic_wiki.add_wikipage` | Create pages and subpages |
+| `generic_wiki.add_wikipage` | Create pages and subpages - in the wikis they write in (`WIKI_EDIT_ACCESS`) |
 | `generic_wiki.change_wikipage` | Edit a page, move it in the menu, pin it, restore a version |
 | `add_wikipage` or `change_wikipage` | Upload an image or a file into a page |
 | `generic_wiki.delete_wikipage` | Delete a page |

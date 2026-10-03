@@ -25,15 +25,42 @@ class TeamResource(ModelResource):
     # A team's own record is in the team: members see theirs.
     team_field = "pk"
 
-    list_display = ("name", "member_count", "members", "created_at")
+    list_display = (
+        "name",
+        "member_count",
+        "leaders",
+        "members",
+        "created_at",
+    )
     search_fields = ("name", "description")
     ordering = ("name",)
     fieldsets = (
-        (None, {"fields": (("name", "color"), "description", "members")}),
+        (
+            None,
+            {
+                "fields": (
+                    ("name", "color"),
+                    "description",
+                    "leaders",
+                    "members",
+                )
+            },
+        ),
     )
     detail_stats = ("member_count",)
     detail_fieldsets = (
-        (None, {"fields": ("name", "description", "members", "created_at")}),
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "description",
+                    "leaders",
+                    "members",
+                    "created_at",
+                )
+            },
+        ),
     )
     readonly_fields = ("created_at",)
     form_overrides = {"color": {"widget": "color"}}

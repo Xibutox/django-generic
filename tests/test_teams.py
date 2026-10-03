@@ -24,6 +24,7 @@ from generic.sites import site
 from generic.sites.serializers import build_form_serializer, without_fields
 from generic.teams import (
     in_teams_of,
+    leaders_of,
     scope_to_teams,
     sees_every_team,
     teams_of,
@@ -142,6 +143,42 @@ def test_nobody_signed_in_reaches_nothing(office):
 
 def test_a_member_of_no_team_reaches_nothing(office):
     assert not scope_to_teams(Binder.objects.all(), allowed(), "team")
+
+
+def test_a_leader_reaches_their_teams_records_without_being_a_member(
+    office,
+):
+    leader = allowed()
+    office.lab.leaders.add(leader)
+
+    assert titles(scope_to_teams(Binder.objects.all(), leader, "team")) == [
+        "Protocols"
+    ]
+    assert list(teams_of(leader)) == [office.lab]
+
+
+def test_a_leader_and_member_is_counted_once(office):
+    user = allowed(teams=[office.lab])
+    office.lab.leaders.add(user)
+
+    assert list(teams_of(user)) == [office.lab]
+    assert titles(scope_to_teams(SharedNote.objects.all(), user, "teams")) == [
+        "Both"
+    ]
+
+
+def test_leaders_of_names_the_active_leaders_once(office):
+    first, second, gone = allowed(), allowed(), allowed()
+    gone.is_active = False
+    gone.save()
+    office.legal.leaders.add(first, gone)
+    office.lab.leaders.add(first, second)
+
+    assert set(leaders_of(office.legal)) == {first}
+    assert sorted(
+        user.pk for user in leaders_of(Team.objects.all())
+    ) == sorted([first.pk, second.pk])
+    assert not leaders_of([]).exists()
 
 
 def test_in_teams_of_answers_for_one_record(office):
