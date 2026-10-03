@@ -323,5 +323,599 @@ msgstr "Pages"
 msgid "People"
 msgstr "Personnes"
 
-msgid "Which wikis are a team's: only its members read them. A wiki of no team is everyone's."
-msgstr "Les wikis propres à une équipe : seuls ses membres les lisent. Un wiki sans équipe est à tout le monde."
+
+# The review circuits, the codification, the check-out (GED).
+msgid "code"
+msgstr "code"
+
+msgid "document type"
+msgstr "type de document"
+
+msgid "document types"
+msgstr "types de document"
+
+msgid "team code"
+msgstr "code de l'équipe"
+
+msgid "pattern"
+msgstr "modèle"
+
+msgid "number every new document"
+msgstr "numéroter chaque nouveau document"
+
+msgid "codification"
+msgstr "codification"
+
+msgid "codifications"
+msgstr "codifications"
+
+msgid "number"
+msgstr "numéro"
+
+msgid "numbered at"
+msgstr "numéroté le"
+
+msgid "next review on"
+msgstr "prochaine revue le"
+
+msgid "checked out at"
+msgstr "réservé le"
+
+msgid "comment"
+msgstr "commentaire"
+
+msgid "written at"
+msgstr "écrit le"
+
+msgid "comments"
+msgstr "commentaires"
+
+msgid "Review"
+msgstr "Relecture"
+
+msgid "Approval"
+msgstr "Approbation"
+
+msgid "Acknowledgement"
+msgstr "Prise de connaissance"
+
+msgid "One of them"
+msgstr "L'un d'eux"
+
+msgid "Each of them"
+msgstr "Chacun d'eux"
+
+msgid "the team's leaders"
+msgstr "les chefs d'équipe"
+
+msgid "the team's members"
+msgstr "les membres de l'équipe"
+
+msgid "offered"
+msgstr "proposé"
+
+msgid "workflow"
+msgstr "circuit"
+
+msgid "workflows"
+msgstr "circuits"
+
+msgid "order"
+msgstr "ordre"
+
+msgid "asks to"
+msgstr "demande de"
+
+msgid "answered by"
+msgstr "répondu par"
+
+msgid "days to answer"
+msgstr "jours pour répondre"
+
+msgid "step"
+msgstr "étape"
+
+msgid "steps"
+msgstr "étapes"
+
+msgid "message"
+msgstr "message"
+
+msgid "status before"
+msgstr "statut avant"
+
+msgid "started at"
+msgstr "démarré le"
+
+msgid "finished at"
+msgstr "terminé le"
+
+msgid "review"
+msgstr "cycle de validation"
+
+msgid "reviews"
+msgstr "cycles de validation"
+
+msgid "due on"
+msgstr "échéance"
+
+msgid "review step"
+msgstr "étape de validation"
+
+msgid "review steps"
+msgstr "étapes de validation"
+
+msgid "asked at"
+msgstr "demandée le"
+
+msgid "answered at"
+msgstr "répondue le"
+
+msgid "reminded at"
+msgstr "relancée le"
+
+msgid "task"
+msgstr "tâche"
+
+msgid "tasks"
+msgstr "tâches"
+
+msgid "Short, in the numbers: CTR, PRC..."
+msgstr "Court, dans les numéros : CTR, PRC..."
+
+msgid "Short, in the numbers ({team}): LEG, ENG..."
+msgstr "Court, dans les numéros ({team}) : LEG, ENG..."
+
+msgid "{team}, {type}, {year}, {yy}, {month}, {day} and the running number {seq} - {seq:04} pads it to four digits. Each series counts on its own: with {year}, from 1 again every year."
+msgstr "{team}, {type}, {year}, {yy}, {month}, {day} et le numéro courant {seq} - {seq:04} le complète à quatre chiffres. Chaque série compte à part : avec {year}, on repart de 1 chaque année."
+
+msgid "Otherwise a document is numbered when asked (Codify)."
+msgstr "Sinon, un document est numéroté à la demande (Codifier)."
+
+msgid "type"
+msgstr "type"
+
+msgid "When the document should be read again."
+msgstr "Quand relire le document."
+
+msgid "related documents"
+msgstr "documents liés"
+
+msgid "checked out by"
+msgstr "réservé par"
+
+msgid "author"
+msgstr "auteur"
+
+msgid "readers"
+msgstr "lecteurs"
+
+msgid "The team reading it; empty, everyone reads it."
+msgstr "L'équipe qui le lit ; vide, tout le monde le lit."
+
+msgid "editing teams"
+msgstr "équipes rédactrices"
+
+msgid "The teams writing in it - they read it too. None: whoever reads it writes in it, with the page permissions."
+msgstr "Les équipes qui y écrivent - elles le lisent aussi. Aucune : quiconque le lit y écrit, avec les permissions sur les pages."
+
+msgid "people"
+msgstr "personnes"
+
+msgid "roles"
+msgstr "rôles"
+
+msgid "Every active member of these groups."
+msgstr "Tous les membres actifs de ces groupes."
+
+msgid "Those leading the document's team."
+msgstr "Ceux qui dirigent l'équipe du document."
+
+msgid "Everyone in the document's team."
+msgstr "Tous les membres de l'équipe du document."
+
+msgid "Offered to this team only; empty, to everyone."
+msgstr "Proposé à cette équipe seulement ; vide, à tout le monde."
+
+msgid "Untick to stop offering it; reviews keep going."
+msgstr "Décochez pour ne plus le proposer ; les cycles en cours continuent."
+
+msgid "One of them: the first answer closes the step. Each of them: everyone answers."
+msgstr "L'un d'eux : la première réponse clôt l'étape. Chacun d'eux : tout le monde répond."
+
+msgid "A due date, for the reminders; never a deadline."
+msgstr "Une échéance, pour les relances ; jamais un blocage."
+
+msgid "Preparing"
+msgstr "En préparation"
+
+msgid "In progress"
+msgstr "En cours"
+
+msgid "Completed"
+msgstr "Terminé"
+
+msgid "Rejected"
+msgstr "Refusé"
+
+msgid "Cancelled"
+msgstr "Annulé"
+
+msgid "Its steps are copied into the review, where they may still be changed. Empty: draw the steps below."
+msgstr "Ses étapes sont copiées dans le cycle, où elles restent modifiables. Vide : dessinez les étapes ci-dessous."
+
+msgid "What the reviewers should know - sent with the task."
+msgstr "Ce que les valideurs doivent savoir - envoyé avec la tâche."
+
+msgid "started by"
+msgstr "lancé par"
+
+msgid "Waiting"
+msgstr "En attente"
+
+msgid "Done"
+msgstr "Terminé"
+
+msgid "Skipped"
+msgstr "Passée"
+
+msgid "To do"
+msgstr "À faire"
+
+msgid "Delegated"
+msgstr "Déléguée"
+
+msgid "Not needed"
+msgstr "Plus nécessaire"
+
+msgid "asked of"
+msgstr "demandée à"
+
+msgid "delegated to"
+msgstr "déléguée à"
+
+msgid "Reviews"
+msgstr "Validation"
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Who reads and who writes each wiki: a wiki of no team is everyone's; editing teams write in it, and nobody else."
+msgstr "Qui lit et qui écrit chaque wiki : un wiki sans équipe est à tout le monde ; les équipes rédactrices y écrivent, et personne d'autre."
+
+msgid "Kinds of document, and the code their numbers carry."
+msgstr "Les sortes de documents, et le code que portent leurs numéros."
+
+msgid "How each team numbers its documents - with a file or not yet."
+msgstr "Comment chaque équipe numérote ses documents - avec un fichier ou pas encore."
+
+msgid "Review circuits: steps of reviewing, approving or reading, each asking people, roles or the team's leaders. Anyone may draw their own."
+msgstr "Les circuits de validation : des étapes de relecture, d'approbation ou de prise de connaissance, chacune demandée à des personnes, des rôles ou aux chefs d'équipe. Chacun peut dessiner les siens."
+
+msgid "Steps"
+msgstr "Étapes"
+
+msgid "Copied from the workflow when one is chosen; add, change or remove them until the review starts. After, its Steps tab."
+msgstr "Copiées du circuit s'il y en a un ; ajoutez-en, modifiez-les ou retirez-les jusqu'au lancement. Ensuite, dans son onglet Étapes."
+
+msgid "Documents going through a review circuit."
+msgstr "Les documents qui suivent un circuit de validation."
+
+msgid "What is asked of each person: review, approve, read. Yours are under My tasks."
+msgstr "Ce qui est demandé à chacun : relire, approuver, prendre connaissance. Les vôtres sont sous Mes tâches."
+
+msgid "My tasks"
+msgstr "Mes tâches"
+
+msgid "Reviews in progress"
+msgstr "Validations en cours"
+
+msgid "Without a file"
+msgstr "Sans fichier"
+
+msgid "Not numbered"
+msgstr "Non numérotés"
+
+msgid "Checked out"
+msgstr "Réservés"
+
+msgid "Due for a review"
+msgstr "À relire bientôt"
+
+msgid "Documents waiting for your review, approval or reading."
+msgstr "Les documents qui attendent votre relecture, votre approbation ou votre lecture."
+
+msgid "Documents going through their circuits."
+msgstr "Les documents qui suivent leur circuit."
+
+msgid "Next number"
+msgstr "Prochain numéro"
+
+msgid "Number"
+msgstr "Numéro"
+
+msgid "Tasks to do"
+msgstr "Tâches à faire"
+
+msgid "Send for review"
+msgstr "Envoyer en validation"
+
+msgid "Codify"
+msgstr "Codifier"
+
+msgid "Give the selected documents their numbers? A number is never changed."
+msgstr "Donner leur numéro aux documents sélectionnés ? Un numéro ne change jamais."
+
+#, python-format
+msgid "%(count)s checked out: the others see you are working on it."
+msgstr "%(count)s réservé(s) : les autres voient que vous y travaillez."
+
+msgid "Check out"
+msgstr "Réserver"
+
+#, python-format
+msgid "%(count)s checked in."
+msgstr "%(count)s libéré(s)."
+
+msgid "Check in"
+msgstr "Libérer"
+
+#, python-format
+msgid "%(count)s made obsolete."
+msgstr "%(count)s rendu(s) obsolète(s)."
+
+msgid "Make obsolete"
+msgstr "Rendre obsolète"
+
+msgid "Mark the selected documents obsolete? They stay here."
+msgstr "Marquer les documents sélectionnés obsolètes ? Ils restent ici."
+
+#, python-format
+msgid "%(group)s (role)"
+msgstr "%(group)s (rôle)"
+
+msgid "Current step"
+msgstr "Étape en cours"
+
+msgid "Progress"
+msgstr "Avancement"
+
+msgid "Start"
+msgstr "Lancer"
+
+msgid "Skip the current step"
+msgstr "Passer l'étape en cours"
+
+msgid "Close the current step without waiting, and go on?"
+msgstr "Clore l'étape en cours sans attendre, et continuer ?"
+
+msgid "Remind"
+msgstr "Relancer"
+
+msgid "Cancel the review"
+msgstr "Annuler le cycle"
+
+msgid "Cancel the selected reviews? The document stays."
+msgstr "Annuler les cycles sélectionnés ? Le document reste."
+
+msgid "Asks"
+msgstr "Demande à"
+
+msgid "Your answer"
+msgstr "Votre réponse"
+
+msgid "Document"
+msgstr "Document"
+
+msgid "Instructions"
+msgstr "Consignes"
+
+msgid "Mine"
+msgstr "À moi"
+
+#, python-format
+msgid "%(count)s answered."
+msgstr "%(count)s répondue(s)."
+
+msgid "Reject"
+msgstr "Refuser"
+
+msgid "Reject? The review ends there. Open the task to say why."
+msgstr "Refuser ? Le cycle s'arrête là. Ouvrez la tâche pour dire pourquoi."
+
+msgid "Replacing the file keeps the old one as a version. A document may have none yet: numbered first, written later."
+msgstr "Remplacer le fichier garde l'ancien comme version. Un document peut ne pas encore en avoir : numéroté d'abord, écrit ensuite."
+
+msgid "Given once, by the team's codification, and never changed."
+msgstr "Donné une fois, par la codification de l'équipe, et jamais changé."
+
+msgid "Give it its number now"
+msgstr "Lui donner son numéro maintenant"
+
+msgid "Some teams number every new document anyway. Without a file too."
+msgstr "Certaines équipes numérotent de toute façon chaque nouveau document. Sans fichier aussi."
+
+msgid "Each circuit the document went through."
+msgstr "Chaque circuit suivi par le document."
+
+msgid "What its readers had to say."
+msgstr "Ce que ses lecteurs en ont dit."
+
+msgid "Choose one document to send for review."
+msgstr "Choisissez un document à envoyer en validation."
+
+msgid "You may not start a review."
+msgstr "Vous ne pouvez pas lancer de cycle de validation."
+
+msgid "They are numbered already."
+msgstr "Ils sont déjà numérotés."
+
+#, python-format
+msgid "Numbered: %(numbers)s."
+msgstr "Numérotés : %(numbers)s."
+
+msgid "Start now"
+msgstr "Lancer maintenant"
+
+msgid "Untick to prepare it first: its steps may be changed until it starts."
+msgstr "Décochez pour le préparer d'abord : ses étapes restent modifiables jusqu'au lancement."
+
+msgid "Reviews by status"
+msgstr "Cycles par statut"
+
+#, python-format
+msgid "%(count)s done."
+msgstr "%(count)s fait(s)."
+
+#, python-format
+msgid "%(count)s people reminded."
+msgstr "%(count)s personne(s) relancée(s)."
+
+msgid "Approve (reviewed, read) or reject - or hand it to someone else."
+msgstr "Approuvez (relu, lu) ou refusez - ou confiez-la à quelqu'un d'autre."
+
+msgid "Answer"
+msgstr "Répondre"
+
+msgid "Or hand it to"
+msgstr "Ou la confier à"
+
+#, python-format
+msgid "Already checked out by someone else: %(documents)s."
+msgstr "Déjà réservé par quelqu'un d'autre : %(documents)s."
+
+#, python-format
+msgid "New version of %(document)s"
+msgstr "Nouvelle version de %(document)s"
+
+#, python-format
+msgid "%(who)s sent version %(number)s while you had it checked out."
+msgstr "%(who)s a envoyé la version %(number)s alors que vous l'aviez réservé."
+
+msgid "Only whoever prepared it may start it."
+msgstr "Seul celui qui l'a préparé peut le lancer."
+
+#, python-format
+msgid "%(count)s left: answered already, or not yours."
+msgstr "%(count)s laissée(s) : déjà répondue(s), ou pas à vous."
+
+msgid "This review is already over."
+msgstr "Ce cycle est déjà terminé."
+
+msgid "Only whoever started the review, the team's leaders and the managers may change its steps."
+msgstr "Seuls celui qui a lancé le cycle, les chefs d'équipe et les responsables peuvent changer ses étapes."
+
+msgid "Approve - reviewed, read"
+msgstr "Approuver - relu, lu"
+
+msgid "Reject - changes needed"
+msgstr "Refuser - à reprendre"
+
+msgid "Choose an answer."
+msgstr "Choisissez une réponse."
+
+#, python-format
+msgid "%(document)s was checked in"
+msgstr "%(document)s a été libéré"
+
+#, python-format
+msgid "%(who)s checked it in for you."
+msgstr "%(who)s l'a libéré pour vous."
+
+msgid "Review requested"
+msgstr "Relecture demandée"
+
+msgid "Approval requested"
+msgstr "Approbation demandée"
+
+msgid "Please read"
+msgstr "À lire"
+
+msgid "Someone"
+msgstr "Quelqu'un"
+
+msgid "This review has already started."
+msgstr "Ce cycle est déjà lancé."
+
+msgid "Add a step to the review, or choose a workflow."
+msgstr "Ajoutez une étape au cycle, ou choisissez un circuit."
+
+msgid "This task has already been answered."
+msgstr "Cette tâche a déjà reçu une réponse."
+
+msgid "This task is not yours to answer."
+msgstr "Cette tâche n'est pas la vôtre."
+
+msgid "A document to read is only read."
+msgstr "Un document à lire se lit, il ne se refuse pas."
+
+msgid "Only whoever started the review, the team's leaders and the managers may do this."
+msgstr "Seuls celui qui a lancé le cycle, les chefs d'équipe et les responsables peuvent le faire."
+
+msgid "This review is not in progress."
+msgstr "Ce cycle n'est pas en cours."
+
+msgid "This task is not yours to hand over."
+msgstr "Cette tâche n'est pas la vôtre à confier."
+
+msgid "Choose someone else to hand it to."
+msgstr "Choisissez quelqu'un d'autre à qui la confier."
+
+#, python-format
+msgid "Review of %(document)s"
+msgstr "Validation de %(document)s"
+
+#, python-format
+msgid "%(who)s started the review."
+msgstr "%(who)s a lancé le cycle de validation."
+
+#, python-format
+msgid "%(who)s rejected it at step %(step)s."
+msgstr "%(who)s l'a refusé à l'étape %(step)s."
+
+#, python-format
+msgid "%(who)s skipped the step %(step)s."
+msgstr "%(who)s a passé l'étape %(step)s."
+
+#, python-format
+msgid "%(who)s handed the step %(step)s to %(to)s."
+msgstr "%(who)s a confié l'étape %(step)s à %(to)s."
+
+#, python-format
+msgid "%(who)s asks you at step %(position)s of %(count)s, %(step)s."
+msgstr "%(who)s vous sollicite à l'étape %(position)s sur %(count)s, %(step)s."
+
+#, python-format
+msgid "Now at step %(position)s of %(count)s, %(step)s - waiting on %(people)s."
+msgstr "Maintenant à l'étape %(position)s sur %(count)s, %(step)s - en attente de %(people)s."
+
+msgid "Every step is done."
+msgstr "Toutes les étapes sont terminées."
+
+#, python-format
+msgid "%(who)s reviewed it at step %(step)s."
+msgstr "%(who)s l'a relu à l'étape %(step)s."
+
+#, python-format
+msgid "%(who)s approved it at step %(step)s."
+msgstr "%(who)s l'a approuvé à l'étape %(step)s."
+
+#, python-format
+msgid "%(who)s read it at step %(step)s."
+msgstr "%(who)s en a pris connaissance à l'étape %(step)s."
+
+#, python-format
+msgid "(for %(for)s)"
+msgstr "(pour %(for)s)"
+
+#, python-format
+msgid "%(who)s cancelled the review."
+msgstr "%(who)s a annulé le cycle de validation."
+
+#, python-format
+msgid "Version %(number)s of the file."
+msgstr "Version %(number)s du fichier."
+
+#, python-format
+msgid "Due on %(date)s."
+msgstr "Échéance le %(date)s."

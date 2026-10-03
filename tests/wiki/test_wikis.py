@@ -300,3 +300,95 @@ class TestAccess:
         )
 
         assert response.status_code == 400
+
+
+def quality_is_read_only(user, wikis):
+    """A ``WIKI_EDIT_ACCESS`` hook: nobody writes in "quality" but
+    superusers."""
+    return wikis if user.is_superuser else wikis.exclude(slug="quality")
+
+
+class TestEditAccess:
+    @pytest.fixture(autouse=True)
+    def hook(self, settings):
+        settings.GENERIC = {
+            **getattr(settings, "GENERIC", {}),
+            "WIKI_EDIT_ACCESS": "tests.wiki.test_wikis.quality_is_read_only",
+        }
+
+    @pytest.fixture
+    def editor(self, client):
+        client.force_login(
+            writer("add_wikipage", "change_wikipage", "delete_wikipage")
+        )
+
+        return client
+
+    def test_the_wikis_written_in_are_among_those_read(self, two_wikis):
+        user = writer("change_wikipage")
+
+        assert list(Wiki.objects.writable_by(user)) == [two_wikis["main"]]
+        assert not Wiki.objects.writable_by(None).exists()
+
+    def test_a_page_of_a_read_only_wiki_is_read(self, editor, two_wikis):
+        response = editor.get("/wiki/quality/rules/")
+
+        assert response.status_code == 200
+        assert response.context["can"] == {
+            "add": False,
+            "change": False,
+            "delete": False,
+        }
+        assert response.context["wiki_config"]["can"]["change"] is False
+
+    def test_but_not_changed(self, editor, two_wikis):
+        rules = two_wikis["rules"]
+
+        assert (
+            patch(editor, f"{PAGES}{rules.pk}/", {"title": "Mine"}).status_code
+            == 403
+        )
+        assert editor.delete(f"{PAGES}{rules.pk}/").status_code == 403
+        rules.refresh_from_db()
+        assert rules.title == "Rules"
+
+    def test_nor_given_a_page(self, editor, two_wikis):
+        quality = two_wikis["quality"]
+
+        assert (
+            post(
+                editor, PAGES, {"title": "New", "wiki": quality.pk}
+            ).status_code
+            == 403
+        )
+        # Nor through a parent of that wiki.
+        assert (
+            post(
+                editor,
+                PAGES,
+                {"title": "Sub", "parent": two_wikis["rules"].pk},
+            ).status_code
+            == 403
+        )
+        assert not WikiPage.objects.filter(title__in=("New", "Sub")).exists()
+
+    def test_the_other_wikis_are_written_in(self, editor, two_wikis):
+        welcome = two_wikis["welcome"]
+
+        assert editor.get("/wiki/main/welcome/").context["can"]["change"]
+        assert (
+            patch(
+                editor, f"{PAGES}{welcome.pk}/", {"title": "Hello"}
+            ).status_code
+            == 200
+        )
+
+    def test_the_hook_does_not_stop_a_superuser(self, admin_client, two_wikis):
+        rules = two_wikis["rules"]
+
+        assert (
+            patch(
+                admin_client, f"{PAGES}{rules.pk}/", {"title": "Mine"}
+            ).status_code
+            == 200
+        )

@@ -222,8 +222,9 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
-- [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams
-- [The wiki](docs/wiki.md) — several wikis, each exported as a PDF; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
+- [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
+- [Numbering](docs/numbering.md) — `allocate("{team}-{year}-{seq:04}", team="LEG")`: numbers from a pattern, each series counting on its own, under a lock
+- [The wiki](docs/wiki.md) — several wikis, each exported as a PDF, who reads and who writes each; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines
 - [Building with an AI assistant](ai/README.md) — prompts that teach an assistant this framework, per use case
@@ -296,9 +297,13 @@ document has had kept as a version with its sender, date, size,
 checksum and change note - restore one and it is current again, as a
 new version. Lists search and filter by format, and *Merge Word files*
 puts documents and versions together into one `.docx` made from a
-template - picked in the lists with *Merge into Word*. Each team has
-its own wiki, exported to PDF. Six
-demonstration accounts in three teams show who sees what:
+template - picked in the lists with *Merge into Word*. Documents are
+numbered by each team's pattern - with a file or not yet - and sent
+through review circuits anyone may draw, each step telling the people
+it asks by notification and e-mail, and the sender and the team's
+leaders how it goes. Each team has its own wiki, written by the teams
+that may, exported to PDF. Seven demonstration accounts in three
+teams show who sees what:
 
 ```bash
 pip install -e ".[export,wiki]"

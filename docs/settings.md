@@ -93,6 +93,7 @@ See [Imports](imports.md).
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `WIKI_ACCESS` | `None` | Which wikis a user reads: a function `(user, wikis) -> wikis`, or its dotted path, narrowing the queryset it is given. `None`: every wiki for anyone signed in ([Who sees which wiki](wiki.md#who-sees-which-wiki)) |
+| `WIKI_EDIT_ACCESS` | `None` | Which of the wikis a user reads they may write in - pages created, changed, moved, deleted, restored: a function `(user, wikis) -> wikis`, or its dotted path. `None`: every wiki they read ([Who writes in which wiki](wiki.md#who-writes-in-which-wiki)) |
 | `WIKI_PDF_FONTS` | `None` | The TrueType fonts a wiki's PDF is written with, `{"regular", "bold", "italic", "bold_italic", "mono": path}`. `None` looks for DejaVu, Liberation or Arial on the system, then falls back on Latin-1 ([PDF](wiki.md#pdf)) |
 
 ## Events

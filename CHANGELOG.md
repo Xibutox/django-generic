@@ -13,6 +13,22 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- The document manager becomes a GED: documents numbered by each
+  team's codification (`LEG-CTR-2026-0001`, a pattern per team on the
+  framework's new `generic.numbering`), with or without a file -
+  a number may be reserved before the document is written; document
+  types; review circuits anyone may draw (steps of review, approval
+  or reading, asking people, roles, the team's leaders or members, one
+  of them or each of them), a document sent through one with its steps
+  still editable, a task per person answered with a comment or handed
+  to someone else, each person asked told by notification and e-mail,
+  the starter and the team's leaders told of every step; nothing
+  blocks - a step nobody can answer is skipped, the starter and the
+  leaders may skip, add, remind, answer for someone or cancel.
+  Also comments, related documents, a next-review date, an advisory
+  check-out, *Make obsolete*. Wikis get editing teams: only they write
+  in a wiki that has some (`GENERIC["WIKI_EDIT_ACCESS"]`). Teams get
+  leaders (`Team.leaders`).
 - The document manager gives each team its wiki: `TeamWiki` links a
   wiki to a team, and `documents/wikis.py`, plugged in as
   `GENERIC["WIKI_ACCESS"]`, lets only its members - and whoever sees

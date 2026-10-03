@@ -138,6 +138,8 @@ generic/
 ├── locale/fr/LC_MESSAGES/  django.po/.mo (pages) and djangojs.po/.mo (browser)
 ├── maintenance/            announced restarts: RestartAnnouncement, the three
 │                           warnings and the restart (scheduler.py), api, page
+├── numbering/              Pattern, allocate, peek, next_value: numbers from a pattern
+│                           ({team}-{year}-{seq:04}), one locked Sequence row per series (§13i)
 ├── mailings/               ScheduledMailing: a list's state e-mailed on a schedule; sending.py
 │                           (as each recipient, through the resource's own export),
 │                           dispatch.py (the generic.send_scheduled_mailings task)
@@ -162,9 +164,9 @@ generic/
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
 │                           nh3 cleaning, WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
-├── teams/                  optional app generic.teams: Team (members, colour), the
-│                           see_every_team permission, scoping.py (scope_to_teams,
-│                           teams_of, in_teams_of), the People › Teams screen;
+├── teams/                  optional app generic.teams: Team (members, leaders, colour),
+│                           the see_every_team permission, scoping.py (scope_to_teams,
+│                           teams_of, in_teams_of, leaders_of), the People › Teams screen;
 │                           a resource's team_field narrows everything (§13h)
 ├── tokens/                 optional app generic.tokens: ApiToken (knox's abstract token,
 │                           its own table), TokenAuthentication (scope, last use),
@@ -250,7 +252,10 @@ unset, allauth is neither needed nor loaded.
 `docmanager/` is a third, self-contained project (`docsite/settings.py`
 like the minimal one, plus `generic.teams`, two languages, a 50 MB
 `FILE_MAX_SIZE`): a document manager - `Folder` (a team's), `Tag`,
-`Document` (its current `file`, `version`, `reference` DOC-00001),
+`Document` (its current `file` - optional: a document may be only a
+number - `version`, `reference` DOC-00001, `code` the team's number,
+`document_type`, `review_on`, `related`, an advisory check-out
+`checked_out_by`),
 `DocumentVersion` (number, file, original `file_name`, size, type,
 SHA-256, change note, sender), each resource scoped by `team_field`;
 `file_format` (`DOCX`, `PDF`: the extension, a field so lists search,
@@ -264,12 +269,36 @@ example's own, not the framework's: `documents/merge.py` (`merge_docx`,
 `d<pk>`/`v<pk>` resolved through the resources' team-scoped querysets,
 a template, downloaded or kept as a new document) and the *Merge into
 Word* actions of documents and versions, which open it with
-`{"redirect": ...}`. Team wikis: `TeamWiki` (wiki one-to-one, team
-PROTECT) and `documents/wikis.py` as `GENERIC["WIKI_ACCESS"]` - a
-wiki of no team is everyone's. `seed_documents` makes three teams, six accounts
-(password `demo`) and Word/PDF/text samples (`samples.py`; a `.dotx`
-holds `{{ documents }}`). Kept working by `tests/test_docmanager.py`,
-run in its own process.
+`{"redirect": ...}`. Team wikis: `TeamWiki` (wiki one-to-one; `team`
+reads it, null = everyone; `editing_teams` write in it and read it,
+none = its readers write) and `documents/wikis.py` as
+`GENERIC["WIKI_ACCESS"]` and `["WIKI_EDIT_ACCESS"]`. Numbering:
+`DocumentType` (`code` = `{type}`), `Codification` per team (`code` =
+`{team}`, `pattern`, `on_create`), `documents/codification.py` over
+`generic.numbering` (*Codify* action, form extra field `codify`).
+Review circuits, all docmanager's: `Workflow` + `WorkflowStep`
+(position, name, kind review/approval/acknowledgement, rule any/all,
+users, groups as roles, `team_leaders`, `team_members`, days),
+`Review` (document, workflow, message, status preparing/in
+progress/approved/rejected/cancelled; steps copied, still editable),
+`ReviewStep`, `ReviewTask` (assignee, status, comment, due, delegated);
+`documents/workflows.py` is the engine (`start`, `advance` - a step
+nobody can answer is skipped - `decide`, `skip_step`, `cancel`,
+`delegate`, `refresh`, `remind`; review row locked), telling through
+`generic.delivery.deliver` on commit (`DOCUMENT_REVIEW_CHANNELS`,
+notification + mail): the asked person, and the starter + the team's
+leaders at each step. Assignees read the documents they are asked
+about outside their teams (`scope_to_teams` widened). A task is
+answered on its change form (extra fields `decision`, `delegate_to`)
+or by bulk actions; *My tasks* is a preset on an `is_mine`
+annotation. Also: `Comment`, *Check out*/*Check in* (a notice, never
+a lock), *Make obsolete*, *Send for review* (redirects to the review
+add form). `seed_documents` makes three teams (each a leader and a
+codification), seven accounts (password `demo`, `quentin` in no team,
+role *Quality*), types, a document without a file, three workflows,
+three reviews under way, and Word/PDF/text samples (`samples.py`; a
+`.dotx` holds `{{ documents }}`). Kept working by
+`tests/test_docmanager.py`, run in its own process.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -1207,8 +1236,12 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   `pdf_url`), `pages/?wiki=<id>`; a page's `wiki` is set on create
   only, its parent must share it. Every read goes through
   `Wiki.objects.readable_by(user)`, narrowed by
-  `GENERIC["WIKI_ACCESS"]` (`(user, wikis) -> wikis`). Never build a
-  page's URL without its wiki: `page.get_absolute_url()`.
+  `GENERIC["WIKI_ACCESS"]` (`(user, wikis) -> wikis`). Writing pages:
+  `Wiki.objects.writable_by(user)`, those read narrowed by
+  `GENERIC["WIKI_EDIT_ACCESS"]` (same signature; the page view's `can`
+  and `WikiPermission.has_object_permission` / `perform_create` -
+  403); the wikis themselves still answer to the wiki permissions only.
+  Never build a page's URL without its wiki: `page.get_absolute_url()`.
 - Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=)` -> bytes;
   cover, table of contents (bookmarks), pages depth-first; uploaded
   images embedded (data URIs), web images named and never fetched,
@@ -1443,7 +1476,7 @@ strftime string fixes the text),
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
 `MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
-`WIKI_ACCESS`, `WIKI_PDF_FONTS`.
+`WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`.
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -1742,6 +1775,36 @@ scope_to_teams(Document.objects.all(), user, "folder__team")
   raises `ImproperlyConfigured`. `TeamResource` (People, `team_field
   = "pk"`). Not narrowed: *History › Changes* (an administrator's
   page), `update()`. See `docs/teams.md`; example `docmanager/`.
+- Leaders: `Team.leaders` (M2M, `related_name="generic_led_teams"`,
+  migration `generic_teams` 0002). A leader reaches the team's records
+  like a member (`own_teams` = members or leaders, used by `teams_of`
+  and `scope_to_teams`); `leaders_of(team | teams)` - active users,
+  each once. What leading means otherwise is the project's.
+
+## 13i. Numbering (`generic.numbering`)
+
+```python
+from generic.numbering import Pattern, allocate, peek
+
+allocate("{team}-{type}-{year}-{seq:04}", namespace="documents",
+         exists=lambda code: Document.objects.filter(code=code).exists(),
+         team="LEG", type="CTR")              # "LEG-CTR-2026-0001"
+Pattern(text, fields=("team", "type")).validate()   # ValidationError
+peek(pattern, **values)                       # the next one, nothing taken
+```
+
+- Fields: `{seq}` (required, `{seq:04}` pads, ≤ 12), `{year}` `{yy}`
+  `{month}` `{day}` (`timezone.localdate()`), any value passed. Only
+  `seq` takes a spec; validation codes `malformed`, `unknown`, `spec`,
+  `no_sequence`; rendering a field without a value: `missing`.
+- One series per pattern filled in but for `#` (+ `namespace:`),
+  digested past 255 characters: `{year}` restarts each year, each team
+  counts apart. `generic.Sequence` (`key` unique, `value`), core app,
+  migration `generic` 0017; `next_value(key)` creates the row in its own
+  savepoint (a concurrent create is caught) then `select_for_update`.
+  Call it in the transaction that stores the number; keep a unique
+  constraint on the field. See `docs/numbering.md`; example
+  `docmanager/documents/codification.py`.
 
 ## 13ter. Signing in through somebody else
 

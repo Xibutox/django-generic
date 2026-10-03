@@ -21,7 +21,7 @@ INSTALLED_APPS = [
 ```
 
 then `python manage.py migrate`. *People › Teams* appears: a team's
-name, colour, description and members.
+name, colour, description, leaders and members.
 
 ## Declaring it
 
@@ -89,6 +89,22 @@ The teams themselves are scoped the same way (`TeamResource.team_field
 only those. Making teams and choosing their members is for holders of
 `generic_teams.add_team` / `change_team` who see every team.
 
+## Team leaders
+
+A team has **leaders** beside its members (`Team.leaders`, many to
+many). A leader sees the team's records like a member, whether or not
+they are one too - `teams_of(user)` and every `team_field` count both.
+What leading means beyond that is the project's: the document manager
+tells the leaders how each review of their team's documents goes, lets
+them steer it, and offers "the team's leaders" as a step's people.
+
+```python
+from generic.teams import leaders_of
+
+leaders_of(document.folder.team)       # its active leaders
+leaders_of(Team.objects.filter(...))   # of several teams, each person once
+```
+
 ## Restricting relations without teams
 
 `scope_relations = True` gives the same treatment to forms pointing at
@@ -110,7 +126,7 @@ queryset, or `None` for every row.
 ## In a view or a task of your own
 
 ```python
-from generic.teams import in_teams_of, scope_to_teams, sees_every_team, teams_of
+from generic.teams import in_teams_of, leaders_of, scope_to_teams, sees_every_team, teams_of
 
 documents = scope_to_teams(Document.objects.all(), request.user, "folder__team")
 teams_of(request.user)                       # the teams a select may offer

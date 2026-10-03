@@ -3035,3 +3035,49 @@ msgstr "Tous les wikis"
 
 msgid "%(name)s has no page yet."
 msgstr "%(name)s n’a pas encore de page."
+
+#: generic/numbering/__init__.py
+msgid "{seq} takes a width in digits, as in {seq:04}."
+msgstr "{seq} prend une largeur en chiffres, comme dans {seq:04}."
+
+msgid "{seq} is padded to %(max)s digits at most."
+msgstr "{seq} est complété à %(max)s chiffres au plus."
+
+msgid "The pattern needs {seq}, the running number."
+msgstr "Le modèle doit contenir {seq}, le numéro courant."
+
+msgid "This pattern cannot be read: %(error)s"
+msgstr "Ce modèle est illisible : %(error)s"
+
+msgid "Unknown field {%(name)s}: use %(fields)s."
+msgstr "Champ {%(name)s} inconnu : utilisez %(fields)s."
+
+msgid "Only {seq} takes a width, as in {seq:04}."
+msgstr "Seul {seq} prend une largeur, comme dans {seq:04}."
+
+msgid "No value for {%(name)s}."
+msgstr "Aucune valeur pour {%(name)s}."
+
+#: generic/numbering/models.py
+msgid "series"
+msgstr "série"
+
+msgid "last number"
+msgstr "dernier numéro"
+
+msgid "number sequence"
+msgstr "séquence de numérotation"
+
+msgid "number sequences"
+msgstr "séquences de numérotation"
+
+#: generic/teams/models.py
+msgid "leaders"
+msgstr "chefs d’équipe"
+
+msgid "Team leaders: they see its records too."
+msgstr "Les chefs d’équipe : ils voient aussi ses enregistrements."
+
+#: generic/wiki/api.py
+msgid "You may not write in this wiki."
+msgstr "Vous ne pouvez pas écrire dans ce wiki."

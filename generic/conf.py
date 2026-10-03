@@ -109,6 +109,11 @@ DEFAULTS: dict[str, Any] = {
     # wikis`` narrowing the queryset it is given, or its dotted path.
     # None: every wiki, for anyone signed in.
     "WIKI_ACCESS": None,
+    # Which of those wikis a user may write in - pages created, changed,
+    # moved, deleted, restored - beside the page permissions: the same
+    # kind of function, given the wikis they read. None: every wiki
+    # they read.
+    "WIKI_EDIT_ACCESS": None,
     # The TrueType fonts a wiki's PDF is written with: {"regular":
     # path, "bold": ..., "italic": ..., "bold_italic": ..., "mono":
     # ...}. None looks for DejaVu, Liberation or Arial where the system
