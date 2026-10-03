@@ -93,6 +93,10 @@ def wikis_of_my_teams(user, wikis):
 GENERIC = {"WIKI_ACCESS": "myproject.wikis.wikis_of_my_teams"}
 ```
 
+The document manager (`docmanager/documents/wikis.py`) does this with
+teams: a `TeamWiki` row makes a wiki one team's, and a wiki of no team
+is everyone's.
+
 Everything goes through it (`Wiki.objects.readable_by(user)`): the
 list, the pages (a hidden wiki's page answers `404`), the API, the
 dashboard's pinned pages, the command palette and the PDF. Writing is

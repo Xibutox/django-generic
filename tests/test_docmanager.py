@@ -200,9 +200,44 @@ SCENARIO = PRELUDE + textwrap.dedent("""
         status = bob.get(url).status_code
         assert status == 200, f"{url}: {status}"
 
-    # A reader of one wiki goes from the list straight into it.
-    response = bob.get("/wiki/", follow=True)
-    assert response.status_code == 200, response.redirect_chain
+    # A wiki per team, beside everyone's: each reads their teams'.
+    from django.contrib.auth import get_user_model
+    from generic.wiki.models import Wiki
+
+    def wikis_of(username):
+        user = get_user_model().objects.get(username=username)
+        return sorted(
+            Wiki.objects.readable_by(user).values_list("slug", flat=True)
+        )
+
+    assert wikis_of("bob") == ["engineering-handbook", "main"]
+    assert wikis_of("alice") == [
+        "engineering-handbook", "legal-handbook", "main"
+    ]
+    assert wikis_of("viewer") == ["legal-handbook", "main"]
+    assert len(wikis_of("manager")) == 4
+    assert Wiki.objects.get(slug="main").name == "Company"
+
+    assert bob.get("/wiki/").status_code == 200
+    for url in (
+        "/wiki/legal-handbook/",
+        "/wiki/legal-handbook/contract-review/",
+        "/wiki/legal-handbook/export.pdf",
+    ):
+        assert bob.get(url).status_code == 404, url
+
+    assert bob.get("/wiki/engineering-handbook/on-call/").status_code == 200
+    exported = bob.get("/wiki/engineering-handbook/export.pdf")
+    assert exported.status_code == 200, exported.status_code
+    assert exported["Content-Type"] == "application/pdf"
+    assert exported.content.startswith(b"%PDF-")
+
+    # Which wiki is whose: the managers say.
+    assert bob.get("/documents/teamwiki/").status_code == 403
+    rows = signed_in("manager").get(
+        "/api/documents/teamwiki/", {"draw": 1}
+    ).json()["data"]
+    assert len(rows) == 3, rows
 
     # Seeded samples open as what they claim to be.
     import zipfile

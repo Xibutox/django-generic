@@ -1,4 +1,5 @@
-"""Demonstration data: teams, people, folders, documents and versions.
+"""Demonstration data: teams, people, folders, documents and versions,
+and a wiki per team beside one for everyone.
 
     python manage.py seed_documents
 
@@ -14,11 +15,13 @@ from django.contrib.auth.models import Group, Permission
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils.text import slugify
 
 from documents import samples, versions
-from documents.models import Document, Folder, Tag
+from documents.models import Document, Folder, Tag, TeamWiki
 from generic.history import acting_as
 from generic.teams.models import Team
+from generic.wiki.models import DEFAULT_WIKI_SLUG, Wiki, WikiPage
 
 TEAMS = {
     "Legal": "#7c3aed",
@@ -124,12 +127,91 @@ DOCUMENTS = {
 }
 
 EDITOR_MODELS = ("folder", "document", "documentversion", "tag")
+WIKI_PAGE = tuple(
+    f"{verb}_wikipage" for verb in ("view", "add", "change", "delete")
+)
+
+#: wiki: (team or None for everyone's, description, pages). A page is
+#: (address, title, parent's address, HTML).
+WIKIS = {
+    "Company": (
+        None,
+        "What everyone needs to know.",
+        [
+            (
+                "welcome",
+                "Welcome",
+                None,
+                "<p>Each team keeps its documents in its folders and its "
+                "know-how in its wiki. This one is everyone's.</p>",
+            ),
+            (
+                "naming-files",
+                "Naming files",
+                "welcome",
+                "<ul><li>Lower case, dashes between words.</li><li>No "
+                "version in the name: the document keeps its versions."
+                "</li></ul>",
+            ),
+        ],
+    ),
+    "Legal handbook": (
+        "Legal",
+        "How the legal team works.",
+        [
+            (
+                "contract-review",
+                "Contract review",
+                None,
+                "<ol><li>Upload the draft to <em>Contracts</em>.</li>"
+                "<li>Set it to <strong>In review</strong>.</li><li>Merge "
+                "it into the letter template to send it.</li></ol>",
+            ),
+        ],
+    ),
+    "Engineering handbook": (
+        "Engineering",
+        "Procedures and conventions of the engineering team.",
+        [
+            (
+                "releases",
+                "Releases",
+                None,
+                "<p>Follow the <em>Release procedure</em> document; note "
+                "each release here.</p>",
+            ),
+            (
+                "on-call",
+                "On call",
+                "releases",
+                "<p>One engineer a week, named on Monday.</p>",
+            ),
+        ],
+    ),
+    "HR handbook": (
+        "Human resources",
+        "Onboarding and people matters - the HR team's only.",
+        [
+            (
+                "onboarding",
+                "Onboarding",
+                None,
+                "<p>Send the <em>Welcome guide</em> the week before the "
+                "first day.</p>",
+            ),
+        ],
+    ),
+}
 
 
 def permissions(*codenames: str) -> list[Permission]:
     return list(
         Permission.objects.filter(
-            content_type__app_label__in=("documents", "generic_teams"),
+            content_type__app_label__in=(
+                "documents",
+                "generic_teams",
+                "generic_wiki",
+            ),
             codename__in=codenames,
         )
     )
@@ -189,12 +271,58 @@ class Command(BaseCommand):
                     document = self.document(folder, title, status, files)
                     document.tags.set([tags[name] for name in tag_names])
 
+        self.wikis(teams, admin)
         self.stdout.write(
             self.style.SUCCESS(
                 "Seeded. Sign in as admin, alice, bob, carol, viewer or "
                 "manager - password demo."
             )
         )
+
+    def wikis(self, teams: dict[str, Team], author) -> None:
+        for position, (name, (team, description, pages)) in enumerate(
+            WIKIS.items()
+        ):
+            # Everyone's wiki is the first one, the framework's own "main"
+            # - made by its migrations - renamed while still empty.
+            slug = DEFAULT_WIKI_SLUG if team is None else slugify(name)
+            wiki, created = Wiki.objects.get_or_create(
+                slug=slug,
+                defaults={
+                    "name": name,
+                    "description": description,
+                    "position": position,
+                },
+            )
+
+            if not created and wiki.name == "Wiki" and not wiki.pages.exists():
+                wiki.name, wiki.description = name, description
+                wiki.save(update_fields=("name", "description"))
+
+            if team:
+                TeamWiki.objects.get_or_create(
+                    wiki=wiki, defaults={"team": teams[team]}
+                )
+
+            for order, (slug, title, parent, content) in enumerate(pages):
+                WikiPage.objects.get_or_create(
+                    wiki=wiki,
+                    slug=slug,
+                    defaults={
+                        "title": title,
+                        "parent": (
+                            WikiPage.objects.filter(
+                                wiki=wiki, slug=parent
+                            ).first()
+                            if parent
+                            else None
+                        ),
+                        "position": order,
+                        "content": content,
+                        "created_by": author,
+                        "updated_by": author,
+                    },
+                )
 
     def groups(self) -> dict[str, Group]:
         editors = Group.objects.get_or_create(name="Editors")[0]
@@ -206,12 +334,15 @@ class Command(BaseCommand):
                     for verb in ("view", "add", "change", "delete")
                 ),
                 "view_team",
+                *WIKI_PAGE,
             )
         )
         readers = Group.objects.get_or_create(name="Readers")[0]
         readers.permissions.set(
             permissions(
-                *(f"view_{model}" for model in EDITOR_MODELS), "view_team"
+                *(f"view_{model}" for model in EDITOR_MODELS),
+                "view_team",
+                "view_wikipage",
             )
         )
         managers = Group.objects.get_or_create(name="Managers")[0]
@@ -219,9 +350,10 @@ class Command(BaseCommand):
             permissions(
                 *(
                     f"{verb}_{model}"
-                    for model in (*EDITOR_MODELS, "team")
+                    for model in (*EDITOR_MODELS, "team", "teamwiki", "wiki")
                     for verb in ("view", "add", "change", "delete")
                 ),
+                *WIKI_PAGE,
                 "see_every_team",
             )
         )

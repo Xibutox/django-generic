@@ -3,7 +3,7 @@
 django-generic as a document management system (a GED): teams, each
 with its own folders and documents, and every file a document has had
 kept as a version - who sent it, when, why, its size and checksum.
-Plus the wiki. A project of its own, like the [minimal
+Plus a wiki per team, exported to PDF. A project of its own, like the [minimal
 example](../minimal/README.md): one settings file, plain WSGI, SQLite.
 
 ```
@@ -14,11 +14,12 @@ docmanager/
 │   ├── urls.py         jsi18n/, api/generic/, wiki/, the site last
 │   └── wsgi.py
 └── documents/
-    ├── models.py       Folder (a team's), Tag, Document, DocumentVersion
+    ├── models.py       Folder (a team's), Tag, Document, DocumentVersion, TeamWiki
     ├── resources.py    the screens, each scoped to its team (team_field)
     ├── versions.py     how a version is recorded, numbered and restored
     ├── merge.py        Word files merged with a template (python-docx)
     ├── merging.py      the Merge Word files page: what may be merged, and how
+    ├── wikis.py        who reads which wiki (GENERIC["WIKI_ACCESS"])
     ├── templates/documents/merge.html, static/documents/   that page
     ├── samples.py      small Word, PDF and text files for the demo
     └── management/commands/seed_documents.py
@@ -79,7 +80,13 @@ Sign in at <http://localhost:8000/> - every password is `demo`:
   the merged file becomes a document of its own, at version 1. Only
   Word files (`.docx`, `.dotx`) of the reader's teams are offered or
   accepted.
-- **Wiki.** *Wiki* in the navigation, as in every example.
+- **A wiki per team.** *Wiki* in the navigation lists the wikis the
+  reader may read: *Company*, everyone's, and their teams' handbooks -
+  `bob` sees *Engineering handbook*, never *Legal handbook* (its pages
+  and its PDF answer 404). *PDF* on a wiki downloads it whole. *People
+  › Team wikis* is where `manager` says which wiki is which team's; a
+  wiki of no team is everyone's. Editors write pages in the wikis they
+  read; `manager` creates wikis.
 
 The files are under `media/` beside `manage.py` (`DJANGO_MEDIA_ROOT`
 moves them), served only through the API, to who may read the
@@ -97,6 +104,8 @@ What the framework gives this project, and where to read about it:
   with ([Forms](../docs/forms.md#the-download)).
 - An action returning `{"redirect": ...}` - *Merge into Word* opening
   the merge page with the selection ([Sites](../docs/sites.md#selection-and-bulk-actions)).
+- `GENERIC["WIKI_ACCESS"]` - the teams' wikis, `documents/wikis.py`
+  ([Wiki](../docs/wiki.md#who-sees-which-wiki)).
 - `@page` - the merge page, a page of the documents' resource with its
   entry in the navigation ([Pages](../docs/pages.md)).
 - Everything else - lists, forms, files, related tables, charts,

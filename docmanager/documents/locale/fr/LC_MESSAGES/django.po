@@ -307,3 +307,21 @@ msgstr "Des documents et des versions Word, dans l'ordre où ils se suivront. S�
 #, python-format
 msgid "The merged file is made from it: its styles, headers and footers. A paragraph reading %(marker)s in it marks where the files go; otherwise they follow its text. Without a template, the first file is the base."
 msgstr "Le fichier fusionné est fait à partir de lui : ses styles, en-têtes et pieds de page. Un paragraphe contenant %(marker)s y marque l'endroit où vont les fichiers ; sinon, ils suivent son texte. Sans modèle, le premier fichier sert de base."
+
+msgid "team wiki"
+msgstr "wiki d'équipe"
+
+msgid "team wikis"
+msgstr "wikis d'équipe"
+
+msgid "wiki"
+msgstr "wiki"
+
+msgid "Pages"
+msgstr "Pages"
+
+msgid "People"
+msgstr "Personnes"
+
+msgid "Which wikis are a team's: only its members read them. A wiki of no team is everyone's."
+msgstr "Les wikis propres à une équipe : seuls ses membres les lisent. Un wiki sans équipe est à tout le monde."

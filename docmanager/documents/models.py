@@ -5,6 +5,9 @@
   every team - reach them.
 * A **document** is what people look for: a title, a status, tags, and
   its current file.
+* A **team wiki** says a wiki is one team's: only its members - and
+  whoever sees every team - read it (``documents/wikis.py``, plugged in
+  as ``GENERIC["WIKI_ACCESS"]``). A wiki of no team is everyone's.
 * A **version** is one file the document has had, with who sent it,
   when, and why. A document's file is always its latest version's;
   versions are never changed, only added - restoring an old one adds a
@@ -22,6 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from generic.teams.models import Team
+from generic.wiki.models import Wiki
 
 
 def file_path(instance: models.Model, filename: str) -> str:
@@ -222,3 +226,31 @@ class DocumentVersion(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.file_format = extension_of(self.file_name or self.file.name)
         super().save(*args, **kwargs)
+
+
+class TeamWiki(models.Model):
+    """A wiki kept for one team. The wikis themselves are the
+    framework's (``generic.wiki``); this says whose they are."""
+
+    wiki = models.OneToOneField(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name="team_link",
+    )
+    team = models.ForeignKey(
+        Team,
+        verbose_name=_("team"),
+        # A team's wiki never becomes everyone's by its team going.
+        on_delete=models.PROTECT,
+        related_name="wikis",
+    )
+
+    class Meta:
+        ordering = ("team__name", "wiki__name")
+        verbose_name = _("team wiki")
+        verbose_name_plural = _("team wikis")
+
+    def __str__(self) -> str:
+        return f"{self.team} / {self.wiki}"
