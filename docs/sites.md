@@ -169,6 +169,8 @@ model nobody declared pages of its own. See
 | `realtime` | Publish every change so open tables and summaries refresh |
 | `watchable` | Offer the *Watch* button, and answer its endpoint ([Watching](watch.md)) |
 | `history` | Keep a version of every record, read back by its History tab ([History](history.md)) |
+| `trash` | Delete moves records to a trash, to be restored or deleted for good ([Trash](trash.md)) |
+| `access_log` | Record who opens a record and who downloads its files ([Access log](trash.md#the-access-log)) |
 | `history_exclude` | Fields left out of that version, by name |
 | `viewset_class` | The DRF viewset the endpoint is built from |
 

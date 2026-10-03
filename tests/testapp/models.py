@@ -11,6 +11,8 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 from django_fsm import FSMField, transition
 
+from generic.trash import Trashable
+
 
 class Publisher(models.Model):
     name = models.CharField(max_length=100)
@@ -249,6 +251,28 @@ class SharedNote(models.Model):
     title = models.CharField(max_length=200)
     teams = models.ManyToManyField(
         "generic_teams.Team", related_name="shared_notes", blank=True
+    )
+
+    class Meta:
+        ordering = ("title",)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class Contract(Trashable):
+    """Deleted into a trash, its openings and downloads logged, its file
+    downloadable by superusers only once it is ``signed``."""
+
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to="contracts/", blank=True)
+    signed = models.BooleanField(default=False)
+    author = models.ForeignKey(
+        Author,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contracts",
     )
 
     class Meta:

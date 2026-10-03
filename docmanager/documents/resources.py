@@ -18,7 +18,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from documents import codification, merging, versions, workflows
+from documents import codification, merging, preview, versions, workflows
 from documents.models import (
     Codification,
     Comment,
@@ -82,6 +82,21 @@ def matching(*conditions: dict, match: str = "all") -> dict:
     return {"filters": {"match": match, "conditions": list(conditions)}}
 
 
+class LiveDocuments:
+    """A resource of what hangs on a document - its versions, reviews,
+    tasks, comments - showing none of a document in the trash."""
+
+    #: The path from the model to its document.
+    document_path = "document"
+
+    def get_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_queryset(request)  # type: ignore[misc]
+            .filter(**{f"{self.document_path}__deleted_at__isnull": True})
+        )
+
+
 def widened(queryset: QuerySet, scoped: QuerySet, extra: Q) -> QuerySet:
     """``scoped`` - the reader's teams' rows - and the rows ``extra``
     adds: what someone asked of the reader, outside their teams."""
@@ -122,15 +137,70 @@ class FolderResource(ModelResource):
 
     team_field = "team"
 
-    list_display = ("name", "team", "document_count", "description")
-    search_fields = ("name", "team__name")
+    list_display = ("path", "team", "document_count", "description")
+    list_display_links = ("path",)
+    search_fields = ("name", "path", "team__name")
+    ordering = ("team__name", "path")
     tag_fields = {"team": TagStyle(color="color")}
-    fieldsets = ((None, {"fields": (("name", "team"), "description")}),)
-    related_tables = (RelatedTable("documents"),)
+    fieldsets = (
+        (None, {"fields": (("name", "team"), "parent", "description")}),
+    )
+    detail_fieldsets = (
+        (None, {"fields": ("name", "team", "parent", "path", "description")}),
+    )
+    related_tables = (
+        RelatedTable(
+            "children",
+            icon="folder",
+            description=_("The folders inside it."),
+        ),
+        RelatedTable("documents"),
+    )
 
     @display(description=_("Documents"))
     def document_count(self, folder: Folder) -> int:
-        return folder.documents.count()
+        return folder.documents.filter(deleted_at__isnull=True).count()
+
+    def save_model(self, request: Any, serializer: Any, change: bool) -> Any:
+        parent = serializer.validated_data.get("parent")
+        team = serializer.validated_data.get("team")
+        folder = serializer.instance
+
+        if parent is not None:
+            if team is not None and parent.team_id != team.pk:
+                raise serializers.ValidationError(
+                    {
+                        "parent": [
+                            gettext("A folder is in a folder of its own team.")
+                        ]
+                    }
+                )
+
+            if folder is not None and (
+                parent.pk == folder.pk
+                or folder.pk in [above.pk for above in parent.ancestors()]
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "parent": [
+                            gettext(
+                                "A folder cannot be put inside itself, nor "
+                                "inside one of its own folders."
+                            )
+                        ]
+                    }
+                )
+
+        before = folder.team_id if folder is not None else None
+        saved = serializer.save()
+
+        # Moved to another team: the folders inside it follow.
+        if before is not None and saved.team_id != before:
+            Folder.objects.filter(
+                pk__in=[child.pk for child in saved.descendants()]
+            ).update(team=saved.team_id)
+
+        return saved
 
 
 @register(TeamWiki)
@@ -196,11 +266,30 @@ class DocumentTypeResource(ModelResource):
     label_plural = _("document types")
     description = _("Kinds of document, and the code their numbers carry.")
 
-    list_display = ("name", "code", "document_count", "description")
+    list_display = (
+        "name",
+        "code",
+        "review_months",
+        "review_workflow",
+        "document_count",
+        "description",
+    )
     search_fields = ("name", "code")
     tag_fields = {"name": TagStyle(color="color")}
     fieldsets = (
         (None, {"fields": (("name", "code"), "color", "description")}),
+        (
+            _("Periodic review"),
+            {
+                "fields": (("review_months", "review_workflow"),),
+                "description": _(
+                    "Documents of this type are read again every so many "
+                    "months after their approval: their authors and team "
+                    "leaders are reminded beforehand, and on the day the "
+                    "workflow starts on its own."
+                ),
+            },
+        ),
     )
     form_overrides = {"color": {"widget": "color"}}
 
@@ -259,6 +348,10 @@ class DocumentResource(ModelResource):
     description = _("Every document, with each version of its file.")
 
     team_field = "folder__team"
+    # Deleted into a trash for GENERIC["TRASH_DAYS"] days; who opens
+    # and downloads what is logged (generic.trash, generic.access).
+    trash = True
+    access_log = True
 
     list_display = (
         "code",
@@ -270,7 +363,8 @@ class DocumentResource(ModelResource):
         "status",
         "tags",
         "file_format",
-        "version",
+        "version_label",
+        "published_label",
         "checked_out_by",
         "review_on",
         "updated_at",
@@ -280,10 +374,12 @@ class DocumentResource(ModelResource):
         "reference",
         "title",
         "description",
-        "folder__name",
+        "folder__path",
         "document_type__name",
         "document_type__code",
         "file_format",
+        # What the file says: a clause, a name, a figure (text.py).
+        "content",
     )
     ordering = ("-updated_at", "-pk")
     tag_fields = {
@@ -298,6 +394,7 @@ class DocumentResource(ModelResource):
         _("Word files"): WORD_FILES,
         _("Without a file"): matching(condition("file_format", "empty")),
         _("Not numbered"): matching(condition("code", "empty")),
+        _("Never published"): matching(condition("published_label", "empty")),
         _("Checked out"): matching(condition("checked_out_by", "not_empty")),
         _("Due for a review"): matching(
             condition("review_on", "older_than_days", 0),
@@ -370,7 +467,7 @@ class DocumentResource(ModelResource):
     }
     form_overrides = {"description": {"rows": 4}}
 
-    detail_stats = ("version", "file_format", "size", "open_tasks")
+    detail_stats = ("version_label", "file_format", "size", "open_tasks")
     detail_fieldsets = (
         (
             None,
@@ -388,6 +485,20 @@ class DocumentResource(ModelResource):
                     "related",
                     "description",
                 )
+            },
+        ),
+        (
+            _("Published version"),
+            {
+                "fields": (
+                    "published_label",
+                    "published_file",
+                    "published_at",
+                ),
+                "description": _(
+                    "The last approved version: what readers who change "
+                    "nothing read, while the authors work on the next."
+                ),
             },
         ),
         (
@@ -488,9 +599,54 @@ class DocumentResource(ModelResource):
         return document
 
     def get_download_name(self, request: Any, obj: Any, field: str) -> str:
+        if field == "published_file":
+            published = obj.published_version
+
+            if published is None:
+                return ""
+
+            if published.stamped:
+                return published.stamped.name.rsplit("/", 1)[-1]
+
+            return published.file_name
+
         current = obj.versions.filter(number=obj.version).first()
 
         return current.file_name if current else ""
+
+    def may_download(self, request: Any, obj: Any, field: str) -> bool:
+        # The working file is its authors' - and of whoever a review
+        # asks; everyone else reads the published version.
+        if field == "file":
+            return versions.sees_drafts(request.user, obj)
+
+        return True
+
+    def delete_model(self, request: Any, obj: Any) -> None:
+        from generic.trash import in_trash
+
+        # Into the trash: nobody is asked about it any more.
+        if not in_trash(request):
+            workflows.close_for(obj, user=request.user)
+
+        super().delete_model(request, obj)
+
+    @page(
+        title=_("Preview"),
+        detail=True,
+        icon="visibility",
+        row_menu=True,
+        template="documents/preview.html",
+    )
+    def preview(self, request: Any, document: Document) -> dict:
+        return {
+            "shown": preview.shown(request, document),
+            "file_url": self.get_page_url("preview-file", document),
+        }
+
+    @page(title=_("Previewed file"), detail=True, button=False)
+    def preview_file(self, request: Any, document: Document) -> Any:
+        return preview.file_response(request, document)
 
     @action(
         description=_("Approve"),
@@ -502,11 +658,19 @@ class DocumentResource(ModelResource):
         count = 0
 
         # One by one rather than update(): each keeps its history entry
-        # and tells whoever watches it.
-        for document in queryset.exclude(status=Document.Status.APPROVED):
-            document.status = Document.Status.APPROVED
-            document.save(update_fields=("status", "updated_at"))
-            count += 1
+        # and tells whoever watches it. Its current version becomes the
+        # published one - a draft sent after the last approval too.
+        for document in queryset:
+            published = document.published_version_id
+            changed = document.status != Document.Status.APPROVED
+
+            if changed:
+                document.status = Document.Status.APPROVED
+                document.save(update_fields=("status", "updated_at"))
+
+            version = versions.publish(document, user=request.user)
+            changed |= version is not None and version.pk != published
+            count += changed
 
         return gettext("%(count)s approved.") % {"count": count}
 
@@ -682,7 +846,7 @@ class DocumentResource(ModelResource):
 
 
 @register(DocumentVersion)
-class DocumentVersionResource(ModelResource):
+class DocumentVersionResource(LiveDocuments, ModelResource):
     icon = "history"
     group = GROUP
     order = 2
@@ -690,12 +854,14 @@ class DocumentVersionResource(ModelResource):
     description = _("Every file sent, in every document.")
 
     team_field = "document__folder__team"
+    access_log = True
 
     list_display = (
         "document",
-        "number",
+        "label",
         "file",
         "comment",
+        "published_at",
         "created_by",
         "created_at",
         "file_format",
@@ -707,17 +873,23 @@ class DocumentVersionResource(ModelResource):
         "comment",
         "file_name",
         "file_format",
+        "content",
     )
     ordering = ("-created_at", "-number")
     fields = ("document", "file", "comment")
     form_overrides = {"comment": {"rows": 3}}
-    detail_stats = ("number", "file_format", "size")
+    detail_stats = ("label", "file_format", "size")
     detail_fieldsets = (
         (None, {"fields": ("document", "file", "comment")}),
+        (
+            _("Approval"),
+            {"fields": ("published_at", "published_by", "stamped")},
+        ),
         (
             _("File"),
             {
                 "fields": (
+                    "number",
                     "file_name",
                     "content_type",
                     "checksum",
@@ -729,13 +901,17 @@ class DocumentVersionResource(ModelResource):
     )
     readonly_fields = (
         "number",
+        "label",
         "file_name",
         "content_type",
         "checksum",
         "created_by",
         "created_at",
     )
-    presets = {_("Word files"): WORD_FILES}
+    presets = {
+        _("Word files"): WORD_FILES,
+        _("Published"): matching(condition("published_at", "not_empty")),
+    }
     actions = ("restore", "merge_word")
     # A version is what was sent: the document's history says the rest.
     history = False
@@ -743,6 +919,25 @@ class DocumentVersionResource(ModelResource):
     @display(description=_("Size"), ordering="file_size")
     def size(self, version: DocumentVersion) -> str:
         return human_size(version.file_size)
+
+    def get_queryset(self, request: Any) -> QuerySet:
+        queryset = super().get_queryset(request)
+        user = getattr(request, "user", None)
+
+        if versions.sees_all_drafts(user):
+            return queryset
+
+        # Readers read published versions - and the drafts of what a
+        # review asks them about.
+        return queryset.filter(
+            Q(published_at__isnull=False)
+            | Q(document__tasks__assignee=getattr(user, "pk", None))
+        ).distinct()
+
+    def may_download(self, request: Any, obj: Any, field: str) -> bool:
+        return obj.is_published or versions.sees_drafts(
+            request.user, obj.document
+        )
 
     def has_change_permission(self, request: Any, obj: Any = None) -> bool:
         # Never rewritten: a correction is a new version.
@@ -761,6 +956,9 @@ class DocumentVersionResource(ModelResource):
         return version
 
     def get_download_name(self, request: Any, obj: Any, field: str) -> str:
+        if field == "stamped" and obj.stamped:
+            return obj.stamped.name.rsplit("/", 1)[-1]
+
         return obj.file_name
 
     @action(
@@ -782,7 +980,7 @@ class DocumentVersionResource(ModelResource):
 
         return {
             "message": gettext("%(document)s is at version %(number)s.")
-            % {"document": restored.document, "number": restored.number},
+            % {"document": restored.document, "number": restored.label},
             "level": "success",
         }
 
@@ -820,7 +1018,7 @@ def tell_checked_out(document: Document, user: Any) -> None:
 
 
 @register(Comment)
-class CommentResource(ModelResource):
+class CommentResource(LiveDocuments, ModelResource):
     icon = "forum"
     group = GROUP
     order = 4
@@ -1016,7 +1214,7 @@ def answer(error: workflows.WorkflowError) -> dict:
 
 
 @register(Review)
-class ReviewResource(ModelResource):
+class ReviewResource(LiveDocuments, ModelResource):
     icon = "rule"
     group = REVIEWS
     order = 1
@@ -1229,12 +1427,13 @@ def start_quietly(review: Review, user: Any) -> None:
 
 
 @register(ReviewStep)
-class ReviewStepResource(ModelResource):
+class ReviewStepResource(LiveDocuments, ModelResource):
     icon = "format_list_numbered"
     group = REVIEWS
     order = 4
     show_in_navigation = False
     label_plural = _("review steps")
+    document_path = "review__document"
 
     team_field = "review__document__folder__team"
 
@@ -1346,7 +1545,7 @@ class ReviewStepResource(ModelResource):
 
 
 @register(ReviewTask)
-class ReviewTaskResource(ModelResource):
+class ReviewTaskResource(LiveDocuments, ModelResource):
     icon = "task_alt"
     group = REVIEWS
     order = 0
@@ -1674,7 +1873,9 @@ site.add_shortcut(
     icon="task_alt",
     description=_("Documents waiting for your review, approval or reading."),
     count=lambda request: ReviewTask.objects.filter(
-        assignee=request.user.pk, status=ReviewTask.Status.PENDING
+        assignee=request.user.pk,
+        status=ReviewTask.Status.PENDING,
+        document__deleted_at__isnull=True,
     ).count(),
     order=-1,
 )

@@ -241,7 +241,8 @@ See [Pages of a resource's own](docs/pages.md).
 - [Watching](docs/watch.md) — being told when a record, or a model, changes
 - [History](docs/history.md) — the versions every record keeps, who changed what, when
 - [People](docs/people.md) — users, groups and permissions, passwords, and what the screens refuse
-- [Single sign-on](docs/sso.md) — declaring a provider, the sign-in page, forbidding local passwords
+- [Single sign-on](docs/sso.md) — declaring a provider, the sign-in page, forbidding local passwords, locking out guessers
+- [Trash and access log](docs/trash.md) — deleted records kept to be restored, who opened what and downloaded which file
 - [Tasks](docs/tasks.md) — declaring one, the four steps, the runs, Celery Beat schedules
 - [Operations and reports](docs/operations.md) — the work behind a button, in the request or the background, answered with a tree of messages that fold
 - [Planned restarts](docs/maintenance.md) — announcing one, the three warnings, restarting the server

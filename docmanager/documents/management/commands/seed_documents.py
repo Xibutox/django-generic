@@ -11,12 +11,15 @@ are only added to a folder that has none.
 
 from __future__ import annotations
 
+import datetime
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.test.utils import override_settings
+from django.utils import timezone
 from django.utils.text import slugify
 
 from documents import codification, samples, versions, workflows
@@ -74,6 +77,18 @@ TYPES = {
     "Template": ("TPL", "#ca8a04"),
     "Guide": ("GDE", "#db2777"),
     "Note": ("NOT", "#64748b"),
+}
+
+#: type: (every so many months, periodic review workflow)
+PERIODIC = {
+    "Procedure": (12, "Procedure validation"),
+    "Contract": (24, None),
+}
+
+#: team: [(folder, subfolder)] - folders inside folders.
+SUBFOLDERS = {
+    "Legal": [("Contracts", "Suppliers")],
+    "Engineering": [("Procedures", "Archive")],
 }
 
 #: A document's type, by its title.
@@ -485,6 +500,15 @@ class Command(BaseCommand):
                     )
                     document.tags.set([tags[name] for name in tag_names])
 
+        for team_name, pairs in SUBFOLDERS.items():
+            for parent_name, name in pairs:
+                parent = Folder.objects.get(
+                    team=teams[team_name], name=parent_name, parent=None
+                )
+                Folder.objects.get_or_create(
+                    team=teams[team_name], parent=parent, name=name
+                )
+
         self.placeholder(kinds["Contract"], teams["Legal"])
         # Every seeded document numbered, by its team's pattern.
         for document in Document.objects.filter(code__isnull=True).order_by(
@@ -495,6 +519,10 @@ class Command(BaseCommand):
         with override_settings(DOCUMENT_REVIEW_CHANNELS=["notification"]):
             self.workflows(teams)
 
+        self.periodic(kinds)
+        # Files sent before their text was read: read now.
+        versions.fill_text()
+
         self.wikis(teams, admin)
         self.stdout.write(
             self.style.SUCCESS(
@@ -502,6 +530,25 @@ class Command(BaseCommand):
                 "quentin or manager - password demo."
             )
         )
+
+    def periodic(self, kinds: dict[str, DocumentType]) -> None:
+        """Types read again every so often - and the release procedure
+        due soon, to see the reminders (*Tasks* > *Periodic reviews*)."""
+        for name, (months, workflow) in PERIODIC.items():
+            kind = kinds[name]
+
+            if kind.review_months is None:
+                kind.review_months = months
+                kind.review_workflow = (
+                    Workflow.objects.filter(name=workflow).first()
+                    if workflow
+                    else None
+                )
+                kind.save(update_fields=("review_months", "review_workflow"))
+
+        Document.objects.filter(
+            title="Release procedure", review_on__isnull=True
+        ).update(review_on=timezone.localdate() + datetime.timedelta(days=10))
 
     def placeholder(self, kind: DocumentType, team: Team) -> None:
         """A number reserved for a contract not written yet: no file."""
@@ -723,6 +770,11 @@ class Command(BaseCommand):
                 versions.record_version(
                     document, user=editor, comment=note, file_name=name
                 )
+                document.refresh_from_db()
+
+            # Approved already: its last version is the published one.
+            if status == Document.Status.APPROVED:
+                versions.publish(document, user=editor)
                 document.refresh_from_db()
 
         return document

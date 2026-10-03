@@ -235,8 +235,16 @@ def related_search_path(
 class TableSerializerBuilder:
     """Turn ``list_display`` into a ``DataTableModelSerializer``."""
 
-    def __init__(self, resource: Any) -> None:
+    def __init__(
+        self,
+        resource: Any,
+        list_display: Sequence[Any] | None = None,
+        links: bool = True,
+    ) -> None:
         self.resource = resource
+        self.list_display = list_display
+        #: Whether the link columns open their row's page.
+        self.links = links
         self.model = resource.model
         self.declared: dict[str, Any] = {}
         self.methods: dict[str, Any] = {}
@@ -249,7 +257,7 @@ class TableSerializerBuilder:
         self.tag_links: dict[str, str] = {}
 
     def build(self) -> type[DataTableModelSerializer]:
-        for entry in self.resource.get_list_display():
+        for entry in self.list_display or self.resource.get_list_display():
             self.add(entry)
 
         self.declared[ROW_KEY] = serializers.ReadOnlyField(source="pk")
@@ -683,7 +691,7 @@ class TableSerializerBuilder:
 
     def link_overrides(self) -> dict[str, dict[str, Any]]:
         """Make the link columns open the change page of their row."""
-        template = self.resource.get_row_url_template()
+        template = self.resource.get_row_url_template() if self.links else ""
 
         if not template:
             return {}
@@ -705,8 +713,14 @@ class TableSerializerBuilder:
         }
 
 
-def build_table_serializer(resource: Any) -> type[DataTableModelSerializer]:
-    return TableSerializerBuilder(resource).build()
+def build_table_serializer(
+    resource: Any,
+    list_display: Sequence[Any] | None = None,
+    links: bool = True,
+) -> type[DataTableModelSerializer]:
+    """``resource``'s table - or one of other columns, ``list_display``,
+    its rows leading nowhere without ``links``."""
+    return TableSerializerBuilder(resource, list_display, links).build()
 
 
 def with_row_key(

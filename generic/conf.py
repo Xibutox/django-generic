@@ -215,6 +215,25 @@ DEFAULTS: dict[str, Any] = {
     # ``generic.history.prune()`` and the ``prune_history`` command
     # delete beyond.
     "HISTORY_RETENTION_DAYS": None,
+    # --- Trash ---------------------------------------------------------
+    # Days a record deleted from a resource declaring ``trash = True``
+    # stays in its trash. ``generic.trash.empty()``, the ``empty_trash``
+    # command and the ``generic.empty_trash`` task delete it for good
+    # after that. None keeps it until somebody empties it by hand.
+    "TRASH_DAYS": 30,
+    # --- Access log ----------------------------------------------------
+    # Days of access log to keep (``access_log = True`` on a resource:
+    # who opened which record, who downloaded which file). None keeps
+    # everything; a number is what ``generic.access.prune()`` deletes
+    # beyond.
+    "ACCESS_LOG_RETENTION_DAYS": None,
+    # --- Sign-in attempts ----------------------------------------------
+    # Failed passwords accepted for one account, or from one address,
+    # before the sign-in page refuses it for LOGIN_LOCKOUT_MINUTES.
+    # None turns the limit off. Counted in Django's cache: a cache
+    # shared by every process (Redis) in production.
+    "LOGIN_MAX_ATTEMPTS": 5,
+    "LOGIN_LOCKOUT_MINUTES": 15,
     # --- Logs ----------------------------------------------------------
     # Seconds during which the same error is mailed to ADMINS only once
     # (generic.logs.ErrorMailHandler); the next mail says how many were

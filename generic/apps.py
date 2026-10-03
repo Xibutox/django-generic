@@ -32,8 +32,15 @@ class GenericConfig(AppConfig):
         # URLconf is read, which is why it happens here.
         autodiscover_modules("resources")
 
+        # The trash's task, once a resource keeps one: it is the
+        # resources that say so.
+        from generic import trash
+
+        trash.register_task()
+
         # After them, so the framework's own screens come last in the
         # navigation: what the project declared is what it opens on.
+        from generic.access.resources import register_screens as accesses
         from generic.accounts.resources import register_screens as people
         from generic.events.resources import register_screens as messages
         from generic.history.resources import register_screens as history
@@ -43,6 +50,7 @@ class GenericConfig(AppConfig):
         tasks()
         mailings()
         history()
+        accesses()
         people()
         messages()
 

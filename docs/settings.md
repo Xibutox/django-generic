@@ -174,7 +174,11 @@ See [Scheduled mailings](mailings.md).
 | `SSO_PROVIDERS` | `[]` | Ways in that are not a password, offered first on the sign-in page: `[{"label", "route"/"url", "icon", "description", "order", "next_param"}]`. The same shape as `site.add_sso_provider()` |
 | `SSO_PASSWORD_LOGIN` | `True` | Whether the username and password form is offered at all. `False` takes it away — and is ignored when no provider is declared, because a page with no way in is a locked door rather than a policy |
 
-See [Signing in through somebody else](sso.md).
+| `LOGIN_MAX_ATTEMPTS` | `5` | Failed sign-ins in a row after which an account is locked for `LOGIN_LOCKOUT_MINUTES`; an address is locked after four times as many, on any accounts. `None` turns the lock off |
+| `LOGIN_LOCKOUT_MINUTES` | `15` | How long the lock lasts, counted from the last failure. Kept in the cache: give production a shared one |
+
+See [Signing in through somebody else](sso.md) and [Locking out
+guessers](sso.md#locking-out-guessers).
 
 ## The dashboard's hub
 
@@ -203,6 +207,15 @@ declares none accepts anything.
 | `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `generic.history.prune()` deletes beyond; nothing prunes on its own |
 
 See [History](history.md).
+
+## Trash and access log
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `TRASH_DAYS` | `30` | How long a record stays in a resource's trash before `empty_trash` (or the *Empty the trash* task) deletes it for good. `None` keeps everything |
+| `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `generic.access.prune()` deletes beyond |
+
+See [Trash and access log](trash.md).
 
 ## Logs
 

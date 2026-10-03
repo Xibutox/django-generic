@@ -3081,3 +3081,118 @@ msgstr "Les chefs d’équipe : ils voient aussi ses enregistrements."
 #: generic/wiki/api.py
 msgid "You may not write in this wiki."
 msgstr "Vous ne pouvez pas écrire dans ce wiki."
+
+msgid "Too many failed attempts. Try again in %(minutes)s minute."
+msgid_plural "Too many failed attempts. Try again in %(minutes)s minutes."
+msgstr[0] "Trop de tentatives échouées. Réessayez dans %(minutes)s minute."
+msgstr[1] "Trop de tentatives échouées. Réessayez dans %(minutes)s minutes."
+
+msgid "Trash"
+msgstr "Corbeille"
+
+msgid "Deleted records, until restored or deleted for good."
+msgstr ""
+"Les enregistrements supprimés, jusqu’à leur restauration ou leur suppression "
+"définitive."
+
+msgid "Move to the trash"
+msgstr "Mettre à la corbeille"
+
+msgid ""
+"Move the selected %(verbose_name_plural)s to the trash? They can be restored "
+"from there."
+msgstr ""
+"Mettre les %(verbose_name_plural)s sélectionnés à la corbeille ? Ils pourront"
+" y être restaurés."
+
+msgid "Delete for good"
+msgstr "Supprimer définitivement"
+
+msgid ""
+"Delete the selected %(verbose_name_plural)s for good? This cannot be undone."
+msgstr ""
+"Supprimer définitivement les %(verbose_name_plural)s sélectionnés ? C’est "
+"irréversible."
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Put the selected %(verbose_name_plural)s back?"
+msgstr "Restaurer les %(verbose_name_plural)s sélectionnés ?"
+
+msgid "%(count)s %(name)s restored."
+msgid_plural "%(count)s %(name_plural)s restored."
+msgstr[0] "%(count)s %(name)s restauré."
+msgstr[1] "%(count)s %(name_plural)s restaurés."
+
+msgid "%(count)s %(name)s moved to the trash."
+msgid_plural "%(count)s %(name_plural)s moved to the trash."
+msgstr[0] "%(count)s %(name)s mis à la corbeille."
+msgstr[1] "%(count)s %(name_plural)s mis à la corbeille."
+
+msgid "%(name)s was moved to the trash."
+msgstr "%(name)s a été mis à la corbeille."
+
+msgid "Move “%(name)s” to the trash? It can be restored from there."
+msgstr "Mettre « %(name)s » à la corbeille ? Il pourra y être restauré."
+
+msgid "record key"
+msgstr "clé de l’enregistrement"
+
+msgid "access"
+msgstr "accès"
+
+msgid "detail"
+msgstr "détail"
+
+msgid "access log"
+msgstr "journal des accès"
+
+msgid "Opened"
+msgstr "Consulté"
+
+msgid "Downloaded"
+msgstr "Téléchargé"
+
+msgid "Who opened which record, and who downloaded which file."
+msgstr "Qui a consulté quel enregistrement, et qui a téléchargé quel fichier."
+
+msgid "Access log"
+msgstr "Journal des accès"
+
+msgid "Deleted records stay here until they are restored or deleted for good."
+msgstr ""
+"Les enregistrements supprimés restent ici jusqu’à leur restauration ou leur "
+"suppression définitive."
+
+msgid ""
+"Deleted records stay here for %(counter)s day, then they are deleted for "
+"good."
+msgid_plural ""
+"Deleted records stay here for %(counter)s days, then they are deleted for "
+"good."
+msgstr[0] ""
+"Les enregistrements supprimés restent ici %(counter)s jour, puis sont "
+"supprimés définitivement."
+msgstr[1] ""
+"Les enregistrements supprimés restent ici %(counter)s jours, puis sont "
+"supprimés définitivement."
+
+msgid "deleted at"
+msgstr "supprimé le"
+
+msgid "deleted by"
+msgstr "supprimé par"
+
+msgid "%(count)s records deleted for good."
+msgstr "%(count)s enregistrements supprimés définitivement."
+
+msgid "Empty the trash"
+msgstr "Vider la corbeille"
+
+msgid ""
+"Deletes for good what has been in a trash longer than GENERIC['TRASH_DAYS']. "
+"Run it once a day."
+msgstr ""
+"Supprime définitivement ce qui est dans une corbeille depuis plus de "
+"GENERIC['TRASH_DAYS'] jours. À lancer une fois par jour."

@@ -784,6 +784,9 @@ class CustomerResource(ModelResource):
     group = _("Support")
     order = 1
     description = _("The companies the desk works for.")
+    # Who opened which customer: History > Access log, and a link on
+    # each customer's page (docs/trash.md).
+    access_log = True
 
     list_display = (
         "name",

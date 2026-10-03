@@ -1,0 +1,24 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n %}
+
+{# A resource's trash (ModelResource.trash): its deleted records, with  #}
+{# Restore and Delete for good - generic.sites.pages.TrashPageView.     #}
+
+{% block page_content %}
+  <section class="card">
+    <p class="muted">
+      {% if days %}
+        {% blocktranslate count counter=days trimmed %}
+          Deleted records stay here for {{ counter }} day, then they are
+          deleted for good.
+        {% plural %}
+          Deleted records stay here for {{ counter }} days, then they are
+          deleted for good.
+        {% endblocktranslate %}
+      {% else %}
+        {% translate "Deleted records stay here until they are restored or deleted for good." %}
+      {% endif %}
+    </p>
+    {% include "generic/components/table.html" with config=table id="trash-table" %}
+  </section>
+{% endblock %}

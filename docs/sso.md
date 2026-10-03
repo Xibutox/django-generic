@@ -92,6 +92,30 @@ For the same reason, a provider whose `route` does not resolve is left
 out quietly instead of raising: the one page nobody can sign in without
 should not be the page that breaks when a dependency is missing.
 
+## Locking out guessers
+
+The password form counts failures. After `LOGIN_MAX_ATTEMPTS` (5) in a
+row on one account, that account is refused for
+`LOGIN_LOCKOUT_MINUTES` (15) - without the password even being checked,
+so the right one does not get through either, and the page says to try
+again later. One address failing on any accounts is locked after four
+times as many. A successful sign-in clears the account's count.
+
+```python
+GENERIC = {"LOGIN_MAX_ATTEMPTS": 10, "LOGIN_LOCKOUT_MINUTES": 30}
+GENERIC = {"LOGIN_MAX_ATTEMPTS": None}   # no lock
+```
+
+- The counts live in Django's cache. The default local-memory cache is
+  per process: give a production with several workers a shared one
+  (Redis, the database).
+- The address is `REMOTE_ADDR`. Behind a proxy that is the proxy's, so
+  every visitor shares it: set `REMOTE_ADDR` from the proxy's header
+  in a middleware of your own if you rely on the address count.
+- Only the local password form is counted: a provider's sign-in is its
+  own (and so is its second factor).
+- Reaching the limit writes a warning in the `generic` log.
+
 ## Wiring a real provider
 
 The framework needs nothing beyond the declaration. For

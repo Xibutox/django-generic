@@ -10,10 +10,11 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_str
 from django.utils.translation import gettext
@@ -589,6 +590,14 @@ class ResourceDetailView(ResourceViewMixin, TemplateView):
             *(resource.get_record_links(request, obj) or ()),
         ]
 
+        if resource.access_log:
+            from generic.access.resources import record_link
+
+            accesses = record_link(request, resource, obj)
+
+            if accesses is not None:
+                items.append(accesses)
+
         url = resource.get_view_on_site_url(obj)
 
         if url:
@@ -815,11 +824,24 @@ class ResourceDeleteView(GenericDeleteView):
         context = super().get_context_data(**kwargs)
         context["generic_site"] = self.site
         context["resource"] = self.resource
+        context["trash"] = self.resource.trash
 
         return context
 
     def form_valid(self, form: Any) -> HttpResponse:
-        return super().form_valid(form)
+        if not self.resource.trash:
+            return super().form_valid(form)
+
+        # Into the trash, through the resource like the API's delete.
+        self.object = self.get_object()
+        label = str(self.object)
+        self.resource.delete_model(self.request, self.object)
+        messages.success(
+            self.request,
+            gettext("%(name)s was moved to the trash.") % {"name": label},
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
 
 
 __all__ = [

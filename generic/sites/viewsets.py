@@ -35,6 +35,7 @@ permissions, the actions.
 from __future__ import annotations
 
 import json
+import posixpath
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -305,13 +306,13 @@ class ResourceViewSet(
         context = super().get_serializer_context()
         # A file reads as {name, url, size}, the url this endpoint's
         # own download - or the one of whichever record it belongs to.
-        context[FILE_URL] = file_url_resolver(self.resource.site)
+        context[FILE_URL] = file_url_resolver(self.resource.site, self.request)
 
         return context
 
     def get_serializer_class(self) -> Any:
         if self.action in TABLE_ACTIONS:
-            return self.resource.get_table_serializer_class()
+            return self.resource.get_rows_serializer_class(self.request)
 
         return self.resource.get_form_serializer_class()
 
@@ -372,6 +373,11 @@ class ResourceViewSet(
 
         record = self.get_object()
 
+        if self.resource.access_log:
+            from generic.access import record as record_access
+
+            record_access(request, record, action="viewed")
+
         return Response(build_summary(self.resource, request, record))
 
     # -- files -------------------------------------------------------------
@@ -401,17 +407,31 @@ class ResourceViewSet(
         record = self.get_object()
         value = getattr(record, field)
 
-        if not is_stored(value):
+        if not is_stored(value) or not self.resource.may_download(
+            request, record, field
+        ):
             raise NotFound(gettext("There is no such file."))
 
+        name = self.resource.get_download_name(request, record, field)
+
         try:
-            return file_response(
-                value,
-                self.resource.get_download_name(request, record, field),
-            )
+            response = file_response(value, name)
         except OSError:
             # Gone between the check and the opening.
             raise NotFound(gettext("There is no such file."))
+
+        if self.resource.access_log:
+            from generic.access import record as record_access
+            from generic.api.files import file_name
+
+            record_access(
+                request,
+                record,
+                action="downloaded",
+                detail=name or posixpath.basename(file_name(value)),
+            )
+
+        return response
 
     def finalize_response(
         self,
@@ -424,12 +444,23 @@ class ResourceViewSet(
             request, response, *args, **kwargs
         )
 
+        action_name = getattr(self, "action", None)
+
         # Refusals too: whatever this address answers, nothing in it
         # may run in the site's origin.
-        if getattr(self, "action", None) == "download_file":
+        if action_name == "download_file":
             from generic.sites.files import protect
 
             protect(response)
+
+        # What a delete takes with it is moot when it goes to a trash:
+        # the dialog says so instead.
+        if (
+            action_name == "deletion_preview"
+            and self.resource.trash
+            and isinstance(getattr(response, "data", None), dict)
+        ):
+            response.data["trash"] = True
 
         return response
 

@@ -5,6 +5,7 @@ The models themselves live next to the code that uses them, in
 ``<app>.models``, so they are re-exported here to get registered.
 """
 
+from generic.access.models import AccessEntry
 from generic.accounts.models import SavedView, UserPreferences
 from generic.events.models import (
     Message,
@@ -21,6 +22,7 @@ from generic.tasks.models import TaskRun
 from generic.watch.models import Watch
 
 __all__ = [
+    "AccessEntry",
     "HistoryEntry",
     "Message",
     "Notification",
