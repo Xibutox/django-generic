@@ -435,6 +435,14 @@ class DocumentResource(ModelResource):
         "review_on",
         "updated_at",
     )
+    # There when asked for, in the column selector: the list opens on
+    # what tells one document from another.
+    list_display_hidden = (
+        "reference",
+        "published_label",
+        "checked_out_by",
+        "review_on",
+    )
     search_fields = (
         "code",
         "reference",

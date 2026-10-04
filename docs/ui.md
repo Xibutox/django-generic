@@ -473,6 +473,10 @@ application has no size setting of its own; a system that scales its
 display (125%, 150%) is answered by the layout's breakpoints, as it
 should be.
 
+The page takes the window's whole width, the navigation shown or not:
+`--content-max-width` is `none`. A project that would rather cap it on
+very wide screens gives it a length (`--content-max-width: 1600px`).
+
 A project that wants its whole interface a little smaller or larger
 sets the root size in its own stylesheet:
 

@@ -140,6 +140,7 @@ model nobody declared pages of its own. See
 | `group`, `order`, `show_in_navigation` | Sidebar placement; `group` defaults to the app's name |
 | `list_display` | Columns: fields, `related__paths`, resource methods, model attributes, `"__str__"` |
 | `list_display_links` | Columns linking to the record's page; the first by default |
+| `list_display_hidden` | Columns of `list_display` the table starts without: the column selector still offers them, filters and exports still know them |
 | `list_select_related`, `list_prefetch_related` | Extra joins; the ones the columns need are added for you |
 | `list_per_page` | First page size, before the user's own preference |
 | `search_fields` | What the search box, the autocomplete and the palette match |

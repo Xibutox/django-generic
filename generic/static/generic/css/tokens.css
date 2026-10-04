@@ -229,7 +229,9 @@
   /* -- Layout -------------------------------------------------------- */
   --sidebar-width: 17rem;
   --header-height: 3.5rem;
-  --content-max-width: 1600px;
+  /* The page takes the window's width, navigation shown or not; a
+     length here caps it, left-aligned, on a wider screen. */
+  --content-max-width: none;
   --control-height: 2.25rem;
   --control-height-sm: 1.875rem;
 

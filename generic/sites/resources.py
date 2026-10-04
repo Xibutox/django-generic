@@ -125,6 +125,9 @@ class ModelResource(PagesMixin):
     list_display: Sequence[Any] = ("__str__",)
     #: Columns linking to the change page. Defaults to the first.
     list_display_links: Sequence[Any] | None = None
+    #: Columns of ``list_display`` the table starts without: the column
+    #: selector still offers them, and a saved view may show them.
+    list_display_hidden: Sequence[Any] = ()
     list_select_related: Sequence[str] = ()
     list_prefetch_related: Sequence[str] = ()
     list_per_page: int | None = None

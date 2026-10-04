@@ -884,6 +884,17 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     ).json()
     assert "Pineapple" not in json.dumps(summary)
 
+    # The list opens without the columns one asks for now and then.
+    config = alice.get("/documents/document/").context["table_config"]
+    hidden = {
+        column["data"]
+        for column in config["columns"]
+        if column.get("visible") is False
+    }
+    assert hidden == {
+        "reference", "published_label", "checked_out_by", "review_on",
+    }, hidden
+
     # The list's shortcuts: Preview, and the file its reader reads.
     def shortcuts(client, title):
         row = next(

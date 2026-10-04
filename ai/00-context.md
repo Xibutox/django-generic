@@ -580,6 +580,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `group`, `order`, `show_in_navigation` | app name, 0, True | sidebar; set False for child models shown only in related tables |
 | `list_display` | `("__str__",)` | columns: field names, `related__paths` (single-valued), many-to-many / reverse names, resource methods, model properties, `"__str__"` |
 | `list_display_links` | first column | columns linking to the row's page |
+| `list_display_hidden` | `()` | columns of `list_display` the table starts without; still in the column selector - keep the default list short, park the rest here |
 | `list_select_related`, `list_prefetch_related` | auto | extra joins |
 | `list_per_page` | settings | first page size |
 | `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
