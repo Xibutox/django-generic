@@ -193,12 +193,13 @@ guide), and `manager` will sign the NDA off once Quentin has read it.
   shows the file in the page: PDF and images as they are, Word as
   text, text files as text.
 - **Shortcuts.** The list's *File* column has two icons on each row:
-  the eye opens the preview, the arrow downloads the latest version its
-  reader may read - the working file for its authors, the published
-  one for everyone else (`@display(icons=True)`). The reviews and the
-  tasks carry the same two icons for their document, and each version
-  its own download - and its stamped copy, once approved - so nobody
-  opens a page to find a button.
+  the eye opens the preview - where the format is one the page shows -
+  and the arrow downloads the latest version its reader may read: the
+  working file for its authors, the published one for everyone else
+  (`@display(icons=True)`). The reviews and the tasks carry the same
+  two icons for their document, and each version its own preview and
+  download, so nobody opens a page to find a button. A file's name is
+  text in the tables: the icons are how it is opened.
 - **Trash.** Delete a document: it goes to the *Trash* page of the
   list, its open review is cancelled, and *Restore* brings it back.
   Older than 30 days, `python manage.py empty_trash` deletes it for

@@ -17,14 +17,15 @@ from django.db.models import (
     Case,
     CharField,
     Exists,
+    F,
     OuterRef,
     Q,
     QuerySet,
     Value,
     When,
 )
+from django.http import Http404
 from django.utils import timezone
-from django.utils.text import capfirst
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -117,13 +118,15 @@ def widened(queryset: QuerySet, scoped: QuerySet, extra: Q) -> QuerySet:
     )
 
 
-def reads(user: Any, path: str = "") -> Case:
+def reads(user: Any, path: str = "") -> dict[str, Case]:
     """Which file of the document at ``path`` (``""`` on a document,
-    ``"document__"`` on what hangs on one) each row's reader reads: the
-    working one for its authors and whoever a review asks, the published
-    one for everyone else, none where there is none - ``preview.readable``
-    for a whole page of rows at once."""
+    ``"document__"`` on what hangs on one) each row's reader reads, and
+    its format: the working one for its authors and whoever a review
+    asks, the published one for everyone else, none where there is none
+    - ``preview.readable`` for a whole page of rows at once, as the
+    annotations ``reads`` and ``reads_format``."""
     has_file = ~Q(**{f"{path}file": ""})
+    published = Q(**{f"{path}published_version__isnull": False})
 
     if versions.sees_all_drafts(user):
         drafts: Any = has_file
@@ -135,37 +138,55 @@ def reads(user: Any, path: str = "") -> Case:
             )
         )
 
-    return Case(
-        When(drafts, then=Value("file")),
-        When(
-            **{f"{path}published_version__isnull": False},
-            then=Value("published_file"),
+    return {
+        "reads": Case(
+            When(drafts, then=Value("file")),
+            When(published, then=Value("published_file")),
+            default=Value(""),
+            output_field=CharField(),
         ),
-        default=Value(""),
-        output_field=CharField(),
-    )
+        "reads_format": Case(
+            When(drafts, then=F(f"{path}file_format")),
+            When(
+                published,
+                then=F(f"{path}published_version__file_format"),
+            ),
+            default=Value(""),
+            output_field=CharField(),
+        ),
+    }
 
 
-def document_shortcuts(document: Any, field: str) -> list[dict]:
-    """A row's icons to its document's file: the preview, the download
-    of ``field`` - none without a file its reader may read."""
+def document_shortcuts(document: Any, row: Any) -> list[dict]:
+    """A row's icons to its document's file, from what :func:`reads`
+    wrote on it: the preview where the format is one the page shows,
+    and the download - none without a file its reader may read."""
+    field = getattr(row, "reads", "")
+
     if not field:
         return []
 
     documents = site.get_resource(Document)
+    icons = []
 
-    return [
-        {
-            "icon": "visibility",
-            "label": gettext("Preview"),
-            "url": documents.get_page_url("preview", document),
-        },
+    if preview.previewable(getattr(row, "reads_format", "")):
+        icons.append(
+            {
+                "icon": "visibility",
+                "label": gettext("Preview"),
+                "url": documents.get_page_url("preview", document),
+            }
+        )
+
+    icons.append(
         {
             "icon": "download",
             "label": gettext("Download"),
             "url": documents.get_file_url(document, field),
-        },
-    ]
+        }
+    )
+
+    return icons
 
 
 class DocumentShortcuts:
@@ -177,14 +198,12 @@ class DocumentShortcuts:
         return (
             super()
             .get_list_queryset(request)  # type: ignore[misc]
-            .annotate(
-                reads=reads(getattr(request, "user", None), "document__")
-            )
+            .annotate(**reads(getattr(request, "user", None), "document__"))
         )
 
     @display(description=_("File"), icons=True)
     def shortcuts(self, row: Any) -> list[dict]:
-        return document_shortcuts(row.document_id, getattr(row, "reads", ""))
+        return document_shortcuts(row.document_id, row)
 
 
 STATUS_COLORS = {
@@ -712,12 +731,12 @@ class DocumentResource(ModelResource):
         return (
             super()
             .get_list_queryset(request)
-            .annotate(reads=reads(getattr(request, "user", None)))
+            .annotate(**reads(getattr(request, "user", None)))
         )
 
     @display(description=_("File"), icons=True)
     def shortcuts(self, document: Document) -> list[dict]:
-        return document_shortcuts(document.pk, getattr(document, "reads", ""))
+        return document_shortcuts(document.pk, document)
 
     @display(description=_("Size"))
     def size(self, document: Document) -> str:
@@ -1018,7 +1037,8 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
     list_display = (
         "document",
         "label",
-        "file",
+        # The name as text: a file is opened by the icons beside it.
+        "file_name",
         "shortcuts",
         "comment",
         "published_at",
@@ -1080,33 +1100,56 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
     def size(self, version: DocumentVersion) -> str:
         return human_size(version.file_size)
 
-    # This version's own files: the list shows a reader only the
+    # This version's own file: the list shows a reader only the
     # versions they may download (get_queryset, may_download).
-    @display(description=_("Download"), icons=True)
+    @display(description=_("File"), icons=True)
     def shortcuts(self, version: DocumentVersion) -> list[dict]:
+        if not version.file:
+            return []
+
         icons = []
 
-        if version.file:
+        if preview.previewable(version.file_format):
             icons.append(
                 {
-                    "icon": "download",
-                    "label": gettext("Download"),
-                    "url": self.get_file_url(version.pk, "file"),
+                    "icon": "visibility",
+                    "label": gettext("Preview"),
+                    "url": self.get_page_url("preview", version),
                 }
             )
 
-        if version.stamped:
-            icons.append(
-                {
-                    "icon": "verified",
-                    "label": capfirst(
-                        DocumentVersion._meta.get_field("stamped").verbose_name
-                    ),
-                    "url": self.get_file_url(version.pk, "stamped"),
-                }
-            )
+        icons.append(
+            {
+                "icon": "download",
+                "label": gettext("Download"),
+                "url": self.get_file_url(version.pk, "file"),
+            }
+        )
 
         return icons
+
+    @page(
+        title=_("Preview"),
+        detail=True,
+        icon="visibility",
+        row_menu=True,
+        template="documents/preview.html",
+    )
+    def preview(self, request: Any, version: DocumentVersion) -> dict:
+        if not self.may_download(request, version, "file"):
+            raise Http404
+
+        return {
+            "shown": preview.shown_version(request, version),
+            "file_url": self.get_page_url("preview-file", version),
+        }
+
+    @page(title=_("Previewed file"), detail=True, button=False)
+    def preview_file(self, request: Any, version: DocumentVersion) -> Any:
+        if not self.may_download(request, version, "file"):
+            raise Http404
+
+        return preview.version_file_response(request, version)
 
     def get_queryset(self, request: Any) -> QuerySet:
         queryset = super().get_queryset(request)
