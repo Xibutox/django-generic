@@ -75,6 +75,12 @@
   gap: var(--space-4);
 }
 
+/* Side by side, kept apart by the grid's gap: the margin stacked cards
+   have between them would push every card but the first down. */
+.summary__sections > .card + .card {
+  margin-top: 0;
+}
+
 .summary-section__header {
   display: flex;
   width: 100%;

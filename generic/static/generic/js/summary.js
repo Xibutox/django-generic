@@ -284,8 +284,37 @@
           });
         },
 
+        /** Keep the card as tall as it is until the tab being opened
+         * has its content: a panel still empty would shorten the page,
+         * and the browser would scroll the tabs out of the reader's
+         * hands. Returns what lets the card go back to its own height.
+         */
+        hold: function () {
+          var card = this.$root.querySelector(".summary-related");
+          var released = false;
+
+          if (!card || !card.offsetHeight) {
+            return function () {};
+          }
+
+          card.style.minHeight = card.offsetHeight + "px";
+
+          function release() {
+            if (!released) {
+              released = true;
+              card.style.minHeight = "";
+            }
+          }
+
+          // Whatever happens to the content, never held for good.
+          window.setTimeout(release, 4000);
+
+          return release;
+        },
+
         show: function (name) {
           var self = this;
+          var release = name === this.active ? function () {} : this.hold();
 
           this.active = name;
 
@@ -295,18 +324,24 @@
             );
 
             if (!table) {
+              // The history, which asks for its entries: a moment.
+              window.setTimeout(release, 600);
               return;
             }
 
             // Started already: only the widths, measured while hidden.
             if (table.genericDataTable) {
               table.genericDataTable.instance.columns.adjust();
+              release();
               return;
             }
 
             table.addEventListener(
               "generic:datatable-ready",
               function (event) {
+                event.detail.api.one("draw.dt", function () {
+                  window.requestAnimationFrame(release);
+                });
                 event.detail.api.on("xhr.dt", function (e, settings, json) {
                   if (json && typeof json.recordsTotal === "number") {
                     self.counts[name] = json.recordsTotal;

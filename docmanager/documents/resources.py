@@ -24,6 +24,7 @@ from django.db.models import (
     When,
 )
 from django.utils import timezone
+from django.utils.text import capfirst
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -114,6 +115,76 @@ def widened(queryset: QuerySet, scoped: QuerySet, extra: Q) -> QuerySet:
         Q(pk__in=scoped.values("pk"))
         | Q(pk__in=queryset.model._default_manager.filter(extra).values("pk"))
     )
+
+
+def reads(user: Any, path: str = "") -> Case:
+    """Which file of the document at ``path`` (``""`` on a document,
+    ``"document__"`` on what hangs on one) each row's reader reads: the
+    working one for its authors and whoever a review asks, the published
+    one for everyone else, none where there is none - ``preview.readable``
+    for a whole page of rows at once."""
+    has_file = ~Q(**{f"{path}file": ""})
+
+    if versions.sees_all_drafts(user):
+        drafts: Any = has_file
+    else:
+        drafts = has_file & Exists(
+            ReviewTask.objects.filter(
+                document=OuterRef(f"{path}pk"),
+                assignee=getattr(user, "pk", None),
+            )
+        )
+
+    return Case(
+        When(drafts, then=Value("file")),
+        When(
+            **{f"{path}published_version__isnull": False},
+            then=Value("published_file"),
+        ),
+        default=Value(""),
+        output_field=CharField(),
+    )
+
+
+def document_shortcuts(document: Any, field: str) -> list[dict]:
+    """A row's icons to its document's file: the preview, the download
+    of ``field`` - none without a file its reader may read."""
+    if not field:
+        return []
+
+    documents = site.get_resource(Document)
+
+    return [
+        {
+            "icon": "visibility",
+            "label": gettext("Preview"),
+            "url": documents.get_page_url("preview", document),
+        },
+        {
+            "icon": "download",
+            "label": gettext("Download"),
+            "url": documents.get_file_url(document, field),
+        },
+    ]
+
+
+class DocumentShortcuts:
+    """A resource of what hangs on a document, with the icons of that
+    document's file on each row: nobody goes to the document's page for
+    a download."""
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)  # type: ignore[misc]
+            .annotate(
+                reads=reads(getattr(request, "user", None), "document__")
+            )
+        )
+
+    @display(description=_("File"), icons=True)
+    def shortcuts(self, row: Any) -> list[dict]:
+        return document_shortcuts(row.document_id, getattr(row, "reads", ""))
 
 
 STATUS_COLORS = {
@@ -638,54 +709,15 @@ class DocumentResource(ModelResource):
         # Which file each row's reader reads: the working one for its
         # authors and whoever a review asks, the published one for
         # everyone else (preview.readable, for the whole page at once).
-        user = getattr(request, "user", None)
-        has_file = ~Q(file="")
-
-        if versions.sees_all_drafts(user):
-            drafts: Any = has_file
-        else:
-            drafts = has_file & Exists(
-                ReviewTask.objects.filter(
-                    document=OuterRef("pk"),
-                    assignee=getattr(user, "pk", None),
-                )
-            )
-
         return (
             super()
             .get_list_queryset(request)
-            .annotate(
-                reads=Case(
-                    When(drafts, then=Value("file")),
-                    When(
-                        published_version__isnull=False,
-                        then=Value("published_file"),
-                    ),
-                    default=Value(""),
-                    output_field=CharField(),
-                )
-            )
+            .annotate(reads=reads(getattr(request, "user", None)))
         )
 
     @display(description=_("File"), icons=True)
     def shortcuts(self, document: Document) -> list[dict]:
-        field = getattr(document, "reads", "")
-
-        if not field:
-            return []
-
-        return [
-            {
-                "icon": "visibility",
-                "label": gettext("Preview"),
-                "url": self.get_page_url("preview", document),
-            },
-            {
-                "icon": "download",
-                "label": gettext("Download"),
-                "url": self.get_file_url(document.pk, field),
-            },
-        ]
+        return document_shortcuts(document.pk, getattr(document, "reads", ""))
 
     @display(description=_("Size"))
     def size(self, document: Document) -> str:
@@ -987,6 +1019,7 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
         "document",
         "label",
         "file",
+        "shortcuts",
         "comment",
         "published_at",
         "created_by",
@@ -1046,6 +1079,34 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
     @display(description=_("Size"), ordering="file_size")
     def size(self, version: DocumentVersion) -> str:
         return human_size(version.file_size)
+
+    # This version's own files: the list shows a reader only the
+    # versions they may download (get_queryset, may_download).
+    @display(description=_("Download"), icons=True)
+    def shortcuts(self, version: DocumentVersion) -> list[dict]:
+        icons = []
+
+        if version.file:
+            icons.append(
+                {
+                    "icon": "download",
+                    "label": gettext("Download"),
+                    "url": self.get_file_url(version.pk, "file"),
+                }
+            )
+
+        if version.stamped:
+            icons.append(
+                {
+                    "icon": "verified",
+                    "label": capfirst(
+                        DocumentVersion._meta.get_field("stamped").verbose_name
+                    ),
+                    "url": self.get_file_url(version.pk, "stamped"),
+                }
+            )
+
+        return icons
 
     def get_queryset(self, request: Any) -> QuerySet:
         queryset = super().get_queryset(request)
@@ -1341,7 +1402,7 @@ def answer(error: workflows.WorkflowError) -> dict:
 
 
 @register(Review)
-class ReviewResource(LiveDocuments, ModelResource):
+class ReviewResource(DocumentShortcuts, LiveDocuments, ModelResource):
     icon = "rule"
     group = REVIEWS
     order = 1
@@ -1351,6 +1412,7 @@ class ReviewResource(LiveDocuments, ModelResource):
 
     list_display = (
         "document",
+        "shortcuts",
         "workflow",
         "status",
         "current_step",
@@ -1672,7 +1734,7 @@ class ReviewStepResource(LiveDocuments, ModelResource):
 
 
 @register(ReviewTask)
-class ReviewTaskResource(LiveDocuments, ModelResource):
+class ReviewTaskResource(DocumentShortcuts, LiveDocuments, ModelResource):
     icon = "task_alt"
     group = REVIEWS
     order = 0
@@ -1686,6 +1748,7 @@ class ReviewTaskResource(LiveDocuments, ModelResource):
 
     list_display = (
         "document",
+        "shortcuts",
         "step__name",
         "step__kind",
         "assignee",
@@ -1712,6 +1775,7 @@ class ReviewTaskResource(LiveDocuments, ModelResource):
         _("My tasks"): {
             "columns": [
                 "document",
+                "shortcuts",
                 "step__name",
                 "step__kind",
                 "status",

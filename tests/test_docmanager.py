@@ -921,6 +921,34 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     if without is not None:
         assert shortcuts(alice, without.title) == []
 
+    # The same icons wherever a document is a row's: its versions,
+    # its reviews, the tasks - each one leading somewhere its reader
+    # may go.
+    for client in (alice, bob, viewer, quentin):
+        for url in (
+            "/api/documents/documentversion/",
+            "/api/documents/review/",
+            "/api/documents/reviewtask/",
+        ):
+            for row in rows(client, url):
+                for icon in row["shortcuts"]:
+                    answer = client.get(icon["url"])
+                    assert answer.status_code == 200, (url, icon)
+    version_icons = [
+        icon["icon"]
+        for row in rows(alice, "/api/documents/documentversion/")
+        for icon in row["shortcuts"]
+    ]
+    assert "download" in version_icons
+    # The stamped copy, where pypdf stamped one.
+    if importlib.util.find_spec("pypdf"):
+        assert "verified" in version_icons, version_icons
+    task_icons = [
+        [icon["icon"] for icon in row["shortcuts"]]
+        for row in rows(quentin, "/api/documents/reviewtask/")
+    ]
+    assert ["visibility", "download"] in task_icons, task_icons
+
     # The readers' list of versions: the published ones.
     def labels_seen(client):
         return {
