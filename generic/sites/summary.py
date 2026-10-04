@@ -483,12 +483,15 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
             "actions": resource.get_actions_url(),
             "transitions": resource.get_transitions_url(obj.pk),
         },
-        # Bulk actions work on one record too; deleting has its own
-        # button, and transitions theirs, below.
+        # Bulk actions work on one record too - the ones that apply to
+        # this one; deleting has its own button, and transitions theirs,
+        # below.
         "actions": [
             entry.as_client()
             for name, entry in resource.get_actions(request).items()
-            if name != "delete_selected" and not is_transition_action(name)
+            if name != "delete_selected"
+            and not is_transition_action(name)
+            and resource.has_record_action(request, obj, name)
         ],
         # What this reader may do to this record's state, now.
         "transitions": [

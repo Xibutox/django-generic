@@ -665,6 +665,14 @@ class TicketResource(ModelResource):
             request, ids=list(queryset.values_list("pk", flat=True))
         )
 
+    def has_record_action(self, request: Any, obj: Any, name: str) -> bool:
+        # A ticket's page offers what applies to it: nothing to mark
+        # on one that is billable already.
+        if name == "mark_billable":
+            return not obj.is_billable
+
+        return super().has_record_action(request, obj, name)
+
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:
         updated = queryset.update(is_billable=True)

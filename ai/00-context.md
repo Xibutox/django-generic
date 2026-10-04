@@ -639,6 +639,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `get_download_name(request, obj, field)` | the name a file downloads under (default `""`: the stored name) - the name it was sent with, kept on the record |
 | `may_download(request, obj, field)` | whether the reader may download that file field (default True): refused, the download 404s and the summary and tables show no link |
 | `get_relation_queryset(request)` | what forms pointing at this model may choose; None = all (default unless `scope_relations`) |
+| `has_record_action(request, obj, name)` | whether the record's page offers the bulk action `name` for this record now (default True). Override so a record's page shows only what applies to its state - few buttons, none answering "already done"; the list keeps them all |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
 | `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
@@ -657,7 +658,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 def column(self, obj): ...
 
 @action(description=_("Label"), permissions=("change",),   # view/add/change/delete or "app.codename"
-        confirm=_("Sure?"), icon="bolt", variant="default") # or "danger"
+        confirm=_("Sure?"), icon="bolt", variant="default", # or "danger"
+        help=_("What it does, in a sentence."))             # the button's tip on the record's page - always give one
 def run(self, request, queryset):
     return None | "message" | {"message": ..., "level": "success|info|warning|error"} | Response
            | Report | {"message": ..., "report": Report} | an operation's run   # §13g

@@ -884,6 +884,27 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     ).json()
     assert "Pineapple" not in json.dumps(summary)
 
+    # A document's page offers what can be done to it now, each button
+    # saying what it does - not the list's seven actions.
+    def offered(client, document):
+        body = client.get(
+            f"/api/documents/document/{document.pk}/summary/"
+        ).json()
+        assert all(entry["help"] for entry in body["actions"]), body
+        return [entry["name"] for entry in body["actions"]]
+
+    assert offered(alice, framework) == [
+        "send_for_review", "approve", "check_out", "make_obsolete",
+    ], offered(alice, framework)
+    Document.objects.filter(pk=framework.pk).update(
+        checked_out_by=User.objects.get(username="alice")
+    )
+    assert "check_in" in offered(alice, framework)
+    assert "check_out" not in offered(alice, framework)
+    Document.objects.filter(pk=framework.pk).update(checked_out_by=None)
+    listed = alice.get("/documents/document/").context["table_config"]
+    assert "merge_word" in json.dumps(listed["options"])
+
     # The list opens without the columns one asks for now and then.
     config = alice.get("/documents/document/").context["table_config"]
     hidden = {
@@ -939,10 +960,17 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
         for row in rows(alice, "/api/documents/documentversion/")
         for icon in row["shortcuts"]
     ]
-    assert "download" in version_icons
-    # The stamped copy, where pypdf stamped one.
-    if importlib.util.find_spec("pypdf"):
-        assert "verified" in version_icons, version_icons
+    assert set(version_icons) == {"visibility", "download"}, version_icons
+    from documents import preview as previews
+    for row in rows(alice, "/api/documents/documentversion/"):
+        assert isinstance(row["file_name"], str), row
+        shown = [icon["icon"] for icon in row["shortcuts"]]
+        expected = ["download"]
+        if previews.previewable(row["file_format"]):
+            expected.insert(0, "visibility")
+        assert shown == expected, row
+    assert not previews.previewable("XLSX")
+    assert previews.previewable("pdf") and previews.previewable("DOCX")
     task_icons = [
         [icon["icon"] for icon in row["shortcuts"]]
         for row in rows(quentin, "/api/documents/reviewtask/")

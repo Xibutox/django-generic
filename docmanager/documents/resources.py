@@ -800,6 +800,29 @@ class DocumentResource(ModelResource):
 
         return True
 
+    def has_record_action(self, request: Any, obj: Any, name: str) -> bool:
+        # A document's page offers what can be done to it now - not the
+        # seven actions of the list, most of which would answer "already
+        # done". Merging is for a selection: the list's.
+        obsolete = obj.status == Document.Status.OBSOLETE
+        in_review = obj.status == Document.Status.REVIEW
+        published = bool(obj.published_label) and (
+            obj.published_label == obj.version_label
+        )
+        offered = {
+            # An approved one too: read again before its time.
+            "send_for_review": bool(obj.file) and not (obsolete or in_review),
+            "approve": bool(obj.file)
+            and not (obsolete or in_review or published),
+            "codify": not obj.code,
+            "check_out": not obsolete and obj.checked_out_by_id is None,
+            "check_in": obj.checked_out_by_id is not None,
+            "make_obsolete": not obsolete,
+            "merge_word": False,
+        }
+
+        return offered.get(name, super().has_record_action(request, obj, name))
+
     def delete_model(self, request: Any, obj: Any) -> None:
         from generic.trash import in_trash
 
@@ -831,6 +854,10 @@ class DocumentResource(ModelResource):
         icon="verified",
         permissions=("change",),
         confirm=_("Approve the selected documents?"),
+        help=_(
+            "Approves the current version without a review: it becomes "
+            "the published one, the version everyone reads."
+        ),
     )
     def approve(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -856,6 +883,10 @@ class DocumentResource(ModelResource):
         description=_("Send for review"),
         icon="rule",
         permissions=("view",),
+        help=_(
+            "Starts a review circuit: the people it names are asked to "
+            "review, then approve, this version."
+        ),
     )
     def send_for_review(self, request: Any, queryset: Any) -> dict:
         chosen = list(queryset.values_list("pk", flat=True)[:2])
@@ -884,6 +915,10 @@ class DocumentResource(ModelResource):
             "Give the selected documents their numbers? A number is "
             "never changed."
         ),
+        help=_(
+            "Gives the document its number, from its team's "
+            "codification. A number is never changed."
+        ),
     )
     def codify(self, request: Any, queryset: Any) -> dict:
         numbers = [
@@ -909,6 +944,10 @@ class DocumentResource(ModelResource):
         description=_("Check out"),
         icon="edit_document",
         permissions=("change",),
+        help=_(
+            "Tells the others you are working on it. Nobody is locked "
+            "out: they are only warned."
+        ),
     )
     def check_out(self, request: Any, queryset: Any) -> dict:
         taken = 0
@@ -945,6 +984,7 @@ class DocumentResource(ModelResource):
         description=_("Check in"),
         icon="assignment_turned_in",
         permissions=("change",),
+        help=_("Says the work on it is over: the document is free again."),
     )
     def check_in(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -986,6 +1026,10 @@ class DocumentResource(ModelResource):
         permissions=("change",),
         confirm=_("Mark the selected documents obsolete? They stay here."),
         variant="danger",
+        help=_(
+            "Withdraws the document: it stays here, marked as no longer "
+            "in use."
+        ),
     )
     def make_obsolete(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -1001,6 +1045,10 @@ class DocumentResource(ModelResource):
         description=_("Merge into Word"),
         icon="merge_type",
         permissions=("view",),
+        help=_(
+            "Puts the selected Word files together into one, with a "
+            "template."
+        ),
     )
     def merge_word(self, request: Any, queryset: Any) -> dict:
         return merge_page_for(queryset, "d")

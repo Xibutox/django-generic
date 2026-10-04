@@ -189,6 +189,7 @@ model nobody declared pages of its own. See
 | `save_model(request, serializer, change)` | `serializer.save()` |
 | `delete_model(request, obj)` | `obj.delete()` |
 | `get_actions(request)` | `actions`, filtered on each action's permissions |
+| `has_record_action(request, obj, name)` | `True`. Whether the record's page offers that action for this record, now: leave out what does not apply (approving what is approved) so the page shows what can be done. The list still offers every action |
 | `get_record_links(request, obj)` | `[]`. `ToolbarItem`s for pages built around this record, shown first on its summary; as many as needed — what does not fit folds into the toolbar's ⋯ menu |
 | `can_edit_column(request, column, obj=None)` | `True`. Freeze an editable column per row or per reader |
 | `save_editable(request, obj, changes)` | Resolve, validate with the form's serializer, save in one transaction ([Editing in the table](editable.md)) |
