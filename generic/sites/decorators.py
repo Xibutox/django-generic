@@ -20,6 +20,7 @@ def action(
     confirm: Any = None,
     icon: str = "",
     variant: str = "default",
+    help: Any = None,
 ) -> Any:
     """Mark a resource method as a bulk action on the table.
 
@@ -35,6 +36,7 @@ def action(
     action: ``view``, ``add``, ``change``, ``delete``, or any full
     permission string. The method may return nothing, a message, a
     ``{"message": ..., "level": ...}`` dict, or a DRF ``Response``.
+    ``help`` says in a sentence what it does: the tip of its button.
     """
 
     def decorate(func: Function) -> Function:
@@ -43,6 +45,7 @@ def action(
         func.confirmation = confirm  # type: ignore[attr-defined]
         func.icon = icon  # type: ignore[attr-defined]
         func.variant = variant  # type: ignore[attr-defined]
+        func.help_text = help  # type: ignore[attr-defined]
 
         if description is not None:
             func.short_description = description  # type: ignore[attr-defined]

@@ -140,6 +140,7 @@ model nobody declared pages of its own. See
 | `group`, `order`, `show_in_navigation` | Sidebar placement; `group` defaults to the app's name |
 | `list_display` | Columns: fields, `related__paths`, resource methods, model attributes, `"__str__"` |
 | `list_display_links` | Columns linking to the record's page; the first by default |
+| `list_display_hidden` | Columns of `list_display` the table starts without: the column selector still offers them, filters and exports still know them |
 | `list_select_related`, `list_prefetch_related` | Extra joins; the ones the columns need are added for you |
 | `list_per_page` | First page size, before the user's own preference |
 | `search_fields` | What the search box, the autocomplete and the palette match |
@@ -188,6 +189,7 @@ model nobody declared pages of its own. See
 | `save_model(request, serializer, change)` | `serializer.save()` |
 | `delete_model(request, obj)` | `obj.delete()` |
 | `get_actions(request)` | `actions`, filtered on each action's permissions |
+| `has_record_action(request, obj, name)` | `True`. Whether the record's page offers that action for this record, now: leave out what does not apply (approving what is approved) so the page shows what can be done. The list still offers every action |
 | `get_record_links(request, obj)` | `[]`. `ToolbarItem`s for pages built around this record, shown first on its summary; as many as needed — what does not fit folds into the toolbar's ⋯ menu |
 | `can_edit_column(request, column, obj=None)` | `True`. Freeze an editable column per row or per reader |
 | `save_editable(request, obj, changes)` | Resolve, validate with the form's serializer, save in one transaction ([Editing in the table](editable.md)) |

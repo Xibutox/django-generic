@@ -17,12 +17,14 @@ from django.db.models import (
     Case,
     CharField,
     Exists,
+    F,
     OuterRef,
     Q,
     QuerySet,
     Value,
     When,
 )
+from django.http import Http404
 from django.utils import timezone
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
@@ -114,6 +116,94 @@ def widened(queryset: QuerySet, scoped: QuerySet, extra: Q) -> QuerySet:
         Q(pk__in=scoped.values("pk"))
         | Q(pk__in=queryset.model._default_manager.filter(extra).values("pk"))
     )
+
+
+def reads(user: Any, path: str = "") -> dict[str, Case]:
+    """Which file of the document at ``path`` (``""`` on a document,
+    ``"document__"`` on what hangs on one) each row's reader reads, and
+    its format: the working one for its authors and whoever a review
+    asks, the published one for everyone else, none where there is none
+    - ``preview.readable`` for a whole page of rows at once, as the
+    annotations ``reads`` and ``reads_format``."""
+    has_file = ~Q(**{f"{path}file": ""})
+    published = Q(**{f"{path}published_version__isnull": False})
+
+    if versions.sees_all_drafts(user):
+        drafts: Any = has_file
+    else:
+        drafts = has_file & Exists(
+            ReviewTask.objects.filter(
+                document=OuterRef(f"{path}pk"),
+                assignee=getattr(user, "pk", None),
+            )
+        )
+
+    return {
+        "reads": Case(
+            When(drafts, then=Value("file")),
+            When(published, then=Value("published_file")),
+            default=Value(""),
+            output_field=CharField(),
+        ),
+        "reads_format": Case(
+            When(drafts, then=F(f"{path}file_format")),
+            When(
+                published,
+                then=F(f"{path}published_version__file_format"),
+            ),
+            default=Value(""),
+            output_field=CharField(),
+        ),
+    }
+
+
+def document_shortcuts(document: Any, row: Any) -> list[dict]:
+    """A row's icons to its document's file, from what :func:`reads`
+    wrote on it: the preview where the format is one the page shows,
+    and the download - none without a file its reader may read."""
+    field = getattr(row, "reads", "")
+
+    if not field:
+        return []
+
+    documents = site.get_resource(Document)
+    icons = []
+
+    if preview.previewable(getattr(row, "reads_format", "")):
+        icons.append(
+            {
+                "icon": "visibility",
+                "label": gettext("Preview"),
+                "url": documents.get_page_url("preview", document),
+            }
+        )
+
+    icons.append(
+        {
+            "icon": "download",
+            "label": gettext("Download"),
+            "url": documents.get_file_url(document, field),
+        }
+    )
+
+    return icons
+
+
+class DocumentShortcuts:
+    """A resource of what hangs on a document, with the icons of that
+    document's file on each row: nobody goes to the document's page for
+    a download."""
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)  # type: ignore[misc]
+            .annotate(**reads(getattr(request, "user", None), "document__"))
+        )
+
+    @display(description=_("File"), icons=True)
+    def shortcuts(self, row: Any) -> list[dict]:
+        return document_shortcuts(row.document_id, row)
 
 
 STATUS_COLORS = {
@@ -435,6 +525,14 @@ class DocumentResource(ModelResource):
         "review_on",
         "updated_at",
     )
+    # There when asked for, in the column selector: the list opens on
+    # what tells one document from another.
+    list_display_hidden = (
+        "reference",
+        "published_label",
+        "checked_out_by",
+        "review_on",
+    )
     search_fields = (
         "code",
         "reference",
@@ -630,54 +728,15 @@ class DocumentResource(ModelResource):
         # Which file each row's reader reads: the working one for its
         # authors and whoever a review asks, the published one for
         # everyone else (preview.readable, for the whole page at once).
-        user = getattr(request, "user", None)
-        has_file = ~Q(file="")
-
-        if versions.sees_all_drafts(user):
-            drafts: Any = has_file
-        else:
-            drafts = has_file & Exists(
-                ReviewTask.objects.filter(
-                    document=OuterRef("pk"),
-                    assignee=getattr(user, "pk", None),
-                )
-            )
-
         return (
             super()
             .get_list_queryset(request)
-            .annotate(
-                reads=Case(
-                    When(drafts, then=Value("file")),
-                    When(
-                        published_version__isnull=False,
-                        then=Value("published_file"),
-                    ),
-                    default=Value(""),
-                    output_field=CharField(),
-                )
-            )
+            .annotate(**reads(getattr(request, "user", None)))
         )
 
     @display(description=_("File"), icons=True)
     def shortcuts(self, document: Document) -> list[dict]:
-        field = getattr(document, "reads", "")
-
-        if not field:
-            return []
-
-        return [
-            {
-                "icon": "visibility",
-                "label": gettext("Preview"),
-                "url": self.get_page_url("preview", document),
-            },
-            {
-                "icon": "download",
-                "label": gettext("Download"),
-                "url": self.get_file_url(document.pk, field),
-            },
-        ]
+        return document_shortcuts(document.pk, document)
 
     @display(description=_("Size"))
     def size(self, document: Document) -> str:
@@ -741,6 +800,29 @@ class DocumentResource(ModelResource):
 
         return True
 
+    def has_record_action(self, request: Any, obj: Any, name: str) -> bool:
+        # A document's page offers what can be done to it now - not the
+        # seven actions of the list, most of which would answer "already
+        # done". Merging is for a selection: the list's.
+        obsolete = obj.status == Document.Status.OBSOLETE
+        in_review = obj.status == Document.Status.REVIEW
+        published = bool(obj.published_label) and (
+            obj.published_label == obj.version_label
+        )
+        offered = {
+            # An approved one too: read again before its time.
+            "send_for_review": bool(obj.file) and not (obsolete or in_review),
+            "approve": bool(obj.file)
+            and not (obsolete or in_review or published),
+            "codify": not obj.code,
+            "check_out": not obsolete and obj.checked_out_by_id is None,
+            "check_in": obj.checked_out_by_id is not None,
+            "make_obsolete": not obsolete,
+            "merge_word": False,
+        }
+
+        return offered.get(name, super().has_record_action(request, obj, name))
+
     def delete_model(self, request: Any, obj: Any) -> None:
         from generic.trash import in_trash
 
@@ -772,6 +854,10 @@ class DocumentResource(ModelResource):
         icon="verified",
         permissions=("change",),
         confirm=_("Approve the selected documents?"),
+        help=_(
+            "Approves the current version without a review: it becomes "
+            "the published one, the version everyone reads."
+        ),
     )
     def approve(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -797,6 +883,10 @@ class DocumentResource(ModelResource):
         description=_("Send for review"),
         icon="rule",
         permissions=("view",),
+        help=_(
+            "Starts a review circuit: the people it names are asked to "
+            "review, then approve, this version."
+        ),
     )
     def send_for_review(self, request: Any, queryset: Any) -> dict:
         chosen = list(queryset.values_list("pk", flat=True)[:2])
@@ -825,6 +915,10 @@ class DocumentResource(ModelResource):
             "Give the selected documents their numbers? A number is "
             "never changed."
         ),
+        help=_(
+            "Gives the document its number, from its team's "
+            "codification. A number is never changed."
+        ),
     )
     def codify(self, request: Any, queryset: Any) -> dict:
         numbers = [
@@ -850,6 +944,10 @@ class DocumentResource(ModelResource):
         description=_("Check out"),
         icon="edit_document",
         permissions=("change",),
+        help=_(
+            "Tells the others you are working on it. Nobody is locked "
+            "out: they are only warned."
+        ),
     )
     def check_out(self, request: Any, queryset: Any) -> dict:
         taken = 0
@@ -886,6 +984,7 @@ class DocumentResource(ModelResource):
         description=_("Check in"),
         icon="assignment_turned_in",
         permissions=("change",),
+        help=_("Says the work on it is over: the document is free again."),
     )
     def check_in(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -927,6 +1026,10 @@ class DocumentResource(ModelResource):
         permissions=("change",),
         confirm=_("Mark the selected documents obsolete? They stay here."),
         variant="danger",
+        help=_(
+            "Withdraws the document: it stays here, marked as no longer "
+            "in use."
+        ),
     )
     def make_obsolete(self, request: Any, queryset: Any) -> str:
         count = 0
@@ -942,6 +1045,10 @@ class DocumentResource(ModelResource):
         description=_("Merge into Word"),
         icon="merge_type",
         permissions=("view",),
+        help=_(
+            "Puts the selected Word files together into one, with a "
+            "template."
+        ),
     )
     def merge_word(self, request: Any, queryset: Any) -> dict:
         return merge_page_for(queryset, "d")
@@ -978,7 +1085,9 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
     list_display = (
         "document",
         "label",
-        "file",
+        # The name as text: a file is opened by the icons beside it.
+        "file_name",
+        "shortcuts",
         "comment",
         "published_at",
         "created_by",
@@ -1038,6 +1147,57 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
     @display(description=_("Size"), ordering="file_size")
     def size(self, version: DocumentVersion) -> str:
         return human_size(version.file_size)
+
+    # This version's own file: the list shows a reader only the
+    # versions they may download (get_queryset, may_download).
+    @display(description=_("File"), icons=True)
+    def shortcuts(self, version: DocumentVersion) -> list[dict]:
+        if not version.file:
+            return []
+
+        icons = []
+
+        if preview.previewable(version.file_format):
+            icons.append(
+                {
+                    "icon": "visibility",
+                    "label": gettext("Preview"),
+                    "url": self.get_page_url("preview", version),
+                }
+            )
+
+        icons.append(
+            {
+                "icon": "download",
+                "label": gettext("Download"),
+                "url": self.get_file_url(version.pk, "file"),
+            }
+        )
+
+        return icons
+
+    @page(
+        title=_("Preview"),
+        detail=True,
+        icon="visibility",
+        row_menu=True,
+        template="documents/preview.html",
+    )
+    def preview(self, request: Any, version: DocumentVersion) -> dict:
+        if not self.may_download(request, version, "file"):
+            raise Http404
+
+        return {
+            "shown": preview.shown_version(request, version),
+            "file_url": self.get_page_url("preview-file", version),
+        }
+
+    @page(title=_("Previewed file"), detail=True, button=False)
+    def preview_file(self, request: Any, version: DocumentVersion) -> Any:
+        if not self.may_download(request, version, "file"):
+            raise Http404
+
+        return preview.version_file_response(request, version)
 
     def get_queryset(self, request: Any) -> QuerySet:
         queryset = super().get_queryset(request)
@@ -1333,7 +1493,7 @@ def answer(error: workflows.WorkflowError) -> dict:
 
 
 @register(Review)
-class ReviewResource(LiveDocuments, ModelResource):
+class ReviewResource(DocumentShortcuts, LiveDocuments, ModelResource):
     icon = "rule"
     group = REVIEWS
     order = 1
@@ -1343,6 +1503,7 @@ class ReviewResource(LiveDocuments, ModelResource):
 
     list_display = (
         "document",
+        "shortcuts",
         "workflow",
         "status",
         "current_step",
@@ -1664,7 +1825,7 @@ class ReviewStepResource(LiveDocuments, ModelResource):
 
 
 @register(ReviewTask)
-class ReviewTaskResource(LiveDocuments, ModelResource):
+class ReviewTaskResource(DocumentShortcuts, LiveDocuments, ModelResource):
     icon = "task_alt"
     group = REVIEWS
     order = 0
@@ -1678,6 +1839,7 @@ class ReviewTaskResource(LiveDocuments, ModelResource):
 
     list_display = (
         "document",
+        "shortcuts",
         "step__name",
         "step__kind",
         "assignee",
@@ -1704,6 +1866,7 @@ class ReviewTaskResource(LiveDocuments, ModelResource):
         _("My tasks"): {
             "columns": [
                 "document",
+                "shortcuts",
                 "step__name",
                 "step__kind",
                 "status",

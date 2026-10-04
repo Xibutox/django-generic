@@ -641,7 +641,7 @@ msgid "Send for review"
 msgstr "Envoyer en validation"
 
 msgid "Codify"
-msgstr "Codifier"
+msgstr "Numéroter"
 
 msgid "Give the selected documents their numbers? A number is never changed."
 msgstr "Donner leur numéro aux documents sélectionnés ? Un numéro ne change jamais."
@@ -1093,3 +1093,24 @@ msgstr "Version %(label)s, brouillon"
 
 msgid "A folder of this name is already there."
 msgstr "Un dossier de ce nom existe déjà à cet endroit."
+
+msgid "Approves the current version without a review: it becomes the published one, the version everyone reads."
+msgstr "Approuve la version en cours sans cycle de validation : elle devient la version publiée, celle que tout le monde lit."
+
+msgid "Starts a review circuit: the people it names are asked to review, then approve, this version."
+msgstr "Lance un cycle de validation : les personnes qu'il désigne sont invitées à relire, puis approuver, cette version."
+
+msgid "Gives the document its number, from its team's codification. A number is never changed."
+msgstr "Donne au document son numéro, selon la codification de son équipe. Un numéro ne change jamais."
+
+msgid "Tells the others you are working on it. Nobody is locked out: they are only warned."
+msgstr "Signale aux autres que vous travaillez dessus. Personne n'est bloqué : ils sont seulement prévenus."
+
+msgid "Says the work on it is over: the document is free again."
+msgstr "Indique que le travail est terminé : le document est de nouveau libre."
+
+msgid "Withdraws the document: it stays here, marked as no longer in use."
+msgstr "Retire le document : il reste ici, marqué comme n'étant plus utilisé."
+
+msgid "Puts the selected Word files together into one, with a template."
+msgstr "Assemble les fichiers Word sélectionnés en un seul, avec un modèle."

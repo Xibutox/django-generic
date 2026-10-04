@@ -60,6 +60,7 @@
           <button type="button"
                   class="button button--sm"
                   :class="{ 'button--danger-ghost': action.variant === 'danger' }"
+                  :title="action.help || null"
                   :disabled="busy"
                   @click="run(action)">
             <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="action.icon" x-text="action.icon"></span>

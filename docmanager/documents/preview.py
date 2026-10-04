@@ -136,10 +136,40 @@ def word_html(data: bytes) -> str:
     )
 
 
+def previewable(kind: str) -> bool:
+    """Whether a file of this format (``"PDF"``, ``"DOCX"``) is shown in
+    the page - anything else is only downloaded."""
+    kind = (kind or "").upper()
+
+    return (
+        kind == "PDF"
+        or kind in IMAGES
+        or kind in text.WORD_FORMATS
+        or kind in text.TEXT_FORMATS
+    )
+
+
 def shown(request: Any, document: Document) -> Shown:
     """What the preview page draws for ``request``'s reader."""
     version, stored, name = readable(request.user, document)
 
+    return draw(request, document, version, stored, name)
+
+
+def shown_version(request: Any, version: DocumentVersion) -> Shown:
+    """What one version's preview page draws: that version's own file,
+    for whoever may download it."""
+    if not version.file:
+        return Shown()
+
+    return draw(request, version, version, version.file, version.file_name)
+
+
+def draw(
+    request: Any, about: Any, version: Any, stored: Any, name: str
+) -> Shown:
+    """``stored`` as the page shows it, the look written in ``about``'s
+    access log."""
     if version is None:
         return Shown()
 
@@ -168,7 +198,7 @@ def shown(request: Any, document: Document) -> Shown:
 
     record(
         request,
-        document,
+        about,
         action="viewed",
         detail=f"preview {version.label}"[:255],
     )
@@ -188,6 +218,19 @@ def file_response(request: Any, document: Document) -> Any:
     """The previewed PDF or picture, shown in the page - never anything
     else: whatever else a file is, it is downloaded."""
     version, stored, name = readable(request.user, document)
+
+    return inline(version, stored, name)
+
+
+def version_file_response(request: Any, version: DocumentVersion) -> Any:
+    """One version's own PDF or picture, shown in its preview page."""
+    if not version.file:
+        raise Http404
+
+    return inline(version, version.file, version.file_name)
+
+
+def inline(version: Any, stored: Any, name: str) -> Any:
     kind = text.format_of(name)
 
     if version is None or (kind != "PDF" and kind not in IMAGES):
@@ -216,4 +259,11 @@ def file_response(request: Any, document: Document) -> Any:
     return response
 
 
-__all__ = ["file_response", "readable", "shown"]
+__all__ = [
+    "file_response",
+    "previewable",
+    "readable",
+    "shown",
+    "shown_version",
+    "version_file_response",
+]

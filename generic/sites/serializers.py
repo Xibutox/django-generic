@@ -310,7 +310,7 @@ class TableSerializerBuilder:
             **self.declared,
             **self.methods,
             "Meta": meta,
-            "datatable_overrides": self.link_overrides(),
+            "datatable_overrides": self.column_overrides(),
             "generic_select_related": tuple(sorted(self.select_related)),
             "generic_prefetch_related": tuple(sorted(self.prefetch_related)),
             "generic_tag_links": dict(self.tag_links),
@@ -732,6 +732,18 @@ class TableSerializerBuilder:
         self.register(entry, entry, ManyRelatedColumn(**options))
 
     # -- links ---------------------------------------------------------
+
+    def column_overrides(self) -> dict[str, dict[str, Any]]:
+        """The link columns, and the ones the table starts without."""
+        overrides = self.link_overrides()
+
+        for entry in getattr(self.resource, "list_display_hidden", ()):
+            name = self.entry_names.get(entry, entry)
+
+            if name in self.declared and name != ROW_KEY:
+                overrides.setdefault(name, {})["visible"] = False
+
+        return overrides
 
     def link_overrides(self) -> dict[str, dict[str, Any]]:
         """Make the link columns open the change page of their row."""

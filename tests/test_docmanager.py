@@ -884,6 +884,38 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     ).json()
     assert "Pineapple" not in json.dumps(summary)
 
+    # A document's page offers what can be done to it now, each button
+    # saying what it does - not the list's seven actions.
+    def offered(client, document):
+        body = client.get(
+            f"/api/documents/document/{document.pk}/summary/"
+        ).json()
+        assert all(entry["help"] for entry in body["actions"]), body
+        return [entry["name"] for entry in body["actions"]]
+
+    assert offered(alice, framework) == [
+        "send_for_review", "approve", "check_out", "make_obsolete",
+    ], offered(alice, framework)
+    Document.objects.filter(pk=framework.pk).update(
+        checked_out_by=User.objects.get(username="alice")
+    )
+    assert "check_in" in offered(alice, framework)
+    assert "check_out" not in offered(alice, framework)
+    Document.objects.filter(pk=framework.pk).update(checked_out_by=None)
+    listed = alice.get("/documents/document/").context["table_config"]
+    assert "merge_word" in json.dumps(listed["options"])
+
+    # The list opens without the columns one asks for now and then.
+    config = alice.get("/documents/document/").context["table_config"]
+    hidden = {
+        column["data"]
+        for column in config["columns"]
+        if column.get("visible") is False
+    }
+    assert hidden == {
+        "reference", "published_label", "checked_out_by", "review_on",
+    }, hidden
+
     # The list's shortcuts: Preview, and the file its reader reads.
     def shortcuts(client, title):
         row = next(
@@ -909,6 +941,41 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     without = Document.objects.filter(file="").first()
     if without is not None:
         assert shortcuts(alice, without.title) == []
+
+    # The same icons wherever a document is a row's: its versions,
+    # its reviews, the tasks - each one leading somewhere its reader
+    # may go.
+    for client in (alice, bob, viewer, quentin):
+        for url in (
+            "/api/documents/documentversion/",
+            "/api/documents/review/",
+            "/api/documents/reviewtask/",
+        ):
+            for row in rows(client, url):
+                for icon in row["shortcuts"]:
+                    answer = client.get(icon["url"])
+                    assert answer.status_code == 200, (url, icon)
+    version_icons = [
+        icon["icon"]
+        for row in rows(alice, "/api/documents/documentversion/")
+        for icon in row["shortcuts"]
+    ]
+    assert set(version_icons) == {"visibility", "download"}, version_icons
+    from documents import preview as previews
+    for row in rows(alice, "/api/documents/documentversion/"):
+        assert isinstance(row["file_name"], str), row
+        shown = [icon["icon"] for icon in row["shortcuts"]]
+        expected = ["download"]
+        if previews.previewable(row["file_format"]):
+            expected.insert(0, "visibility")
+        assert shown == expected, row
+    assert not previews.previewable("XLSX")
+    assert previews.previewable("pdf") and previews.previewable("DOCX")
+    task_icons = [
+        [icon["icon"] for icon in row["shortcuts"]]
+        for row in rows(quentin, "/api/documents/reviewtask/")
+    ]
+    assert ["visibility", "download"] in task_icons, task_icons
 
     # The readers' list of versions: the published ones.
     def labels_seen(client):

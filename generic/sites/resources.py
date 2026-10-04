@@ -76,6 +76,8 @@ class ResourceAction:
     icon: str = ""
     confirm: str = ""
     variant: str = "default"
+    #: What it does, in a sentence: the tip of its button.
+    help: str = ""
 
     def as_client(self) -> dict[str, Any]:
         return {
@@ -84,6 +86,7 @@ class ResourceAction:
             "icon": self.icon,
             "confirm": self.confirm,
             "variant": self.variant,
+            "help": self.help,
         }
 
 
@@ -125,6 +128,9 @@ class ModelResource(PagesMixin):
     list_display: Sequence[Any] = ("__str__",)
     #: Columns linking to the change page. Defaults to the first.
     list_display_links: Sequence[Any] | None = None
+    #: Columns of ``list_display`` the table starts without: the column
+    #: selector still offers them, and a saved view may show them.
+    list_display_hidden: Sequence[Any] = ()
     list_select_related: Sequence[str] = ()
     list_prefetch_related: Sequence[str] = ()
     list_per_page: int | None = None
@@ -1412,6 +1418,18 @@ class ModelResource(PagesMixin):
             "verbose_name_plural": self.opts.verbose_name_plural,
         }
 
+    def has_record_action(self, request: Any, obj: Any, name: str) -> bool:
+        """Whether the record's page offers the action ``name`` for
+        ``obj``, now.
+
+        The list offers every action, whatever is selected; a record's
+        page knows the record. Override to leave out what does not
+        apply to it - approving what is approved, releasing what nobody
+        holds - so the page shows what can be done, not everything
+        that exists. The action itself still decides when it runs.
+        """
+        return True
+
     def get_actions(
         self,
         request: Any,
@@ -1458,6 +1476,7 @@ class ModelResource(PagesMixin):
 
             description = getattr(function, "short_description", None)
             confirm = getattr(function, "confirmation", None)
+            tip = getattr(function, "help_text", None)
 
             if self.trash and name == "delete_selected":
                 description, confirm = TRASH_DELETE[trashing]
@@ -1471,6 +1490,7 @@ class ModelResource(PagesMixin):
                 icon=getattr(function, "icon", "") or "",
                 confirm=self._describe(confirm) if confirm else "",
                 variant=getattr(function, "variant", "default") or "default",
+                help=self._describe(tip) if tip else "",
             )
 
         if self.transition_actions and not trashing:

@@ -364,7 +364,10 @@ class TestSummary:
         admin_client,
         support_desk,
     ):
+        from example.models import Ticket
+
         login = support_desk["login"]
+        Ticket.objects.filter(pk=login.pk).update(is_billable=False)
         body = self.summary(admin_client, f"{TICKETS}{login.pk}/summary/")
 
         # Transitions are not among them: they have their own buttons,
@@ -378,6 +381,45 @@ class TestSummary:
             "resolve",
             "wait",
         ]
+
+    def test_an_action_that_does_not_apply_is_left_out(
+        self,
+        admin_client,
+        support_desk,
+    ):
+        from example.models import Ticket
+
+        login = support_desk["login"]
+        Ticket.objects.filter(pk=login.pk).update(is_billable=True)
+        body = self.summary(admin_client, f"{TICKETS}{login.pk}/summary/")
+
+        # Billable already: the page does not offer to mark it so. The
+        # list still does, whatever is selected.
+        assert [entry["name"] for entry in body["actions"]] == ["check"]
+
+    def test_an_action_says_what_it_does(self, rf, admin_user):
+        from django.utils.translation import gettext_lazy as _
+
+        from example.models import Tag
+        from generic.sites import ModelResource, action, site
+
+        class TagResource(ModelResource):
+            actions = ("archive", "plain")
+
+            @action(description=_("Archive"), help=_("Puts it away."))
+            def archive(self, request, queryset):
+                return None
+
+            @action(description=_("Plain"))
+            def plain(self, request, queryset):
+                return None
+
+        request = rf.get("/")
+        request.user = admin_user
+        actions = TagResource(Tag, site).get_actions(request)
+
+        assert actions["archive"].as_client()["help"] == "Puts it away."
+        assert actions["plain"].as_client()["help"] == ""
 
 
 class TestSummaryPage:
