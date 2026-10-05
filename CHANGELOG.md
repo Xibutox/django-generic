@@ -10,9 +10,35 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.3.0] - 2026-10-05
 
 ### Added
+- The document manager runs in Docker: `docmanager/compose.yaml` puts
+  gunicorn behind nginx, which redirects HTTP to HTTPS, serves the
+  static files and signs its own certificate on its first start. The
+  data lives in PostgreSQL, the cache (and so the sign-in lock, shared
+  by every worker) in Redis, and the documents' files in
+  `docmanager/data/documents` on the host (`DOCUMENTS_DIR`). Ports and
+  names come from `docmanager/.env`. Without those services the
+  settings fall back on SQLite and the local-memory cache, as before.
+  See docmanager/README.md.
+- The document manager grows: search inside files (Office formats and
+  PDF), versions labelled 0.1, 1.0, 1.1, 2.0 with readers seeing only
+  the published one, approved PDFs stamped, a preview page for
+  documents and versions, folders in folders, periodic reviews that
+  remind and start on their own, and deleted documents kept in a
+  trash. Every documents table carries preview and download icons,
+  and the documents list starts with fewer columns.
+- Customers keep an access log: who opened which customer, under
+  *History › Access log* and from each customer's page. A ticket's
+  page offers *Mark as billable* only when the ticket is not billable
+  yet, and every action button says what it does.
+- A minimal example beside the full one, `minimal/`: one settings
+  file, the URLs and one app with one model whose screens come from
+  `auto(Book)`, on the core package alone, with the wiki and a Docker
+  image of its own. With `MICROSOFT_CLIENT_ID`,
+  `MICROSOFT_CLIENT_SECRET` and `MICROSOFT_TENANT_ID` set, it signs in
+  with Microsoft through django-allauth. See minimal/README.md.
 - The document manager becomes a GED: documents numbered by each
   team's codification (`LEG-CTR-2026-0001`, a pattern per team on the
   framework's new `generic.numbering`), with or without a file -

@@ -433,7 +433,7 @@ folder, and the project's `requirements.txt` names it by its path with
 the extras it uses:
 
 ```text
-./vendor/django_generic-1.2.0-py3-none-any.whl[export,import,api,fsm,events,tasks,postgres,wiki]
+./vendor/django_generic-1.3.0-py3-none-any.whl[export,import,api,fsm,events,tasks,postgres,wiki]
 ```
 
 The copied Dockerfile then copies `requirements.txt` and `vendor/` in

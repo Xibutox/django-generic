@@ -17,7 +17,7 @@ rather than inventing new wiring.
 
 ```
 <project>/
-├── pyproject.toml            dependencies: django-generic[<extras>]>=1.2,<2 by name
+├── pyproject.toml            dependencies: django-generic[<extras>]>=1.3,<2 by name
 ├── requirements.txt          ./vendor/django_generic-<version>-py3-none-any.whl, then -e .
 ├── requirements-dev.txt      -r requirements.txt, then -e .[dev]
 ├── vendor/                   the framework's wheel, committed (it is not on PyPI)
@@ -61,7 +61,7 @@ rather than inventing new wiring.
    is an unrelated package: never install it by name. Build its wheel
    from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`),
    copy it into `vendor/`, and commit it. `pyproject.toml` lists
-   `django-generic[export,events,tasks,postgres,wiki]>=1.2,<2` by name
+   `django-generic[export,events,tasks,postgres,wiki]>=1.3,<2` by name
    (Python ≥ 3.10, Django ≥ 5.2, DRF ≥ 3.16) and the project's own
    `dev` extra for tests and linters. `requirements.txt` holds the
    wheel's path, then `-e .`, so pip takes the wheel for the name;

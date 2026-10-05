@@ -283,7 +283,7 @@ def test_the_example_is_released_with_the_framework():
     """The example ships with each release of the framework, and says
     so in three places the framework's version does not reach: the
     navigation's footer and the Help page, its API description, and its
-    own changelog. They stayed at 1.0.0 through 1.1.0 and 1.2.0, their
+    own changelog. They stayed at 1.0.0 through 1.1.0, 1.2.0 and 1.3.0, their
     changes piled under Unreleased. Unreleased entries may wait on top
     of it between releases; the newest release must be this one."""
     from example_project.settings import base
