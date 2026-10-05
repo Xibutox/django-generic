@@ -54,9 +54,9 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 8000
 
-# The tables, the demo's teams, people and documents - seed_documents
-# leaves alone what is already there - then gunicorn.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_documents && exec gunicorn docsite.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 300 --forwarded-allow-ips '*' --access-logfile -"]
+# The tables, then the demo (DEMO_DATA) or the first administrator
+# (DJANGO_SUPERUSER_*), then gunicorn: docker-start.sh.
+CMD ["sh", "docker-start.sh"]
 
 # -- nginx --------------------------------------------------------------
 

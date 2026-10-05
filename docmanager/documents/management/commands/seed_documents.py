@@ -3,10 +3,15 @@ documents and versions, numbers, review circuits and reviews under
 way, and a wiki per team beside one for everyone.
 
     python manage.py seed_documents
+    python manage.py seed_documents --roles-only
 
 Every account's password is ``demo``. Running it again changes nothing
 already there: the people and teams are found by name, and documents
 are only added to a folder that has none.
+
+``--roles-only`` makes the groups alone - Editors, Readers, Quality
+and Managers, with their permissions - for a document manager that
+starts empty (DEMO_DATA=0 in the Docker stack).
 """
 
 from __future__ import annotations
@@ -415,9 +420,21 @@ def permissions(*codenames: str) -> list[Permission]:
 class Command(BaseCommand):
     help = "Teams, people, folders and documents to try the example with."
 
+    def add_arguments(self, parser) -> None:
+        parser.add_argument(
+            "--roles-only",
+            action="store_true",
+            help="Only the groups and their permissions: no demo data.",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options) -> None:
         groups = self.groups()
+
+        if options["roles_only"]:
+            self.stdout.write(f"Groups: {', '.join(groups)}.")
+            return
+
         teams = {
             name: Team.objects.get_or_create(
                 name=name, defaults={"color": color}

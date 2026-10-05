@@ -59,6 +59,12 @@ services:
       POSTGRES_USER: docmanager
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docmanager}
       REDIS_URL: redis://redis:6379/0
+      # 1: the demo's teams, people and documents (password demo).
+      # 0: an empty document manager, with this administrator if set.
+      DEMO_DATA: ${DEMO_DATA:-1}
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-}
     volumes:
       # Every version of every document, in a folder of this machine:
       # docmanager/data/documents unless DOCUMENTS_DIR names another.
