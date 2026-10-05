@@ -1,0 +1,56 @@
+# The document manager behind nginx. ${VARIABLES} in capitals are
+# filled from the environment when the container starts; nginx's own
+# ($host, $scheme...) are left alone.
+
+upstream docmanager_web {
+    server web:8000;
+}
+
+# Port 80: everything to HTTPS.
+server {
+    listen 80;
+    server_name _;
+
+    return 301 https://$host:${HTTPS_PORT}$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name _;
+
+    # Signed by nginx/10-self-signed.sh on the first start.
+    ssl_certificate /etc/nginx/certs/server.crt;
+    ssl_certificate_key /etc/nginx/certs/server.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+
+    # Documents are up to FILE_MAX_SIZE (50 MB, docsite/settings.py);
+    # nginx refuses anything above 1 MB unless told.
+    client_max_body_size 60m;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json
+               image/svg+xml text/plain;
+
+    # The static files, collected in the image. No location for the
+    # documents' files (MEDIA_ROOT): Django serves each one through its
+    # record's endpoint, which checks who asks.
+    location /static/ {
+        alias /srv/static/;
+        access_log off;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    # Everything else: the pages and the REST API. A merge of many Word
+    # files takes a while; five minutes before nginx gives up.
+    location / {
+        proxy_pass http://docmanager_web;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+}
