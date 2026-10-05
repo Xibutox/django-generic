@@ -83,6 +83,29 @@ DATABASES = {
         "NAME": os.environ.get("DJANGO_DB_PATH") or BASE_DIR / "db.sqlite3",
     }
 }
+# PostgreSQL when the environment names its server, as the Docker stack
+# does (compose.yaml): needs psycopg, pip install "..[postgres]".
+if os.environ.get("POSTGRES_HOST"):
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "NAME": os.environ.get("POSTGRES_DB", "docmanager"),
+        "USER": os.environ.get("POSTGRES_USER", "docmanager"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "CONN_MAX_AGE": 60,
+    }
+
+# Redis as the cache when the environment names one: what the cache
+# keeps - the failed sign-ins counted by the login lock - is then the
+# same for every gunicorn worker, not one count per process.
+if os.environ.get("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.environ["REDIS_URL"],
+        }
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # English and French, the framework's two: the account menu switches.

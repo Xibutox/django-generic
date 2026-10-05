@@ -59,7 +59,9 @@ def codify(document: Document) -> str:
     """Give ``document`` its number, if it has none yet; the number."""
     with transaction.atomic():
         document = (
-            Document.objects.select_for_update()
+            # The document's row alone: PostgreSQL locks no row of a
+            # nullable join (the type), and refuses the query if asked.
+            Document.objects.select_for_update(of=("self",))
             .select_related("folder__team", "document_type")
             .get(pk=document.pk)
         )

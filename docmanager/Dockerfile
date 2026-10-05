@@ -2,7 +2,8 @@
 #
 # The document manager in containers, two images from one file:
 #
-#   --target web     the application, run by gunicorn (plain WSGI)
+#   --target web     the application, run by gunicorn (plain WSGI), on
+#                    PostgreSQL, with Redis as its cache
 #   --target nginx   nginx in front: HTTPS with a certificate it signs
 #                    itself on its first start, the static files, the
 #                    rest handed to gunicorn
@@ -19,7 +20,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    DJANGO_DB_PATH=/data/db.sqlite3 \
     DJANGO_MEDIA_ROOT=/data/media \
     DJANGO_STATIC_ROOT=/app/staticfiles
 
@@ -30,23 +30,28 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # The framework with the export and wiki extras, as the README installs
-# it, the document manager's own libraries, and gunicorn to serve it.
+# it, and postgres (psycopg); the document manager's own libraries;
+# gunicorn to serve it and the Redis client for the cache.
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
 COPY docmanager/requirements.txt ./
-RUN pip install ".[export,wiki]" -r requirements.txt "gunicorn>=22" \
+RUN pip install ".[export,wiki,postgres]" -r requirements.txt \
+    "gunicorn>=22" "redis>=5.0" \
     && rm -rf /src
 
 WORKDIR /app
 COPY docmanager/ ./
 RUN python manage.py collectstatic --noinput
 
-# The database and the documents' files live in /data, a volume, so
-# they outlive the container.
-RUN useradd --create-home app && mkdir /data && chown app /data
+# The documents' files are in /data/media, a folder of the host mounted
+# there (compose.yaml). The entrypoint, as root, hands it to this user
+# - a folder Docker made on Linux is root's - then runs the command as
+# app, who owns nothing else it could damage.
+RUN useradd --create-home app && mkdir -p /data/media && chown app /data/media
+COPY --chmod=755 docmanager/docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
 
-USER app
 EXPOSE 8000
 
 # The tables, the demo's teams, people and documents - seed_documents
