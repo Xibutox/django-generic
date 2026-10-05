@@ -1150,6 +1150,49 @@ def test_the_migrations_are_up_to_date():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+#: For a document manager that starts empty: the groups, nothing else.
+ROLES_ONLY = textwrap.dedent("""
+    import os
+
+    os.environ["DJANGO_SETTINGS_MODULE"] = "docsite.settings"
+
+    import django
+
+    django.setup()
+
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import Group
+    from django.core.management import call_command
+    from django.db import connection
+
+    from documents.models import Document
+    from generic.teams.models import Team
+
+    connection.creation.create_test_db(verbosity=0)
+    call_command("seed_documents", "--roles-only", stdout=open(os.devnull, "w"))
+
+    groups = {group.name: group for group in Group.objects.all()}
+    assert sorted(groups) == ["Editors", "Managers", "Quality", "Readers"]
+    assert groups["Editors"].permissions.filter(
+        codename="add_document"
+    ).exists()
+    assert groups["Managers"].permissions.filter(
+        codename="see_every_team"
+    ).exists()
+    assert not get_user_model().objects.exists()
+    assert not Team.objects.exists()
+    assert not Document.objects.exists()
+    print("ok")
+    """)
+
+
+def test_the_roles_alone_for_an_empty_start():
+    result = manage("-c", ROLES_ONLY)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
 def test_teams_documents_and_versions_work_together():
     result = manage("-c", SCENARIO)
 

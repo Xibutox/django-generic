@@ -105,7 +105,7 @@ Then <https://localhost/>, the same accounts. Four containers:
 
 - `web`: the document manager run by gunicorn, `DEBUG` off. Each start
   runs `migrate` and `seed_documents`, which leaves alone what is
-  already there. The documents' files - every version of each - are in
+  already there (`DEMO_DATA=0`: an empty start, below). The documents' files - every version of each - are in
   a folder of this machine, `docmanager/data/documents` (git ignores
   it): seen in the Explorer, backed up with the rest.
 - `db`: PostgreSQL 16, its data in the `postgres-data` volume.
@@ -130,6 +130,8 @@ local network needs.
 | `DOCUMENTS_DIR` | `./data/documents` | the documents' folder, relative to `docmanager/` or absolute (`D:/GED/documents`) |
 | `POSTGRES_PASSWORD` | `docmanager` | set before the first start: the database keeps the first one |
 | `DJANGO_SECRET_KEY` | a fixed one | |
+| `DEMO_DATA` | `1` | `0`: no demo, only the roles (below) |
+| `DJANGO_SUPERUSER_USERNAME`, `_PASSWORD`, `_EMAIL` | - | the first administrator, made while there is nobody |
 
 Set them in a `.env` file beside `compose.yaml` - `docmanager/.env`,
 which git ignores - on Windows as anywhere else:
@@ -143,11 +145,45 @@ SERVER_NAME=srv-docs
 DJANGO_ALLOWED_HOSTS=srv-docs,localhost,127.0.0.1
 ```
 
-`docker compose -f docmanager/compose.yaml down -v` empties the
-database and drops the certificate; the documents' folder stays, to be
-emptied by hand to start over. After a change to `SERVER_NAME`,
-removing the `certs` volume alone (`docker volume rm docmanager_certs`)
-signs a new certificate.
+#### Starting empty, without the demo
+
+`DEMO_DATA=0` in `docmanager/.env`: no teams, people, folders or
+documents, only the roles - the groups Editors, Readers, Quality and
+Managers with their permissions (`seed_documents --roles-only`). And
+an administrator to sign in with, either from the same file - made on
+the first start, while there is nobody; changing these lines later
+changes no account:
+
+```ini
+DEMO_DATA=0
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_PASSWORD=a-real-password
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+```
+
+or by hand once it runs:
+
+```bash
+docker compose -f docmanager/compose.yaml exec web python manage.py createsuperuser
+```
+
+Then *People › Teams*, folders, document types and numbering, as the
+administrator.
+
+#### Starting over
+
+```bash
+docker compose -f docmanager/compose.yaml down -v
+```
+
+empties the database (and drops the certificate). The documents'
+folder is a folder of this machine, not a volume: `down -v` leaves it
+alone, and it is emptied by hand - delete `docmanager/data/documents`
+- or the new database starts beside the old one's files. Then `up`
+again, with or without `DEMO_DATA=0`.
+
+After a change to `SERVER_NAME`, removing the `certs` volume alone
+(`docker volume rm docmanager_certs`) signs a new certificate.
 
 A certificate of your own instead: copy `server.crt` and `server.key`
 into the `certs` volume, and nginx serves them. The e-mails of the
