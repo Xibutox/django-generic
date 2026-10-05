@@ -15,7 +15,8 @@ example](../minimal/README.md): one settings file, plain WSGI, SQLite.
 docmanager/
 ├── manage.py
 ├── Dockerfile          gunicorn, and nginx in front (optional)
-├── compose.yaml        docker compose -f docmanager/compose.yaml up
+├── compose.yaml        docker compose -f docmanager/compose.yaml up:
+│                       nginx, gunicorn, PostgreSQL, Redis
 ├── nginx/              HTTPS with a self-signed certificate, the static files
 ├── docsite/
 │   ├── settings.py     generic.teams and generic.wiki installed, MEDIA_ROOT
@@ -100,12 +101,16 @@ macOS):
 docker compose -f docmanager/compose.yaml up --build
 ```
 
-Then <https://localhost/>, the same accounts. Two containers:
+Then <https://localhost/>, the same accounts. Four containers:
 
 - `web`: the document manager run by gunicorn, `DEBUG` off. Each start
   runs `migrate` and `seed_documents`, which leaves alone what is
-  already there. The database and the documents' files are in the
-  `data` volume.
+  already there. The documents' files - every version of each - are in
+  a folder of this machine, `docmanager/data/documents` (git ignores
+  it): seen in the Explorer, backed up with the rest.
+- `db`: PostgreSQL 16, its data in the `postgres-data` volume.
+- `redis`: the cache. The login lock counts failed sign-ins there, the
+  same count for every gunicorn worker.
 - `nginx`: HTTPS, with port 80 redirected to it, the static files
   (collected into the image), and the rest handed to gunicorn. The
   documents' files are not among what it serves: Django sends each one
@@ -122,6 +127,8 @@ local network needs.
 | `HTTP_PORT`, `HTTPS_PORT` | `80`, `443` | the ports on this machine, if those are taken |
 | `SERVER_NAME` | `localhost` | the machine's name on the network, put in the certificate |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | the names the site answers to |
+| `DOCUMENTS_DIR` | `./data/documents` | the documents' folder, relative to `docmanager/` or absolute (`D:/GED/documents`) |
+| `POSTGRES_PASSWORD` | `docmanager` | set before the first start: the database keeps the first one |
 | `DJANGO_SECRET_KEY` | a fixed one | |
 
 Set them in a `.env` file beside `compose.yaml` - `docmanager/.env`,
@@ -136,10 +143,11 @@ SERVER_NAME=srv-docs
 DJANGO_ALLOWED_HOSTS=srv-docs,localhost,127.0.0.1
 ```
 
-`docker compose -f docmanager/compose.yaml down -v` starts over: the
-database, the files and the certificate. After a change to
-`SERVER_NAME`, this or removing the `certs` volume alone
-(`docker volume rm docmanager_certs`) signs a new certificate.
+`docker compose -f docmanager/compose.yaml down -v` empties the
+database and drops the certificate; the documents' folder stays, to be
+emptied by hand to start over. After a change to `SERVER_NAME`,
+removing the `certs` volume alone (`docker volume rm docmanager_certs`)
+signs a new certificate.
 
 A certificate of your own instead: copy `server.crt` and `server.key`
 into the `certs` volume, and nginx serves them. The e-mails of the

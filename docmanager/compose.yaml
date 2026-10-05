@@ -1,5 +1,7 @@
 # The document manager over HTTPS: gunicorn behind nginx, which serves
-# the static files and signs its own certificate.
+# the static files and signs its own certificate; PostgreSQL for the
+# data, Redis for the cache, and the documents' files in a folder of
+# this machine, docmanager/data/documents.
 #
 #   docker compose -f docmanager/compose.yaml up --build
 #
@@ -15,6 +17,30 @@
 name: docmanager
 
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docmanager
+      POSTGRES_USER: docmanager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docmanager}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docmanager -d docmanager"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   web:
     build:
       context: ..
@@ -28,9 +54,20 @@ services:
       # The names the site is reached by: add the machine's own to
       # reach it from the network (and SERVER_NAME for the certificate).
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      POSTGRES_HOST: db
+      POSTGRES_DB: docmanager
+      POSTGRES_USER: docmanager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docmanager}
+      REDIS_URL: redis://redis:6379/0
     volumes:
-      # The database and every version of every document.
-      - data:/data
+      # Every version of every document, in a folder of this machine:
+      # docmanager/data/documents unless DOCUMENTS_DIR names another.
+      - ${DOCUMENTS_DIR:-./data/documents}:/data/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -63,5 +100,5 @@ services:
         condition: service_healthy
 
 volumes:
-  data:
+  postgres-data:
   certs:

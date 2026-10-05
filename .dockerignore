@@ -25,6 +25,7 @@ logs
 staticfiles
 # Uploaded files are data, in the app-media volume, never in an image.
 media
+docmanager/data
 
 .idea
 .vscode

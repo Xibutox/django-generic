@@ -45,3 +45,6 @@ docker/nginx/acme/
 !.vscode/settings.json
 !.vscode/extensions.json
 .DS_Store
+
+# The document manager's files, when Docker runs it (docmanager/compose.yaml).
+docmanager/data/
