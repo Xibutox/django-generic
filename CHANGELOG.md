@@ -21,7 +21,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `docmanager/data/documents` on the host (`DOCUMENTS_DIR`). Ports and
   names come from `docmanager/.env`. Without those services the
   settings fall back on SQLite and the local-memory cache, as before.
-  See docmanager/README.md.
+  `DEMO_DATA=0` starts it empty, with its roles (Editors, Readers,
+  Quality, Managers - `seed_documents --roles-only`) and, from
+  `DJANGO_SUPERUSER_USERNAME`, `_PASSWORD` and `_EMAIL`, a first
+  administrator. See docmanager/README.md.
 - The document manager grows: search inside files (Office formats and
   PDF), versions labelled 0.1, 1.0, 1.1, 2.0 with readers seeing only
   the published one, approved PDFs stamped, a preview page for
