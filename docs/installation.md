@@ -35,11 +35,11 @@ Built once per version, from a checkout:
 ```bash
 git clone https://github.com/Xibutox/django-generic.git
 cd django-generic
-git checkout v1.2.0          # the version to install; `git tag` lists them
+git checkout v1.3.0          # the version to install; `git tag` lists them
 python -m pip wheel --no-deps --wheel-dir dist .
 ```
 
-That leaves `dist/django_generic-1.2.0-py3-none-any.whl`. Building it
+That leaves `dist/django_generic-1.3.0-py3-none-any.whl`. Building it
 needs pip alone (and the network, for the build's own setuptools). The
 same file installs everywhere: a virtual environment, a Docker image, a
 server that cannot reach the repository.
@@ -60,14 +60,14 @@ python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 
 mkdir vendor
-cp ../django-generic/dist/django_generic-1.2.0-py3-none-any.whl vendor/
+cp ../django-generic/dist/django_generic-1.3.0-py3-none-any.whl vendor/
 ```
 
 `requirements.txt`, at the project's root - the wheel by its path,
 with the [extras](#extras) wanted in brackets:
 
 ```text
-./vendor/django_generic-1.2.0-py3-none-any.whl[export]
+./vendor/django_generic-1.3.0-py3-none-any.whl[export]
 ```
 
 ```bash
@@ -158,12 +158,12 @@ two middlewares, a few URLs and its own tables.
 
    A project whose dependencies live in its `pyproject.toml` lists the
    framework there by name, with its extras -
-   `"django-generic[export]>=1.2,<2"` - and keeps the wheel's path in
+   `"django-generic[export]>=1.3,<2"` - and keeps the wheel's path in
    `requirements.txt`, installed in the same command as the project
    itself:
 
    ```text
-   ./vendor/django_generic-1.2.0-py3-none-any.whl
+   ./vendor/django_generic-1.3.0-py3-none-any.whl
    -e .
    ```
 
@@ -237,7 +237,7 @@ parts come as extras, named in brackets after the wheel's path - in
 `requirements.txt`, or in `pyproject.toml` after the name:
 
 ```text
-./vendor/django_generic-1.2.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+./vendor/django_generic-1.3.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
 and installed again with `pip install -r requirements.txt`.

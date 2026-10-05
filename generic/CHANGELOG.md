@@ -9,6 +9,95 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.3.0] - 2026-10-05
+
+### Added
+- Operations: the work behind a button, answered with a report.
+  `generic.reports.Report` holds levelled lines and sections that fold,
+  and isolated sections that roll back one item and go on.
+  `@operation` and `operation_response` in `generic.tasks` run the
+  work in the request or, with `.start(request, background=True)`, in
+  the background: through Celery, or a thread when no worker answers
+  (`OPERATION_FALLBACK`). Every task run keeps its report
+  (`TaskRun.tree`, migration `generic 0016`), and `Generic.operations`
+  draws it in the browser as a card that follows the run until it
+  ends. See docs/operations.md.
+- Teams, `generic.teams` (an optional app, migrations `0001` and
+  `0002`). A `Team` has members and leaders. `team_field` on a
+  resource (`"team"`, `"folder__team"`, `"teams"`) narrows its lists,
+  pages, searches, files, watches and the forms pointing at it to the
+  reader's teams, and refuses another team's key sent by hand. A user
+  may belong to several teams; leaders see their team's records;
+  superusers and holders of `generic_teams.see_every_team` see
+  everything. `scope_to_teams()`, `teams_of()`, `leaders_of()` and
+  `in_teams_of()` serve a project's own views. `scope_relations =
+  True` gives forms the same narrowing for any resource that restricts
+  its rows. See docs/teams.md.
+- Numbering, `generic.numbering`: numbers such as `LEG-CTR-2026-0001`
+  from a `Pattern`, each given once however many requests ask at the
+  same time (`allocate()`, `peek()`, `generic.Sequence`,
+  migration `generic 0017`). See docs/numbering.md.
+- A trash: `trash = True` on a resource moves deleted records to a
+  trash (the `Trashable` mixin) instead of deleting them. A *Trash*
+  page restores them or deletes them for good; the `empty_trash`
+  command and the `generic.empty_trash` task delete what is older than
+  `TRASH_DAYS` (30). See docs/trash.md.
+- An access log: `access_log = True` on a resource records who opened
+  which record and who downloaded which file (`generic.access`,
+  migration `generic 0018`), shown under *History › Access log* and
+  linked from the record's page. `ACCESS_LOG_RETENTION_DAYS` and
+  `generic.access.prune()` keep it bounded.
+- Sign-in lock: after `LOGIN_MAX_ATTEMPTS` (5) failed passwords for
+  one account or from one address, the sign-in page refuses it for
+  `LOGIN_LOCKOUT_MINUTES` (15). Counted in Django's cache, so a
+  production with several processes needs a shared cache (Redis).
+  `None` turns it off.
+- Several wikis. A `Wiki` model groups pages under their own menu:
+  `wiki/` lists the wikis, `wiki/<wiki>/<page>/` is a page, and
+  `wiki/api/wikis/` manages them under the `add/change/delete_wiki`
+  permissions (migrations `0004` to `0006`). `GENERIC["WIKI_ACCESS"]`
+  narrows which wikis a user reads, everywhere at once (pages, search,
+  dashboard, PDF); `GENERIC["WIKI_EDIT_ACCESS"]` narrows which they
+  write in; `Wiki.objects.readable_by()` and `writable_by()` apply
+  them.
+- A wiki downloads as a PDF, `wiki/<wiki>/export.pdf`: a cover, a
+  table of contents, every page in menu order, uploaded images
+  embedded and files listed. Written with fpdf2 (pure Python, in the
+  `wiki` extra); `WIKI_PDF_FONTS` chooses the fonts.
+- Files in the wiki: the editor's paperclip, a drop or a paste uploads
+  files into a page, each a block linking to its download
+  (`generic_wiki.WikiFile`, migration `0003`, `POST
+  api/generic/wiki/files/`, `GET wiki/files/<id>/` always as an
+  attachment). Images dropped or pasted are uploaded too. The
+  toolbar's arrows (Alt+Up / Alt+Down) move a line, an image or a file
+  up and down the page, and a page lists its attachments under its
+  text and in its API.
+- Resources: `form_extra_fields`, questions a form asks that the model
+  does not keep (a change note), handed to `save_model` as
+  `serializer.extra_values`; `get_download_name()`, a file downloaded
+  under another name than the stored one; `may_download(request, obj,
+  field)`, to refuse one file field; `list_display_hidden`, columns a
+  table starts without, still offered by the column selector;
+  `has_record_action(request, obj, name)`, so a record's page offers
+  only the actions that apply to it.
+- `@action(help=...)`: a sentence saying what the action does, the
+  tip of its button. `@display(icons=True)`: a column of icons one
+  clicks, shortcuts of the row (preview, download...).
+- A bulk action may open a page of the site by returning
+  `{"redirect": "/path/"}`; another site's address is refused. See
+  docs/sites.md.
+
+### Changed
+- Pages take the window's full width. A project may still cap them
+  with `--content-max-width` (it was 1600px).
+- A wiki page's address holds its wiki: the route `generic_wiki:page`
+  takes `wiki` and `slug`, and a page's slug is unique within its
+  wiki. Existing pages move into a first wiki, `main`, and their old
+  addresses redirect; code linking to a page should use
+  `page.get_absolute_url()`.
+- On a summary page, cards side by side start at the same height, and
+  switching tabs no longer scrolls the page back up.
+
 ## [1.2.0] - 2026-09-27
 
 ### Added

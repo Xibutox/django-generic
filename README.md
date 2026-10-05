@@ -106,14 +106,14 @@ Build its wheel from this repository, keep it in the project's
 
 ```bash
 git clone https://github.com/Xibutox/django-generic.git
-cd django-generic && git checkout v1.2.0
+cd django-generic && git checkout v1.3.0
 python -m pip wheel --no-deps --wheel-dir dist .
-mkdir -p ../mysite/vendor && cp dist/django_generic-1.2.0-py3-none-any.whl ../mysite/vendor/
+mkdir -p ../mysite/vendor && cp dist/django_generic-1.3.0-py3-none-any.whl ../mysite/vendor/
 ```
 
 ```text
 # mysite/requirements.txt
-./vendor/django_generic-1.2.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+./vendor/django_generic-1.3.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
 ```bash
