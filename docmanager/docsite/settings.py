@@ -3,11 +3,12 @@
 Teams each with their own documents (``generic.teams``), documents
 filed in folders, every file kept as a version with its author, date
 and change note, and the wiki. For local use only: the secret key is
-written here and DEBUG is on. Built like the minimal example - one
-settings file, no real time, plain WSGI - so it runs anywhere
-``runserver`` does; the full example's production settings and Docker
-stack (``example_project/``, ``docker/``) apply unchanged when it
-grows up.
+written here and DEBUG is on - unless the environment says otherwise,
+as the Docker stack beside it does (``compose.yaml``). Built like the
+minimal example - one settings file, no real time, plain WSGI - so it
+runs anywhere ``runserver`` does; the full example's production
+settings and Docker stack (``example_project/``, ``docker/``) apply
+unchanged when it grows up.
 """
 
 import os
@@ -18,9 +19,15 @@ from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "docmanager-example-local-only"
-DEBUG = True
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# The defaults are for runserver on this machine; the Docker stack
+# (compose.yaml) sets each from the environment.
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", "docmanager-example-local-only"
+)
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1"
+).split(",")
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -86,6 +93,17 @@ USE_TZ = True
 TIME_ZONE = "Europe/Paris"
 
 STATIC_URL = "/static/"
+# Where collectstatic gathers them, for nginx to serve (Dockerfile).
+STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT") or (
+    BASE_DIR / "staticfiles"
+)
+
+# Behind nginx, which terminates HTTPS: the scheme is the one nginx
+# saw, and the cookies only travel over HTTPS.
+if os.environ.get("DJANGO_HTTPS") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Where the documents' files are written, every version of them. No
 # MEDIA_URL: each file is served through the API, to who may see it.

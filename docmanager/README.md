@@ -14,6 +14,9 @@ example](../minimal/README.md): one settings file, plain WSGI, SQLite.
 ```
 docmanager/
 ├── manage.py
+├── Dockerfile          gunicorn, and nginx in front (optional)
+├── compose.yaml        docker compose -f docmanager/compose.yaml up
+├── nginx/              HTTPS with a self-signed certificate, the static files
 ├── docsite/
 │   ├── settings.py     generic.teams and generic.wiki installed, MEDIA_ROOT
 │   ├── urls.py         jsi18n/, api/generic/, wiki/, the site last
@@ -87,6 +90,62 @@ Sign in at <http://localhost:8000/> - every password is `demo`:
 Waiting for them when they sign in: `quentin` has two tasks (the NDA's
 review, the release procedure's approval), `carol` one (the welcome
 guide), and `manager` will sign the NDA off once Quentin has read it.
+
+### In Docker, behind nginx over HTTPS
+
+From the repository's root, with Docker (Docker Desktop on Windows or
+macOS):
+
+```bash
+docker compose -f docmanager/compose.yaml up --build
+```
+
+Then <https://localhost/>, the same accounts. Two containers:
+
+- `web`: the document manager run by gunicorn, `DEBUG` off. Each start
+  runs `migrate` and `seed_documents`, which leaves alone what is
+  already there. The database and the documents' files are in the
+  `data` volume.
+- `nginx`: HTTPS, with port 80 redirected to it, the static files
+  (collected into the image), and the rest handed to gunicorn. The
+  documents' files are not among what it serves: Django sends each one
+  through its record's endpoint, to who may see it.
+
+The certificate is signed by nginx itself on its first start
+(`nginx/10-self-signed.sh`) and kept in the `certs` volume: the
+browser warns once - *Advanced* > *Continue to localhost* - and not
+again. Nobody vouches for it, which is all a site on this machine or a
+local network needs.
+
+| Variable | Default | |
+| --- | --- | --- |
+| `HTTP_PORT`, `HTTPS_PORT` | `80`, `443` | the ports on this machine, if those are taken |
+| `SERVER_NAME` | `localhost` | the machine's name on the network, put in the certificate |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | the names the site answers to |
+| `DJANGO_SECRET_KEY` | a fixed one | |
+
+Set them in a `.env` file beside `compose.yaml` - `docmanager/.env`,
+which git ignores - on Windows as anywhere else:
+
+```ini
+# https://localhost:8443/, ports 80 and 443 being taken
+HTTP_PORT=8080
+HTTPS_PORT=8443
+# Reached from the network as https://srv-docs/
+SERVER_NAME=srv-docs
+DJANGO_ALLOWED_HOSTS=srv-docs,localhost,127.0.0.1
+```
+
+`docker compose -f docmanager/compose.yaml down -v` starts over: the
+database, the files and the certificate. After a change to
+`SERVER_NAME`, this or removing the `certs` volume alone
+(`docker volume rm docmanager_certs`) signs a new certificate.
+
+A certificate of your own instead: copy `server.crt` and `server.key`
+into the `certs` volume, and nginx serves them. The e-mails of the
+reviews are in `docker compose -f docmanager/compose.yaml logs web`.
+Like the demo it starts, this is for a machine or a local network,
+not the internet: its secret key and passwords are public.
 
 ## Things to try
 

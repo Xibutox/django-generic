@@ -1,0 +1,67 @@
+# The document manager over HTTPS: gunicorn behind nginx, which serves
+# the static files and signs its own certificate.
+#
+#   docker compose -f docmanager/compose.yaml up --build
+#
+# then https://localhost/ - the browser warns once about the
+# certificate, which nobody but nginx has signed - and sign in as
+# alice, bob, manager or admin, password demo. For trying it on this
+# machine or a local network, not for the internet: the secret key and
+# the demo's passwords are known to everyone.
+#
+# Ports 80 or 443 taken, or a name on the network: the variables below
+# in a .env file beside this one (README.md, "In Docker").
+
+name: docmanager
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docmanager/Dockerfile
+      target: web
+    restart: unless-stopped
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_HTTPS: "1"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-docmanager-docker-local-only}
+      # The names the site is reached by: add the machine's own to
+      # reach it from the network (and SERVER_NAME for the certificate).
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+    volumes:
+      # The database and every version of every document.
+      - data:/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 8000), 2)"
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docmanager/Dockerfile
+      target: nginx
+    restart: unless-stopped
+    environment:
+      # The name the certificate is signed for, beside localhost.
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+      # Where port 80 sends the browser.
+      HTTPS_PORT: ${HTTPS_PORT:-443}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - certs:/etc/nginx/certs
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  data:
+  certs:
