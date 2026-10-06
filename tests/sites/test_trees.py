@@ -8,6 +8,7 @@ record; everything else is the declaration's and the resources'.
 
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 
 import pytest
@@ -335,6 +336,87 @@ class TestFind:
         answer = get(admin_client, BOM, find="screw")
 
         assert answer["truncated"] is True
+
+
+class TestTheTablesFilters:
+    """The resource's own table, above the tree: its filters and search
+    box find records at every level."""
+
+    def filters(self, *conditions) -> str:
+        return json.dumps({"match": "all", "conditions": list(conditions)})
+
+    def test_a_filter_on_a_column(self, admin_client, bom):
+        answer = get(
+            admin_client,
+            BOM,
+            filters=self.filters(
+                {"column": "kind", "operator": "any_of", "value": ["assembly"]}
+            ),
+        )
+
+        assert shape(answer["items"]) == [
+            (
+                "BK-1 City bicycle",
+                False,
+                [("WH-1 Wheel", True, [("HB-1 Hub", True, None)])],
+            )
+        ]
+        assert answer["matches"] == 2
+        assert answer["filtered"] is True
+
+    def test_the_search_box(self, admin_client, bom):
+        answer = get(admin_client, BOM, node=bom["WH-1"].pk, search="spoke")
+
+        assert shape(answer["items"]) == [("SP-1 Spoke", True, None)]
+
+    def test_with_find_too(self, admin_client, bom):
+        answer = get(
+            admin_client,
+            BOM,
+            find="screw",
+            filters=self.filters(
+                {"column": "kind", "operator": "any_of", "value": ["part"]}
+            ),
+        )
+
+        assert answer["matches"] == 1
+        assert answer["filtered"] is True
+
+    def test_nothing_selected(self, admin_client, bom):
+        answer = get(
+            admin_client,
+            BOM,
+            filters=self.filters(
+                {"column": "kind", "operator": "any_of", "value": ["material"]}
+            ),
+        )
+
+        assert answer["items"] == []
+
+    def test_an_unknown_column_is_refused(self, admin_client, bom):
+        response = admin_client.get(
+            BOM,
+            {
+                "filters": self.filters(
+                    {"column": "secret", "operator": "equals", "value": "x"}
+                )
+            },
+        )
+
+        assert response.status_code == 400
+
+    def test_the_page_and_the_tabs_carry_the_table(self, admin_client, bom):
+        page = admin_client.get("/example/article/bom/")
+        detail = admin_client.get(f"/example/article/{bom['WH-1'].pk}/")
+
+        assert page.context["tree_config"]["filterTable"] == (
+            "tree-filter-table"
+        )
+        assert page.context["filter_table"]["url"] == "/api/example/article/"
+        assert [panel["filter_id"] for panel in detail.context["trees"]] == [
+            "related-tree-bom-filters",
+            "related-tree-bom-up-filters",
+        ]
 
 
 class TestRefusals:

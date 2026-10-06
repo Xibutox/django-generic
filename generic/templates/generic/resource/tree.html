@@ -32,6 +32,15 @@
   {% endif %}
 
   <section class="card tree-card">
+    {# The resource's table, its filters and search box only: the tree #}
+    {# shows the records they select at every level.                   #}
+    <div class="tree-filters">
+      {{ filter_table|json_script:"tree-filter-table" }}
+      <table class="js-tree-filters display" data-config="tree-filter-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
     <div class="generic-tree" data-config="tree-config" data-autostart></div>
   </section>
 {% endblock %}

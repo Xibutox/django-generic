@@ -213,3 +213,19 @@
   margin: var(--space-2) 0 var(--space-3);
   font-size: var(--font-size-sm);
 }
+
+/* The resource's table above a tree: its search box, its filters and
+   their chips, not its rows (js/tree.js follows them). */
+
+/* As specific as DataTables' own rules. */
+.tree-filters div.dt-container div.dt-layout-table,
+.tree-filters div.dt-container div.dt-processing,
+.tree-filters div.dt-container div.dt-info,
+.tree-filters div.dt-container div.dt-paging,
+.tree-filters div.dt-container div.dt-length {
+  display: none;
+}
+
+.tree-filters .dt-container {
+  margin: 0;
+}

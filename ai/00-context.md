@@ -1312,7 +1312,12 @@ links from the link resource's (register the link model, usually
 no link values). Every generated form serializer of the link model (or
 of the model, self-FK) refuses a cycle (`check_links`): forms, cells,
 imports, API. A record met again below itself is drawn, not unfolded.
-*Find at any depth* (toolbar; `?find=` on the endpoint) walks every
+The tree page and tabs carry the resource's own table above the tree,
+rows hidden (`get_filter_table_config`, `config.filterTable`): its
+search box and filter editor (`filters`, `search` on the tree
+endpoint, applied by the viewset's own backends, `tree` being a table
+action) select records at every level; without one, *Find at any
+depth* (`?find=`). Either walks every
 level below the top a level per query (≤ 50,000 records, ≤ 1,000 rows
 answered, `truncated`) and answers the branches leading to matches,
 nested (`items`, `match`); partial levels offer *Show them all*.
@@ -1357,7 +1362,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
-| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find` searches every level (§5.18) |
+| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,

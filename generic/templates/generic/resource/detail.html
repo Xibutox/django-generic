@@ -266,6 +266,14 @@
                 </a>
               </div>
             </div>
+            <div class="tree-filters">
+              {# Started by the tree (js/tree.js) when its tab opens. #}
+              {{ tree.filter_table|json_script:tree.filter_id }}
+              <table class="js-tree-filters display" data-config="{{ tree.filter_id }}">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
             <div class="generic-tree"
                  data-tree="{{ tree.name }}"
                  data-config="{{ tree.config_id }}"></div>

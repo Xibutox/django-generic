@@ -129,8 +129,10 @@ def test_found_at_any_depth_then_back(signed_in, terminals):
     page.goto("/example/article/bom/")
     expect(row(page, "BK-1 City bicycle")).to_be_visible()
 
-    find = page.get_by_role("searchbox", name="Find at any depth")
+    # The articles' own search box, above the tree.
+    find = page.locator(".tree-filters").get_by_role("searchbox")
     find.fill("TB-119")
+    find.press("Enter")
 
     # Unfolded down to it, through the 120 blocks of the rail.
     match = page.locator(".tree-row.is-match")
@@ -150,6 +152,7 @@ def test_found_at_any_depth_then_back(signed_in, terminals):
     )
 
     find.fill("")
+    find.press("Enter")
     expect(page.locator(".tree-row.is-match")).to_have_count(0)
     expect(row(page, "BK-1 City bicycle")).to_be_visible()
     expect(page.locator(".tree-row", has_text="WH-1")).to_have_count(0)
@@ -169,3 +172,38 @@ def test_the_exploded_bom(signed_in, bom):
     expect(table.locator("tbody tr", has_text="SC-1 Screw")).to_contain_text(
         "20"
     )
+
+
+def test_the_articles_filters_search_the_tree(signed_in, bom):
+    page = signed_in
+    page.goto("/example/article/bom/")
+    expect(row(page, "BK-1 City bicycle")).to_be_visible()
+
+    search = page.locator(".tree-filters").get_by_role("searchbox")
+    search.fill("kind:assembly")
+    search.press("Enter")
+
+    # A chip, as on the list: the tree shows every assembly, unfolded.
+    expect(page.locator(".tree-filters .dt-filterbar")).to_contain_text(
+        "Assembly"
+    )
+    matches = page.locator(".tree-row.is-match")
+    expect(matches).to_have_count(2)
+    expect(matches.first).to_contain_text("WH-1 Wheel")
+    expect(matches.last).to_contain_text("HB-1 Hub")
+    expect(page.locator(".tree__status")).to_contain_text("2 matches")
+
+
+def test_a_tab_has_the_filters_too(signed_in, bom):
+    page = signed_in
+    page.goto(f"/example/article/{bom['WH-1'].pk}/")
+
+    tab = page.locator("#related-tree-bom")
+    expect(tab.locator(".tree-row", has_text="HB-1 Hub")).to_be_visible()
+
+    search = tab.locator(".tree-filters").get_by_role("searchbox")
+    search.fill("screw")
+    search.press("Enter")
+
+    expect(tab.locator(".tree-row.is-match")).to_contain_text("SC-1 Screw")
+    expect(tab.locator(".tree-row", has_text="SP-1 Spoke")).to_have_count(0)

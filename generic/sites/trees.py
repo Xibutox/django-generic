@@ -427,7 +427,12 @@ class BoundTree:
 
     # -- the endpoint --------------------------------------------------
 
-    def answer(self, request: Any, params: Any) -> dict[str, Any]:
+    def answer(
+        self,
+        request: Any,
+        params: Any,
+        matching: Any = None,
+    ) -> dict[str, Any]:
         """One level of the tree, a page of it: what the endpoint says.
 
         ``node`` names the record unfolded - none, the roots; ``root``
@@ -435,6 +440,9 @@ class BoundTree:
         ``direction`` is ``down`` or ``up``; ``offset``, ``limit``;
         ``q`` searches the level; ``path`` names the records above, so
         one met again is marked rather than unfolded.
+
+        ``find`` - or ``matching``, the records the resource's table
+        selects with its own filters - searches every level at once.
         """
         direction = params.get("direction") or DOWN
 
@@ -461,8 +469,10 @@ class BoundTree:
         visible = self.visible(request)
         wanted = (params.get("find") or "").strip()
 
-        if wanted:
-            return self.search(request, direction, node, root, wanted)
+        if wanted or matching is not None:
+            return self.search(
+                request, direction, node, root, wanted, matching
+            )
 
         if node is not None:
             path.append(force_str(node.pk))
@@ -618,9 +628,11 @@ class BoundTree:
         node: Any,
         root: Any,
         term: str,
+        matching: Any = None,
     ) -> dict[str, Any]:
-        """The records matching ``term`` at any depth, with the branches
-        leading to them: what the endpoint answers to ``find``.
+        """The records matching ``term`` - and ``matching``, a queryset
+        of keys - at any depth, with the branches leading to them: what
+        the endpoint answers to ``find``, and to a table's filters.
 
         Each item is one of a level's; those leading to a match carry
         ``items``, the part of their level that does - not the whole of
@@ -648,12 +660,20 @@ class BoundTree:
         below, met, truncated = self.walk(
             request, direction, [pk for _key, pk in top]
         )
-        matching = apply_search(visible, self.get_search_fields(request), term)
+        selected = visible
+
+        if term:
+            selected = apply_search(
+                selected, self.get_search_fields(request), term
+            )
+
+        if matching is not None:
+            selected = selected.filter(pk__in=matching)
         matches: set[Any] = set()
 
         for start in range(0, len(met), WALK_CHUNK):
             matches.update(
-                matching.filter(
+                selected.filter(
                     pk__in=met[start : start + WALK_CHUNK]
                 ).values_list("pk", flat=True)
             )
@@ -722,6 +742,7 @@ class BoundTree:
             "node": force_str(node.pk) if node is not None else None,
             "direction": direction,
             "find": term,
+            "filtered": matching is not None,
             "matches": len(matches),
             "truncated": truncated or state["cut"],
             "columns": self.get_columns(request),
@@ -931,6 +952,8 @@ class BoundTree:
         return {
             "name": self.name,
             "url": self.get_api_url(),
+            # The id of a table whose filters search the tree, if any.
+            "filterTable": None,
             "node": force_str(obj.pk) if obj is not None else None,
             "root": force_str(root.pk) if root is not None else None,
             "direction": direction,
@@ -943,6 +966,32 @@ class BoundTree:
             ],
             "topics": topics,
         }
+
+    def get_filter_table_config(
+        self, request: Any, key: str
+    ) -> dict[str, Any]:
+        """The resource's own table, for its filter editor and search
+        box: the tree shows, at every level, the records they select.
+        Its rows are not shown."""
+        return self.resource.get_page_table_config(
+            request,
+            f"tree-{self.name}-{key}",
+            pageLength=10,
+            lengthMenu=[10],
+            stateSave=False,
+            columnSelector=False,
+            filterRow=False,
+            excel=False,
+            csv=False,
+            copy=False,
+            print=False,
+            rowActions=[],
+            bulkActions=[],
+            presets={},
+            mailingUrl="",
+            savedViewsUrl="",
+            realtimeTopic="",
+        )
 
     def get_add_url(self, request: Any, obj: Any) -> str:
         """A new link - a new child, without one - with ``obj`` as its
@@ -1027,15 +1076,25 @@ class BoundTree:
             return []
 
         directions = [DOWN, UP] if self.definition.where_used else [DOWN]
+        panels = []
 
-        return [
-            {
-                "name": self.tab_name(direction),
-                "config_id": f"related-{self.tab_name(direction)}-config",
-                "config": self.get_config(request, obj, direction),
-            }
-            for direction in directions
-        ]
+        for direction in directions:
+            name = self.tab_name(direction)
+            config = self.get_config(request, obj, direction)
+            config["filterTable"] = f"related-{name}-filters"
+            panels.append(
+                {
+                    "name": name,
+                    "config_id": f"related-{name}-config",
+                    "config": config,
+                    "filter_id": config["filterTable"],
+                    "filter_table": self.get_filter_table_config(
+                        request, direction
+                    ),
+                }
+            )
+
+        return panels
 
     # -- writes ---------------------------------------------------------
 
@@ -1364,6 +1423,10 @@ class TreePageView(ResourcePageView):
         bound = self.get_bound_tree()
         context["tree"] = bound
         context["tree_config"] = bound.get_config(self.request, root=self.root)
+        context["tree_config"]["filterTable"] = "tree-filter-table"
+        context["filter_table"] = bound.get_filter_table_config(
+            self.request, "page"
+        )
         context["root"] = self.root
 
         if self.root is not None:

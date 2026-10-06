@@ -230,7 +230,11 @@
       self.reload();
     });
 
-    toolbar.appendChild(finder);
+    // With a table's filters to follow, its search box is the one.
+    if (!this.config.filterTable) {
+      toolbar.appendChild(finder);
+    }
+
     toolbar.appendChild(status);
     toolbar.appendChild(collapse);
     toolbar.appendChild(refresh);
@@ -386,6 +390,7 @@
     var self = this;
 
     this.top.expanded = true;
+    this.linkTable(this.config.filterTable);
     this.load(this.top, false).then(function () {
       // The one record a page is shown from: opened at once.
       if (self.config.root && self.top.items.length === 1) {
@@ -400,10 +405,39 @@
   /** Ask for what matches `term` below the top, at any depth; under two
    * letters, back to the tree as it was. */
   TreeView.prototype.find = function (term) {
+    this.term = term && term.length >= 2 ? term : "";
+
+    return this.search();
+  };
+
+  /** What narrows the tree now: the find box, the table's filters. */
+  TreeView.prototype.criteria = function () {
+    var criteria = {};
+    var filters = this.tableFilters || {};
+
+    if (this.term) {
+      criteria.find = this.term;
+    }
+
+    if (filters.filters) {
+      criteria.filters = filters.filters;
+    }
+
+    if (filters.search) {
+      criteria.search = filters.search;
+    }
+
+    return criteria;
+  };
+
+  /** Search every level for what the criteria select - or, with none
+   * left, back to the tree as it was. */
+  TreeView.prototype.search = function () {
     var self = this;
     var config = this.config;
+    var criteria = this.criteria();
 
-    if (!term || term.length < 2) {
+    if (!Object.keys(criteria).length) {
       this.asking = null;
 
       if (this.found) {
@@ -413,7 +447,7 @@
       return Promise.resolve();
     }
 
-    var params = { direction: config.direction || "down", find: term };
+    var params = Object.assign({ direction: config.direction || "down" }, criteria);
     var asked = {};
 
     if (config.root) {
@@ -422,7 +456,6 @@
       params.node = config.node;
     }
 
-    this.term = term;
     this.asking = asked;
     this.status.textContent = t("Searching\u2026");
 
@@ -440,6 +473,62 @@
           Generic.toast((error && error.message) || t("The tree could not be loaded."), "error");
         }
       });
+  };
+
+  /** Follow a table's filters and search box (the resource's own
+   * table, its rows hidden): the tree shows, at every level, the
+   * records it would list. */
+  TreeView.prototype.linkTable = function (id) {
+    var self = this;
+    var table = id ? document.querySelector('table[data-config="' + window.CSS.escape(id) + '"]') : null;
+
+    if (!table) {
+      return;
+    }
+
+    function link(controller) {
+      var last = "";
+      var follow = Generic.debounce(function () {
+        var params = controller.currentParams();
+        var wanted = { filters: params.filters || "", search: params.search || "" };
+        var key = JSON.stringify(wanted);
+
+        if (key !== last) {
+          last = key;
+          self.tableFilters = wanted;
+          self.search();
+        }
+      }, 150);
+
+      controller.instance.on("xhr.dt", follow);
+    }
+
+    if (table.genericDataTable && table.genericDataTable.instance) {
+      link(table.genericDataTable);
+      return;
+    }
+
+    table.addEventListener(
+      "generic:datatable-ready",
+      function (event) {
+        link(event.detail.controller);
+      },
+      { once: true }
+    );
+
+    var tables = window.GenericDataTables;
+
+    if (tables && typeof tables.start === "function") {
+      tables.start(table);
+    } else {
+      document.addEventListener(
+        "generic:datatables-loaded",
+        function () {
+          window.GenericDataTables.start(table);
+        },
+        { once: true }
+      );
+    }
   };
 
   /** Draw a search's answer in place of the tree, kept aside. */
@@ -634,7 +723,8 @@
   TreeView.prototype.headOf = function (parent) {
     var self = this;
 
-    if (!(parent.total > this.pageSize || parent.q)) {
+    // A level shown in part, as found: "Show them all" first.
+    if (parent.partial || !(parent.total > this.pageSize || parent.q)) {
       return null;
     }
 
@@ -861,7 +951,7 @@
     var open = [];
 
     if (this.found) {
-      return this.find(this.term);
+      return this.search();
     }
 
     function walk(node) {

@@ -11,8 +11,10 @@ depth. A resource declares the hierarchy once, with `Tree`, and gets:
   the list), or from one record (`?root=<pk>`, the tab's *Open as a
   page*);
 - an endpoint serving one level at a time, a page at a time;
-- a search through every level at once, unfolding the branches that
-  lead to what it finds;
+- the filters and search box of the resource's own table above the
+  tree - every column, the same editor, chips and `kind:part` syntax as
+  the list - searching every level at once and unfolding the branches
+  that lead to what they select;
 - with `flat=True`, a table of everything a record holds at every
   depth - an exploded bill of materials - filtered, sorted and
   exported as any table;
@@ -153,18 +155,24 @@ list - the counts included. A level is one count and one query, with
 the counts of the next level as a subquery: no query per record, beyond
 what the `columns` themselves read.
 
-## Finding at any depth
+## Filtering at any depth
 
-The search box of a level looks through that level. The one in the
-tree's toolbar, *Find at any depth*, looks through everything below
-the tree's top - the tab's record, the page's root, or the roots - and
-draws only the branches leading to what it finds, unfolded, the
-matches highlighted. A level shown in part says how many of its
+The search box of a level looks through that level. Above the tree,
+the page and each tab carry the resource's own table - its search box,
+*Filter* and the chips of its filters, not its rows: what it would
+list is looked for in everything below the tree's top (the tab's
+record, the page's root, or the roots), and the tree draws only the
+branches leading to it, unfolded, the matches highlighted. Every
+column of the list is there, with its editor: a choice's values with
+their counts, numbers and dates with their operators, `kind:part` and
+`unit_cost:>10` typed in the search box. A level shown in part says how many of its
 records do not lead to a match, with *Show them all*; emptying the box
 brings back the tree as it was left.
 
-`GET .../trees/<name>/?find=<text>` (with `node`, `root`, `direction`
-as for a level) answers with the same items, nested:
+`GET .../trees/<name>/` with the table's own parameters - `filters`
+(the filter tree), `search` - or `find=<text>` (the search fields
+alone), and `node`, `root`, `direction` as for a level, answers with
+the same items, nested:
 
 ```json
 {"find": "screw", "matches": 1, "truncated": false, "columns": [...],
@@ -252,7 +260,9 @@ every open level, keeping it open. When a record or a link changes -
 here or elsewhere - the open levels reload by themselves (the
 resources' `realtime`).
 
-On a page of your own:
+A tree drawn without a table to follow (`filterTable` left empty in
+its configuration) gets a *Find at any depth* box in its toolbar
+instead. On a page of your own:
 
 ```django
 {{ tree_config|json_script:"bom-config" }}
