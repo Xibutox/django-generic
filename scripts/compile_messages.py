@@ -81,6 +81,8 @@ def parse(path: Path) -> dict[str, str]:
     forms: dict[int, str] = {}
     target: str | None = None
     index = 0
+    start = 0
+    seen: dict[str, int] = {}
 
     def flush() -> None:
         if target is None:
@@ -89,11 +91,23 @@ def parse(path: Path) -> dict[str, str]:
         prefix = context + "\x04" if context else ""
 
         if plural:
-            ordered = [forms[key] for key in sorted(forms)]
-            entries[prefix + singular + "\0" + plural] = "\0".join(ordered)
+            key = prefix + singular + "\0" + plural
+            value = "\0".join(forms[form] for form in sorted(forms))
         elif singular or not entries:
             # The empty msgid holds the catalog's own header.
-            entries[prefix + singular] = forms.get(0, "")
+            key, value = prefix + singular, forms.get(0, "")
+        else:
+            return
+
+        if key in seen:
+            # msgfmt refuses this too: "duplicate message definition".
+            raise CatalogError(
+                f"{path}:{start}: duplicate message definition"
+                f" (first defined at line {seen[key]})."
+            )
+
+        seen[key] = start
+        entries[key] = value
 
     for number, raw in enumerate(
         path.read_text(encoding="utf-8").splitlines(), start=1
@@ -105,6 +119,7 @@ def parse(path: Path) -> dict[str, str]:
 
         if line.startswith("msgctxt"):
             flush()
+            start = number
             context = unquote(line[len("msgctxt") :], path, number)
             singular = plural = ""
             forms = {}
@@ -115,6 +130,7 @@ def parse(path: Path) -> dict[str, str]:
         elif line.startswith("msgid"):
             if target != "context":
                 flush()
+                start = number
                 context = ""
 
             singular = unquote(line[len("msgid") :], path, number)
