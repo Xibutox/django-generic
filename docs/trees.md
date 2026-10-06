@@ -282,4 +282,9 @@ terminal rail holds 1,200 terminal blocks - open
 search the level - or type *TB-0999* in *Find at any depth*. An
 article's page has the *Bill of materials* and *Where used* tabs, and
 *Exploded BOM*: every component of a bicycle with its total quantity,
-or one row per component. *Article families* is the other shape.
+or one row per component. *Edit the BOM* is the first level as an
+editable grid - a `RelatedTable("bom_lines", editable=True)` over
+`BomLineResource.editable_fields`, see [Editing in the
+table](editable.md) - and refuses a line that would make an article
+part of itself, as the form does. *Article families* is the other
+shape.

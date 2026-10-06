@@ -683,3 +683,102 @@ class TestDeclaring:
         tree = resource.get_tree("bom")
 
         assert labels(tree.answer(request, {})) == ["HB-1 Hub", "WH-1 Wheel"]
+
+
+class TestEditingTheFirstLevel:
+    """The article's "Edit the BOM" tab: its own lines as a grid."""
+
+    ROWS = f"{LINES}rows/"
+
+    @staticmethod
+    def related(article) -> str:
+        return f"_related=example.article.bom_lines:{article.pk}"
+
+    def send(self, client, method: str, url: str, data: dict):
+        return getattr(client, method)(
+            url, json.dumps(data), content_type="application/json"
+        )
+
+    def test_the_tab_is_a_grid_of_the_direct_components(
+        self, admin_client, bom
+    ):
+        bike = bom["BK-1"]
+        bound = site.get_related_table("example.article.bom_lines")
+        config = bound.get_table_config(
+            admin_client.get("/").wsgi_request, bike
+        )
+        options = config["options"]
+
+        assert set(options["editable"]) == {
+            "position",
+            "child",
+            "quantity",
+            "note",
+        }
+        assert set(options["gridAdd"]["columns"]) == {
+            "position",
+            "child",
+            "quantity",
+            "note",
+        }
+
+        response = admin_client.get(
+            f"{LINES}?draw=1&length=100&{self.related(bike)}"
+        )
+        children = {row["child"] for row in response.json()["data"]}
+
+        # The wheel and the screw; never the wheel's own hub and spokes.
+        assert len(children) == 2
+
+    def test_a_quantity_is_corrected_in_its_cell(self, admin_client, bom):
+        line = bom["lines"][("BK-1", "SC-1")]
+        response = self.send(
+            admin_client,
+            "patch",
+            f"{LINES}{line.pk}/cells/?{self.related(bom['BK-1'])}",
+            {"quantity": "16"},
+        )
+
+        assert response.status_code == 200, response.content
+        line.refresh_from_db()
+        assert line.quantity == Decimal("16")
+
+    def test_a_new_line_belongs_to_the_article(self, admin_client, bom):
+        response = self.send(
+            admin_client,
+            "post",
+            f"{self.ROWS}?{self.related(bom['BK-1'])}",
+            {"child": bom["LO-1"].pk, "quantity": "3", "position": 30},
+        )
+
+        assert response.status_code == 201, response.content
+        assert BomLine.objects.get(
+            parent=bom["BK-1"], child=bom["LO-1"]
+        ).quantity == Decimal("3")
+
+    def test_a_component_holding_the_article_is_refused(
+        self, admin_client, bom
+    ):
+        # The bicycle under the hub, which the bicycle already holds.
+        response = self.send(
+            admin_client,
+            "post",
+            f"{self.ROWS}?{self.related(bom['HB-1'])}",
+            {"child": bom["BK-1"].pk, "quantity": "1"},
+        )
+
+        assert response.status_code == 400
+        assert "child" in response.json()
+
+        line = bom["lines"][("HB-1", "SC-1")]
+        response = self.send(
+            admin_client,
+            "patch",
+            f"{LINES}{line.pk}/cells/?{self.related(bom['HB-1'])}",
+            {"child": bom["WH-1"].pk},
+        )
+
+        assert response.status_code == 400
+        assert "child" in response.json()
+        line.refresh_from_db()
+        assert line.child == bom["SC-1"]
