@@ -20,8 +20,10 @@ import logging
 from typing import Any
 
 from django.apps import apps
+from django.db import models
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
 
 from generic.conf import generic_settings
 from generic.sites import ModelResource, TagStyle, action, display, site
@@ -201,6 +203,83 @@ class TaskRunResource(ModelResource):
 # -- The scheduler's own models -----------------------------------------
 
 
+def celery_task_names() -> set[str]:
+    """Every task the Celery app of this process knows by name.
+
+    Its own (``celery.*``) are machinery, not something to schedule.
+    The app's modules are imported first, so tasks of apps that only
+    the worker would otherwise import are listed too.
+    """
+    try:
+        from celery import current_app
+    except ImportError:  # pragma: no cover - beat needs Celery
+        return set()
+
+    try:
+        current_app.loader.import_default_modules()
+    except Exception:  # pragma: no cover - a module that fails to import
+        logger.warning("Importing the Celery task modules", exc_info=True)
+
+    return {
+        name for name in current_app.tasks if not name.startswith("celery.")
+    }
+
+
+def schedulable_tasks() -> list[tuple[str, str]]:
+    """What a schedule may run, as ``(name, label)`` pairs, by label.
+
+    The tasks declared to the framework, under their label, and any
+    other task of the Celery app, under its name. Operations are left
+    out: they run on what their page chose, which a schedule cannot.
+    """
+    choices: dict[str, str] = {}
+
+    for name in celery_task_names() | set(registry.names()):
+        definition = registry.get(name)
+
+        if definition is None:
+            choices[name] = name
+        elif definition.catalogue:
+            title = definition.title
+            choices[name] = name if title == name else f"{title} ({name})"
+
+    return sorted(choices.items(), key=lambda choice: choice[1].lower())
+
+
+class TaskChoiceField(serializers.ChoiceField):
+    """A schedule's task, chosen from the tasks the application knows.
+
+    The list is read again for every form, so a task declared since the
+    process started is there. A schedule naming a task that is no
+    longer known keeps it: saving the row for another reason must not
+    fail on its task.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(choices=(), **kwargs)
+
+    def bind(self, field_name: str, parent: Any) -> None:
+        super().bind(field_name, parent)
+
+        choices = schedulable_tasks()
+        instance = getattr(parent, "instance", None)
+        current = (
+            getattr(instance, field_name, "")
+            if isinstance(instance, models.Model)
+            else ""
+        )
+
+        if current and current not in dict(choices):
+            choices.append(
+                (
+                    current,
+                    gettext("%(name)s (not registered)") % {"name": current},
+                )
+            )
+
+        self.choices = choices
+
+
 class PeriodicTaskResource(ModelResource):
     """A schedule: which task runs, how often, and whether it is on."""
 
@@ -263,6 +342,31 @@ class PeriodicTaskResource(ModelResource):
     # scheduler bumps on every tick are not, and recording them would
     # write a version of this row every time anything ran.
     history_exclude = ("last_run_at", "total_run_count", "date_changed")
+
+    #: The generated form serializer, with the task as a list.
+    _task_form_serializer: Any = None
+
+    def get_form_serializer_class(self) -> Any:
+        """The generated form, its task a choice rather than a text.
+
+        A name typed by hand is a schedule that fails at night, on a
+        typo nobody saw.
+        """
+        if self._task_form_serializer is None:
+            generated = super().get_form_serializer_class()
+            self._task_form_serializer = type(
+                generated.__name__,
+                (generated,),
+                {
+                    "task": TaskChoiceField(
+                        label=_("Task"),
+                        help_text=_("The task this schedule runs."),
+                    ),
+                    "__module__": __name__,
+                },
+            )
+
+        return self._task_form_serializer
 
     @display(description=_("When"))
     def schedule_display(self, obj: Any) -> str:

@@ -538,6 +538,106 @@ class TestTheSchedules:
         assert TaskRun.objects.count() == 0
 
 
+@beat_only
+class TestChoosingTheTask:
+    """A schedule's task is chosen from a list, never typed."""
+
+    URL = "/api/django_celery_beat/periodictask/"
+
+    @pytest.fixture
+    def manager(self, auth_client, user):
+        for codename in (
+            "view_periodictask",
+            "add_periodictask",
+            "change_periodictask",
+        ):
+            user.user_permissions.add(
+                permission(codename, app_label="django_celery_beat")
+            )
+
+        return auth_client
+
+    @pytest.fixture
+    def crontab(self):
+        model = apps.get_model("django_celery_beat", "CrontabSchedule")
+
+        return model.objects.create(minute="0", hour="7")
+
+    def choices(self, client):
+        response = client.get(f"{self.URL}form-schema/")
+
+        assert response.status_code == 200, response.content
+
+        field = next(
+            field
+            for field in response.json()["fields"]
+            if field["name"] == "task"
+        )
+
+        assert field["type"] == "select"
+
+        return {
+            choice["value"]: choice["label"] for choice in field["choices"]
+        }
+
+    def test_the_form_lists_the_tasks(self, manager, digest, declared):
+        @declared(name="tests.page-work", catalogue=False)
+        def page_work(run):  # pragma: no cover - not run here
+            pass
+
+        choices = self.choices(manager)
+
+        # Declared ones under their label, the framework's own included.
+        assert choices["tests.digest"] == "Digest (tests.digest)"
+        assert "generic.send_scheduled_mailings" in choices
+        # An operation runs on what its page chose: no schedule for it.
+        assert "tests.page-work" not in choices
+        # Celery's own machinery is not something to schedule.
+        assert not [name for name in choices if name.startswith("celery.")]
+
+    def test_a_task_nobody_declared_is_refused(self, manager, crontab):
+        response = manager.post(
+            self.URL,
+            {"name": "Typo", "task": "tests.digets", "crontab": crontab.pk},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400, response.content
+        assert "task" in response.json()
+
+    def test_a_listed_task_is_saved(self, manager, digest, crontab):
+        response = manager.post(
+            self.URL,
+            {"name": "Morning", "task": "tests.digest", "crontab": crontab.pk},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 201, response.content
+
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+
+        assert periodic.objects.get(name="Morning").task == "tests.digest"
+
+    def test_a_task_no_longer_known_survives_an_edit(self, manager, crontab):
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        schedule = periodic.objects.create(
+            name="Old one", task="gone.cleanup", crontab=crontab
+        )
+
+        response = manager.patch(
+            f"{self.URL}{schedule.pk}/",
+            {"description": "Still here", "task": "gone.cleanup"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+
+        schedule.refresh_from_db()
+
+        assert schedule.task == "gone.cleanup"
+        assert schedule.description == "Still here"
+
+
 class TestTheExample:
     def test_the_desk_declares_its_digest(self):
         assert registry.get("example.overdue_digest") is not None
