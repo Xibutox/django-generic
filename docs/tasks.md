@@ -176,6 +176,16 @@ tables, filters and forms as everything else, without sending anybody to
 or whatever `name=` you gave it), and *Run now* starts a declared one
 immediately.
 
+The form offers that name as a list, never as text to type: every task
+declared to the framework, under its label (*Digest
+(myapp.tasks.nightly_digest)*), and every other task of the Celery app,
+under its name - the app's task modules are imported first, so a task
+only the worker would load is there too. Celery's own `celery.*` tasks
+and [operations](operations.md), which run on what their page chose,
+are left out. A name the list does not hold is refused, except the one
+a schedule already has: a schedule whose task has since disappeared
+shows it as *not registered* and still saves.
+
 Beat itself reads them with the database scheduler:
 
 ```bash

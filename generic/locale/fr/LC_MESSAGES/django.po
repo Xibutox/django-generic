@@ -1873,6 +1873,10 @@ msgstr "exécution"
 msgid "task runs"
 msgstr "exécutions"
 
+#: generic/tasks/resources.py
+msgid "Task"
+msgstr "Tâche"
+
 #: generic/tasks/resources.py:62
 msgid "Tasks"
 msgstr "Tâches"
@@ -1904,6 +1908,10 @@ msgstr "L'export dépasse la limite de %(limit)s lignes. Affinez les filtres et 
 #: generic/api/renderers.py:68
 msgid "The request could not be processed."
 msgstr "La requête n'a pas pu être traitée."
+
+#: generic/tasks/resources.py
+msgid "The task this schedule runs."
+msgstr "La tâche que cette planification exécute."
 
 #: generic/templates/generic/wiki/page.html:156
 msgid "The wiki has no page yet."
@@ -3188,3 +3196,7 @@ msgid ""
 msgstr ""
 "Supprime définitivement ce qui est dans une corbeille depuis plus de "
 "GENERIC['TRASH_DAYS'] jours. À lancer une fois par jour."
+
+#: generic/tasks/resources.py
+msgid "%(name)s (not registered)"
+msgstr "%(name)s (non enregistrée)"

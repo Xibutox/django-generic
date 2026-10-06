@@ -1716,7 +1716,11 @@ def nightly_digest(run):
   or the web server runs every task in the request.
 - `django_celery_beat` installed puts its `PeriodicTask`, interval,
   crontab and clocked models in the **Tasks** group as resources, with
-  *Run now*. `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
+  *Run now*. A schedule's task is a list (`TaskChoiceField`, read again
+  per form by `schedulable_tasks()`): declared tasks by label, other
+  Celery tasks by name, no operations, no `celery.*`; any other name
+  is refused but the row's current one, kept as *not registered*.
+  `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
 
 ## 13g. Operations and reports (the work behind a button)
 
