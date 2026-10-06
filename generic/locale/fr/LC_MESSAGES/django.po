@@ -3230,3 +3230,63 @@ msgstr "Déplié depuis"
 
 msgid "The whole tree"
 msgstr "Toute l’arborescence"
+
+msgid "Every level"
+msgstr "Tous les niveaux"
+
+msgid "Places"
+msgstr "Emplacements"
+
+msgid "First level"
+msgstr "Premier niveau"
+
+msgid "Held by"
+msgstr "Contenu dans"
+
+msgid "Path"
+msgstr "Chemin"
+
+msgid "Total quantity"
+msgstr "Quantité totale"
+
+msgid "Name the record the table starts from."
+msgstr "Indiquez l’enregistrement dont part le tableau."
+
+msgid "Rows"
+msgstr "Lignes"
+
+msgid "One row per place"
+msgstr "Une ligne par emplacement"
+
+msgid "One row per record"
+msgstr "Une ligne par enregistrement"
+
+msgid "As a tree"
+msgstr "En arbre"
+
+msgid ""
+"Each record once, with how many places it takes and its quantities added "
+"up: what one of this record needs."
+msgstr ""
+"Chaque enregistrement une fois, avec son nombre d’emplacements et ses "
+"quantités additionnées : ce qu’il faut pour un de cet enregistrement."
+
+msgid "Each record once, with how many places it takes."
+msgstr "Chaque enregistrement une fois, avec son nombre d’emplacements."
+
+msgid ""
+"Every place a record takes below this one, with its level, what holds it "
+"and its quantity for one of this record."
+msgstr ""
+"Chaque emplacement d’un enregistrement sous celui-ci, avec son niveau, ce "
+"qui le contient et sa quantité pour un de cet enregistrement."
+
+msgid ""
+"Every place a record takes below this one, with its level and what holds "
+"it."
+msgstr ""
+"Chaque emplacement d’un enregistrement sous celui-ci, avec son niveau et ce "
+"qui le contient."
+
+msgid "The first %(count)s rows at most."
+msgstr "Au plus les %(count)s premières lignes."

@@ -15,6 +15,17 @@
   gap: var(--space-2);
 }
 
+.tree__find {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tree__find .input {
+  width: 16rem;
+  max-width: 100%;
+}
+
 .tree__status {
   margin-inline-end: auto;
   font-size: var(--font-size-sm);
@@ -67,6 +78,15 @@
 
 .tree-row:not(.tree-row--foot):hover {
   background: var(--surface-sunken);
+}
+
+.tree-row.is-match,
+.tree-row.is-match:hover {
+  background: var(--color-warning-subtle);
+}
+
+.tree-row.is-match .tree-row__name {
+  font-weight: 600;
 }
 
 .tree-row:focus-visible {
@@ -177,4 +197,19 @@
 
 .tree-card {
   padding: var(--space-4);
+}
+
+/* A tree laid flat (generic/resource/tree_flat.html). */
+
+.tree-flat__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tree-flat__help {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--font-size-sm);
 }

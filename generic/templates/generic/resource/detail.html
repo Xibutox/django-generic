@@ -243,7 +243,7 @@
                aria-labelledby="related-tab-{{ tree.name }}"
                x-show="active === '{{ tree.name|escapejs }}'">
             <div class="summary-related__bar"
-                 x-show="related('{{ tree.name|escapejs }}').description || related('{{ tree.name|escapejs }}').addUrl || related('{{ tree.name|escapejs }}').pageUrl">
+                 x-show="related('{{ tree.name|escapejs }}').description || related('{{ tree.name|escapejs }}').addUrl || related('{{ tree.name|escapejs }}').pageUrl || related('{{ tree.name|escapejs }}').flatUrl">
               <p class="summary-related__description" x-text="related('{{ tree.name|escapejs }}').description"></p>
               <div class="cluster">
                 <a class="button button--sm button--ghost"
@@ -251,6 +251,12 @@
                    :href="safeUrl(related('{{ tree.name|escapejs }}').pageUrl)">
                   {% icon "open_in_full" "icon--sm" %}
                   {% translate "Open as a page" %}
+                </a>
+                <a class="button button--sm button--ghost"
+                   x-show="related('{{ tree.name|escapejs }}').flatUrl"
+                   :href="safeUrl(related('{{ tree.name|escapejs }}').flatUrl)">
+                  {% icon "table_rows" "icon--sm" %}
+                  <span x-text="related('{{ tree.name|escapejs }}').flatTitle"></span>
                 </a>
                 <a class="button button--sm"
                    x-show="related('{{ tree.name|escapejs }}').addUrl"

@@ -180,6 +180,163 @@ class TestModelPointingAtItsParent:
         assert answer["items"][0]["children"] == 1
 
 
+def shape(items: list[dict]) -> list:
+    """The labels of a search's answer, nested as its branches are."""
+    return [
+        (
+            item["label"],
+            item["match"],
+            shape(item["items"]) if "items" in item else None,
+        )
+        for item in items
+    ]
+
+
+class TestFind:
+    def test_the_branches_leading_to_a_match_are_unfolded(
+        self, admin_client, bom
+    ):
+        answer = get(admin_client, BOM, find="screw")
+
+        assert shape(answer["items"]) == [
+            (
+                "BK-1 City bicycle",
+                False,
+                [
+                    (
+                        "WH-1 Wheel",
+                        False,
+                        [("HB-1 Hub", False, [("SC-1 Screw", True, None)])],
+                    ),
+                    ("SC-1 Screw", True, None),
+                ],
+            ),
+        ]
+        # Found in two places, it is one record.
+        assert answer["matches"] == 1
+        assert answer["truncated"] is False
+
+    def test_each_item_is_described_as_a_levels_are(self, admin_client, bom):
+        answer = get(admin_client, BOM, find="screw")
+        bicycle = answer["items"][0]
+        wheel = bicycle["items"][0]
+
+        # Its count is the whole level's, not the part shown.
+        assert wheel["children"] == 2
+        assert wheel["key"] == str(bom["lines"][("BK-1", "WH-1")].pk)
+        assert bicycle["key"] == str(bom["BK-1"].pk)
+        assert wheel["cells"][1]["display"] == "2.000"
+        assert answer["columns"] == get(admin_client, BOM)["columns"]
+
+    def test_from_a_record_its_own_level_comes_first(self, admin_client, bom):
+        answer = get(admin_client, BOM, node=bom["WH-1"].pk, find="SC-")
+
+        assert shape(answer["items"]) == [
+            ("HB-1 Hub", False, [("SC-1 Screw", True, None)])
+        ]
+        assert answer["node"] == str(bom["WH-1"].pk)
+
+    def test_from_one_record_alone(self, admin_client, bom):
+        answer = get(admin_client, BOM, root=bom["HB-1"].pk, find="screw")
+
+        assert shape(answer["items"]) == [
+            ("HB-1 Hub", False, [("SC-1 Screw", True, None)])
+        ]
+
+    def test_upwards(self, admin_client, bom):
+        answer = get(
+            admin_client,
+            BOM,
+            node=bom["SC-1"].pk,
+            direction="up",
+            find="bicycle",
+        )
+
+        assert shape(answer["items"]) == [
+            ("BK-1 City bicycle", True, None),
+            (
+                "HB-1 Hub",
+                False,
+                [("WH-1 Wheel", False, [("BK-1 City bicycle", True, None)])],
+            ),
+        ]
+
+    def test_a_match_holding_no_match_stays_folded(self, admin_client, bom):
+        answer = get(admin_client, BOM, find="wheel")
+        wheel = answer["items"][0]["items"][0]
+
+        assert wheel["match"] is True
+        assert "items" not in wheel
+        assert wheel["children"] == 2
+
+    def test_nothing_matches(self, admin_client, bom):
+        answer = get(admin_client, BOM, find="nothing like it")
+
+        assert answer["items"] == []
+        assert answer["matches"] == 0
+
+    def test_a_record_inside_itself_ends_the_branch(self, admin_client, bom):
+        # Written past the forms, which would refuse it.
+        BomLine.objects.create(parent=bom["HB-1"], child=bom["WH-1"])
+
+        answer = get(admin_client, BOM, node=bom["WH-1"].pk, find="spoke")
+
+        assert shape(answer["items"]) == [
+            (
+                "HB-1 Hub",
+                False,
+                [("WH-1 Wheel", False, None)],
+            ),
+            ("SP-1 Spoke", True, None),
+        ]
+        assert answer["items"][0]["items"][0]["cycle"] is True
+
+    def test_a_model_pointing_at_its_parent(self, admin_client, bom):
+        answer = get(admin_client, FAMILIES, find="hubs")
+
+        assert shape(answer["items"]) == [
+            (
+                "Bicycles",
+                False,
+                [("Wheels", False, [("Hubs", True, None)])],
+            )
+        ]
+
+    def test_and_upwards(self, admin_client, bom):
+        answer = get(
+            admin_client,
+            FAMILIES,
+            node=bom["hubs"].pk,
+            direction="up",
+            find="bicycles",
+        )
+
+        assert shape(answer["items"]) == [
+            ("Wheels", False, [("Bicycles", True, None)])
+        ]
+
+    def test_a_long_answer_is_cut_and_says_so(
+        self, admin_client, bom, monkeypatch
+    ):
+        monkeypatch.setattr("generic.sites.trees.MAX_FIND_ITEMS", 2)
+
+        answer = get(admin_client, BOM, find="screw")
+
+        assert answer["truncated"] is True
+        assert shape(answer["items"]) == [
+            ("BK-1 City bicycle", False, [("WH-1 Wheel", False, [])])
+        ]
+
+    def test_a_long_walk_is_cut_and_says_so(
+        self, admin_client, bom, monkeypatch
+    ):
+        monkeypatch.setattr("generic.sites.trees.MAX_FIND_WALK", 2)
+
+        answer = get(admin_client, BOM, find="screw")
+
+        assert answer["truncated"] is True
+
+
 class TestRefusals:
     def test_an_unknown_tree_is_not_found(self, admin_client, bom):
         response = admin_client.get("/api/example/article/trees/nope/")

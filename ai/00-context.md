@@ -115,6 +115,7 @@ generic/
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
 │   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
+│   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
 │   │                       (self FK or link model), a level at a time; no cycles
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
@@ -1294,7 +1295,9 @@ trees = (
          link_columns=("position", "quantity"),  # the link's
          ordering=("position", "child__reference"),
          where_used=True,                        # a second tab, upwards
-         page_size=50, roots=None, tab=True, page=True, allow_add=True),
+         page_size=50, roots=None, tab=True, page=True, allow_add=True,
+         flat=True, flat_title=_("Exploded BOM"),  # every level as a table
+         quantity="quantity"),                   # multiplied down each path
 )
 ```
 
@@ -1309,10 +1312,21 @@ links from the link resource's (register the link model, usually
 no link values). Every generated form serializer of the link model (or
 of the model, self-FK) refuses a cycle (`check_links`): forms, cells,
 imports, API. A record met again below itself is drawn, not unfolded.
+*Find at any depth* (toolbar; `?find=` on the endpoint) walks every
+level below the top a level per query (≤ 50,000 records, ≤ 1,000 rows
+answered, `truncated`) and answers the branches leading to matches,
+nested (`items`, `match`); partial levels offer *Show them all*.
+`flat=True` (`generic/sites/tree_rows.py`): a page `<pk>/<name>-flat/`
+per record and `api/<app>/<model>/trees/<name>/flat/?root=<pk>`
+(`grouped=1`: one row per record, places, quantities added), a
+`RowsDataTableViewSet` registered by the site after the resource's:
+level, record, held by, path, `link_<name>`, columns, total quantity
+(link values need the link resource's view permission); ≤ 20,000 rows.
 JS: `Generic.tree.start(element)` (`js/tree.js`, `css/tree.css`),
 config from `bound.get_config(request, obj, direction, root)`. Example:
 `example.Article` / `BomLine` / `ArticleFamily`, `seed_example` (a
-1,200-part terminal rail). `PageSweep` opens each tree's levels.
+1,200-part terminal rail). `PageSweep` opens each tree's levels, a
+search and the flat table.
 
 ## 6. URLs and endpoints (generated)
 
@@ -1343,7 +1357,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
-| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path` (§5.18) |
+| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find` searches every level (§5.18) |
+| `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,

@@ -638,6 +638,17 @@ class GenericSite:
                 basename=f"api_{name}",
             )
 
+            # A tree laid flat: a table of its own (generic.sites.tree_rows).
+            for bound in resource.get_trees():
+                flat = bound.get_flat()
+
+                if flat is not None:
+                    router.register(
+                        flat.get_url_prefix(),
+                        flat.get_viewset_class(),
+                        basename=flat.get_url_basename(),
+                    )
+
         # Rows that are not a model's: a list and a page per row, read
         # only, under data/.
         for resource in self._data.values():

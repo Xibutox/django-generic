@@ -186,6 +186,8 @@
       items: [],
       total: 0,
       q: "",
+      match: Boolean(data.match),
+      partial: false,
       row: null,
       foot: null
     };
@@ -197,6 +199,22 @@
     var status = el("span", "tree__status muted");
     var collapse = el("button", "button button--sm button--ghost");
     var refresh = el("button", "button button--sm button--ghost");
+    var finder = el("label", "tree__find");
+    var find = el("input", "input input--sm");
+
+    // Every level at once, from the server: the branches leading to
+    // what matches come back unfolded.
+    find.type = "search";
+    find.placeholder = t("Find at any depth");
+    find.setAttribute("aria-label", t("Find at any depth"));
+    find.addEventListener(
+      "input",
+      Generic.debounce(function () {
+        self.find(find.value.trim());
+      }, 400)
+    );
+    finder.appendChild(icon("manage_search", "muted"));
+    finder.appendChild(find);
 
     collapse.type = "button";
     collapse.appendChild(icon("unfold_less"));
@@ -212,6 +230,7 @@
       self.reload();
     });
 
+    toolbar.appendChild(finder);
     toolbar.appendChild(status);
     toolbar.appendChild(collapse);
     toolbar.appendChild(refresh);
@@ -376,6 +395,109 @@
     this.follow();
   };
 
+  /* -- Finding at any depth ------------------------------------------- */
+
+  /** Ask for what matches `term` below the top, at any depth; under two
+   * letters, back to the tree as it was. */
+  TreeView.prototype.find = function (term) {
+    var self = this;
+    var config = this.config;
+
+    if (!term || term.length < 2) {
+      this.asking = null;
+
+      if (this.found) {
+        this.leaveFind();
+      }
+
+      return Promise.resolve();
+    }
+
+    var params = { direction: config.direction || "down", find: term };
+    var asked = {};
+
+    if (config.root) {
+      params.root = config.root;
+    } else if (config.node !== null && config.node !== undefined) {
+      params.node = config.node;
+    }
+
+    this.term = term;
+    this.asking = asked;
+    this.status.textContent = t("Searching\u2026");
+
+    return Generic.api
+      .get(config.url, params)
+      .then(function (answer) {
+        // Typed further meanwhile: that search answers instead.
+        if (self.asking === asked) {
+          self.showFound(answer);
+        }
+      })
+      .catch(function (error) {
+        if (self.asking === asked) {
+          self.status.textContent = "";
+          Generic.toast((error && error.message) || t("The tree could not be loaded."), "error");
+        }
+      });
+  };
+
+  /** Draw a search's answer in place of the tree, kept aside. */
+  TreeView.prototype.showFound = function (answer) {
+    var top = this.node({ id: null, depth: -1 });
+
+    if (!this.found) {
+      this.normal = this.top;
+    }
+
+    top.path = [];
+    top.expanded = true;
+    top.loaded = true;
+    top.items = this.foundItems(answer.items || [], top, []);
+    top.total = top.items.length;
+    this.found = true;
+    this.top = top;
+    this.redraw(top);
+
+    var status = answer.matches
+      ? Generic.format(Generic.nt("%(count)s match", "%(count)s matches", answer.matches), { count: number(answer.matches) })
+      : t("Nothing matches.");
+
+    if (answer.truncated) {
+      status += " " + t("(the first ones only: be more precise)");
+    }
+
+    this.status.textContent = status;
+  };
+
+  TreeView.prototype.foundItems = function (list, parent, path) {
+    var self = this;
+
+    return list.map(function (data) {
+      var child = self.node(Object.assign({}, data, { depth: parent.depth + 1 }));
+
+      child.path = path;
+
+      if (data.items) {
+        child.expanded = true;
+        child.loaded = true;
+        child.partial = true;
+        child.items = self.foundItems(data.items, child, path.concat([child.id]));
+        child.total = child.items.length;
+      }
+
+      return child;
+    });
+  };
+
+  /** The search box emptied: the tree as it was left. */
+  TreeView.prototype.leaveFind = function () {
+    this.found = false;
+    this.top = this.normal;
+    this.redraw(this.top);
+    this.announce();
+  };
+
   /* -- Rows ------------------------------------------------------------- */
 
   TreeView.prototype.rowOf = function (node) {
@@ -385,7 +507,7 @@
     }
 
     var self = this;
-    var row = el("tr", "tree-row");
+    var row = el("tr", "tree-row" + (node.match ? " is-match" : ""));
     var first = el("td", "tree-row__label");
     var inner = el("div", "tree-row__inner");
     var toggle = el("button", "tree-row__toggle");
@@ -549,15 +671,35 @@
     var self = this;
     var shown = parent.items.length;
     var more = parent.total - shown;
+    var hidden = parent.partial ? parent.count - shown : 0;
 
-    if (!parent.loading && !parent.failed && more <= 0 && shown) {
+    if (!parent.loading && !parent.failed && more <= 0 && hidden <= 0 && shown) {
       return null;
     }
 
     var row = this.levelRow(parent, "tree-row--foot");
     var rest = row.inner;
 
-    if (parent.loading) {
+    if (hidden > 0 && !parent.loading && !parent.failed) {
+      // Found: only what leads to a match is shown of this level.
+      var all = el("button", "button button--sm button--ghost");
+
+      all.type = "button";
+      all.appendChild(icon("unfold_more"));
+      all.appendChild(el("span", "", t("Show them all")));
+      all.addEventListener("click", function () {
+        parent.partial = false;
+        self.load(parent, false);
+      });
+      rest.appendChild(
+        el(
+          "span",
+          "muted",
+          Generic.format(Generic.nt("%(count)s more, not matching", "%(count)s more, not matching", hidden), { count: number(hidden) })
+        )
+      );
+      rest.appendChild(all);
+    } else if (parent.loading) {
       rest.appendChild(icon("progress_activity", "tree-row__spin"));
       rest.appendChild(el("span", "muted", t("Loading\u2026")));
     } else if (parent.failed) {
@@ -717,6 +859,10 @@
   TreeView.prototype.reload = function () {
     var self = this;
     var open = [];
+
+    if (this.found) {
+      return this.find(this.term);
+    }
 
     function walk(node) {
       if (node.expanded && node.loaded) {

@@ -16,7 +16,7 @@ Each pass is cheap, and together they are the whole surface:
   schema, a summary and its history, each column's values, both
   exports, every chart, and where declared the import's schema and
   template, a record's transitions and each tree's first levels (both
-  ways) - because those are generated
+  ways), a search of it and its flat table - because those are generated
   per resource exactly as the pages are.
 
 A page whose address takes an argument nothing can fill fails
@@ -583,11 +583,26 @@ class PageSweep:
                 if tree.definition.where_used:
                     asked.append({"node": record.pk, "direction": "up"})
 
+            if record is not None:
+                asked.append({"node": record.pk, "find": "a"})
+
             for params in asked:
                 response = opener.get(url, params)
 
                 assert response.status_code == 200, f"{resource} {url}"
                 assert "items" in response.json()
+
+            flat = tree.get_flat()
+
+            if flat is not None and record is not None:
+                url = f"{prefix}trees/{tree.name}/flat/"
+
+                for grouped in ("", "1"):
+                    response = opener.get(
+                        url, {"draw": 1, "root": record.pk, "grouped": grouped}
+                    )
+
+                    assert response.status_code == 200, f"{resource} {url}"
 
     def test_the_api_description(self, opener: Any) -> None:
         """The OpenAPI description, where the project mounts it."""

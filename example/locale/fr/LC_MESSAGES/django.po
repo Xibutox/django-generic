@@ -2059,3 +2059,6 @@ msgstr "Arbre des familles"
 
 msgid "Belongs to"
 msgstr "Appartient à"
+
+msgid "Exploded BOM"
+msgstr "Nomenclature éclatée"

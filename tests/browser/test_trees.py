@@ -122,3 +122,50 @@ def test_the_keyboard_walks_the_tree(signed_in, bom):
     expect(first).to_be_focused()
     page.keyboard.press("ArrowLeft")
     expect(page.locator(".tree-row", has_text="WH-1")).to_have_count(0)
+
+
+def test_found_at_any_depth_then_back(signed_in, terminals):
+    page = signed_in
+    page.goto("/example/article/bom/")
+    expect(row(page, "BK-1 City bicycle")).to_be_visible()
+
+    find = page.get_by_role("searchbox", name="Find at any depth")
+    find.fill("TB-119")
+
+    # Unfolded down to it, through the 120 blocks of the rail.
+    match = page.locator(".tree-row.is-match")
+    expect(match).to_have_count(1)
+    expect(match).to_contain_text("TB-119 Terminal block")
+    expect(match).to_have_attribute("aria-level", "3")
+    expect(page.locator(".tree__status")).to_contain_text("1 match")
+    expect(
+        page.locator(".tree-row--foot", has_text="119 more, not matching")
+    ).to_be_visible()
+
+    page.locator(".tree-row--foot", has_text="119 more").get_by_role(
+        "button", name="Show them all"
+    ).click()
+    expect(page.locator(".tree-row", has_text="Terminal block")).to_have_count(
+        50
+    )
+
+    find.fill("")
+    expect(page.locator(".tree-row.is-match")).to_have_count(0)
+    expect(row(page, "BK-1 City bicycle")).to_be_visible()
+    expect(page.locator(".tree-row", has_text="WH-1")).to_have_count(0)
+
+
+def test_the_exploded_bom(signed_in, bom):
+    page = signed_in
+    page.goto(f"/example/article/{bom['BK-1'].pk}/bom-flat/")
+
+    table = page.locator('table[data-config="tree-flat-table"]')
+    expect(table.locator("tbody tr")).to_have_count(5)
+    expect(table.locator("tbody tr").nth(2)).to_contain_text("SC-1 Screw")
+    expect(table.locator("tbody tr").nth(2)).to_contain_text("8.000")
+
+    page.get_by_role("link", name="One row per record").click()
+    expect(table.locator("tbody tr")).to_have_count(4)
+    expect(table.locator("tbody tr", has_text="SC-1 Screw")).to_contain_text(
+        "20"
+    )

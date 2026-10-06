@@ -790,6 +790,13 @@ class ModelResource(PagesMixin):
                 if bound.definition.page and bound.name not in names:
                     declared.append(tree_page(bound))
 
+                flat = bound.get_flat()
+
+                if flat is not None and flat.page_name not in names:
+                    from generic.sites.tree_rows import flat_page
+
+                    declared.append(flat_page(bound))
+
         if self.trash and "trash" not in names:
             from generic.sites.pages import trash_page
 

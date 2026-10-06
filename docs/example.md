@@ -126,8 +126,12 @@ materials* is the tree of every product: unfold *BK-100 City bicycle*,
 then its wheel, its hub, its axle - five levels, each fetched when it
 is opened. Unfold *CB-900 Control cabinet* and its terminal rail: 1,200
 terminal blocks, fifty at a time, with a search box at the top of the
-level (`TB-07`). Open *WH-300 Wheel assembly*: its *Bill of materials*
-tab, and *Where used* - both bicycles. Try to add a line putting the
+level (`TB-07`) - or type `TB-0999` in *Find at any depth*, which
+unfolds the way down to it. Open *WH-300 Wheel assembly*: its *Bill of
+materials* tab, and *Where used* - both bicycles. *Exploded BOM*, on a
+bicycle, lists every component at every level with its total quantity
+for one bicycle - or, *One row per record*, what to buy - filtered and
+exported as any table. Try to add a line putting the
 bicycle inside one of its own spokes: the form refuses it.
 *Article families* is the other shape, a model pointing at its parent.
 `ArticleResource.trees` is the whole of it ([Trees](trees.md)).

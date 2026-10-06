@@ -158,7 +158,7 @@ model nobody declared pages of its own. See
 | `detail_fieldsets` | The summary page's sections; the form's fieldsets by default |
 | `detail_stats` | Figures shown as tiles on the summary page |
 | `related_tables` | `RelatedTable` declarations: the summary page's tabs |
-| `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time ([Trees](trees.md)) |
+| `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time, searched at any depth, laid flat as a table ([Trees](trees.md)) |
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | The form, admin style |
 | `form_overrides` | Presentation per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText` |
 | `form_serializer` | A hand-written `FormModelSerializer`, replacing the generated one |

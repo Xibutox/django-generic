@@ -1215,6 +1215,11 @@ class ArticleResource(ModelResource):
             link_columns=("position", "quantity"),
             ordering=("position", "child__reference"),
             where_used=True,
+            # Every level as one table: an exploded BOM, with the
+            # quantity of each component for one article.
+            flat=True,
+            flat_title=_("Exploded BOM"),
+            quantity="quantity",
         ),
     )
 

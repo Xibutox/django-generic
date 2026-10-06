@@ -57,6 +57,7 @@ from django.core.exceptions import (
     ImproperlyConfigured,
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import models
 from django.db.models import Count, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.utils.encoding import force_str
@@ -89,6 +90,14 @@ MAX_WALK = 200_000
 
 #: Keys looked up per query while walking down a tree.
 WALK_CHUNK = 500
+
+#: How many records a search of the whole tree, or its flat table,
+#: walks through: past it, what was found so far is said to be partial.
+MAX_FIND_WALK = 50_000
+
+#: The most rows a search of the whole tree answers with: matches and
+#: the branches leading to them.
+MAX_FIND_ITEMS = 1_000
 
 
 @dataclasses.dataclass(frozen=True)
@@ -137,6 +146,16 @@ class Tree:
     #: An "Add" on the tab, creating a link (a child, without
     #: ``through``) with this record as its parent.
     allow_add: bool = True
+    #: A flat table of everything a record holds, at every depth - one
+    #: row per place, with its level and its path - filtered, sorted and
+    #: exported as any table: a page of each record (generic.sites.
+    #: tree_rows).
+    flat: bool = False
+    flat_title: Any = None
+    #: With ``through``: the link's field saying how many of the child
+    #: go into the parent. The flat table multiplies it down each path:
+    #: the total quantity of each component, for one of the record.
+    quantity: str | None = None
 
 
 def entry_label(resource: Any, model: Any, name: str) -> str:
@@ -440,6 +459,10 @@ class BoundTree:
         node = self.find(request, params.get("node"))
         root = self.find(request, params.get("root"))
         visible = self.visible(request)
+        wanted = (params.get("find") or "").strip()
+
+        if wanted:
+            return self.search(request, direction, node, root, wanted)
 
         if node is not None:
             path.append(force_str(node.pk))
@@ -498,6 +521,286 @@ class BoundTree:
                 for row in page
             ],
         }
+
+    # -- walking every level ---------------------------------------------
+
+    def edges(
+        self,
+        request: Any,
+        direction: str,
+        holders: Sequence[Any],
+    ) -> list[tuple[Any, Any, Any]]:
+        """``(key, holder, held)`` for what ``holders`` hold - upwards,
+        what holds them - in each one's order, as a reader sees it."""
+        found: list[tuple[Any, Any, Any]] = []
+        visible = self.visible(request)
+        parent = self.parent_field.attname
+
+        for start in range(0, len(holders), WALK_CHUNK):
+            chunk = list(holders[start : start + WALK_CHUNK])
+
+            if self.linked:
+                near, far = self.fields(direction)
+                meta = self.link_model._meta
+                found += (
+                    self.links(request)
+                    .filter(**{f"{near}__in": chunk})
+                    .order_by(*self.get_ordering(request, direction))
+                    .values_list(
+                        "pk",
+                        meta.get_field(near).attname,
+                        meta.get_field(far).attname,
+                    )
+                )
+            elif direction == DOWN:
+                found += [
+                    (pk, holder, pk)
+                    for pk, holder in visible.filter(
+                        **{f"{parent}__in": chunk}
+                    )
+                    .order_by(*self.get_ordering(request, DOWN))
+                    .values_list("pk", parent)
+                ]
+            else:
+                # Upwards, a record is held by its parent - one it sees.
+                found += [
+                    (holder, pk, holder)
+                    for pk, holder in visible.filter(
+                        pk__in=chunk,
+                        **{f"{parent}__in": visible.values("pk")},
+                    ).values_list("pk", parent)
+                ]
+
+        return found
+
+    def walk(
+        self,
+        request: Any,
+        direction: str,
+        starts: Sequence[Any],
+        limit: int | None = None,
+    ) -> tuple[dict[Any, list[tuple[Any, Any]]], list[Any], bool]:
+        """Every record below ``starts``, a level at a time.
+
+        Returns what each record holds - ``{holder: [(key, held)]}`` -
+        the records met, in the order met, and whether ``limit`` records
+        stopped the walk before its end. A record held in several
+        places is walked once.
+        """
+        limit = MAX_FIND_WALK if limit is None else limit
+        below: dict[Any, list[tuple[Any, Any]]] = {}
+        seen = set(starts)
+        met = list(dict.fromkeys(starts))
+        frontier = list(met)
+
+        while frontier:
+            if len(seen) >= limit:
+                return below, met, True
+
+            found = []
+
+            for key, holder, held in self.edges(request, direction, frontier):
+                below.setdefault(holder, []).append((key, held))
+
+                if held not in seen:
+                    seen.add(held)
+                    met.append(held)
+                    found.append(held)
+
+            frontier = found
+
+        return below, met, False
+
+    def search(
+        self,
+        request: Any,
+        direction: str,
+        node: Any,
+        root: Any,
+        term: str,
+    ) -> dict[str, Any]:
+        """The records matching ``term`` at any depth, with the branches
+        leading to them: what the endpoint answers to ``find``.
+
+        Each item is one of a level's; those leading to a match carry
+        ``items``, the part of their level that does - not the whole of
+        it, which unfolding them again asks for.
+        """
+        visible = self.visible(request)
+
+        if root is not None:
+            top = [(root.pk, root.pk)]
+        elif node is not None:
+            top = [
+                (key, held)
+                for key, _holder, held in self.edges(
+                    request, direction, [node.pk]
+                )
+            ]
+        else:
+            top = [
+                (pk, pk)
+                for pk in self.get_roots(request)
+                .order_by(*self.get_node_ordering(request))
+                .values_list("pk", flat=True)[:MAX_FIND_WALK]
+            ]
+
+        below, met, truncated = self.walk(
+            request, direction, [pk for _key, pk in top]
+        )
+        matching = apply_search(visible, self.get_search_fields(request), term)
+        matches: set[Any] = set()
+
+        for start in range(0, len(met), WALK_CHUNK):
+            matches.update(
+                matching.filter(
+                    pk__in=met[start : start + WALK_CHUNK]
+                ).values_list("pk", flat=True)
+            )
+
+        # What leads to a match: the matches, and everything above them.
+        above: dict[Any, set[Any]] = {}
+
+        for holder, entries in below.items():
+            for _key, held in entries:
+                above.setdefault(held, set()).add(holder)
+
+        relevant = set(matches)
+        frontier = list(matches)
+
+        while frontier:
+            found = []
+
+            for pk in frontier:
+                for holder in above.get(pk, ()):
+                    if holder not in relevant:
+                        relevant.add(holder)
+                        found.append(holder)
+
+            frontier = found
+
+        state: dict[str, Any] = {"budget": MAX_FIND_ITEMS, "cut": False}
+
+        def branch(
+            entries: Sequence[tuple[Any, Any]], path: Any, linking: bool
+        ) -> list[dict[str, Any]]:
+            items: list[dict[str, Any]] = []
+
+            for key, pk in entries:
+                if pk not in relevant:
+                    continue
+
+                if state["budget"] <= 0:
+                    state["cut"] = True
+                    break
+
+                state["budget"] -= 1
+                item = {
+                    "key": key,
+                    "pk": pk,
+                    "link": key if linking else None,
+                    "path": path,
+                    "items": None,
+                }
+                items.append(item)
+                children = below.get(pk, ())
+
+                if pk not in path and any(
+                    held in relevant for _key, held in children
+                ):
+                    item["items"] = branch(children, path | {pk}, self.linked)
+
+            return items
+
+        shown = branch(
+            top,
+            frozenset([node.pk] if node is not None else []),
+            self.linked and node is not None,
+        )
+
+        return {
+            "node": force_str(node.pk) if node is not None else None,
+            "direction": direction,
+            "find": term,
+            "matches": len(matches),
+            "truncated": truncated or state["cut"],
+            "columns": self.get_columns(request),
+            "items": self.describe_found(request, direction, shown, matches),
+        }
+
+    def describe_found(
+        self,
+        request: Any,
+        direction: str,
+        shown: list[dict[str, Any]],
+        matches: set[Any],
+    ) -> list[dict[str, Any]]:
+        """The items of a search, described as a level's are: their
+        records and links read in a few queries, not one each."""
+        pks: set[Any] = set()
+        keys: set[Any] = set()
+
+        def collect(items: list[dict[str, Any]]) -> None:
+            for item in items:
+                pks.add(item["pk"])
+
+                if item["link"] is not None:
+                    keys.add(item["link"])
+                collect(item["items"] or [])
+
+        collect(shown)
+        records: dict[Any, Any] = {}
+        links: dict[Any, Any] = {}
+        ordered = list(pks)
+
+        for start in range(0, len(ordered), WALK_CHUNK):
+            chunk = ordered[start : start + WALK_CHUNK]
+            records.update(
+                (record.pk, record)
+                for record in self.visible(request)
+                .filter(pk__in=chunk)
+                .annotate(
+                    **{CHILDREN: self.children_count(request, direction, "pk")}
+                )
+            )
+
+        if self.linked:
+            ordered = list(keys)
+
+            for start in range(0, len(ordered), WALK_CHUNK):
+                links.update(
+                    (link.pk, link)
+                    for link in self.links(request).filter(
+                        pk__in=ordered[start : start + WALK_CHUNK]
+                    )
+                )
+
+        def build(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+            described = []
+
+            for item in items:
+                record = records.get(item["pk"])
+
+                if record is None:
+                    continue
+
+                entry = self.describe(
+                    request,
+                    record,
+                    links.get(item["link"]),
+                    getattr(record, CHILDREN),
+                    {force_str(pk) for pk in item["path"]},
+                )
+                entry["match"] = item["pk"] in matches
+
+                if item["items"] is not None and not entry["cycle"]:
+                    entry["items"] = build(item["items"])
+
+                described.append(entry)
+
+            return described
+
+        return build(shown)
 
     def find(self, request: Any, value: Any) -> Any:
         """The record a parameter names, if this reader may see it."""
@@ -561,6 +864,37 @@ class BoundTree:
         return item
 
     # -- where it shows -------------------------------------------------
+
+    def get_flat(self) -> Any:
+        """The flat table of the tree (generic.sites.tree_rows), with
+        ``flat=True``; None without."""
+        if not self.definition.flat:
+            return None
+
+        flat = self.__dict__.get("_flat")
+
+        if flat is None:
+            from generic.sites.tree_rows import FlatTree
+
+            flat = self.__dict__["_flat"] = FlatTree(self)
+
+        return flat
+
+    def get_flat_url(self, request: Any, obj: Any) -> str:
+        """The flat table from ``obj``, for whoever may open it."""
+        flat = self.get_flat()
+
+        if flat is None:
+            return ""
+
+        declared = self.resource.get_page(flat.page_name)
+
+        if declared is None or not self.resource.has_page_permission(
+            request, declared, obj
+        ):
+            return ""
+
+        return flat.get_page_url(obj)
 
     def is_visible(self, request: Any) -> bool:
         return self.resource.has_view_permission(request)
@@ -654,6 +988,10 @@ class BoundTree:
                 "count": self.count(request, obj, DOWN),
                 "addUrl": self.get_add_url(request, obj),
                 "pageUrl": self.get_record_page_url(obj),
+                "flatUrl": self.get_flat_url(request, obj),
+                "flatTitle": (
+                    self.get_flat().get_title() if self.definition.flat else ""
+                ),
             }
         ]
 
@@ -668,6 +1006,8 @@ class BoundTree:
                     "count": self.count(request, obj, UP),
                     "addUrl": "",
                     "pageUrl": "",
+                    "flatUrl": "",
+                    "flatTitle": "",
                 }
             )
 
@@ -804,6 +1144,13 @@ def describe_link_entry(
     return describe_value(tree.resource.site, request, getattr(link, name))
 
 
+def get_model_field(model: Any, name: str) -> Any:
+    try:
+        return model._meta.get_field(name)
+    except FieldDoesNotExist:
+        return None
+
+
 def read_number(value: Any, name: str, default: int) -> int:
     if value in (None, ""):
         return default
@@ -885,6 +1232,33 @@ def bind_tree(definition: Tree, resource: Any) -> BoundTree:
                     f"{where} shows '{name}' of each link, which is not a "
                     f"field of {link_model.__name__}."
                 ) from None
+
+    if definition.quantity is not None:
+        if definition.through is None or not isinstance(
+            get_model_field(link_model, definition.quantity),
+            models.Field,
+        ):
+            raise ImproperlyConfigured(
+                f"{where}: quantity names '{definition.quantity}', which "
+                f"is not a field of a 'through' model."
+            )
+
+    if definition.flat:
+        from generic.sites.tree_rows import RESERVED, link_key
+
+        keys = [
+            *definition.columns,
+            *(link_key(name) for name in definition.link_columns),
+        ]
+        taken = sorted(
+            {key for key in keys if key in RESERVED or keys.count(key) > 1}
+        )
+
+        if taken:
+            raise ImproperlyConfigured(
+                f"{where}: the flat table could not tell its own columns "
+                f"from {', '.join(taken)}."
+            )
 
     roots = definition.roots
 

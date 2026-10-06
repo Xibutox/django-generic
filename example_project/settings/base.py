@@ -385,6 +385,8 @@ SPECTACULAR_SETTINGS = {
     # One name per choice set a column carries in several tables.
     "ENUM_NAME_OVERRIDES": {
         "TicketStatusEnum": "example.models.Ticket.Status",
+        "ArticleKindEnum": "example.models.Article.Kind",
+        "EquipmentKindEnum": "example.models.Equipment.Kind",
     },
 }
 

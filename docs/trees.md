@@ -11,6 +11,11 @@ depth. A resource declares the hierarchy once, with `Tree`, and gets:
   the list), or from one record (`?root=<pk>`, the tab's *Open as a
   page*);
 - an endpoint serving one level at a time, a page at a time;
+- a search through every level at once, unfolding the branches that
+  lead to what it finds;
+- with `flat=True`, a table of everything a record holds at every
+  depth - an exploded bill of materials - filtered, sorted and
+  exported as any table;
 - forms, table cells and imports of the links that refuse a record
   inside itself.
 
@@ -108,6 +113,8 @@ the parent filled in) and who changes one (a pencil on each row).
 | `page` | `True` | The page of the whole tree, and its button on the list |
 | `where_used`, `where_used_title` | `False`, *Where used* | A second tab, unfolding upwards |
 | `allow_add` | `True` | An *Add* on the tab, for whoever may add links (children) |
+| `flat`, `flat_title` | `False`, *Every level* | A page of each record with everything below it as a table (below) |
+| `quantity` | `None` | With `through`: the link's field saying how many of the child go into the parent; the flat table multiplies it down each path |
 
 A declaration that could not work - an unknown field, a foreign key to
 another model, `through` without `child` - raises
@@ -126,6 +133,7 @@ permission:
 | `offset`, `limit` | The page; `limit` is capped at 500 |
 | `q` | Searches the level (the search syntax of the tables) |
 | `path` | The records above, comma separated: one met again is marked |
+| `find` | Searches every level below at once (below) |
 
 ```json
 {"node": "6", "direction": "down", "total": 1200, "offset": 0, "limit": 50,
@@ -144,6 +152,75 @@ resource's: a reader never sees a record, or a link, those would not
 list - the counts included. A level is one count and one query, with
 the counts of the next level as a subquery: no query per record, beyond
 what the `columns` themselves read.
+
+## Finding at any depth
+
+The search box of a level looks through that level. The one in the
+tree's toolbar, *Find at any depth*, looks through everything below
+the tree's top - the tab's record, the page's root, or the roots - and
+draws only the branches leading to what it finds, unfolded, the
+matches highlighted. A level shown in part says how many of its
+records do not lead to a match, with *Show them all*; emptying the box
+brings back the tree as it was left.
+
+`GET .../trees/<name>/?find=<text>` (with `node`, `root`, `direction`
+as for a level) answers with the same items, nested:
+
+```json
+{"find": "screw", "matches": 1, "truncated": false, "columns": [...],
+ "items": [{"label": "BK-1 City bicycle", "match": false, "children": 3,
+            "items": [{"label": "SC-1 Screw", "match": true, ...}]}]}
+```
+
+`items` is there on a record leading to a match, and holds only that
+part of its level - `children` stays the whole level's count. The walk
+reads a level of the tree per query, every record of it at once,
+records met in several places walked once; it stops after 50,000
+records, and the answer after 1,000 rows - `truncated` then says the
+answer is partial.
+
+## Every level as a table
+
+```python
+Tree(
+    "bom",
+    through=BomLine,
+    parent="parent",
+    child="child",
+    link_columns=("position", "quantity"),
+    columns=("kind", "unit", "unit_cost"),
+    flat=True,
+    flat_title=_("Exploded BOM"),
+    quantity="quantity",
+)
+```
+
+Each record gets a page, `<pk>/<name>-flat/` (a button on its page and
+on the tree's tab), listing every record below it - one row per place
+it takes, in the tree's order:
+
+| Column | |
+| --- | --- |
+| Level | 1 for what the record holds itself |
+| The record | its name, linking to it |
+| Held by | the record holding it there |
+| Path | the records from the top down to it (hidden at first) |
+| `link_columns` | the link's values, as `link_<name>` |
+| `columns` | the record's values |
+| Total quantity | with `quantity`: the quantities multiplied down the path - how many of it one of the top record needs there |
+
+*One row per record* (`?grouped=1`) lists each record once, with how
+many places it takes, the first level it appears at, and its total
+quantities added up: what to buy for one of the record.
+
+It is an ordinary table over rows that are not a model's
+([data.md](data.md)): the filter editor on every column, the search
+box, sorting, the column selector, Excel and CSV. Its endpoint is
+`GET api/<app>/<model>/trees/<name>/flat/?root=<pk>` (`grouped=1`),
+behind the resource's view permission; the link columns and the total
+quantity need the link resource's. The rows are worked out per
+request from the same querysets as the tree, a level a query, and
+capped at 20,000.
 
 ## No record inside itself
 
@@ -192,5 +269,7 @@ with `tree_config = resource.get_tree("bom").get_config(request, obj)`.
 five levels deep, sharing their wheels, and a control cabinet whose
 terminal rail holds 1,200 terminal blocks - open
 *Articles › Bill of materials*, unfold *CB-900*, then *TS-920*, and
-search the level. An article's page has the *Bill of materials* and
-*Where used* tabs. *Article families* is the other shape.
+search the level - or type *TB-0999* in *Find at any depth*. An
+article's page has the *Bill of materials* and *Where used* tabs, and
+*Exploded BOM*: every component of a bicycle with its total quantity,
+or one row per component. *Article families* is the other shape.
