@@ -237,6 +237,10 @@ class ModelResource(PagesMixin):
     detail_stats: Sequence[str] = ()
     #: Tables of related records below the sections: RelatedTable(...).
     related_tables: Sequence[Any] = ()
+    #: Records holding records of this model, unfolded as a tree: a tab
+    #: on the summary page and a page of the whole tree. ``Tree(...)``,
+    #: see ``generic.sites.trees``.
+    trees: Sequence[Any] = ()
 
     # -- charts ------------------------------------------------------------
 
@@ -773,16 +777,23 @@ class ModelResource(PagesMixin):
         return getattr(obj, "pk", obj)
 
     def get_page_declarations(self) -> list[Any]:
-        """The pages declared, and the *Trash* when ``trash`` keeps one
-        and nothing else is called that."""
-        declared = super().get_page_declarations()
+        """The pages declared, the page of each tree, and the *Trash*
+        when ``trash`` keeps one - each unless a page declared takes its
+        name."""
+        declared = list(super().get_page_declarations())
+        names = {getattr(page, "name", None) for page in declared}
 
-        if not self.trash or any(page.name == "trash" for page in declared):
-            return declared
+        if self.trees:
+            from generic.sites.trees import tree_page
 
-        from generic.sites.pages import trash_page
+            for bound in self.get_trees():
+                if bound.definition.page and bound.name not in names:
+                    declared.append(tree_page(bound))
 
-        declared.append(trash_page())
+        if self.trash and "trash" not in names:
+            from generic.sites.pages import trash_page
+
+            declared.append(trash_page())
 
         return declared
 
@@ -1239,6 +1250,33 @@ class ModelResource(PagesMixin):
 
     def get_bound_related_table(self, name: str) -> Any:
         for bound in self.get_related_tables():
+            if bound.name == name:
+                return bound
+
+        return None
+
+    def get_trees(self) -> list[Any]:
+        """The declared trees, resolved once against this resource."""
+        bound = self.__dict__.get("_bound_trees")
+
+        if bound is None:
+            from generic.sites.trees import bind_tree
+
+            bound = [bind_tree(definition, self) for definition in self.trees]
+            names = [tree.name for tree in bound]
+
+            if len(set(names)) != len(names):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.trees declares the same name "
+                    f"twice."
+                )
+
+            self.__dict__["_bound_trees"] = bound
+
+        return list(bound)
+
+    def get_tree(self, name: str) -> Any:
+        for bound in self.get_trees():
             if bound.name == name:
                 return bound
 

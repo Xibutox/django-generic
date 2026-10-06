@@ -11,11 +11,13 @@
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'generic/css/summary.css' %}">
   <link rel="stylesheet" href="{% static 'generic/css/history.css' %}">
+  {% if trees %}<link rel="stylesheet" href="{% static 'generic/css/tree.css' %}">{% endif %}
 {% endblock %}
 
 {% block components %}
   <script src="{% static 'generic/js/summary.js' %}" defer></script>
   <script src="{% static 'generic/js/history.js' %}" defer></script>
+  {% if trees %}<script src="{% static 'generic/js/tree.js' %}" defer></script>{% endif %}
 {% endblock %}
 
 {% block page_eyebrow %}
@@ -131,7 +133,7 @@
       </template>
     </div>
 
-    {% if related_tables or summary.history %}
+    {% if related_tables or trees or summary.history %}
       <section class="card summary-related"
                :class="{ 'is-menu-open': overflow }"
                aria-label="{% translate 'Related records' %}">
@@ -227,6 +229,40 @@
               <thead></thead>
               <tbody></tbody>
             </table>
+          </div>
+        {% endfor %}
+
+        {# A tree per tab (generic.sites.trees): it asks for its first #}
+        {# level when the tab is first shown, and for the others as   #}
+        {# they are unfolded.                                           #}
+        {% for tree in trees %}
+          {{ tree.config|json_script:tree.config_id }}
+          <div class="summary-related__panel"
+               role="tabpanel"
+               id="related-{{ tree.name }}"
+               aria-labelledby="related-tab-{{ tree.name }}"
+               x-show="active === '{{ tree.name|escapejs }}'">
+            <div class="summary-related__bar"
+                 x-show="related('{{ tree.name|escapejs }}').description || related('{{ tree.name|escapejs }}').addUrl || related('{{ tree.name|escapejs }}').pageUrl">
+              <p class="summary-related__description" x-text="related('{{ tree.name|escapejs }}').description"></p>
+              <div class="cluster">
+                <a class="button button--sm button--ghost"
+                   x-show="related('{{ tree.name|escapejs }}').pageUrl"
+                   :href="safeUrl(related('{{ tree.name|escapejs }}').pageUrl)">
+                  {% icon "open_in_full" "icon--sm" %}
+                  {% translate "Open as a page" %}
+                </a>
+                <a class="button button--sm"
+                   x-show="related('{{ tree.name|escapejs }}').addUrl"
+                   :href="safeUrl(related('{{ tree.name|escapejs }}').addUrl)">
+                  {% icon "add" "icon--sm" %}
+                  {% translate "Add" %}
+                </a>
+              </div>
+            </div>
+            <div class="generic-tree"
+                 data-tree="{{ tree.name }}"
+                 data-config="{{ tree.config_id }}"></div>
           </div>
         {% endfor %}
 

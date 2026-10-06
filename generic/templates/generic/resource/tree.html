@@ -1,0 +1,37 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# The page of a tree (generic.sites.trees): the records nothing holds, #}
+{# or one record (?root=<pk>), unfolded a level at a time.              #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/tree.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'generic/js/tree.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  {{ tree_config|json_script:"tree-config" }}
+
+  {% if root %}
+    <p class="tree-page__scope">
+      {% icon "account_tree" "icon--sm" %}
+      <span>{% translate "Unfolded from" %}</span>
+      <a href="{{ root_url }}">{{ root_label }}</a>
+      {% if whole_url %}
+        <a class="button button--sm button--ghost" href="{{ whole_url }}">
+          {% icon "unfold_more" "icon--sm" %}
+          {% translate "The whole tree" %}
+        </a>
+      {% endif %}
+    </p>
+  {% endif %}
+
+  <section class="card tree-card">
+    <div class="generic-tree" data-config="tree-config" data-autostart></div>
+  </section>
+{% endblock %}

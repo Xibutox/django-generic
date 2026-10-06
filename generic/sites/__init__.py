@@ -45,6 +45,12 @@ a page per row from a ``DataResource`` (``generic.sites.data``)::
         def get_rows(self, request):
             return statuspage.services()
 
+Records holding records - a category inside a category, the parts of
+an assembly - unfold as a tree, a level at a time
+(``generic.sites.trees``)::
+
+    trees = (Tree("bom", through=BomLine, parent="parent", child="child"),)
+
 Any resource may have pages of its own - a map, a timeline, a gallery,
 a report - declared on it, with any content (``generic.sites.pages``)::
 
@@ -73,6 +79,7 @@ from generic.sites.site import (
     site,
 )
 from generic.sites.sso import SsoProvider
+from generic.sites.trees import Tree
 
 __all__ = [
     "AlreadyRegistered",
@@ -95,6 +102,7 @@ __all__ = [
     "StackedInline",
     "TabularInline",
     "TagStyle",
+    "Tree",
     "action",
     "auto",
     "chart_payload",

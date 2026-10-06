@@ -20,6 +20,7 @@ Every generated screen talks to it, and so can anything else:
 ``POST   .../actions/``                  run a bulk action
 ``GET    .../autocomplete/``             Select2 results
 ``GET    .../charts/<name>/``            one declared chart's data
+``GET    .../trees/<name>/``             one level of a declared tree
 ==========================  ======================================
 
 The table endpoints - and the charts - also take ``_related``, which
@@ -667,6 +668,28 @@ class ResourceViewSet(
         return Response(
             definition.get_payload(self.resource, request, queryset, period)
         )
+
+    # -- trees -------------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"trees/(?P<tree>[a-z0-9-]+)",
+        url_name="tree",
+    )
+    def tree(self, request: Any, tree: str = "") -> Response:
+        """One level of a declared tree, a page of it.
+
+        ``node`` (none: the roots), ``root``, ``direction``, ``offset``,
+        ``limit``, ``q`` and ``path`` - see ``BoundTree.answer``. The
+        tree resolves every record through the resources' querysets.
+        """
+        bound = self.resource.get_tree(tree)
+
+        if bound is None:
+            raise NotFound(gettext("There is no such tree."))
+
+        return Response(bound.answer(request, request.query_params))
 
     # -- bulk actions ------------------------------------------------------
 

@@ -26,7 +26,9 @@ class TestEveryPage(PageSweep):
     }
 
     @pytest.fixture
-    def records(self, db, support_desk, library, workshop) -> dict[str, Any]:
+    def records(
+        self, db, support_desk, library, workshop, bom
+    ) -> dict[str, Any]:
         """A record of every model of the example and the test app.
 
         The framework's own screens get theirs from the base class, as
@@ -74,6 +76,10 @@ class TestEveryPage(PageSweep):
             "example.supplier": workshop["supplier"],
             "example.equipment": workshop["laptop"],
             "example.maintenance": workshop["visit"],
+            # Records holding records: the trees.
+            "example.article": bom["WH-1"],
+            "example.articlefamily": bom["wheels"],
+            "example.bomline": bom["lines"][("WH-1", "HB-1")],
             "testapp.manuscript": Manuscript.objects.create(title="Pooled"),
             "testapp.contract": Contract.objects.create(title="Pooled"),
             # Its file is named, not written: the storage has none.

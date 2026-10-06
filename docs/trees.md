@@ -1,0 +1,196 @@
+# Trees: records holding records
+
+A category inside a category, the parts of an assembly, the tasks of a
+project phase: records that hold records of the same model, to any
+depth. A resource declares the hierarchy once, with `Tree`, and gets:
+
+- a tab on every record's summary page - what the record holds,
+  unfolding level by level - and, with `where_used=True`, a second one:
+  what holds the record, unfolding upwards;
+- a page of the whole tree, from the records nothing holds (a button on
+  the list), or from one record (`?root=<pk>`, the tab's *Open as a
+  page*);
+- an endpoint serving one level at a time, a page at a time;
+- forms, table cells and imports of the links that refuse a record
+  inside itself.
+
+Nothing is loaded before it is unfolded. Opening a record asks for the
+first page of what it holds (50 by default), *Show more* for the next,
+and a level holding more than a page gets a search box of its own, at
+its top: a level of several thousand records costs what a level of
+fifty does, and the one you want is found without loading the others.
+
+## Two shapes
+
+### A model pointing at its parent
+
+```python
+class Family(models.Model):
+    name = models.CharField(max_length=80)
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="children",
+    )
+```
+
+```python
+from generic.sites import ModelResource, Tree, register
+
+@register(Family)
+class FamilyResource(ModelResource):
+    trees = (
+        Tree("families", parent="parent", title=_("Family tree"),
+             columns=("article_count",)),
+    )
+```
+
+### A link model: a bill of materials
+
+A real bill of materials is not a plain tree: a screw goes into many
+assemblies, each time in its own quantity. The hierarchy lives in a
+model linking two records of the same model, carrying what the link
+says:
+
+```python
+class BomLine(models.Model):
+    parent = models.ForeignKey(Article, on_delete=models.CASCADE,
+                               related_name="bom_lines")
+    child = models.ForeignKey(Article, on_delete=models.PROTECT,
+                              related_name="used_in_lines")
+    position = models.PositiveIntegerField(default=10)
+    quantity = models.DecimalField(max_digits=10, decimal_places=3)
+```
+
+```python
+@register(Article)
+class ArticleResource(ModelResource):
+    trees = (
+        Tree(
+            "bom",
+            through=BomLine,
+            parent="parent",
+            child="child",
+            title=_("Bill of materials"),
+            columns=("kind", "unit", "unit_cost"),     # the article's
+            link_columns=("position", "quantity"),     # the line's
+            ordering=("position", "child__reference"),
+            where_used=True,
+        ),
+    )
+
+@register(BomLine)
+class BomLineResource(ModelResource):
+    show_in_navigation = False     # reached from the article's tab
+    fields = (("parent", "child"), ("position", "quantity"))
+```
+
+Register the link model too: its resource decides who reads the links
+(its `get_queryset`, its view permission - a reader without it sees the
+articles and not the quantities), who adds one (the tab's *Add*, with
+the parent filled in) and who changes one (a pencil on each row).
+
+## `Tree` options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `name` | - | Lower case letters, digits, dashes: the endpoint is `trees/<name>/`, the page `<name>/` |
+| `parent` | `"parent"` | The foreign key to the record holding this one - on the model, or on `through` |
+| `through` | `None` | The link model; `None`: the model points at its parent |
+| `child` | `None` | With `through`: its foreign key to the record held |
+| `title`, `icon`, `description` | name, `account_tree`, `""` | The tab and the page |
+| `columns` | `()` | Values of each record beside its name: fields, resource methods (`@display`), model attributes - as a summary section shows them (tags, links, choices, booleans, numbers) |
+| `link_columns` | `()` | Values of each link: `("quantity",)` |
+| `ordering` | the link's (or model's) `Meta.ordering` | How a record's children are ordered: fields of the link, or of the model |
+| `search_fields` | the resource's `search_fields` | What a level's search box looks through |
+| `page_size` | `50` | Records per request (1-500) |
+| `roots` | the records nothing holds | Where the page of the whole tree starts: a callable `(request, queryset)` or a resource method's name |
+| `tab` | `True` | A tab on each record's summary page |
+| `page` | `True` | The page of the whole tree, and its button on the list |
+| `where_used`, `where_used_title` | `False`, *Where used* | A second tab, unfolding upwards |
+| `allow_add` | `True` | An *Add* on the tab, for whoever may add links (children) |
+
+A declaration that could not work - an unknown field, a foreign key to
+another model, `through` without `child` - raises
+`ImproperlyConfigured` when the resource is registered.
+
+## The endpoint
+
+`GET api/<app>/<model>/trees/<name>/`, behind the resource's view
+permission:
+
+| Parameter | Meaning |
+| --- | --- |
+| `node` | The record unfolded; none: the roots |
+| `root` | One record alone, the top of a tree shown from it |
+| `direction` | `down` (default) or `up` (with `where_used`) |
+| `offset`, `limit` | The page; `limit` is capped at 500 |
+| `q` | Searches the level (the search syntax of the tables) |
+| `path` | The records above, comma separated: one met again is marked |
+
+```json
+{"node": "6", "direction": "down", "total": 1200, "offset": 0, "limit": 50,
+ "columns": [{"key": "link.quantity", "label": "Quantity"}, ...],
+ "items": [{"key": "33", "id": "27", "label": "TB-0001 Terminal block",
+            "url": "/example/article/27/", "children": 0, "cycle": false,
+            "cells": [{"type": "number", "display": "1.000"}, ...],
+            "linkUrl": "/example/bomline/33/change/"}]}
+```
+
+`key` is the link's (the same article can sit twice under one assembly),
+`id` the record's, `children` how many records it holds in the asked
+direction - what decides whether it unfolds. Every record comes from the
+resource's `get_queryset(request)` and every link from the link
+resource's: a reader never sees a record, or a link, those would not
+list - the counts included. A level is one count and one query, with
+the counts of the next level as a subquery: no query per record, beyond
+what the `columns` themselves read.
+
+## No record inside itself
+
+A link that would make a record part of itself - a wheel containing
+the bicycle it is part of - would make a tree that never ends. Every
+form serializer the framework generates for the model holding the
+links checks it, so the add and change pages, table cells, grids,
+imports and the API refuse it with a message on the field:
+
+> *HB-1 Hub already contains SP-1 Spoke: this would make it part of itself.*
+
+The check walks the links below the new child, every link - not only
+the ones the person saving sees. A hand-written `form_serializer` (or a
+write that bypasses the framework) is not checked: call
+`generic.sites.trees.check_links(model, instance, attrs)` from it.
+
+The tree is drawn defensively anyway: a record met again below itself
+(data written some other way) is shown with a warning sign and not
+unfolded.
+
+## In the browser
+
+`js/tree.js` (`Generic.tree.start(element)`) draws one flat table with
+the treegrid role: a record's children are the rows after it with a
+deeper level. The keyboard walks it - arrows up and down, right to
+unfold or go in, left to fold or go up, Enter opens the record, Space
+folds and unfolds. *Collapse all* folds everything; *Refresh* reloads
+every open level, keeping it open. When a record or a link changes -
+here or elsewhere - the open levels reload by themselves (the
+resources' `realtime`).
+
+On a page of your own:
+
+```django
+{{ tree_config|json_script:"bom-config" }}
+<div class="generic-tree" data-config="bom-config" data-autostart></div>
+<link rel="stylesheet" href="{% static 'generic/css/tree.css' %}">
+<script src="{% static 'generic/js/tree.js' %}" defer></script>
+```
+
+with `tree_config = resource.get_tree("bom").get_config(request, obj)`.
+
+## In the example
+
+*Manufacturing › Articles*: the bill of materials of two bicycles,
+five levels deep, sharing their wheels, and a control cabinet whose
+terminal rail holds 1,200 terminal blocks - open
+*Articles › Bill of materials*, unfold *CB-900*, then *TS-920*, and
+search the level. An article's page has the *Bill of materials* and
+*Where used* tabs. *Article families* is the other shape.

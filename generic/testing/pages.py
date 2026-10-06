@@ -15,7 +15,8 @@ Each pass is cheap, and together they are the whole surface:
 * every resource's generated endpoints answer too - rows, the form
   schema, a summary and its history, each column's values, both
   exports, every chart, and where declared the import's schema and
-  template and a record's transitions - because those are generated
+  template, a record's transitions and each tree's first levels (both
+  ways) - because those are generated
   per resource exactly as the pages are.
 
 A page whose address takes an argument nothing can fill fails
@@ -548,7 +549,8 @@ class PageSweep:
         opener: Any,
         pooled: dict[str, Any],
     ) -> None:
-        """What a resource declares on top: an import, transitions."""
+        """What a resource declares on top: an import, transitions,
+        trees."""
         from generic.sites.imports import declaration_of
 
         entry = self.resource_named(resource)
@@ -570,6 +572,22 @@ class PageSweep:
             response = opener.get(f"{prefix}{record.pk}/transitions/")
 
             assert response.status_code == 200, f"{resource} transitions"
+
+        for tree in entry.get_trees():
+            url = f"{prefix}trees/{tree.name}/"
+            asked = [{}]
+
+            if record is not None:
+                asked.append({"node": record.pk})
+
+                if tree.definition.where_used:
+                    asked.append({"node": record.pk, "direction": "up"})
+
+            for params in asked:
+                response = opener.get(url, params)
+
+                assert response.status_code == 200, f"{resource} {url}"
+                assert "items" in response.json()
 
     def test_the_api_description(self, opener: Any) -> None:
         """The OpenAPI description, where the project mounts it."""

@@ -3200,3 +3200,33 @@ msgstr ""
 #: generic/tasks/resources.py
 msgid "%(name)s (not registered)"
 msgstr "%(name)s (non enregistrée)"
+
+msgid "Where used"
+msgstr "Cas d’emploi"
+
+msgid "This direction is not offered."
+msgstr "Ce sens n’est pas proposé."
+
+msgid "A record cannot contain itself."
+msgstr "Un enregistrement ne peut pas se contenir lui-même."
+
+msgid "%(child)s already contains %(parent)s: this would make it part of itself."
+msgstr "%(child)s contient déjà %(parent)s : il deviendrait une partie de lui-même."
+
+msgid "A whole number is expected."
+msgstr "Un nombre entier est attendu."
+
+msgid "Tree"
+msgstr "Arborescence"
+
+msgid "There is no such tree."
+msgstr "Cette arborescence n’existe pas."
+
+msgid "Open as a page"
+msgstr "Ouvrir en pleine page"
+
+msgid "Unfolded from"
+msgstr "Déplié depuis"
+
+msgid "The whole tree"
+msgstr "Toute l’arborescence"

@@ -121,6 +121,17 @@ a PDF, an image, a spreadsheet - shown with its size before you save;
 not take, is refused before anything is sent. As `guest`, the same
 download answers 403.
 
+**A bill of materials.** *Manufacturing › Articles › Bill of
+materials* is the tree of every product: unfold *BK-100 City bicycle*,
+then its wheel, its hub, its axle - five levels, each fetched when it
+is opened. Unfold *CB-900 Control cabinet* and its terminal rail: 1,200
+terminal blocks, fifty at a time, with a search box at the top of the
+level (`TB-07`). Open *WH-300 Wheel assembly*: its *Bill of materials*
+tab, and *Where used* - both bicycles. Try to add a line putting the
+bicycle inside one of its own spokes: the form refuses it.
+*Article families* is the other shape, a model pointing at its parent.
+`ArticleResource.trees` is the whole of it ([Trees](trees.md)).
+
 **On a customer.** Open the largest one from the dashboard. The figures
 sit on top, the values below — the account manager is a link to the
 agent's own page. Switch to *Time spent*: that table starts only now,

@@ -24,6 +24,9 @@ from django.utils.translation import ngettext, pgettext_lazy
 from example import external
 from example.models import (
     Agent,
+    Article,
+    ArticleFamily,
+    BomLine,
     Customer,
     Equipment,
     Supplier,
@@ -61,6 +64,7 @@ from generic.sites import (
     StackedInline,
     TabularInline,
     TagStyle,
+    Tree,
     action,
     auto,
     display,
@@ -1147,6 +1151,135 @@ EQUIPMENT = _("Equipment")
 
 auto(Supplier, related=("equipment",), group=EQUIPMENT)
 auto(Equipment, related=("maintenances",), group=EQUIPMENT)
+
+
+# ---------------------------------------------------------------------
+# Manufacturing: records holding records, as trees
+# ---------------------------------------------------------------------
+#
+# A bill of materials is a tree of articles through a link model: an
+# assembly holds components, each in its own quantity, and a component
+# - a screw - goes into many assemblies. Declared once on the article,
+# it is a tab on every article's page (and its *Where used*), and a
+# page of the whole tree from the products nothing holds. Levels load
+# as they are unfolded, a page at a time: the control cabinet's
+# thousand-odd parts open as fast as the bicycle's handful.
+#
+# Families are the other shape: a model pointing at its parent.
+
+MANUFACTURING = _("Manufacturing")
+
+
+@register(Article)
+class ArticleResource(ModelResource):
+    icon = "precision_manufacturing"
+    group = MANUFACTURING
+    order = 0
+    description = _("What is made, bought or assembled, and of what.")
+
+    list_display = (
+        "reference",
+        "name",
+        "kind",
+        "unit",
+        "unit_cost",
+        "family",
+        "component_count",
+    )
+    search_fields = ("reference", "name")
+    ordering = ("reference",)
+    tag_fields = {
+        "kind": TagStyle(
+            colors={
+                "product": "#7c3aed",
+                "assembly": "#2563eb",
+                "part": "#0f766e",
+                "material": "#b45309",
+            }
+        )
+    }
+    fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
+    detail_stats = ("component_count", "used_in_count")
+    trees = (
+        Tree(
+            "bom",
+            through=BomLine,
+            parent="parent",
+            child="child",
+            title=_("Bill of materials"),
+            description=_(
+                "What the article is made of, level by level: unfold a "
+                "component to see its own."
+            ),
+            columns=("kind", "unit", "unit_cost"),
+            link_columns=("position", "quantity"),
+            ordering=("position", "child__reference"),
+            where_used=True,
+        ),
+    )
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)
+            .annotate(components=Count("bom_lines"))
+        )
+
+    @display(description=_("Components"), ordering="components")
+    def component_count(self, article: Article) -> int:
+        components = getattr(article, "components", None)
+
+        return article.bom_lines.count() if components is None else components
+
+    @display(description=_("Used in"))
+    def used_in_count(self, article: Article) -> int:
+        return article.used_in_lines.count()
+
+
+@register(BomLine)
+class BomLineResource(ModelResource):
+    icon = "account_tree"
+    group = MANUFACTURING
+    # Reached from an article: its tree's links, and their Add.
+    show_in_navigation = False
+
+    list_display = ("parent", "position", "child", "quantity", "note")
+    search_fields = ("parent__reference", "child__reference", "child__name")
+    fields = (("parent", "child"), ("position", "quantity"), "note")
+
+
+@register(ArticleFamily)
+class ArticleFamilyResource(ModelResource):
+    icon = "category"
+    group = MANUFACTURING
+    order = 1
+
+    list_display = ("name", "parent", "article_count")
+    search_fields = ("name",)
+    related_tables = (RelatedTable("articles"),)
+    trees = (
+        Tree(
+            "families",
+            parent="parent",
+            title=_("Family tree"),
+            columns=("article_count",),
+            where_used=True,
+            where_used_title=_("Belongs to"),
+        ),
+    )
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)
+            .annotate(article_total=Count("articles"))
+        )
+
+    @display(description=_("Articles"), ordering="article_total")
+    def article_count(self, family: ArticleFamily) -> int:
+        total = getattr(family, "article_total", None)
+
+        return family.articles.count() if total is None else total
 
 
 # ---------------------------------------------------------------------

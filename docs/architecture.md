@@ -55,6 +55,7 @@ generic/
 │   ├── views.py         List, add/change and delete pages
 │   ├── decorators.py    @action, @display
 │   ├── related.py       RelatedTable: a summary page's related tables
+│   ├── trees.py         Tree: records holding records, a level at a time
 │   ├── charts.py        Chart: declared aggregates -> chart payloads
 │   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
 │   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint

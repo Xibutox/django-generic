@@ -500,3 +500,112 @@ class Maintenance(models.Model):
 
     def __str__(self) -> str:
         return f"{self.description} ({self.performed_on})"
+
+
+# ---------------------------------------------------------------------
+# Manufacturing: records holding records
+# ---------------------------------------------------------------------
+#
+# Two shapes of hierarchy, each drawn as a tree (generic.sites.trees):
+# a family points at the family it belongs to, and a bill of materials
+# links an article to the articles it is made of - one part going into
+# many assemblies, each time in its own quantity.
+
+
+class ArticleFamily(models.Model):
+    """A family of articles, inside a broader one."""
+
+    name = models.CharField(_("name"), max_length=80)
+    parent = models.ForeignKey(
+        "self",
+        verbose_name=_("parent family"),
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="children",
+    )
+
+    class Meta:
+        ordering = ("name",)
+        verbose_name = _("article family")
+        verbose_name_plural = _("article families")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Article(models.Model):
+    """Something made, bought or assembled."""
+
+    class Kind(models.TextChoices):
+        PRODUCT = "product", _("Product")
+        ASSEMBLY = "assembly", _("Assembly")
+        PART = "part", _("Part")
+        MATERIAL = "material", _("Raw material")
+
+    class Unit(models.TextChoices):
+        PIECE = "pcs", _("piece")
+        METRE = "m", _("metre")
+        KILOGRAM = "kg", _("kilogram")
+        LITRE = "l", _("litre")
+
+    reference = models.CharField(_("reference"), max_length=30, unique=True)
+    name = models.CharField(_("name"), max_length=120)
+    kind = models.CharField(
+        _("kind"), max_length=10, choices=Kind.choices, default=Kind.PART
+    )
+    unit = models.CharField(
+        _("unit"), max_length=3, choices=Unit.choices, default=Unit.PIECE
+    )
+    unit_cost = models.DecimalField(
+        _("unit cost"), max_digits=10, decimal_places=2, default=0
+    )
+    family = models.ForeignKey(
+        ArticleFamily,
+        verbose_name=_("family"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="articles",
+    )
+
+    class Meta:
+        ordering = ("reference",)
+        verbose_name = _("article")
+        verbose_name_plural = _("articles")
+
+    def __str__(self) -> str:
+        return f"{self.reference} {self.name}"
+
+
+class BomLine(models.Model):
+    """One line of an article's bill of materials: a component, and how
+    much of it goes in."""
+
+    # CASCADE: an article's bill goes with it. PROTECT: a component
+    # still used somewhere cannot disappear from under an assembly.
+    parent = models.ForeignKey(
+        Article,
+        verbose_name=_("assembly"),
+        on_delete=models.CASCADE,
+        related_name="bom_lines",
+    )
+    child = models.ForeignKey(
+        Article,
+        verbose_name=_("component"),
+        on_delete=models.PROTECT,
+        related_name="used_in_lines",
+    )
+    position = models.PositiveIntegerField(_("position"), default=10)
+    quantity = models.DecimalField(
+        _("quantity"), max_digits=10, decimal_places=3, default=1
+    )
+    note = models.CharField(_("note"), max_length=120, blank=True, default="")
+
+    class Meta:
+        ordering = ("parent", "position", "pk")
+        verbose_name = _("BOM line")
+        verbose_name_plural = _("BOM lines")
+
+    def __str__(self) -> str:
+        return f"{self.parent.reference} → {self.child.reference}"

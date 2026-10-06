@@ -26,7 +26,7 @@ from rest_framework.routers import SimpleRouter
 from generic.conf import generic_settings
 from generic.history import recording as history
 from generic.i18n import language_menu
-from generic.sites import realtime
+from generic.sites import realtime, trees
 from generic.sites.imports import check_import, declaration_of
 from generic.sites.resources import ModelResource
 from generic.sites.shortcuts import (
@@ -162,6 +162,9 @@ class GenericSite:
             resource.check_pages()
             check_import(resource)
             resource.get_transitions()
+            # Trees are checked here too, and from now on the forms of
+            # the model holding their links refuse a cycle.
+            trees.guard(resource)
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)
@@ -218,6 +221,7 @@ class GenericSite:
 
             realtime.disconnect(resource)
             history.disconnect(resource)
+            trees.forget(resource)
 
     def register_data(self, resource_class: type) -> Any:
         """Give rows that are not a model's a list page and a page per
