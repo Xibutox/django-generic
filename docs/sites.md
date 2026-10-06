@@ -159,6 +159,7 @@ model nobody declared pages of its own. See
 | `detail_stats` | Figures shown as tiles on the summary page |
 | `related_tables` | `RelatedTable` declarations: the summary page's tabs |
 | `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time, searched at any depth, laid flat as a table ([Trees](trees.md)) |
+| `tab_order` | The summary page's tabs to show first, by name; the others follow as declared ([below](#the-summary-page)) |
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | The form, admin style |
 | `form_overrides` | Presentation per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText` |
 | `form_serializer` | A hand-written `FormModelSerializer`, replacing the generated one |
@@ -613,6 +614,15 @@ so they stay within the record.
 The related model needs a registered resource: register it with
 `show_in_navigation = False` when it has no page of its own, like the
 example's ticket comments.
+
+The tabs come in the order declared: the related tables, then each
+tree's tab and its *Where used*. `tab_order` puts some first, by name -
+a related table's name, `tree-<name>`, `tree-<name>-up`:
+
+```python
+# The bill of materials to read, then its first level to edit.
+tab_order = ("tree-bom", "bom_lines")
+```
 
 Where records open is `object_page`: `"detail"`, the default, or
 `"change"` for the admin's behaviour. Table rows open there, and so do

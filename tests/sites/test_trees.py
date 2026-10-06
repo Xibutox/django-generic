@@ -564,6 +564,17 @@ class TestPages:
         assert panels[0]["config"]["node"] == str(bom["WH-1"].pk)
         assert panels[1]["config"]["direction"] == "up"
 
+    def test_the_tree_comes_first_then_the_grid_editing_it(
+        self, admin_client, bom
+    ):
+        response = admin_client.get(f"/example/article/{bom['WH-1'].pk}/")
+        names = [
+            entry["name"] for entry in response.context["summary"]["related"]
+        ]
+
+        # ArticleResource.tab_order; Where used was not named: it follows.
+        assert names == ["tree-bom", "bom_lines", "tree-bom-up"]
+
     def test_a_reader_who_may_not_add_lines_gets_no_add(
         self, reader_client, bom
     ):

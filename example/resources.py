@@ -1200,6 +1200,8 @@ class ArticleResource(ModelResource):
     }
     fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
     detail_stats = ("component_count", "used_in_count")
+    # The tree to read first, then the grid to edit it, then where used.
+    tab_order = ("tree-bom", "bom_lines")
     # The first level of the bill, as a grid: change a quantity, swap a
     # component, add a line, delete a few. One level and no deeper on
     # purpose - a component's own bill is edited on that component,
