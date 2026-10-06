@@ -111,3 +111,43 @@ def test_on_a_phone_the_navigation_opens_over_the_page_and_closes(
 
     expect(navigation).to_be_hidden()
     expect(html).not_to_have_class(re.compile(r"\bsidebar-open\b"))
+
+
+def test_a_closed_navigation_group_stays_closed(signed_in):
+    page = signed_in
+    open_list(page)
+    # A group the page does not belong to: the one it does stays open
+    # whatever was remembered.
+    group = page.locator(
+        '#sidebar details[data-nav-group-key]:not(:has([aria-current="page"]))'
+    ).first
+    current = page.locator(
+        '#sidebar details[data-nav-group-key]:has([aria-current="page"])'
+    ).first
+    expect(group).to_have_attribute("open", "")
+
+    group.locator("summary").click()
+
+    expect(group).not_to_have_attribute("open", "")
+
+    page.reload()
+
+    expect(group).not_to_have_attribute("open", "")
+    expect(current).to_have_attribute("open", "")
+
+    # The filter opens a group to show what it found, and that is not a
+    # choice: an emptied box leaves the navigation as the reader left it.
+    label = group.locator("summary").inner_text()
+    filter_box = page.locator(".js-nav-filter")
+    filter_box.fill(label[:4])
+
+    expect(group).to_have_attribute("open", "")
+
+    filter_box.fill("")
+
+    expect(group).not_to_have_attribute("open", "")
+
+    group.locator("summary").click()
+    page.reload()
+
+    expect(group).to_have_attribute("open", "")

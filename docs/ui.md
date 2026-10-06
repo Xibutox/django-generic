@@ -541,6 +541,30 @@ never opens with the navigation in the wrong place. `ui.js` changes
 them and `localStorage` remembers: `generic.sidebar` and
 `generic.sidebar-pinned`.
 
+### The groups stay as they were left
+
+A navigation group is a `<details>`, and which ones are closed is
+remembered too — `generic.nav-groups` in `localStorage`, a map of the
+group's label to a boolean. Nothing is sent to the server: this is a
+browser's own habit, not a setting on the account, so there is no
+endpoint and no migration.
+
+The state is applied by a short inline script at the end of
+`sidebar.html`, right after the navigation is parsed and before the
+first paint, the way the theme and the pin are: a group the reader
+closed never flashes open. Two rules keep it from hiding anything:
+
+- The group the page belongs to (the one holding `aria-current="page"`)
+  stays open whatever was saved.
+- The navigation filter opens a group to show what it found, and that is
+  not a choice to remember: `ui.js` saves only a click on the summary
+  (Enter and Space on it arrive as a click too), and an emptied filter
+  box restores the saved state.
+
+With JavaScript disabled every group is open, as the template renders
+it. A project that overrides `sidebar.html` keeps the behaviour by
+keeping that script and `data-nav-group-key` on each `<details>`.
+
 What decides whether a peek stays out is where the pointer *is*, not
 what it entered: the panel slides out to meet a pointer that need not
 move again, and a browser only hit-tests on a move, so waiting for
