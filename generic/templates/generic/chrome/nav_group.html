@@ -2,8 +2,14 @@
 {# One navigation group. Collapsible when it has a title, using a     #}
 {# native <details>: keyboard accessible and working before any       #}
 {# script has loaded.                                                 #}
+{#                                                                    #}
+{# The label is also the key the browser remembers the group's open   #}
+{# or closed state under (sidebar.html, ui.js).                       #}
 {% if group.label %}
-  <details class="nav-group" open data-nav-group>
+  <details class="nav-group"
+           open
+           data-nav-group
+           data-nav-group-key="{{ group.label }}">
     <summary class="nav-group__title">{{ group.label }}</summary>
     {% include "generic/chrome/nav_items.html" with items=group.items label=group.label %}
   </details>

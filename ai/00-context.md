@@ -1644,6 +1644,16 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   edge and the pin would have nothing to bring back. Below 1024px none
   of this applies: the navigation is already an overlay. `ui.js` owns
   the behaviour.
+- **The navigation's groups** are `<details>` (`chrome/nav_group.html`),
+  and this browser remembers which ones are closed: a map of the group's
+  label to a boolean under `generic.nav-groups` in `localStorage`, no
+  endpoint and no preference on the account. The inline script at the
+  end of `sidebar.html` applies it right after the navigation is parsed,
+  so a closed group never flashes open; `ui.js` writes it, on a click on
+  the summary only — the navigation filter opens groups to show what it
+  found, which is nobody's choice, and an emptied box restores the
+  saved state. The group holding `aria-current="page"` stays open
+  whatever was saved.
 
 ## 13a. Watching a record
 

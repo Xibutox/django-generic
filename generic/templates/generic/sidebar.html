@@ -42,3 +42,36 @@
     {% endif %}
   {% endblock %}
 </aside>
+
+{# Each group's open or closed state, as this browser last left it.    #}
+{# Applied here, right after the navigation is parsed and before the   #}
+{# first paint, so a group the reader closed never flashes open. The   #}
+{# saving half lives in ui.js; the state is this browser's only, like  #}
+{# the theme and the pin.                                              #}
+<script>
+  (function () {
+    var groups = document.querySelectorAll(
+      "#sidebar details[data-nav-group-key]"
+    );
+    var saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem("generic.nav-groups"));
+    } catch (error) {
+      /* Private mode, or nothing saved: every group stays open. */
+    }
+    if (!saved || typeof saved !== "object") {
+      return;
+    }
+    Array.prototype.forEach.call(groups, function (group) {
+      // The group the page belongs to stays open whatever was saved:
+      // hiding where the reader is would be a worse flash than any.
+      if (group.querySelector('[aria-current="page"]')) {
+        return;
+      }
+      var state = saved[group.dataset.navGroupKey];
+      if (typeof state === "boolean") {
+        group.open = state;
+      }
+    });
+  })();
+</script>
