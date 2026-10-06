@@ -1200,6 +1200,26 @@ class ArticleResource(ModelResource):
     }
     fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
     detail_stats = ("component_count", "used_in_count")
+    # The tree to read first, then the grid to edit it, then where used.
+    tab_order = ("tree-bom", "bom_lines")
+    # The first level of the bill, as a grid: change a quantity, swap a
+    # component, add a line, delete a few. One level and no deeper on
+    # purpose - a component's own bill is edited on that component,
+    # where it is the same for every assembly using it.
+    related_tables = (
+        RelatedTable(
+            "bom_lines",
+            title=_("Edit the BOM"),
+            icon="edit_note",
+            description=_(
+                "The article's direct components: edit a cell, add a "
+                "line, delete a few. A component's own components are "
+                "edited on that component."
+            ),
+            page_length=25,
+            editable=True,
+        ),
+    )
     trees = (
         Tree(
             "bom",
@@ -1249,6 +1269,9 @@ class BomLineResource(ModelResource):
     show_in_navigation = False
 
     list_display = ("parent", "position", "child", "quantity", "note")
+    # The article's "Edit the BOM" tab asks for these. The parent is
+    # not one of them: a line moves to another assembly on its form.
+    editable_fields = ("position", "child", "quantity", "note")
     search_fields = ("parent__reference", "child__reference", "child__name")
     fields = (("parent", "child"), ("position", "quantity"), "note")
 

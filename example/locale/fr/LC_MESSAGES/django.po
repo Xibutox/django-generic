@@ -2062,3 +2062,14 @@ msgstr "Appartient à"
 
 msgid "Exploded BOM"
 msgstr "Nomenclature éclatée"
+
+msgid "Edit the BOM"
+msgstr "Modifier la nomenclature"
+
+msgid ""
+"The article's direct components: edit a cell, add a line, delete a few. A "
+"component's own components are edited on that component."
+msgstr ""
+"Les composants directs de l'article : modifiez une cellule, ajoutez une "
+"ligne, supprimez-en. Les composants d'un composant se modifient sur ce "
+"composant."

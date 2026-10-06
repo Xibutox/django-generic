@@ -466,6 +466,11 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
     for tree in resource.get_trees():
         related += tree.get_tabs(request, obj)
 
+    if resource.tab_order:
+        first = {name: index for index, name in enumerate(resource.tab_order)}
+        # A stable sort: the tabs not named keep their order, after.
+        related.sort(key=lambda tab: first.get(tab["name"], len(first)))
+
     return {
         "object": {
             "pk": force_str(obj.pk),

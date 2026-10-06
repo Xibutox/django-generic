@@ -131,8 +131,12 @@ unfolds the way down to it. Open *WH-300 Wheel assembly*: its *Bill of
 materials* tab, and *Where used* - both bicycles. *Exploded BOM*, on a
 bicycle, lists every component at every level with its total quantity
 for one bicycle - or, *One row per record*, what to buy - filtered and
-exported as any table. Try to add a line putting the
-bicycle inside one of its own spokes: the form refuses it.
+exported as any table. *Edit the BOM*, on any article, is its first
+level as a grid: change a quantity or a position in its cell, swap a
+component through the autocomplete, *Add a row* for a new line, select
+lines and *Delete* them. Only the direct components: a component's own
+are edited on that component. Try to add a line putting the bicycle
+inside one of its own spokes: the cell and the form both refuse it.
 *Article families* is the other shape, a model pointing at its parent.
 `ArticleResource.trees` is the whole of it ([Trees](trees.md)).
 

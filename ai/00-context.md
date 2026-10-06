@@ -613,6 +613,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
 | `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
+| `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |

@@ -241,6 +241,10 @@ class ModelResource(PagesMixin):
     #: on the summary page and a page of the whole tree. ``Tree(...)``,
     #: see ``generic.sites.trees``.
     trees: Sequence[Any] = ()
+    #: The summary page's tabs to put first, in this order, by name: a
+    #: related table's name, ``tree-<name>`` and ``tree-<name>-up``.
+    #: The others follow as declared, related tables before trees.
+    tab_order: Sequence[str] = ()
 
     # -- charts ------------------------------------------------------------
 
