@@ -328,9 +328,7 @@ class DataTableFieldMixin:
             column["filterMany"] = True
 
         # Words, too: the editor offers "contains" beside the values.
-        if options.filterable and self.resolve_text_field(
-            field_name, options
-        ):
+        if options.filterable and self.resolve_text_field(field_name, options):
             column["textSearch"] = True
 
         return column

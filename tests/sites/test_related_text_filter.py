@@ -37,9 +37,7 @@ class TestForeignKey:
 
         assert found == ["SD-1", "SD-3"]
 
-    def test_several_words_match_any_of_them(
-        self, admin_client, support_desk
-    ):
+    def test_several_words_match_any_of_them(self, admin_client, support_desk):
         found = references(
             admin_client,
             condition("team", "contains", ["front", "infra"]),
