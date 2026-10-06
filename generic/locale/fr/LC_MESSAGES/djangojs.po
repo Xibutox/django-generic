@@ -1592,3 +1592,19 @@ msgstr "« %(name)s » va à la corbeille. Il pourra y être restauré."
 
 msgid "Move to the trash"
 msgstr "Mettre à la corbeille"
+
+#: generic/static/generic/js/datatables/filterbar.js
+msgid "Contains “%(value)s”"
+msgstr "Contient « %(value)s »"
+
+#: generic/static/generic/js/datatables/filterbar.js
+msgid "Keep every row whose value contains these words, listed here or not"
+msgstr "Garder chaque ligne dont la valeur contient ces mots, listée ici ou non"
+
+#: generic/static/generic/js/datatables/filterbar.js
+msgid "Unselect these values"
+msgstr "Désélectionner ces valeurs"
+
+#: generic/static/generic/js/datatables/filterbar.js
+msgid "Select the %(count)s values found"
+msgstr "Sélectionner les %(count)s valeurs trouvées"

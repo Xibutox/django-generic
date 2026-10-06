@@ -126,6 +126,55 @@ def test_a_typed_filter_narrows_and_its_chip_takes_it_back(ticket_list):
     expect(info(page)).to_have_text("1 to 10 of 25 rows")
 
 
+def test_a_typed_relation_filter_can_hold_words(ticket_list):
+    page = ticket_list
+
+    # "~": every customer whose name contains the words, none picked.
+    search_box(page).fill("customer:~acme ")
+
+    chip = page.locator(".dt-filterbar .dt-chip")
+    expect(chip).to_have_count(1)
+    expect(chip).to_contain_text("contains")
+    expect(chip).to_contain_text("acme")
+    expect(info(page)).to_contain_text("1 to 9 of 9 rows")
+
+
+def assignee_values(page, term):
+    # The search row's field, not the header's funnel.
+    page.locator(
+        ".dt-filter-field__picker[aria-label='Filter Assignee']"
+    ).click()
+    editor = page.locator(".dt-editor")
+    editor.locator(".dt-choices input[type=search]").fill(term)
+    # Camille Rousseau and Lea Martin.
+    expect(editor.locator(".dt-choice")).to_have_count(2)
+
+    return editor
+
+
+def test_every_value_a_search_found_is_picked_at_once(ticket_list):
+    page = ticket_list
+    editor = assignee_values(page, "ea")
+
+    editor.get_by_role("button", name="Select the 2 values found").click()
+
+    expect(editor.locator(".dt-choice input:checked")).to_have_count(2)
+    expect(info(page)).to_contain_text("1 to 10 of 12 rows")
+    expect(
+        editor.get_by_role("button", name="Unselect these values")
+    ).to_be_visible()
+
+
+def test_a_relation_search_can_become_the_filter(ticket_list):
+    page = ticket_list
+    editor = assignee_values(page, "ea")
+
+    editor.get_by_role("button", name="Contains \u201cea\u201d").click()
+
+    expect(editor.locator(".dt-editor__operator")).to_have_value("contains")
+    expect(info(page)).to_contain_text("1 to 10 of 12 rows")
+
+
 def test_a_bulk_transition_says_what_was_done_and_skipped(ticket_list):
     page = ticket_list
     # SD-1001 is open and may close; SD-1004 is closed already.
