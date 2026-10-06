@@ -708,6 +708,8 @@
     var search = el("input", "input input--sm");
     var list = el("div", "dt-choices__list");
     var status = el("p", "dt-editor__hint");
+    var bulk = el("div", "dt-choices__bulk");
+    var shownResult = null;
     var selected = (Array.isArray(draft.value) ? draft.value : []).map(String);
     var raw = {};
     var sequence = 0;
@@ -751,6 +753,10 @@
         item.classList.toggle("is-selected", checkbox.checked);
         sync();
         hooks.changed();
+
+        if (shownResult) {
+          renderBulk(shownResult.result, shownResult.term);
+        }
       });
 
       item.classList.toggle("is-selected", checkbox.checked);
@@ -763,8 +769,72 @@
       return item;
     }
 
+    /**
+     * What a search found, at once: every value listed ticked (or
+     * unticked), or - on a relation - the words themselves, so the
+     * filter keeps every record whose name holds them, listed or not.
+     */
+    function renderBulk(result, term) {
+      var values = result.values || [];
+      var keys = values.map(function (entry) {
+        return String(entry.value);
+      });
+      var all = keys.length > 0 && keys.every(function (key) {
+        return selected.indexOf(key) !== -1;
+      });
+
+      bulk.replaceChildren();
+
+      if (term && column.textSearch) {
+        var words = button(
+          "button button--sm button--ghost dt-choices__words",
+          core.format(t("Contains \u201c%(value)s\u201d"), { value: term })
+        );
+
+        words.title = t("Keep every row whose value contains these words, listed here or not");
+        words.addEventListener("click", function () {
+          hooks.setOperator("contains", false, [term]);
+        });
+        bulk.appendChild(words);
+      }
+
+      if (term && keys.length > 1) {
+        var toggle = button(
+          "button button--sm button--ghost dt-choices__all",
+          all
+            ? t("Unselect these values")
+            : core.format(t("Select the %(count)s values found"), { count: formatCount(keys.length) })
+        );
+
+        toggle.addEventListener("click", function () {
+          values.forEach(function (entry) {
+            var key = String(entry.value);
+            var index = selected.indexOf(key);
+
+            raw[key] = entry.value;
+
+            if (all && index !== -1) {
+              selected.splice(index, 1);
+            } else if (!all && index === -1) {
+              selected.push(key);
+              draft.labels[key] = entry.label;
+            }
+          });
+
+          sync();
+          hooks.changed();
+          render(result, term);
+        });
+        bulk.appendChild(toggle);
+      }
+
+      bulk.hidden = !bulk.childNodes.length;
+    }
+
     function render(result, term) {
+      shownResult = { result: result, term: term };
       list.replaceChildren();
+      renderBulk(result, term);
 
       var shown = {};
 
@@ -833,7 +903,8 @@
     }
 
     search.addEventListener("input", core.debounce(load, 250));
-    node.append(search, list, status);
+    bulk.hidden = true;
+    node.append(search, bulk, list, status);
     load();
 
     return { node: node };
@@ -958,9 +1029,15 @@
           applyLive();
         }
       },
-      setOperator: function (value, submitNow) {
+      setOperator: function (value, submitNow, newValue) {
         draft.operator = value;
         operatorSelect.value = value;
+
+        if (newValue !== undefined) {
+          draft.value = newValue;
+          delete draft.labels;
+        }
+
         renderValue();
         applyLive();
 
@@ -1560,7 +1637,15 @@
         });
       })
     ).then(function (entries) {
+      var words = [];
+
       entries.forEach(function (entry) {
+        if (entry.missing && column.textSearch) {
+          // Not one value's name: the words the names contain.
+          words.push(entry.missing);
+          return;
+        }
+
         if (entry.missing) {
           if (Generic) {
             Generic.toast(
@@ -1583,6 +1668,15 @@
 
       if (condition.value.length) {
         addTyped(controller, condition);
+      }
+
+      if (words.length) {
+        addTyped(controller, {
+          id: query.uid(),
+          column: condition.column,
+          operator: condition.operator === "none_of" ? "not_contains" : "contains",
+          value: words
+        });
       }
     });
   }

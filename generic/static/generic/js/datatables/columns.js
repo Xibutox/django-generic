@@ -471,9 +471,11 @@
         linkTarget: column.linkTarget || column.link_target || "_self",
         tagUrl: column.tagUrl || column.tag_url || null,
         // The filter editor may ask the endpoint for this column's
-        // values, and offer "has all of" on a many-valued one.
+        // values, offer "has all of" on a many-valued one, and words
+        // ("contains") on a relation the server searches by name.
         facets: Boolean(column.facets),
         filterMany: Boolean(column.filterMany || column.filter_many),
+        textSearch: Boolean(column.textSearch || column.text_search),
         render: column.render
       };
 
@@ -536,6 +538,7 @@
       "facets",
       "facetsFailed",
       "filterMany",
+      "textSearch",
       "choices",
       "type",
       "step",

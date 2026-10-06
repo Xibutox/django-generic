@@ -668,6 +668,18 @@ def date_engine(
 #: New spelling of the older multiple choice names.
 MULTISELECT_ALIASES = {"include": "any_of", "exclude": "none_of"}
 
+#: Text operators a multiselect column with a ``text_field`` takes.
+MULTISELECT_TEXT_OPERATORS = frozenset(
+    {
+        "contains",
+        "not_contains",
+        "equals",
+        "not_equals",
+        "starts_with",
+        "ends_with",
+    }
+)
+
 
 def _choice_values(name: str, spec: FilterSpec, raw_value: Any) -> list[Any]:
     if not isinstance(raw_value, list):
@@ -702,6 +714,16 @@ def multiselect_engine(
         return _empty(spec), operator == "not_empty"
 
     operator = MULTISELECT_ALIASES.get(operator, operator)
+
+    # Words in the text of the values - the related record's name -
+    # rather than values picked one by one.
+    if spec.text_field and operator in MULTISELECT_TEXT_OPERATORS:
+        return text_engine(
+            name,
+            FilterSpec(field=spec.text_field, type=FILTER_TEXT),
+            operator,
+            raw_value,
+        )
 
     if operator not in {"any_of", "none_of", "all_of"}:
         raise _error(

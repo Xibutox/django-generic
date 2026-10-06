@@ -86,12 +86,17 @@ class FilterSpec:
     ``many`` marks a path crossing a many-valued relation. Filtering on
     it directly would repeat a row once per matching related value, so
     the backend matches through a subquery on the primary key instead.
+
+    ``text_field`` lets a multiselect column also be filtered by words:
+    the text path ``contains`` and ``not_contains`` look into - the
+    related record's name, for a relation - instead of picking keys.
     """
 
     field: str
     type: str
     value_type: str = "string"
     many: bool = False
+    text_field: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return dataclasses.asdict(self)
@@ -322,6 +327,12 @@ class DataTableFieldMixin:
         if options.filterable and options.filter_many:
             column["filterMany"] = True
 
+        # Words, too: the editor offers "contains" beside the values.
+        if options.filterable and self.resolve_text_field(
+            field_name, options
+        ):
+            column["textSearch"] = True
+
         return column
 
     def build_filter(
@@ -337,7 +348,30 @@ class DataTableFieldMixin:
             type=self.resolve_filter_type(options),
             value_type=(options.value_type or self.datatable_value_type),
             many=options.filter_many,
+            text_field=self.resolve_text_field(field_name, options),
         )
+
+    def resolve_text_field(
+        self,
+        field_name: str,
+        options: ColumnOptions,
+    ) -> str | None:
+        """The text a multiselect column can also be filtered by.
+
+        A relation column picks keys, and searches the related record's
+        text through ``search_field``: the same path lets a filter match
+        words in it - every client whose name contains "acme" - without
+        picking each client.
+        """
+        if self.resolve_filter_type(options) != FILTER_MULTISELECT:
+            return None
+
+        search = options.search_field
+
+        if not search or search == (options.filter_field or field_name):
+            return None
+
+        return search
 
     def build_search_field(
         self,
