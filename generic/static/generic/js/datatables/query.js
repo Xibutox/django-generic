@@ -769,6 +769,17 @@
           }
         }
       }
+    } else if (group === "multiselect" && column.textSearch && raw.charAt(0) === "~") {
+      // "client:~acme": every client whose name contains the words.
+      var searched = splitList(raw.slice(1));
+
+      if (searched.length) {
+        condition = {
+          column: key,
+          operator: negated ? "not_contains" : "contains",
+          value: searched
+        };
+      }
     } else if (group === "multiselect") {
       var parts = splitList(raw);
       var values = [];
@@ -920,8 +931,8 @@
       after: ">",
       on_or_before: "<=",
       on_or_after: ">=",
-      contains: "",
-      not_contains: "",
+      contains: kind(column) === "multiselect" ? "~" : "",
+      not_contains: kind(column) === "multiselect" ? "~" : "",
       starts_with: "^"
     };
 

@@ -699,7 +699,8 @@ headers (there by default; the button beside *Filter* hides it, and that
 choice is remembered per table; `filter_row` on the resource),
 `name:value` words in the
 search box (`status:open,pending -tags:billing hours:>=2 opened:30d
-due:2026-01-01..2026-03-31 assignee:empty`), or a right click on a cell.
+due:2026-01-01..2026-03-31 assignee:empty customer:~acme`), or a right
+click on a cell.
 The search row has one field per column: text/number/date fields take
 the same syntax as after `name:` (`=exact`, `^start`, `>10`, `2..8`,
 `30d`, `this-month`, `empty`, `!` to exclude), a boolean is a list, a
@@ -710,7 +711,11 @@ words. Operators per type include *any of / none of / has all of*,
 *contains / is / starts with*, comparisons and *between*, relative dates
 (this month, last 30 days, more than N days ago), *is empty*; conditions
 combine with *all*/*any* and groups. The editor lists a column's values
-with counts from `facets/`. The editor applies as it changes (ticks and
+with counts from `facets/`; once searched, *Select the N values found*
+ticks them all, and on a relation *Contains "..."* filters by the words
+instead (`contains`/`not_contains` on a multiselect column whose
+`search_field` differs from its filter path: `FilterSpec.text_field`,
+`textSearch` in the column config). The editor applies as it changes (ticks and
 operators at once, typed values as typing pauses); *Done* closes,
 *Cancel* restores. The URL carries the filters on list pages.
 To make a column's values listable, keep it filterable (default for
@@ -1375,7 +1380,8 @@ on_or_after`, `between` `{"from","to"}`, `today yesterday this_week
 last_week this_month last_month this_quarter last_quarter this_year
 last_year` (no value), `last_days next_days older_than_days` (N);
 boolean `is_true is_false`; multiselect `any_of none_of all_of` (list of
-keys); every type `empty not_empty`. The older flat `advanced_filters`
+keys), and on a relation column (`text_field`) the text operators on the
+related record's name; every type `empty not_empty`. The older flat `advanced_filters`
 (`{"<column>": {"operator": "include"|"exact"|..., "value": ...}}`) is
 still accepted. Build filter URLs for links with `filters=` JSON.
 

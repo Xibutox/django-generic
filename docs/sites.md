@@ -209,7 +209,8 @@ table needs:
 - a **foreign key** is shown by the related record's name, links to
   that record's page when the user may open it, and is filtered by
   picking among the related records present — searched by their label,
-  never shipped whole to the browser,
+  never shipped whole to the browser — or by words in their name
+  (*contains*), without picking any,
 - a **many-to-many** is shown as a comma-separated list and filtered
   without listing a row twice, with *has all of* besides *any* and
   *none*,
@@ -340,7 +341,7 @@ The editor fits the column:
 
 | Column | Offers |
 | --- | --- |
-| Choice, relation, tags | The values present under the other filters, searchable, with a count beside each and tags in their colours; *is any of*, *is none of*, *has all of* (many-valued), *is empty* |
+| Choice, relation, tags | The values present under the other filters, searchable, with a count beside each and tags in their colours; *is any of*, *is none of*, *has all of* (many-valued), *is empty*. Once the values are searched, *Select the N values found* ticks every one listed at once; on a relation, *Contains "…"* turns the search itself into the filter — *contains* / *does not contain*, matching every record whose name holds the words, listed or not |
 | Text | *contains*, *does not contain*, *is*, *is not*, *starts with*, *ends with* — several values with commas, any of which may match — with the column's values suggested when it offers them |
 | Number | *=*, *≠*, *>*, *≥*, *<*, *≤*, *is between*, with the column's range as a hint |
 | Date | *is on*, *before*, *after*, *on or before*, *on or after*, *between*, and relative periods: today, this week, last month, this quarter, this year, in the last or next N days, more than N days ago |
@@ -403,7 +404,8 @@ list suggests the columns, then their values with their counts.
 | --- | --- |
 | `status:open,pending` | Status is any of Open, Pending (labels or values) |
 | `-tags:billing` | Tags is none of billing |
-| `team:front` | Team is the one whose name matches *front* |
+| `team:front` | Team is the one whose name matches *front*; when several or none do, every team whose name contains *front* |
+| `customer:~acme`, `-customer:~acme` | Customer's name contains (or does not contain) *acme* — a relation, without picking |
 | `hours:>=2`, `hours:2..8` | at least 2; between 2 and 8 |
 | `opened:30d`, `due:+7d` | in the last 30 days; in the next 7 |
 | `opened:this-month`, `opened:last-year` | a relative period |
