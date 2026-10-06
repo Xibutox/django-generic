@@ -222,6 +222,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
+- [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
 - [Numbering](docs/numbering.md) — `allocate("{team}-{year}-{seq:04}", team="LEG")`: numbers from a pattern, each series counting on its own, under a lock
 - [The wiki](docs/wiki.md) — several wikis, each exported as a PDF, who reads and who writes each; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps

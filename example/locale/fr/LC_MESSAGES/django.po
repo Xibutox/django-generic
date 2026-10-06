@@ -1966,3 +1966,99 @@ msgstr "Vérifier"
 #: example/tasks.py example/resources.py
 msgid "Review"
 msgstr "Passer en revue"
+
+msgid "article family"
+msgstr "famille d’articles"
+
+msgid "article families"
+msgstr "familles d’articles"
+
+msgid "parent family"
+msgstr "famille parente"
+
+msgid "Product"
+msgstr "Produit"
+
+msgid "Assembly"
+msgstr "Ensemble"
+
+msgid "Part"
+msgstr "Pièce"
+
+msgid "Raw material"
+msgstr "Matière première"
+
+msgid "piece"
+msgstr "pièce"
+
+msgid "metre"
+msgstr "mètre"
+
+msgid "kilogram"
+msgstr "kilogramme"
+
+msgid "litre"
+msgstr "litre"
+
+msgid "unit"
+msgstr "unité"
+
+msgid "unit cost"
+msgstr "coût unitaire"
+
+msgid "family"
+msgstr "famille"
+
+msgid "article"
+msgstr "article"
+
+msgid "articles"
+msgstr "articles"
+
+msgid "assembly"
+msgstr "ensemble"
+
+msgid "component"
+msgstr "composant"
+
+msgid "position"
+msgstr "position"
+
+msgid "quantity"
+msgstr "quantité"
+
+msgid "BOM line"
+msgstr "ligne de nomenclature"
+
+msgid "BOM lines"
+msgstr "lignes de nomenclature"
+
+msgid "Manufacturing"
+msgstr "Fabrication"
+
+msgid "What is made, bought or assembled, and of what."
+msgstr "Ce qui est fabriqué, acheté ou assemblé, et de quoi."
+
+msgid "Bill of materials"
+msgstr "Nomenclature"
+
+msgid "What the article is made of, level by level: unfold a component to see its own."
+msgstr "Ce dont l’article est fait, niveau par niveau : dépliez un composant pour voir le sien."
+
+msgid "Components"
+msgstr "Composants"
+
+msgid "Used in"
+msgstr "Utilisé dans"
+
+msgid "Articles"
+msgstr "Articles"
+
+msgid "Family tree"
+msgstr "Arbre des familles"
+
+msgid "Belongs to"
+msgstr "Appartient à"
+
+msgid "Exploded BOM"
+msgstr "Nomenclature éclatée"

@@ -1593,6 +1593,78 @@ msgstr "« %(name)s » va à la corbeille. Il pourra y être restauré."
 msgid "Move to the trash"
 msgstr "Mettre à la corbeille"
 
+msgid "Collapse all"
+msgstr "Tout replier"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Tree"
+msgstr "Arborescence"
+
+msgid "%(count)s record"
+msgid_plural "%(count)s records"
+msgstr[0] "%(count)s enregistrement"
+msgstr[1] "%(count)s enregistrements"
+
+msgid "The tree could not be loaded."
+msgstr "L’arborescence n’a pas pu être chargée."
+
+msgid "Already above in this branch: not unfolded again."
+msgstr "Déjà présent plus haut dans cette branche : pas déplié à nouveau."
+
+msgid "Edit the link"
+msgstr "Modifier le lien"
+
+msgid "Fold"
+msgstr "Replier"
+
+msgid "Unfold"
+msgstr "Déplier"
+
+msgid "Search this level"
+msgstr "Rechercher dans ce niveau"
+
+msgid "Search these %(count)s"
+msgstr "Rechercher parmi ces %(count)s"
+
+msgid "Try again"
+msgstr "Réessayer"
+
+msgid "This level could not be loaded."
+msgstr "Ce niveau n’a pas pu être chargé."
+
+msgid "Nothing matches."
+msgstr "Aucun résultat."
+
+msgid "Nothing here."
+msgstr "Rien ici."
+
+msgid "%(shown)s of %(total)s"
+msgstr "%(shown)s sur %(total)s"
+
+msgid "Show %(count)s more"
+msgstr "Afficher %(count)s de plus"
+
+msgid "Find at any depth"
+msgstr "Chercher à tous les niveaux"
+
+msgid "%(count)s match"
+msgid_plural "%(count)s matches"
+msgstr[0] "%(count)s résultat"
+msgstr[1] "%(count)s résultats"
+
+msgid "(the first ones only: be more precise)"
+msgstr "(les premiers seulement : précisez la recherche)"
+
+msgid "Show them all"
+msgstr "Tout afficher"
+
+msgid "%(count)s more, not matching"
+msgid_plural "%(count)s more, not matching"
+msgstr[0] "%(count)s autre, sans correspondance"
+msgstr[1] "%(count)s autres, sans correspondance"
+
 #: generic/static/generic/js/datatables/filterbar.js
 msgid "Contains “%(value)s”"
 msgstr "Contient « %(value)s »"

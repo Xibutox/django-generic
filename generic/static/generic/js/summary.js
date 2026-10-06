@@ -324,6 +324,23 @@
             );
 
             if (!table) {
+              var tree = document.querySelector(
+                '.generic-tree[data-tree="' + window.CSS.escape(name) + '"]'
+              );
+
+              // A tree (generic.sites.trees): its first level, once.
+              if (tree && Generic.tree && !tree.genericTree) {
+                tree.addEventListener("generic:tree-loaded", function (event) {
+                  self.counts[name] = event.detail.total;
+                  window.requestAnimationFrame(release);
+                  self.$nextTick(function () {
+                    self.measure();
+                  });
+                });
+                Generic.tree.start(tree);
+                return;
+              }
+
               // The history, which asks for its entries: a moment.
               window.setTimeout(release, 600);
               return;

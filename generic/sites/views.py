@@ -657,6 +657,11 @@ class ResourceDetailView(ResourceViewMixin, TemplateView):
             for bound in resource.get_related_tables(request)
             if bound.is_visible(request)
         ]
+        context["trees"] = [
+            panel
+            for tree in resource.get_trees()
+            for panel in tree.get_panels(request, obj)
+        ]
         return context
 
 

@@ -97,7 +97,7 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
-│   │                       RelatedTable, Grid, Chart, TagStyle, TabularInline,
+│   │                       RelatedTable, Grid, Tree, Chart, TagStyle, TabularInline,
 │   │                       StackedInline, action, display, chart_payload
 │   ├── site.py             GenericSite: registry, URLs, navigation, search, chrome, add_link,
 │   │                       auto, complete_auto
@@ -110,10 +110,13 @@ generic/
 │   ├── serializers.py      list_display/fields -> generated table and form serializers
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
-│   │                       _grid, cells, rows)
+│   │                       _grid, cells, rows, trees/<name>/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
+│   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
+│   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
+│   │                       (self FK or link model), a level at a time; no cycles
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
@@ -214,6 +217,7 @@ generic/
     ├── js/charts.js        Alpine genericChart; Generic.charts (ECharts, lazy)
     ├── js/summary.js       Alpine recordSummary (summary page)
     ├── js/history.js       Alpine recordHistory (the History tab)
+    ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/wiki.js          Alpine wikiPage
     ├── js/datatables/      core (operators), columns (renderers), query (filter
@@ -608,6 +612,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `detail_fieldsets` | form fieldsets | summary page sections (may include read-only methods) |
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
+| `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -1278,6 +1283,61 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
 
 ---
 
+### 5.18 Trees (`Tree`)
+
+Records holding records of the same model, to any depth - a bill of
+materials, nested categories. Declared on the resource of the records
+(`docs/trees.md`):
+
+```python
+trees = (
+    # A model pointing at its parent.
+    Tree("families", parent="parent", columns=("article_count",)),
+    # A link model (a part in many assemblies, each with a quantity).
+    Tree("bom", through=BomLine, parent="parent", child="child",
+         title=_("Bill of materials"),
+         columns=("kind", "unit_cost"),          # the record's: summary-typed
+         link_columns=("position", "quantity"),  # the link's
+         ordering=("position", "child__reference"),
+         where_used=True,                        # a second tab, upwards
+         page_size=50, roots=None, tab=True, page=True, allow_add=True,
+         flat=True, flat_title=_("Exploded BOM"),  # every level as a table
+         quantity="quantity"),                   # multiplied down each path
+)
+```
+
+Each tree is a summary tab (`tree-<name>`, `tree-<name>-up`) with *Add*
+(a link with the parent filled in) and *Open as a page*, and a page
+`<model>/<name>/` (button on the list; `?root=<pk>` from one record).
+Levels are fetched as they are unfolded, a page at a time (*Show
+more*); a level larger than a page gets a search box at its top. Never
+render a whole tree. Records come from the resource's `get_queryset`,
+links from the link resource's (register the link model, usually
+`show_in_navigation = False`; without its view permission a reader sees
+no link values). Every generated form serializer of the link model (or
+of the model, self-FK) refuses a cycle (`check_links`): forms, cells,
+imports, API. A record met again below itself is drawn, not unfolded.
+The tree page and tabs carry the resource's own table above the tree,
+rows hidden (`get_filter_table_config`, `config.filterTable`): its
+search box and filter editor (`filters`, `search` on the tree
+endpoint, applied by the viewset's own backends, `tree` being a table
+action) select records at every level; without one, *Find at any
+depth* (`?find=`). Either walks every
+level below the top a level per query (≤ 50,000 records, ≤ 1,000 rows
+answered, `truncated`) and answers the branches leading to matches,
+nested (`items`, `match`); partial levels offer *Show them all*.
+`flat=True` (`generic/sites/tree_rows.py`): a page `<pk>/<name>-flat/`
+per record and `api/<app>/<model>/trees/<name>/flat/?root=<pk>`
+(`grouped=1`: one row per record, places, quantities added), a
+`RowsDataTableViewSet` registered by the site after the resource's:
+level, record, held by, path, `link_<name>`, columns, total quantity
+(link values need the link resource's view permission); ≤ 20,000 rows.
+JS: `Generic.tree.start(element)` (`js/tree.js`, `css/tree.css`),
+config from `bound.get_config(request, obj, direction, root)`. Example:
+`example.Article` / `BomLine` / `ArticleFamily`, `seed_example` (a
+1,200-part terminal rail). `PageSweep` opens each tree's levels, a
+search and the flat table.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1307,6 +1367,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
+| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
+| `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,

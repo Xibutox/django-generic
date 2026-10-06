@@ -20,6 +20,7 @@ Every generated screen talks to it, and so can anything else:
 ``POST   .../actions/``                  run a bulk action
 ``GET    .../autocomplete/``             Select2 results
 ``GET    .../charts/<name>/``            one declared chart's data
+``GET    .../trees/<name>/``             one level of a declared tree
 ==========================  ======================================
 
 The table endpoints - and the charts - also take ``_related``, which
@@ -73,7 +74,17 @@ MAX_SELECTED = 5000
 #: Actions reading the table: they get the table serializer, the
 #: filter backends and the list queryset.
 TABLE_ACTIONS = frozenset(
-    {"list", "export", "export_csv", "run_action", "chart", "facets"}
+    {"list", "export", "export_csv", "run_action", "chart", "facets", "tree"}
+)
+
+
+#: What narrows a table: the filter tree (and its older form), the
+#: search box.
+TABLE_FILTER_PARAMS = (
+    "filters",
+    "advanced_filters",
+    "search",
+    "search[value]",
 )
 
 
@@ -667,6 +678,40 @@ class ResourceViewSet(
         return Response(
             definition.get_payload(self.resource, request, queryset, period)
         )
+
+    # -- trees -------------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"trees/(?P<tree>[a-z0-9-]+)",
+        url_name="tree",
+    )
+    def tree(self, request: Any, tree: str = "") -> Response:
+        """One level of a declared tree, a page of it.
+
+        ``node`` (none: the roots), ``root``, ``direction``, ``offset``,
+        ``limit``, ``q``, ``path`` and ``find`` - see
+        ``BoundTree.answer``. The tree resolves every record through the
+        resources' querysets.
+
+        The table's own parameters - ``filters``, ``search`` - search
+        every level for the records the table would show.
+        """
+        bound = self.resource.get_tree(tree)
+
+        if bound is None:
+            raise NotFound(gettext("There is no such tree."))
+
+        params = request.query_params
+        matching = None
+
+        if any(
+            (params.get(name) or "").strip() for name in TABLE_FILTER_PARAMS
+        ):
+            matching = self.filter_queryset(self.get_queryset()).values("pk")
+
+        return Response(bound.answer(request, params, matching))
 
     # -- bulk actions ------------------------------------------------------
 

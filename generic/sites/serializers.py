@@ -962,6 +962,18 @@ def make_display_getter(
     return getter
 
 
+def validate_tree_links(serializer: Any, attrs: dict[str, Any]) -> Any:
+    """Refuse a link making a record part of itself (``generic.sites.
+    trees``): the form, a table's cells and an import all validate
+    through here."""
+    from generic.sites.trees import check_links
+
+    attrs = FormModelSerializer.validate(serializer, attrs)
+    check_links(serializer.Meta.model, serializer.instance, attrs)
+
+    return attrs
+
+
 def build_form_serializer(
     model: type[models.Model],
     *,
@@ -1085,6 +1097,7 @@ def build_form_serializer(
     attributes = {
         **declared,
         **methods,
+        "validate": validate_tree_links,
         "Meta": meta,
         "form_sections": tuple(sections),
         "form_overrides": merged,
