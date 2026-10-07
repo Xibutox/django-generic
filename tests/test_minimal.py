@@ -130,6 +130,18 @@ PAGES = textwrap.dedent("""
         status = client.get(url).status_code
         assert status == 200, f"{url}: {status}"
 
+    # The product page's timeline: steps due and done by date, today
+    # among the dates and marked.
+    chart = client.get(
+        "/api/products/milestone/charts/timeline/",
+        {"_related": f"products.product.milestones:{product.pk}"},
+    ).json()
+    planned, done = chart["series"]
+    assert planned["data"][-1] == 5, chart
+    assert max(value for value in done["data"] if value is not None) == 2
+    mark = chart["options"]["series"][0]["markLine"]["data"][0]["xAxis"]
+    assert mark in chart["categories"], chart
+
     rows = {
         row["reference"]: row
         for row in client.get("/api/products/product/").json()["data"]

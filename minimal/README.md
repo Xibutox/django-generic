@@ -145,7 +145,10 @@ steps - its milestones - with its files attached. Where `library` lets
   being annotations of `get_list_queryset`. The *Views* menu offers
   *Late* and *In development*. The form edits the milestones on a tab,
   with the product, in one save (`inlines`). The product's page leads
-  with its progress and next step (`detail_stats`), then two tabs: its
+  with its progress and next step (`detail_stats`) and a *Timeline*:
+  a line of the steps due and one of the steps done, by date, with a
+  dashed line at today (`Chart(data=...)` on the milestones, shown by
+  `detail_charts`). Then two tabs: its
   milestones and its documents (`related_tables`), each with an *Add*
   button filling the product in.
 - **Milestones** - every product's steps in one list, by date, each

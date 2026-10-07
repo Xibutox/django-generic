@@ -7,9 +7,10 @@ guess: each product's next step, its progress, whether it is late.
 """
 
 from django.db.models import Count, Exists, OuterRef, Q, Subquery
-from django.utils import timezone
+from django.utils import formats, timezone
 
 from generic.sites import (
+    Chart,
     ModelResource,
     RelatedTable,
     TabularInline,
@@ -109,6 +110,9 @@ class ProductResource(ModelResource):
         RelatedTable("milestones", icon="flag"),
         RelatedTable("documents", icon="description"),
     )
+    # The milestones' timeline, between the figures and the tabs: a
+    # chart of the related resource, narrowed to this product.
+    detail_charts = ("milestones.timeline",)
 
     def get_list_queryset(self, request):
         upcoming = Milestone.objects.filter(
@@ -185,6 +189,72 @@ class ProductResource(ModelResource):
         return getattr(product, "documents_count", 0)
 
 
+def milestone_timeline(chart, request, queryset, period):
+    """The steps over time: how many were due, and how many done, by
+    each milestone's date - and a dashed line where today falls.
+
+    Computed (``Chart(data=...)``): the categories are the milestones'
+    own dates and today, in order, rather than buckets of a period.
+    """
+    today = timezone.localdate()
+    milestones = list(queryset.order_by("due_on", "pk"))
+    days = sorted(
+        {m.due_on for m in milestones}
+        | {m.done_on for m in milestones if m.done_on}
+        | {today}
+    )
+
+    def steps_by(day, field):
+        return sum(
+            1
+            for m in milestones
+            if getattr(m, field) and getattr(m, field) <= day
+        )
+
+    def label(day):
+        return formats.date_format(day, "SHORT_DATE_FORMAT")
+
+    categories = [label(day) for day in days]
+    planned = [steps_by(day, "due_on") for day in days]
+    # Nothing is known after today: the line stops there.
+    done = [steps_by(day, "done_on") if day <= today else None for day in days]
+
+    def line(name, color, data):
+        return {
+            "name": name,
+            "type": "line",
+            "data": data,
+            "symbol": "circle",
+            "symbolSize": 7,
+            "itemStyle": {"color": color},
+            "lineStyle": {"width": 2, "color": color},
+        }
+
+    # ``options`` is merged over what the series make; a list replaces
+    # the series whole, so the lines are spelled out with the marker
+    # ECharts draws for today - a vertical dashed line.
+    marked = line("Planned", "#2563eb", planned)
+    marked["markLine"] = {
+        "silent": True,
+        "symbol": "none",
+        "data": [{"xAxis": label(today)}],
+        "lineStyle": {"color": "#dc2626", "type": "dashed", "width": 2},
+        "label": {"formatter": "Today", "color": "#dc2626"},
+    }
+
+    return {
+        "categories": categories,
+        "series": [
+            {"name": "Planned", "color": "#2563eb", "data": planned},
+            {"name": "Done", "color": "#16a34a", "data": done},
+        ],
+        "value": {"label": "Steps", "format": "integer"},
+        "options": {
+            "series": [marked, line("Done", "#16a34a", done)],
+        },
+    }
+
+
 @register(Milestone)
 class MilestoneResource(ModelResource):
     """Every product's steps in one list: what is due, what is late."""
@@ -195,6 +265,17 @@ class MilestoneResource(ModelResource):
     description = "The dated steps of every product."
 
     list_display = ("due_on", "product", "step", "done_on", "state", "late")
+    charts = (
+        Chart(
+            "timeline",
+            title="Timeline",
+            description="Steps due and done, by date; the dashed line is "
+            "today.",
+            icon="timeline",
+            type="line",
+            data=milestone_timeline,
+        ),
+    )
     list_display_hidden = ("late",)
     search_fields = ("step", "notes", "product__reference", "product__name")
     # The furthest first: what is coming, then what is late, then done.
