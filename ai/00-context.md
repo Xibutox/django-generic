@@ -248,8 +248,8 @@ one model with `auto(Book)`, a `products` app declared by hand
 (`Product`, its `Milestone`s - dated steps, edited as an inline - and
 its `Document`s - a `FileField`, a related table; computed columns
 *next step*, *progress*, *late* annotated in `get_list_queryset`,
-presets, `detail_stats`, a computed timeline chart with a today
-marker in `detail_charts`, two dashboard shortcuts; `seed_products`),
+presets, `detail_stats`, a computed horizontal timeline (time axis
+through `options`, today marked) in `detail_charts`, two dashboard shortcuts; `seed_products`),
 and `generic.wiki` (the `wiki` extra, `MEDIA_ROOT` for its images and
 the documents) - run from its folder (`cd minimal &&
 python manage.py runserver`) or in Docker (`minimal/Dockerfile`, one

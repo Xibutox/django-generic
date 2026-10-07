@@ -190,67 +190,75 @@ class ProductResource(ModelResource):
 
 
 def milestone_timeline(chart, request, queryset, period):
-    """The steps over time: how many were due, and how many done, by
-    each milestone's date - and a dashed line where today falls.
+    """The product's milestones on one horizontal line, each at its date
+    and coloured by its state, and a dashed line where today falls.
 
-    Computed (``Chart(data=...)``): the categories are the milestones'
-    own dates and today, in order, rather than buckets of a period.
+    Computed (``Chart(data=...)``). The figures - what the card's table
+    button shows - are each step's days from today; ``options``, merged
+    over what they make, draws them on a time axis with no y axis.
     """
     today = timezone.localdate()
     milestones = list(queryset.order_by("due_on", "pk"))
-    days = sorted(
-        {m.due_on for m in milestones}
-        | {m.done_on for m in milestones if m.done_on}
-        | {today}
-    )
 
-    def steps_by(day, field):
-        return sum(
-            1
-            for m in milestones
-            if getattr(m, field) and getattr(m, field) <= day
-        )
-
-    def label(day):
-        return formats.date_format(day, "SHORT_DATE_FORMAT")
-
-    categories = [label(day) for day in days]
-    planned = [steps_by(day, "due_on") for day in days]
-    # Nothing is known after today: the line stops there.
-    done = [steps_by(day, "done_on") if day <= today else None for day in days]
-
-    def line(name, color, data):
+    def point(index, milestone):
+        label, color = STATES[milestone.state]
+        day = formats.date_format(milestone.due_on, "SHORT_DATE_FORMAT")
         return {
-            "name": name,
-            "type": "line",
-            "data": data,
-            "symbol": "circle",
-            "symbolSize": 7,
+            "name": f"{milestone.step} - {day} ({label.lower()})",
+            "value": [milestone.due_on.isoformat(), 0],
             "itemStyle": {"color": color},
-            "lineStyle": {"width": 2, "color": color},
+            # Above and below in turn, so close steps keep their names.
+            "label": {
+                "formatter": milestone.step,
+                "position": "top" if index % 2 == 0 else "bottom",
+            },
         }
 
-    # ``options`` is merged over what the series make; a list replaces
-    # the series whole, so the lines are spelled out with the marker
-    # ECharts draws for today - a vertical dashed line.
-    marked = line("Planned", "#2563eb", planned)
-    marked["markLine"] = {
-        "silent": True,
-        "symbol": "none",
-        "data": [{"xAxis": label(today)}],
-        "lineStyle": {"color": "#dc2626", "type": "dashed", "width": 2},
-        "label": {"formatter": "Today", "color": "#dc2626"},
-    }
+    dates = [m.due_on for m in milestones] + [today]
+    line = [[min(dates).isoformat(), 0], [max(dates).isoformat(), 0]]
 
     return {
-        "categories": categories,
+        "categories": [m.step for m in milestones],
         "series": [
-            {"name": "Planned", "color": "#2563eb", "data": planned},
-            {"name": "Done", "color": "#16a34a", "data": done},
+            {
+                "name": "Days from today",
+                "data": [(m.due_on - today).days for m in milestones],
+            }
         ],
-        "value": {"label": "Steps", "format": "integer"},
+        "value": {"label": "Days from today", "format": "integer"},
         "options": {
-            "series": [marked, line("Done", "#16a34a", done)],
+            "grid": {"left": 40, "right": 40, "top": 28, "bottom": 4},
+            "xAxis": {"type": "time", "data": None, "boundaryGap": False},
+            "yAxis": {"show": False, "min": -1, "max": 1},
+            "tooltip": {"trigger": "item", "formatter": "{b}"},
+            "series": [
+                {
+                    "name": "Timeline",
+                    "type": "line",
+                    "data": line,
+                    "symbol": "none",
+                    "silent": True,
+                    "lineStyle": {"width": 6, "color": "#cbd5e1"},
+                    "markLine": {
+                        "silent": True,
+                        "symbol": "none",
+                        "data": [{"xAxis": today.isoformat()}],
+                        "lineStyle": {
+                            "color": "#dc2626",
+                            "type": "dashed",
+                            "width": 2,
+                        },
+                        "label": {"formatter": "Today", "color": "#dc2626"},
+                    },
+                },
+                {
+                    "name": "Milestones",
+                    "type": "scatter",
+                    "symbolSize": 14,
+                    "label": {"show": True, "fontSize": 11},
+                    "data": [point(i, m) for i, m in enumerate(milestones)],
+                },
+            ],
         },
     }
 
@@ -269,10 +277,11 @@ class MilestoneResource(ModelResource):
         Chart(
             "timeline",
             title="Timeline",
-            description="Steps due and done, by date; the dashed line is "
-            "today.",
+            description="Each step at its date: green done, red late, "
+            "blue upcoming. The dashed line is today.",
             icon="timeline",
             type="line",
+            height="9rem",
             data=milestone_timeline,
         ),
     )

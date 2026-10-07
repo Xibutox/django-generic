@@ -146,9 +146,10 @@ steps - its milestones - with its files attached. Where `library` lets
   *Late* and *In development*. The form edits the milestones on a tab,
   with the product, in one save (`inlines`). The product's page leads
   with its progress and next step (`detail_stats`) and a *Timeline*:
-  a line of the steps due and one of the steps done, by date, with a
-  dashed line at today (`Chart(data=...)` on the milestones, shown by
-  `detail_charts`). Then two tabs: its
+  one horizontal line with each milestone at its date - green done,
+  red late, blue upcoming - and a dashed line at today
+  (`Chart(data=...)` on the milestones, drawn on a time axis through
+  its `options`, shown by `detail_charts`). Then two tabs: its
   milestones and its documents (`related_tables`), each with an *Add*
   button filling the product in.
 - **Milestones** - every product's steps in one list, by date, each

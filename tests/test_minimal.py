@@ -130,17 +130,25 @@ PAGES = textwrap.dedent("""
         status = client.get(url).status_code
         assert status == 200, f"{url}: {status}"
 
-    # The product page's timeline: steps due and done by date, today
-    # among the dates and marked.
+    # The product page's timeline: every step on one line at its date,
+    # coloured by its state, and today marked.
     chart = client.get(
         "/api/products/milestone/charts/timeline/",
         {"_related": f"products.product.milestones:{product.pk}"},
     ).json()
-    planned, done = chart["series"]
-    assert planned["data"][-1] == 5, chart
-    assert max(value for value in done["data"] if value is not None) == 2
-    mark = chart["options"]["series"][0]["markLine"]["data"][0]["xAxis"]
-    assert mark in chart["categories"], chart
+    line, points = chart["options"]["series"]
+    assert [p["label"]["formatter"] for p in points["data"]] == [
+        "Concept",
+        "Design review",
+        "Prototype",
+        "Validation",
+        "Launch",
+    ], points
+    assert points["data"][2]["itemStyle"]["color"] == "#dc2626"  # late
+    from django.utils import timezone
+
+    today = line["markLine"]["data"][0]["xAxis"]
+    assert today == timezone.localdate().isoformat(), line
 
     rows = {
         row["reference"]: row
