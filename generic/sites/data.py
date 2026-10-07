@@ -76,7 +76,7 @@ from generic.sites.pages import PagesMixin, allows
 from generic.sites.related import RELATED_PARAM
 from generic.sites.serializers import ROW_KEY
 from generic.sites.summary import describe_value, format_number
-from generic.views.datatable import filter_row_option
+from generic.views.datatable import filter_row_option, saved_view_options
 
 #: A name is a piece of address: ``data/<name>/``.
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -295,6 +295,9 @@ class DataResource(PagesMixin):
     #: The row of search fields under the headers: ``"open"``,
     #: ``"toggle"`` or ``False``.
     filter_row: str | bool = "open"
+    #: Named layouts offered to every user in the **Views** menu, beside
+    #: each user's own saved views - as on a ``ModelResource``.
+    presets: dict[str, dict[str, Any]] = {}
     table_options: dict[str, Any] = {}
 
     # -- a row's page ---------------------------------------------------------
@@ -750,6 +753,7 @@ class DataResource(PagesMixin):
             "labelPlural": self.get_label_plural(),
             "exportName": self.name,
             "syncUrl": True,
+            **saved_view_options(request, self.presets),
         }
         options.update(self.table_options)
 

@@ -95,6 +95,38 @@ class TestConfiguration:
         assert json.loads(body)["url"] == "/api/books/"
 
 
+class TestViews:
+    """The Views menu: presets for everyone, each user's own saved."""
+
+    def test_each_user_may_save_views(self, auth_client, library):
+        options = config_of(auth_client.get(URL))["options"]
+
+        assert options["savedViewsUrl"] == "/api/generic/saved-views/"
+        assert options["presets"] == {}
+
+    def test_the_page_offers_its_presets(self, rf, user):
+        view = DataTableView()
+        view.request = rf.get("/")
+        view.request.user = user
+        view.presets = {"Recent": {"order": [["published_on", "desc"]]}}
+
+        presets = view.get_table_options()["presets"]
+
+        assert presets == {"Recent": {"order": [["published_on", "desc"]]}}
+
+    def test_the_state_left_follows_the_preference(self, auth_client, user):
+        from generic.accounts.models import UserPreferences
+
+        options = config_of(auth_client.get(URL))["options"]
+        assert options["stateSave"] is True
+
+        UserPreferences.objects.update_or_create(
+            user=user, defaults={"remember_table_state": False}
+        )
+        options = config_of(auth_client.get(URL))["options"]
+        assert options["stateSave"] is False
+
+
 class TestMisconfiguration:
     def test_a_missing_viewset_is_reported(self, rf, user):
         view = DataTableView()

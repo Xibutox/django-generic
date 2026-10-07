@@ -38,7 +38,7 @@ from generic.sites.serializers import (
     with_row_key,
     without_fields,
 )
-from generic.views.datatable import filter_row_option
+from generic.views.datatable import filter_row_option, saved_view_options
 
 #: The bulk actions of a trash's table.
 TRASH_ACTIONS = ("restore_from_trash", "delete_selected")
@@ -992,18 +992,10 @@ class ModelResource(PagesMixin):
         return actions
 
     def get_table_options(self, request: Any) -> dict[str, Any]:
-        preferences = _preferences_for(request)
-        remember = (
-            preferences.remember_table_state
-            if preferences is not None
-            else True
-        )
-
         options: dict[str, Any] = {
             "pageLength": self.get_page_size(request),
             "lengthMenu": [10, 15, 25, 50, 100],
             "stateKey": self.state_key,
-            "stateSave": remember,
             "columnSelector": True,
             "filters": True,
             "filterRow": filter_row_option(self),
@@ -1018,8 +1010,8 @@ class ModelResource(PagesMixin):
                 for entry in self.get_actions(request).values()
             ],
             "bulkActionsUrl": self.get_actions_url(),
-            "presets": self.get_presets(request),
-            "savedViewsUrl": self._reverse("generic:saved-view-list"),
+            # The Views menu: presets, saved views, the state left.
+            **saved_view_options(request, self.get_presets(request)),
             # Where "Send by e-mail on a schedule" leads, for who may.
             "mailingUrl": self.get_mailing_url(request),
             "realtimeTopic": self.topic_name if self.realtime else "",
