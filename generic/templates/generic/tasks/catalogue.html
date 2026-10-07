@@ -125,4 +125,70 @@
       </section>
     {% endfor %}
   </div>
+
+  {% if other_tasks %}
+    {# Tasks of the Celery app no @managed_task declares: sent by name, #}
+    {# without arguments; no run, so their history is Celery's results. #}
+    <section class="card task-others">
+      <div class="card__header">
+        <h2 class="card__title">
+          {% icon "bolt" %} {% translate "Other Celery tasks" %}
+        </h2>
+      </div>
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          Found in the Celery application, not declared to the framework:
+          Run now sends one to Celery without arguments - a schedule's Run
+          now sends its own. They keep no run: what came of them is in the
+          Celery results.
+        {% endblocktranslate %}
+      </p>
+      <table class="object-table task-others__table">
+        <thead>
+          <tr>
+            <th scope="col">{% translate "Name" %}</th>
+            {% if beat_installed %}<th scope="col">{% translate "Scheduled" %}</th>{% endif %}
+            {% if results_installed %}<th scope="col">{% translate "Celery results" %}</th>{% endif %}
+            <th scope="col"><span class="sr-only">{% translate "Run now" %}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in other_tasks %}
+            <tr>
+              <td><code>{{ entry.name }}</code></td>
+              {% if beat_installed %}
+                <td>
+                  {% for schedule in entry.schedules %}
+                    <a href="{% url 'site:django_celery_beat_periodictask_detail' schedule.pk %}">
+                      {{ schedule.name }}</a>{% if not schedule.enabled %}
+                      <span class="muted">({% translate "off" %})</span>
+                    {% endif %}{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    <span class="muted">{% translate "Not on a schedule" %}</span>
+                  {% endfor %}
+                </td>
+              {% endif %}
+              {% if results_installed %}
+                <td>
+                  {% if entry.results_url %}
+                    <a href="{{ entry.results_url }}">{% translate "See the results" %}</a>
+                  {% endif %}
+                </td>
+              {% endif %}
+              <td class="task-others__run">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="task" value="{{ entry.name }}">
+                  <button type="submit" class="button button--sm">
+                    {% icon "play_arrow" "icon--sm" %}
+                    {% translate "Run now" %}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
 {% endblock %}

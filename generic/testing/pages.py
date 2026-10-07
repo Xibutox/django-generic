@@ -52,6 +52,8 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     # a permission is declared by a model: nobody adds one by hand.
     "site:generic_taskrun_add": (403,),
     "site:generic_historyentry_add": (403,),
+    # Celery writes its results; they are read here, not made.
+    "site:django_celery_results_taskresult_add": (403,),
     # An access is recorded when it happens, and kept as it was.
     "site:generic_accessentry_add": (403,),
     "site:generic_accessentry_delete": (403,),
@@ -697,6 +699,16 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
                     name="Page sweep", task="page.sweep", crontab=nightly
                 ),
             }
+        )
+
+    if apps.is_installed("django_celery_results"):
+        result = apps.get_model("django_celery_results", "TaskResult")
+        records["django_celery_results.taskresult"] = result.objects.create(
+            task_id="page-sweep",
+            task_name="page.sweep",
+            status="SUCCESS",
+            result='"Nothing much"',
+            date_done=timezone.now(),
         )
 
     # Written by the saves above, since saving anything records a

@@ -142,7 +142,7 @@ See [Planned restarts](maintenance.md).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as the project declares a task or `django_celery_beat` is installed |
+| `SHOW_TASKS` | `None` | Whether the task pages appear; `None` offers them as soon as the project declares a task or `django_celery_beat` or `django_celery_results` is installed |
 | `TASK_RECENT_RUNS` | `5` | How many runs the catalogue lists under each task |
 | `OPERATION_FALLBACK` | `"thread"` | Where a background operation goes when no Celery worker can be reached: `"thread"` (a thread of the process; the page is answered at once) or `"inline"` (the request waits) |
 

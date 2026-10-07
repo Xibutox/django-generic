@@ -101,10 +101,6 @@ msgstr "%(missing)s n'est plus déclarée."
 msgid "%(operations)s is started from its own page, not from here."
 msgstr "%(operations)s se lance depuis sa propre page, pas d'ici."
 
-#: generic/tasks/resources.py:222
-msgid "%(count)s started. %(missing)s is not declared to the framework, so it can only run on its schedule."
-msgstr "%(count)s lancée(s). %(missing)s n'est pas déclarée au framework : elle ne peut s'exécuter que par sa planification."
-
 #: generic/watch/notify.py:59
 msgid "%(model)s changed: %(label)s"
 msgstr "%(model)s modifié : %(label)s"
@@ -775,8 +771,12 @@ msgid "Every record"
 msgstr "Tous les enregistrements"
 
 #: generic/tasks/resources.py:66
-msgid "Every run of every task, and what came of it."
-msgstr "Chaque exécution de chaque tâche, et ce qu'elle a produit."
+msgid ""
+"Every run of a task declared to the framework, step by step, and what came "
+"of it."
+msgstr ""
+"Chaque exécution d'une tâche déclarée au framework, étape par étape, et ce "
+"qu'elle a produit."
 
 #: generic/tasks/resources.py:259
 msgid "Every so many seconds, minutes, hours or days."
@@ -3290,3 +3290,49 @@ msgstr ""
 
 msgid "The first %(count)s rows at most."
 msgstr "Au plus les %(count)s premières lignes."
+
+msgid "Task catalogue"
+msgstr "Catalogue des tâches"
+
+msgid "Celery result"
+msgstr "Résultat Celery"
+
+msgid "Celery results"
+msgstr "Résultats Celery"
+
+msgid ""
+"The tasks declared to the framework: run one now, see its schedules and its "
+"last runs."
+msgstr ""
+"Les tâches déclarées au framework : en lancer une maintenant, voir ses "
+"planifications et ses dernières exécutions."
+
+msgid ""
+"Every Celery task a worker ran, scheduled or not, and what it returned."
+msgstr ""
+"Chaque tâche Celery exécutée par un worker, planifiée ou non, et ce qu'elle "
+"a renvoyé."
+
+msgid "%(count)s sent to Celery: what came of it is in the Celery results."
+msgstr "%(count)s envoyée(s) à Celery : le résultat est dans les résultats Celery."
+
+msgid "Not sent: %(errors)s."
+msgstr "Non envoyée(s) : %(errors)s."
+
+msgid "no Celery broker is configured"
+msgstr "aucun broker Celery n'est configuré"
+
+msgid "%(task)s could not be sent: %(error)s"
+msgstr "%(task)s n'a pas pu être envoyée : %(error)s"
+
+msgid "%(task)s sent to Celery (%(id)s)."
+msgstr "%(task)s envoyée à Celery (%(id)s)."
+
+msgid "Other Celery tasks"
+msgstr "Autres tâches Celery"
+
+msgid "See the results"
+msgstr "Voir les résultats"
+
+msgid "Found in the Celery application, not declared to the framework: Run now sends one to Celery without arguments - a schedule's Run now sends its own. They keep no run: what came of them is in the Celery results."
+msgstr "Trouvées dans l'application Celery, non déclarées au framework : Lancer maintenant en envoie une à Celery sans arguments - le Lancer maintenant d'une planification envoie les siens. Elles ne gardent pas d'exécution : leur résultat est dans les résultats Celery."

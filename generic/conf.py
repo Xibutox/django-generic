@@ -164,9 +164,10 @@ DEFAULTS: dict[str, Any] = {
     "MAINTENANCE_RESTART_COMMAND": None,
     # --- Tasks ---------------------------------------------------------
     # Whether the task pages appear: the catalogue, the runs, and the
-    # schedules when django-celery-beat is installed. None offers them
-    # as soon as there is something to show - a declared task or the
-    # scheduler - which is what a project that uses neither wants.
+    # schedules and Celery results when django-celery-beat and
+    # django-celery-results are installed. None offers them as soon as
+    # there is something to show - a declared task, the scheduler or
+    # the results - which is what a project that uses none wants.
     "SHOW_TASKS": None,
     # How many runs the catalogue page shows under each task.
     "TASK_RECENT_RUNS": 5,

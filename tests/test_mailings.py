@@ -549,5 +549,6 @@ def test_the_framework_task_alone_does_not_bring_the_task_pages(monkeypatch):
         registry, "names", lambda: ["generic.send_scheduled_mailings"]
     )
     monkeypatch.setattr(resources, "beat_installed", lambda: False)
+    monkeypatch.setattr(resources, "results_installed", lambda: False)
 
     assert resources.tasks_are_offered() is False
