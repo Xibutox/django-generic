@@ -1751,3 +1751,8 @@ dialog.dialog::backdrop {
 .prose p {
   margin-bottom: 0;
 }
+/* A value typed as a summary page types it, drawn by js/values.js:
+   in the tree, the dashboard's cards, the calendar. */
+.typed-value .tag + .tag {
+  margin-inline-start: 0.25rem;
+}

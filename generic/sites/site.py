@@ -165,6 +165,11 @@ class GenericSite:
             # Trees are checked here too, and from now on the forms of
             # the model holding their links refuse a cycle.
             trees.guard(resource)
+            # Key figures, cards and calendars are checked where they
+            # are declared, not on the first dashboard drawn.
+            resource.get_kpis()
+            resource.get_cards()
+            resource.get_calendars()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)

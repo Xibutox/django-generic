@@ -21,6 +21,11 @@ Every generated screen talks to it, and so can anything else:
 ``GET    .../autocomplete/``             Select2 results
 ``GET    .../charts/<name>/``            one declared chart's data
 ``GET    .../trees/<name>/``             one level of a declared tree
+``GET    .../kpis/<name>/``              a declared key figure
+``GET    .../cards/<name>/``             a declared set of record cards
+``GET    .../calendars/<name>/``         a declared calendar's records,
+                                        ``?start=&end=``
+``PATCH  .../<pk>/calendars/<name>/``    a record moved to another day
 ==========================  ======================================
 
 The table endpoints - and the charts - also take ``_related``, which
@@ -74,7 +79,16 @@ MAX_SELECTED = 5000
 #: Actions reading the table: they get the table serializer, the
 #: filter backends and the list queryset.
 TABLE_ACTIONS = frozenset(
-    {"list", "export", "export_csv", "run_action", "chart", "facets", "tree"}
+    {
+        "list",
+        "export",
+        "export_csv",
+        "run_action",
+        "chart",
+        "facets",
+        "tree",
+        "calendar",
+    }
 )
 
 
@@ -115,7 +129,13 @@ class ResourcePermission(BasePermission):
         if name in ("import_rows", "import_schema", "import_template"):
             return resource.can_import(request)
 
-        if name in ("update", "partial_update", "cells", "take_transition"):
+        if name in (
+            "update",
+            "partial_update",
+            "cells",
+            "take_transition",
+            "calendar_move",
+        ):
             return resource.has_change_permission(request)
 
         if name == "destroy":
@@ -138,7 +158,7 @@ class ResourcePermission(BasePermission):
         resource = view.resource
         name = view.action
 
-        if name in ("update", "partial_update", "cells"):
+        if name in ("update", "partial_update", "cells", "calendar_move"):
             return resource.has_change_permission(request, obj)
 
         if name == "destroy":
@@ -712,6 +732,92 @@ class ResourceViewSet(
             matching = self.filter_queryset(self.get_queryset()).values("pk")
 
         return Response(bound.answer(request, params, matching))
+
+    # -- the dashboard -----------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"kpis/(?P<kpi>[a-z0-9_-]+)",
+        url_name="kpi",
+    )
+    def kpi(self, request: Any, kpi: str = "") -> Response:
+        """One declared key figure (generic.sites.dashboard): its
+        filters are the declaration's, never the request's."""
+        definition = self.resource.get_kpi(kpi)
+
+        if definition is None or not definition.is_visible(
+            request, self.resource
+        ):
+            raise NotFound(gettext("There is no such figure."))
+
+        return Response(definition.get_payload(self.resource, request))
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"cards/(?P<cards>[a-z0-9_-]+)",
+        url_name="cards",
+    )
+    def card_list(self, request: Any, cards: str = "") -> Response:
+        """One declared set of record cards (generic.sites.dashboard)."""
+        definition = self.resource.get_card_list(cards)
+
+        if definition is None or not definition.is_visible(
+            request, self.resource
+        ):
+            raise NotFound(gettext("There are no such cards."))
+
+        return Response(definition.get_payload(self.resource, request))
+
+    # -- calendars ---------------------------------------------------------
+
+    def get_bound_calendar(self, name: str) -> Any:
+        """The calendar ``name``, for a reader who may open its page."""
+        bound = self.resource.get_calendar(name)
+        declared = self.resource.get_page(name) if bound else None
+
+        if (
+            bound is None
+            or declared is None
+            or not self.resource.has_page_permission(self.request, declared)
+        ):
+            raise NotFound(gettext("There is no such calendar."))
+
+        return bound
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"calendars/(?P<calendar>[a-z0-9-]+)",
+        url_name="calendar",
+    )
+    def calendar(self, request: Any, calendar: str = "") -> Response:
+        """A declared calendar's records from ``start`` to ``end``
+        (excluded), under the table's own ``filters`` and ``search``
+        (generic.sites.calendars)."""
+        bound = self.get_bound_calendar(calendar)
+        queryset = self.filter_queryset(self.get_queryset())
+
+        return Response(bound.answer(request, queryset, request.query_params))
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path=r"calendars/(?P<calendar>[a-z0-9-]+)",
+        url_name="calendar-move",
+    )
+    def calendar_move(
+        self, request: Any, pk: Any = None, calendar: str = ""
+    ) -> Response:
+        """Move one record to another day: ``{"date": "YYYY-MM-DD"}``,
+        written by the resource's cell writer."""
+        bound = self.get_bound_calendar(calendar)
+        record = self.get_object()
+        bound.move(request, record, request.data)
+        record.refresh_from_db()
+
+        return Response(bound.describe(request, record, True))
 
     # -- bulk actions ------------------------------------------------------
 

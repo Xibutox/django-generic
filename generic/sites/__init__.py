@@ -57,11 +57,21 @@ a report - declared on it, with any content (``generic.sites.pages``)::
     @page(title=_("Map"), icon="map", template="myapp/customer_map.html")
     def map(self, request):
         return {"customers": self.get_queryset(request)}
+
+Key figures and record cards on the dashboard
+(``generic.sites.dashboard``), and records on a calendar by a date
+field (``generic.sites.calendars``)::
+
+    kpis = (Kpi("open", title=_("Open"), filters={...}, danger=50),)
+    cards = (Cards("urgent", filters={...}, fields=("due_on",)),)
+    calendars = (Calendar("due", date="due_on", color="priority"),)
 """
 
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
+from generic.sites.calendars import Calendar
 from generic.sites.charts import Chart, chart_payload
+from generic.sites.dashboard import Cards, Kpi
 from generic.sites.data import DataResource, RelatedRows, RowLink
 from generic.sites.decorators import action, display
 from generic.sites.grids import Grid
@@ -84,12 +94,15 @@ from generic.sites.trees import Tree
 __all__ = [
     "AlreadyRegistered",
     "AutoResource",
+    "Calendar",
+    "Cards",
     "Chart",
     "DataResource",
     "GenericSite",
     "Grid",
     "Import",
     "InlineResource",
+    "Kpi",
     "ModelResource",
     "RelatedRows",
     "RelatedTable",

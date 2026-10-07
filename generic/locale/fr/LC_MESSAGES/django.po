@@ -3336,3 +3336,39 @@ msgstr "Voir les résultats"
 
 msgid "Found in the Celery application, not declared to the framework: Run now sends one to Celery without arguments - a schedule's Run now sends its own. They keep no run: what came of them is in the Celery results."
 msgstr "Trouvées dans l'application Celery, non déclarées au framework : Lancer maintenant en envoie une à Celery sans arguments - le Lancer maintenant d'une planification envoie les siens. Elles ne gardent pas d'exécution : leur résultat est dans les résultats Celery."
+
+msgid "Calendar"
+msgstr "Calendrier"
+
+msgid "A date is expected (YYYY-MM-DD)."
+msgstr "Une date est attendue (AAAA-MM-JJ)."
+
+msgid "The end must come after the start."
+msgstr "La fin doit venir après le début."
+
+msgid "At most %(days)s days at a time."
+msgstr "Au plus %(days)s jours à la fois."
+
+msgid "Records of this calendar are not moved here."
+msgstr "Les enregistrements de ce calendrier ne se déplacent pas ici."
+
+msgid "Send the day to move it to."
+msgstr "Envoyez le jour où le déplacer."
+
+msgid "This record has no date to move."
+msgstr "Cet enregistrement n'a pas de date à déplacer."
+
+msgid "There is no such figure."
+msgstr "Cet indicateur n'existe pas."
+
+msgid "There are no such cards."
+msgstr "Ces cartes n'existent pas."
+
+msgid "There is no such calendar."
+msgstr "Ce calendrier n'existe pas."
+
+msgid "Key figures"
+msgstr "Indicateurs clés"
+
+msgid "See all"
+msgstr "Tout voir"

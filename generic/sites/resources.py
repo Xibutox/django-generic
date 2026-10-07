@@ -257,6 +257,19 @@ class ModelResource(PagesMixin):
     #: resource>", narrowed to the record.
     detail_charts: Sequence[str] = ()
 
+    # -- the dashboard and the calendar ------------------------------------
+
+    #: Key figures on the dashboard: Kpi(...), a number over the rows the
+    #: list shows under a filter, opening that list (generic.sites.
+    #: dashboard).
+    kpis: Sequence[Any] = ()
+    #: Records drawn as cards on the dashboard: Cards(...), a few rows
+    #: under a filter and an order.
+    cards: Sequence[Any] = ()
+    #: Records on a calendar, by a date field: Calendar(...), a page each
+    #: (generic.sites.calendars).
+    calendars: Sequence[Any] = ()
+
     # -- live updates ------------------------------------------------------
 
     #: Publish every change so open tables refresh themselves.
@@ -781,9 +794,9 @@ class ModelResource(PagesMixin):
         return getattr(obj, "pk", obj)
 
     def get_page_declarations(self) -> list[Any]:
-        """The pages declared, the page of each tree, and the *Trash*
-        when ``trash`` keeps one - each unless a page declared takes its
-        name."""
+        """The pages declared, the page of each tree and calendar, and
+        the *Trash* when ``trash`` keeps one - each unless a page
+        declared takes its name."""
         declared = list(super().get_page_declarations())
         names = {getattr(page, "name", None) for page in declared}
 
@@ -800,6 +813,13 @@ class ModelResource(PagesMixin):
                     from generic.sites.tree_rows import flat_page
 
                     declared.append(flat_page(bound))
+
+        if self.calendars:
+            from generic.sites.calendars import calendar_page
+
+            for bound in self.get_calendars():
+                if bound.name not in names:
+                    declared.append(calendar_page(bound))
 
         if self.trash and "trash" not in names:
             from generic.sites.pages import trash_page
@@ -1280,6 +1300,71 @@ class ModelResource(PagesMixin):
 
     def get_tree(self, name: str) -> Any:
         for bound in self.get_trees():
+            if bound.name == name:
+                return bound
+
+        return None
+
+    def get_kpis(self) -> list[Any]:
+        """The declared key figures, checked once."""
+        checked = self.__dict__.get("_checked_kpis")
+
+        if checked is None:
+            from generic.sites.dashboard import Kpi, check_declarations
+
+            checked = check_declarations(self, "kpis", Kpi)
+            self.__dict__["_checked_kpis"] = checked
+
+        return list(checked)
+
+    def get_kpi(self, name: str) -> Any:
+        for kpi in self.get_kpis():
+            if kpi.name == name:
+                return kpi
+
+        return None
+
+    def get_cards(self) -> list[Any]:
+        """The declared cards, checked once."""
+        checked = self.__dict__.get("_checked_cards")
+
+        if checked is None:
+            from generic.sites.dashboard import Cards, check_declarations
+
+            checked = check_declarations(self, "cards", Cards)
+            self.__dict__["_checked_cards"] = checked
+
+        return list(checked)
+
+    def get_card_list(self, name: str) -> Any:
+        for cards in self.get_cards():
+            if cards.name == name:
+                return cards
+
+        return None
+
+    def get_calendars(self) -> list[Any]:
+        """The declared calendars, resolved once against this resource."""
+        bound = self.__dict__.get("_bound_calendars")
+
+        if bound is None:
+            from generic.sites.calendars import bind_calendar
+
+            bound = [bind_calendar(item, self) for item in self.calendars]
+            names = [calendar.name for calendar in bound]
+
+            if len(set(names)) != len(names):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.calendars declares the same "
+                    f"name twice."
+                )
+
+            self.__dict__["_bound_calendars"] = bound
+
+        return list(bound)
+
+    def get_calendar(self, name: str) -> Any:
+        for bound in self.get_calendars():
             if bound.name == name:
                 return bound
 

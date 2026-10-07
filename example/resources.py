@@ -52,10 +52,13 @@ from generic.api import (
     TagsColumn,
 )
 from generic.sites import (
+    Calendar,
+    Cards,
     Chart,
     DataResource,
     Grid,
     Import,
+    Kpi,
     ModelResource,
     RelatedRows,
     RelatedTable,
@@ -78,6 +81,14 @@ from generic.views.toolbar import ToolbarItem, toolbar_item_for_route
 
 #: Tickets someone still has to act on.
 OPEN_STATUSES = (Ticket.Status.OPEN, Ticket.Status.PENDING)
+
+#: The open tickets, as a filter tree's condition: the key figures, the
+#: cards and the list they open all read it.
+STILL_OPEN = {
+    "column": "status",
+    "operator": "any_of",
+    "value": ["open", "pending"],
+}
 
 
 def next_reference() -> str:
@@ -525,6 +536,123 @@ class TicketResource(ModelResource):
     # Above the list: they follow its filters, and a click filters it.
     list_charts = ("by_status", "opened")
 
+    # Key figures on the dashboard. Each is a filter tree over the
+    # list's columns - the one its tile opens the list with - and a
+    # count, or an aggregate. The thresholds colour the tile.
+    kpis = (
+        Kpi(
+            "open",
+            title=_("Open tickets"),
+            icon="inbox",
+            description=_("Open or waiting for the customer."),
+            filters={"match": "all", "conditions": [STILL_OPEN]},
+            warning=150,
+            danger=200,
+        ),
+        Kpi(
+            "urgent",
+            title=_("Urgent and open"),
+            icon="priority_high",
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "priority",
+                        "operator": "any_of",
+                        "value": ["urgent"],
+                    },
+                ],
+            },
+            warning=1,
+            danger=5,
+        ),
+        Kpi(
+            "overdue",
+            title=_("Overdue"),
+            icon="event_busy",
+            description=_("Still open, due more than a day ago."),
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "due_on",
+                        "operator": "older_than_days",
+                        "value": 1,
+                    },
+                ],
+            },
+            warning=1,
+            danger=10,
+        ),
+        Kpi(
+            "satisfaction",
+            title=_("Satisfaction"),
+            icon="sentiment_satisfied",
+            description=_("Average score of the closed tickets."),
+            filters={
+                "match": "all",
+                "conditions": [
+                    {
+                        "column": "status",
+                        "operator": "any_of",
+                        "value": ["closed"],
+                    }
+                ],
+            },
+            value=Avg("satisfaction"),
+            unit="/ 5",
+            decimals=1,
+            # Lower is worse: danger below warning.
+            warning=3.5,
+            danger=3,
+        ),
+    )
+
+    # A few tickets drawn as cards on the dashboard, the most pressing
+    # first; "See all" opens the list with the same filters.
+    cards = (
+        Cards(
+            "pressing",
+            title=_("Pressing tickets"),
+            icon="local_fire_department",
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "priority",
+                        "operator": "any_of",
+                        "value": ["urgent", "high"],
+                    },
+                ],
+            },
+            ordering=("due_on", "-opened_at"),
+            subtitle="customer",
+            fields=("priority", "status", "assignee", "due_on"),
+            limit=6,
+        ),
+    )
+
+    # The tickets on the days they are due: a page with the list's
+    # filters above it. Dragging a ticket to another day writes its due
+    # date, through the same writer as the Triage grid (due_on is one
+    # of the editable_fields).
+    calendars = (
+        Calendar(
+            "due",
+            date="due_on",
+            title=_("Due dates"),
+            icon="event",
+            description=_("Every ticket on the day it is due."),
+            color="priority",
+            fields=("customer", "status", "assignee"),
+            editable=True,
+            navigation=True,
+        ),
+    )
+
     def get_record_links(self, request: Any, ticket: Ticket) -> list[Any]:
         """Where somebody reading a ticket usually goes next.
 
@@ -770,6 +898,30 @@ class TimeEntryResource(ModelResource):
         ),
     )
     list_charts = ("hours_by_month", "hours_by_agent")
+
+    # An aggregate rather than a count, over a period that moves with
+    # the calendar: "this month" is next month's this month too.
+    kpis = (
+        Kpi(
+            "hours-this-month",
+            title=_("Hours this month"),
+            icon="schedule",
+            filters={
+                "match": "all",
+                "conditions": [
+                    {
+                        "column": "spent_on",
+                        "operator": "this_month",
+                        "value": None,
+                    }
+                ],
+            },
+            value=Sum("hours"),
+            unit="h",
+            decimals=1,
+            order=1,
+        ),
+    )
 
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:

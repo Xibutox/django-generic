@@ -183,10 +183,6 @@
   max-width: 100%;
 }
 
-.tree-value .tag + .tag {
-  margin-inline-start: 0.25rem;
-}
-
 .tree-page__scope {
   display: flex;
   flex-wrap: wrap;

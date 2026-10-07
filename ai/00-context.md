@@ -97,7 +97,8 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
-│   │                       RelatedTable, Grid, Tree, Chart, TagStyle, TabularInline,
+│   │                       RelatedTable, Grid, Tree, Calendar, Kpi, Cards, Chart,
+│   │                       TagStyle, TabularInline,
 │   │                       StackedInline, action, display, chart_payload
 │   ├── site.py             GenericSite: registry, URLs, navigation, search, chrome, add_link,
 │   │                       auto, complete_auto
@@ -110,13 +111,18 @@ generic/
 │   ├── serializers.py      list_display/fields -> generated table and form serializers
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
-│   │                       _grid, cells, rows, trees/<name>/)
+│   │                       _grid, cells, rows, trees/<name>/, kpis/<name>/,
+│   │                       cards/<name>/, calendars/<name>/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
 │   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
 │   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
 │   │                       (self FK or link model), a level at a time; no cycles
+│   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
+│   │                       days, a page each, moved by dragging (§5.20)
+│   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
+│   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
@@ -218,6 +224,10 @@ generic/
     ├── js/summary.js       Alpine recordSummary (summary page)
     ├── js/history.js       Alpine recordHistory (the History tab)
     ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
+    ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
+    │                       element (tree, cards, calendar); loaded by base.html
+    ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
+    ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/wiki.js          Alpine wikiPage
     ├── js/datatables/      core (operators), columns (renderers), query (filter
@@ -615,6 +625,9 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
 | `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
 | `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
+| `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
+| `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
+| `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -944,7 +957,9 @@ def reports(request, term):
 ```
 
 Dashboard template blocks: `dashboard_pinned` (wiki pins),
-`dashboard_shortcuts` (the hub), `dashboard_intro`, `dashboard_extra`.
+`dashboard_shortcuts` (the hub), `dashboard_kpis` and `dashboard_cards`
+(the resources' `kpis` and `cards`, §5.19), `dashboard_intro`,
+`dashboard_extra`.
 
 ### 5.11 Pages worked out from the model (`auto`)
 
@@ -1340,6 +1355,76 @@ config from `bound.get_config(request, obj, direction, root)`. Example:
 1,200-part terminal rail). `PageSweep` opens each tree's levels, a
 search and the flat table.
 
+### 5.19 Key figures and cards on the dashboard (`Kpi`, `Cards`)
+
+Numbers and records the dashboard opens with, declared on the resource
+whose rows they are (`docs/dashboard.md`):
+
+```python
+from django.db.models import Avg, Sum
+from generic.sites import Cards, Kpi
+
+OPEN = {"column": "status", "operator": "any_of", "value": ["open", "pending"]}
+
+kpis = (
+    Kpi("open", title=_("Open tickets"), icon="inbox",
+        filters={"match": "all", "conditions": [OPEN]},   # a preset's tree
+        warning=150, danger=200),                        # higher is worse
+    Kpi("satisfaction", value=Avg("satisfaction"),       # or callable(request, qs)
+        unit="/ 5", decimals=1, warning=3.5, danger=3,   # danger < warning: lower is worse
+        filters={...}, permission=None, order=0, description=_("...")),
+)
+cards = (
+    Cards("pressing", title=_("Pressing tickets"), filters={...},
+          ordering=("due_on", "-opened_at"),             # nulls last, any database
+          subtitle="customer", fields=("priority", "due_on"),
+          image=None, limit=6),                          # image: a file field; limit 1-24
+)
+```
+
+`filters` is a filter tree over the **list's columns** (or the flat
+form), read by the table serializer's whitelist (`FilterTreeBuilder`):
+relative dates stay true, a column the list lacks raises
+`ImproperlyConfigured` at first use. The tile and *See all* open the
+list with the same tree (`?filters=`), so they agree. A figure is
+aggregated over `get_queryset` re-selected by key from the narrowed
+`get_list_queryset` (team scoping applies); none over no row (`-`).
+Cards: values typed by `describe_entry` (summary page), the label links
+to the record, `total` counts all matches. Shown on the dashboard to
+readers with the resource's view permission (+ `permission`), ordered
+by `order`, resource `order`, name; filled by `js/dashboard.js` from
+`kpis/<name>/` and `cards/<name>/`, refreshed on `resource.changed`.
+Declarations checked at registration (`check_declarations`). Example:
+`TicketResource.kpis`/`.cards`, `TimeEntryResource.kpis` (a `Sum` over
+`this_month`).
+
+### 5.20 Calendars (`Calendar`)
+
+```python
+calendars = (
+    Calendar("due", date="due_on",            # DateField or DateTimeField
+             end=None,                        # inclusive end: drawn on each day
+             title=_("Due dates"), icon="event", description=_("..."),
+             label=None,                      # event text; default the record's label
+             color="priority",                # a tag field: first tag's colour
+             fields=("customer", "status"),   # summary-typed values
+             editable=True,                   # drag = save_editable; date must be in editable_fields
+             views=("month", "week", "list"), navigation=True, permission=None),
+)
+```
+
+A page `<model>/<name>/` (button on the list; `navigation` adds a
+sidebar entry) with the resource's table above it, rows hidden (as a
+tree's page), whose `filters`/`search` the calendar follows (`calendar`
+is a table action). Month (6 weeks), week, list of days; the week
+starts on `FIRST_DAY_OF_WEEK`; `?view=&date=` in the address. Records
+of a range through `get_list_queryset`, a date-and-time placed on its
+local day with its time. Moving goes through `save_editable` (change
+permission, `can_edit_column`, form validation); a datetime keeps its
+time, `end` shifts by as many days. *Add* on a day opens the add form
+with the date filled. `docs/calendars.md`; example: *Support › Due
+dates*.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1371,6 +1456,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 | `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
+| `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
+| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,
