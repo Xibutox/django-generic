@@ -101,10 +101,6 @@ msgstr "%(missing)s n'est plus déclarée."
 msgid "%(operations)s is started from its own page, not from here."
 msgstr "%(operations)s se lance depuis sa propre page, pas d'ici."
 
-#: generic/tasks/resources.py:222
-msgid "%(count)s started. %(missing)s is not declared to the framework, so it can only run on its schedule."
-msgstr "%(count)s lancée(s). %(missing)s n'est pas déclarée au framework : elle ne peut s'exécuter que par sa planification."
-
 #: generic/watch/notify.py:59
 msgid "%(model)s changed: %(label)s"
 msgstr "%(model)s modifié : %(label)s"
@@ -3316,3 +3312,27 @@ msgid ""
 msgstr ""
 "Chaque tâche Celery exécutée par un worker, planifiée ou non, et ce qu'elle "
 "a renvoyé."
+
+msgid "%(count)s sent to Celery: what came of it is in the Celery results."
+msgstr "%(count)s envoyée(s) à Celery : le résultat est dans les résultats Celery."
+
+msgid "Not sent: %(errors)s."
+msgstr "Non envoyée(s) : %(errors)s."
+
+msgid "no Celery broker is configured"
+msgstr "aucun broker Celery n'est configuré"
+
+msgid "%(task)s could not be sent: %(error)s"
+msgstr "%(task)s n'a pas pu être envoyée : %(error)s"
+
+msgid "%(task)s sent to Celery (%(id)s)."
+msgstr "%(task)s envoyée à Celery (%(id)s)."
+
+msgid "Other Celery tasks"
+msgstr "Autres tâches Celery"
+
+msgid "See the results"
+msgstr "Voir les résultats"
+
+msgid "Found in the Celery application, not declared to the framework: Run now sends one to Celery without arguments - a schedule's Run now sends its own. They keep no run: what came of them is in the Celery results."
+msgstr "Trouvées dans l'application Celery, non déclarées au framework : Lancer maintenant en envoie une à Celery sans arguments - le Lancer maintenant d'une planification envoie les siens. Elles ne gardent pas d'exécution : leur résultat est dans les résultats Celery."

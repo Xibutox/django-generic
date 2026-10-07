@@ -237,6 +237,80 @@ def celery_task_names() -> set[str]:
     }
 
 
+def undeclared_tasks() -> list[str]:
+    """The Celery app's tasks no ``@managed_task`` declares, by name."""
+    return sorted(celery_task_names() - set(registry.names()))
+
+
+def send_to_celery(
+    name: str,
+    *,
+    args: list[Any] | tuple[Any, ...] = (),
+    kwargs: dict[str, Any] | None = None,
+    queue: str | None = None,
+    schedule: str | None = None,
+) -> str:
+    """Hand a task the framework does not declare to Celery, by name.
+
+    No run is written - only a declared task keeps one - so what came
+    of it is in Celery's results. A task this process knows goes
+    through its own ``apply_async``, which honours eager mode; one only
+    the worker knows goes by ``send_task``. ``schedule`` is the name
+    of the schedule it stands in for, which the results record.
+
+    Returns the Celery task id.
+    """
+    from celery import current_app
+
+    conf = current_app.conf
+
+    # With no broker configured, Celery would wait on a connection to a
+    # queue nobody serves: say so instead.
+    if not (conf.get("task_always_eager") or conf.get("broker_url")):
+        raise RuntimeError(gettext("no Celery broker is configured"))
+
+    options: dict[str, Any] = {}
+
+    if queue:
+        options["queue"] = queue
+
+    if schedule:
+        options["headers"] = {"periodic_task_name": schedule}
+
+    task = current_app.tasks.get(name)
+
+    if task is not None:
+        result = task.apply_async(
+            args=list(args), kwargs=kwargs or {}, **options
+        )
+    else:
+        result = current_app.send_task(
+            name, args=list(args), kwargs=kwargs or {}, **options
+        )
+
+    return str(result.id)
+
+
+def results_url(task: str = "", schedule: str = "") -> str:
+    """Celery's results list, on one task or one schedule, if shown."""
+    if not results_installed():
+        return ""
+
+    model = apps.get_model("django_celery_results", "TaskResult")
+    resource = site.get_resource(model)
+
+    if resource is None:
+        return ""
+
+    if schedule:
+        return filtered_list_url(resource, "periodic_task_name", schedule)
+
+    if task:
+        return filtered_list_url(resource, "task_name", task)
+
+    return resource.get_list_url()
+
+
 def schedulable_tasks() -> list[tuple[str, str]]:
     """What a schedule may run, as ``(name, label)`` pairs, by label.
 
@@ -405,6 +479,16 @@ class PeriodicTaskResource(ModelResource):
         return str(obj.schedule) if obj.schedule else ""
 
     @staticmethod
+    def positional_of(schedule: Any) -> list[Any]:
+        """The positional arguments beat would call this task with."""
+        try:
+            arguments = json.loads(schedule.args or "[]")
+        except (TypeError, ValueError):
+            return []
+
+        return arguments if isinstance(arguments, list) else []
+
+    @staticmethod
     def arguments_of(schedule: Any) -> dict[str, Any]:
         """The keyword arguments beat would call this task with.
 
@@ -426,30 +510,53 @@ class PeriodicTaskResource(ModelResource):
     )
     def run_now(self, request: Any, queryset: Any) -> str:
         started = 0
-        refused = []
+        sent = 0
+        failed = []
 
         for schedule in queryset:
-            if registry.get(schedule.task) is None:
-                refused.append(schedule.task)
+            if registry.get(schedule.task) is not None:
+                launch(
+                    schedule.task,
+                    user=request.user,
+                    arguments=self.arguments_of(schedule),
+                )
+                started += 1
                 continue
 
-            launch(
-                schedule.task,
-                user=request.user,
-                arguments=self.arguments_of(schedule),
-            )
-            started += 1
+            # Any other Celery task goes to Celery as beat would send
+            # it - its arguments, its queue - and its result is
+            # recorded under this schedule's name.
+            try:
+                send_to_celery(
+                    schedule.task,
+                    args=self.positional_of(schedule),
+                    kwargs=self.arguments_of(schedule),
+                    queue=schedule.queue or None,
+                    schedule=schedule.name,
+                )
+            except Exception as error:  # the broker, or the task itself
+                logger.warning(
+                    "Sending %s to Celery", schedule.task, exc_info=True
+                )
+                failed.append(f"{schedule.task}: {error}")
+                continue
 
-        if refused:
-            # Celery can run anything by name, but only a declared task
-            # announces itself, keeps a run and reports - which is what
-            # these pages are about.
-            return gettext(
-                "%(count)s started. %(missing)s is not declared to the "
-                "framework, so it can only run on its schedule."
-            ) % {"count": started, "missing": ", ".join(sorted(set(refused)))}
+            sent += 1
 
-        return gettext("%(count)s started.") % {"count": started}
+        message = gettext("%(count)s started.") % {"count": started + sent}
+
+        if sent:
+            message += " " + gettext(
+                "%(count)s sent to Celery: what came of it is in the "
+                "Celery results."
+            ) % {"count": sent}
+
+        if failed:
+            message += " " + gettext("Not sent: %(errors)s.") % {
+                "errors": "; ".join(failed)
+            }
+
+        return message
 
     @action(description=_("Enable"), icon="toggle_on")
     def enable(self, request: Any, queryset: Any) -> str:

@@ -1797,7 +1797,12 @@ def nightly_digest(run):
   declared tasks only). A schedule's page links to its results
   (`periodic_task_name`), a result to its run (`TaskRun.celery_id`).
 - Pages, one question each: *Task catalogue* (link, `site:tasks`:
-  declared tasks, *Run now*), *Runs*, *Celery results*, *Schedules*.
+  declared tasks, *Run now*; then *Other Celery tasks*: the app's
+  undeclared tasks, `undeclared_tasks()`, *Run now* sends one with no
+  arguments via `send_to_celery()`), *Runs*, *Celery results*,
+  *Schedules* (*Run now*: declared -> `launch`, else `send_to_celery`
+  with the row's args, kwargs, queue and `periodic_task_name`; no
+  broker and not eager -> refused, not hung).
   `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
 
 ## 13g. Operations and reports (the work behind a button)

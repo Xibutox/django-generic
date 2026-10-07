@@ -520,7 +520,15 @@ class TestTheSchedules:
 
         assert run.arguments == {"team": "Front office"}
 
-    def test_running_an_undeclared_task_says_so(self, auth_client, user):
+    def test_a_task_celery_cannot_send_says_so(
+        self, auth_client, user, monkeypatch
+    ):
+        from generic.tasks import resources
+
+        def refuse(*args, **kwargs):
+            raise ConnectionError("broker down")
+
+        monkeypatch.setattr(resources, "send_to_celery", refuse)
         crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
         periodic = apps.get_model("django_celery_beat", "PeriodicTask")
         schedule = periodic.objects.create(
@@ -543,7 +551,7 @@ class TestTheSchedules:
         )
 
         assert response.status_code == 200, response.content
-        assert "elsewhere.cleanup" in response.json()["message"]
+        assert "broker down" in response.json()["message"]
         assert TaskRun.objects.count() == 0
 
 
@@ -645,6 +653,93 @@ class TestChoosingTheTask:
 
         assert schedule.task == "gone.cleanup"
         assert schedule.description == "Still here"
+
+
+class TestUndeclaredCeleryTasks:
+    """A plain Celery task can be started from the pages too."""
+
+    @pytest.fixture
+    def plain(self, monkeypatch):
+        from celery import current_app
+
+        # The suite's Celery app, eager: sent, and run right here.
+        monkeypatch.setitem(current_app.conf, "task_always_eager", True)
+        calls = []
+
+        @current_app.task(name="tests.plain_cleanup")
+        def plain_cleanup(*args, **kwargs):
+            calls.append((args, kwargs))
+            return "cleaned"
+
+        yield calls
+
+        current_app.tasks.pop("tests.plain_cleanup", None)
+
+    def test_the_catalogue_lists_and_sends_it(self, auth_client, user, plain):
+        user.user_permissions.add(permission("run_task"))
+
+        page = auth_client.get(TASKS).content.decode()
+
+        assert "tests.plain_cleanup" in page
+
+        response = auth_client.post(TASKS, {"task": "tests.plain_cleanup"})
+
+        assert response.status_code == 302
+        assert plain == [((), {})]
+        # No run: only a declared task keeps one.
+        assert TaskRun.objects.count() == 0
+
+    def test_without_a_broker_it_says_so(self, monkeypatch):
+        import celery
+
+        from generic.tasks.resources import send_to_celery
+
+        class Unconfigured:
+            conf = {"task_always_eager": False, "broker_url": None}
+            tasks = {}
+
+        monkeypatch.setattr(celery, "current_app", Unconfigured())
+
+        with pytest.raises(RuntimeError):
+            send_to_celery("tests.plain_cleanup")
+
+    def test_a_name_celery_does_not_know_is_refused(self, auth_client, user):
+        user.user_permissions.add(permission("run_task"))
+
+        response = auth_client.post(TASKS, {"task": "nowhere.at_all"})
+
+        assert response.status_code == 404
+
+    @beat_only
+    def test_a_schedule_sends_it_with_its_arguments(
+        self, auth_client, user, plain
+    ):
+        crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        schedule = periodic.objects.create(
+            name="Nightly cleanup",
+            task="tests.plain_cleanup",
+            crontab=crontab.objects.create(minute="0", hour="4"),
+            args="[30]",
+            kwargs='{"dry_run": true}',
+        )
+
+        for codename in ("view_periodictask", "change_periodictask"):
+            user.user_permissions.add(
+                permission(codename, app_label="django_celery_beat")
+            )
+
+        user.user_permissions.add(permission("run_task"))
+
+        response = auth_client.post(
+            reverse("site:api_django_celery_beat_periodictask-actions"),
+            {"action": "run_now", "ids": [schedule.pk]},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+        assert plain == [((30,), {"dry_run": True})]
+        assert "Celery" in response.json()["message"]
 
 
 @results_only
