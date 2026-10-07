@@ -384,6 +384,47 @@ class TicketTablePage(DataTableView):
     template_name = "example/datatable.html"
     page_title = _("Tickets (interactive table)")
 
+    # The Views menu, as on a resource's list: these layouts for
+    # everyone, and each user's own saved beside them. A preset may
+    # filter and sort on a computed column - here the comment count,
+    # an annotation of the viewset.
+    presets = {
+        _("Most discussed"): {
+            "columns": [
+                "reference",
+                "title",
+                "team",
+                "status",
+                "comment_count",
+            ],
+            "filters": {
+                "match": "all",
+                "conditions": [
+                    {
+                        "column": "comment_count",
+                        "operator": "gte",
+                        "value": 3,
+                    }
+                ],
+            },
+            "order": [["comment_count", "desc"]],
+        },
+        _("Billable, still open"): {
+            "filters": {
+                "match": "all",
+                "conditions": [
+                    {"column": "is_billable", "operator": "is_true"},
+                    {
+                        "column": "status",
+                        "operator": "any_of",
+                        "value": ["open", "pending"],
+                    },
+                ],
+            },
+            "order": [["due_on", "asc"]],
+        },
+    }
+
 
 class AgentTablePage(DataTableView):
     model = Agent

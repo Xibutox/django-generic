@@ -590,7 +590,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
-| `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength` |
+| `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
 | `editable_fields` | `()` | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
 | `list_editable` | `False` | whether the resource's own list page offers those cells |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
@@ -1022,7 +1022,7 @@ is empty. Filtering, search, ordering, facets and exports run in Python
 (`generic.api.rows`: `RowsDataTableViewSet`, `RowList`, `matches(q,
 row)` reading the same `Q` the filter engines build - same whitelist,
 400 on undeclared names). Other options: `list_display_links`,
-`list_per_page`, `show_export`, `filter_row`, `table_options`,
+`list_per_page`, `show_export`, `filter_row`, `presets`, `table_options`,
 `label_field`, `show_in_navigation`, `description`. Override `get_row`
 to fetch one row directly.
 

@@ -472,6 +472,10 @@ default, and gets it back on any device: views are stored on the
 server (`SavedView`), not in the browser. Whether a table also comes
 back as it was left is a per-user preference.
 
+The same menu is on a `DataResource`'s table and on a hand-built
+`DataTableView` page, with the same `presets` attribute
+([Interactive tables](ui.md#views)).
+
 ### Exports
 
 *Excel* and *CSV* export **every row matching the filters and the

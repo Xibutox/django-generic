@@ -220,7 +220,41 @@ The configuration is emitted with `json_script` and read from the DOM.
   fields under the headers on demand;
 - a column selector, with the choice remembered per view;
 - Excel and CSV exports of **every filtered row**, not just the page;
-- saved state — ordering, page length, hidden columns.
+- saved state — ordering, page length, hidden columns;
+- a **Views** menu: each user saves the layout under a name, and
+  `presets` offers some to everyone.
+
+### Views
+
+A `DataTableView` has the same **Views** menu as a resource's list
+([Sites › Views](sites.md#views)): each user saves the current layout -
+visible columns, their order, sorting, filters, search, page length -
+under a name, marks one as the table's default, and finds it again on
+any device. `presets` adds layouts for everyone. A column the viewset
+computes, an annotation or an aggregate, is filtered and sorted like
+any other, so a preset may use it:
+
+```python
+class TicketTablePage(DataTableView):
+    model = Ticket
+    viewset = TicketTableViewSet
+    api_url_name = "example_api:ticket-list"
+    presets = {
+        _("Most discussed"): {
+            "columns": ["reference", "title", "status", "comment_count"],
+            "filters": {"match": "all", "conditions": [
+                {"column": "comment_count", "operator": "gte", "value": 3},
+            ]},
+            "order": [["comment_count", "desc"]],
+        },
+    }
+```
+
+Saved views are kept per user and per table, under the view's state
+key (`get_state_key()`, the class's dotted path), and go through
+`api/generic/`: without `include("generic.urls", namespace="generic")`
+in the URLs, the menu only offers the presets. Override `get_presets()`
+for layouts that depend on the request.
 
 ### Supplying DataTables
 

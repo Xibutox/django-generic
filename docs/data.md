@@ -221,6 +221,7 @@ is fetched when the page opens. See [Pages of a resource's own](pages.md).
 | `list_per_page` | `TABLE_PAGE_SIZE` | The user's own choice wins |
 | `show_export` | `True` | |
 | `filter_row` | `"open"` | The fields under the headers: `"open"`, `"toggle"`, `False` |
+| `presets` | `{}` | Layouts offered to everyone in the **Views** menu, beside each user's saved views - as on a [resource](sites.md#views) |
 | `table_options` | `{}` | Client options merged over the defaults |
 | `label_field` | the first column | What a row is called on its page |
 | `detail_fieldsets` | one section of every column | Sections of the row's page, fieldsets style; any key of the row may appear |
