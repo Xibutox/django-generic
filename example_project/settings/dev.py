@@ -57,6 +57,9 @@ else:
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", "memory://")
 CELERY_TASK_ALWAYS_EAGER = not env("CELERY_BROKER_URL")
+# A task run in the request still writes its Celery result, when the
+# results are installed.
+CELERY_TASK_STORE_EAGER_RESULT = True
 
 # -- Mail --------------------------------------------------------------
 #

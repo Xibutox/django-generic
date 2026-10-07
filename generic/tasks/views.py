@@ -22,7 +22,11 @@ from generic.conf import generic_settings
 from generic.sites.views import SiteViewMixin
 from generic.tasks.models import TaskRun
 from generic.tasks.registry import registry
-from generic.tasks.resources import beat_installed, tasks_are_offered
+from generic.tasks.resources import (
+    beat_installed,
+    results_installed,
+    tasks_are_offered,
+)
 from generic.tasks.runner import launch
 from generic.views.toolbar import Breadcrumb, ToolbarItem
 
@@ -31,8 +35,11 @@ class TasksPage(SiteViewMixin, TemplateView):
     """Every declared task, with a button and its recent runs."""
 
     template_name = "generic/tasks/catalogue.html"
-    page_title = _("Tasks")
-    page_subtitle = _("What this application knows how to run.")
+    page_title = _("Task catalogue")
+    page_subtitle = _(
+        "The tasks declared to the framework: run one now, see its "
+        "schedules and its last runs."
+    )
 
     def has_permission(self) -> bool:
         if not tasks_are_offered():
@@ -41,7 +48,7 @@ class TasksPage(SiteViewMixin, TemplateView):
         return bool(self.request.user.has_perm("generic.run_task"))
 
     def get_breadcrumbs(self) -> list[Breadcrumb]:
-        return [Breadcrumb(label=gettext("Tasks"))]
+        return [Breadcrumb(label=gettext("Task catalogue"))]
 
     def get_toolbar_items(self) -> list[ToolbarItem]:
         items = [
@@ -52,6 +59,16 @@ class TasksPage(SiteViewMixin, TemplateView):
                 variant="ghost",
             )
         ]
+
+        if results_installed():
+            items.append(
+                ToolbarItem(
+                    url=reverse("site:django_celery_results_taskresult_list"),
+                    label=gettext("Celery results"),
+                    icon="fact_check",
+                    variant="ghost",
+                )
+            )
 
         if beat_installed():
             items.append(

@@ -151,7 +151,7 @@ generic/
 ├── tasks/                  declared tasks: registry, runner (announce, run,
 │                           collect, report; in the request, a worker or a
 │                           thread), TaskRun, the catalogue page and the
-│                           django-celery-beat screens; operations.py:
+│                           django-celery-beat and -results screens; operations.py:
 │                           @operation, work a page starts (§13g)
 ├── reports.py              Report: a tree of levelled lines and sections that
 │                           fold, isolated sections (savepoint) (§13g)
@@ -403,7 +403,8 @@ mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
 `E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
 drf-spectacular, `W010` a model with a file field - or the wiki - and
-no `MEDIA_ROOT`, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
+result backend / results not extended, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1789,6 +1790,14 @@ def nightly_digest(run):
   per form by `schedulable_tasks()`): declared tasks by label, other
   Celery tasks by name, no operations, no `celery.*`; any other name
   is refused but the row's current one, kept as *not registered*.
+- `django_celery_results` installed (extra `results`;
+  `CELERY_RESULT_BACKEND = "django-db"`, `CELERY_RESULT_EXTENDED =
+  True`) puts its `TaskResult` in the group as *Celery results*,
+  read-only: every task a worker ran, declared or not (`Runs` hold
+  declared tasks only). A schedule's page links to its results
+  (`periodic_task_name`), a result to its run (`TaskRun.celery_id`).
+- Pages, one question each: *Task catalogue* (link, `site:tasks`:
+  declared tasks, *Run now*), *Runs*, *Celery results*, *Schedules*.
   `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
 
 ## 13g. Operations and reports (the work behind a button)

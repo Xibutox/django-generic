@@ -1,16 +1,18 @@
 """The task screens.
 
-Three of them, and they answer three different questions:
+Four of them, and they answer four different questions:
 
-    the catalogue    what can be run, and run one now (a page)
-    the runs         what has run, and what came of it (this file)
-    the schedules    what runs by itself (django-celery-beat, below)
+    the catalogue       what the framework can run, and run one now (a page)
+    the runs            what a declared task did, step by step (this file)
+    the Celery results  what every Celery task returned
+                        (django-celery-results, below)
+    the schedules       what runs by itself (django-celery-beat, below)
 
-The schedules are only there when ``django_celery_beat`` is installed:
-its models are the ones the admin plugin shows, declared here as
-resources so they get the same tables, filters and forms as everything
-else - and so that managing them does not mean sending anybody to
-``/admin/``.
+The results and the schedules are only there when their package is
+installed: their models are the ones the admin plugins show, declared
+here as resources so they get the same tables, filters and forms as
+everything else - and so that reading or managing them does not mean
+sending anybody to ``/admin/``.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
+from urllib.parse import quote
 
 from django.apps import apps
 from django.db import models
@@ -30,6 +33,7 @@ from generic.sites import ModelResource, TagStyle, action, display, site
 from generic.tasks.models import TaskRun
 from generic.tasks.registry import registry
 from generic.tasks.runner import launch
+from generic.views.toolbar import ToolbarItem
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +49,11 @@ STATUS_COLORS = {
 def beat_installed() -> bool:
     """Whether the scheduler's own models are part of this project."""
     return apps.is_installed("django_celery_beat")
+
+
+def results_installed() -> bool:
+    """Whether Celery writes its task results into this database."""
+    return apps.is_installed("django_celery_results")
 
 
 def tasks_are_offered() -> bool:
@@ -63,7 +72,7 @@ def tasks_are_offered() -> bool:
         if not name.startswith("generic.") and registry.get(name).catalogue
     ]
 
-    return bool(declared) or beat_installed()
+    return bool(declared) or beat_installed() or results_installed()
 
 
 def runs_are_kept() -> bool:
@@ -89,7 +98,10 @@ class TaskRunResource(ModelResource):
     order = 1
     label = _("Run")
     label_plural = _("Runs")
-    description = _("Every run of every task, and what came of it.")
+    description = _(
+        "Every run of a task declared to the framework, step by step, "
+        "and what came of it."
+    )
 
     list_display = (
         "label",
@@ -368,6 +380,26 @@ class PeriodicTaskResource(ModelResource):
 
         return self._task_form_serializer
 
+    def get_record_links(self, request: Any, obj: Any) -> list[Any]:
+        """What this schedule's runs returned, in Celery's results."""
+        if not results_installed():
+            return []
+
+        model = apps.get_model("django_celery_results", "TaskResult")
+        results = site.get_resource(model)
+
+        if results is None or not results.has_view_permission(request):
+            return []
+
+        return [
+            ToolbarItem(
+                url=filtered_list_url(results, "periodic_task_name", obj.name),
+                label=gettext("Celery results"),
+                icon="fact_check",
+                variant="ghost",
+            )
+        ]
+
     @display(description=_("When"))
     def schedule_display(self, obj: Any) -> str:
         return str(obj.schedule) if obj.schedule else ""
@@ -447,7 +479,7 @@ class PeriodicTaskResource(ModelResource):
 class IntervalScheduleResource(ModelResource):
     icon = "timer"
     group = _("Tasks")
-    order = 2
+    order = 3
     label = _("Interval")
     label_plural = _("Intervals")
     description = _("Every so many seconds, minutes, hours or days.")
@@ -458,7 +490,7 @@ class IntervalScheduleResource(ModelResource):
 class CrontabScheduleResource(ModelResource):
     icon = "calendar_month"
     group = _("Tasks")
-    order = 3
+    order = 4
     label = _("Crontab")
     label_plural = _("Crontabs")
     description = _("At a time of day, on the days you choose.")
@@ -477,11 +509,142 @@ class CrontabScheduleResource(ModelResource):
 class ClockedScheduleResource(ModelResource):
     icon = "alarm"
     group = _("Tasks")
-    order = 4
+    order = 5
     label = _("Clocked")
     label_plural = _("Clocked times")
     description = _("Once, at one moment.")
     list_display = ("__str__", "clocked_time")
+
+
+# -- Celery's own results ------------------------------------------------
+
+#: Celery's states, coloured as the runs' are.
+RESULT_STATUS_COLORS = {
+    "PENDING": STATUS_COLORS[TaskRun.Status.PENDING],
+    "RECEIVED": STATUS_COLORS[TaskRun.Status.PENDING],
+    "STARTED": STATUS_COLORS[TaskRun.Status.RUNNING],
+    "RETRY": "#d97706",
+    "SUCCESS": STATUS_COLORS[TaskRun.Status.SUCCESS],
+    "FAILURE": STATUS_COLORS[TaskRun.Status.FAILURE],
+    "REVOKED": "#64748b",
+}
+
+
+def filtered_list_url(resource: Any, column: str, value: str) -> str:
+    """``resource``'s list, showing the rows whose ``column`` is ``value``."""
+    filters = {
+        "match": "all",
+        "conditions": [
+            {"column": column, "operator": "equals", "value": value}
+        ],
+    }
+
+    return f"{resource.get_list_url()}?filters={quote(json.dumps(filters))}"
+
+
+class TaskResultResource(ModelResource):
+    """What every Celery task returned, as django-celery-results keeps it.
+
+    The runs only know the tasks declared to the framework; Celery
+    writes a row here for every task a worker runs - scheduled or not,
+    declared or not - when its result backend is ``django-db``. Read
+    only, like the runs; deleting old rows is the one change allowed.
+    """
+
+    icon = "fact_check"
+    group = _("Tasks")
+    order = 2
+    label = _("Celery result")
+    label_plural = _("Celery results")
+    description = _(
+        "Every Celery task a worker ran, scheduled or not, and what it "
+        "returned."
+    )
+
+    list_display = (
+        "task_name",
+        "status",
+        "periodic_task_name",
+        "date_created",
+        "date_done",
+        "duration",
+        "worker",
+        "task_id",
+    )
+    list_display_links = ("task_name",)
+    list_display_hidden = ("worker", "task_id")
+    search_fields = ("task_name", "periodic_task_name", "task_id", "result")
+    ordering = ("-date_created", "-pk")
+    tag_fields = {"status": TagStyle(colors=RESULT_STATUS_COLORS)}
+    actions = ("delete_selected",)
+
+    detail_stats = ("status", "duration", "worker")
+    detail_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    ("task_name", "periodic_task_name"),
+                    ("task_id", "worker"),
+                    ("date_created", "date_started", "date_done"),
+                    ("task_args", "task_kwargs"),
+                    "result",
+                    "traceback",
+                )
+            },
+        ),
+    )
+
+    # Celery writes these rows, and keeps rewriting them as the task
+    # moves on: a history of that is noise, and a tag or a watch on a
+    # result nobody will see again is no use.
+    history = False
+    watchable = False
+    realtime = False
+
+    def has_add_permission(self, request: Any) -> bool:
+        return False
+
+    def has_change_permission(self, request: Any, obj: Any = None) -> bool:
+        return False
+
+    @display(description=_("Duration"))
+    def duration(self, result: Any) -> str:
+        start = result.date_started or result.date_created
+        end = result.date_done
+
+        if not start or not end or end < start:
+            return ""
+
+        # As a run's duration reads.
+        seconds = (end - start).total_seconds()
+
+        if seconds < 60:
+            return f"{seconds:.1f} s"
+
+        minutes, rest = divmod(int(seconds), 60)
+
+        return f"{minutes} min {rest:02d} s"
+
+    def get_record_links(self, request: Any, obj: Any) -> list[Any]:
+        """The framework's run of this task, when it was a declared one."""
+        run = TaskRun.objects.filter(celery_id=obj.task_id).first()
+        runs = site.get_resource(TaskRun)
+
+        if run is None or runs is None:
+            return []
+
+        if not runs.has_view_permission(request, run):
+            return []
+
+        return [
+            ToolbarItem(
+                url=run.get_absolute_url(),
+                label=gettext("Run"),
+                icon="history",
+                variant="ghost",
+            )
+        ]
 
 
 #: The scheduler's models, and the resource each one is shown with.
@@ -513,8 +676,11 @@ def register_screens() -> None:
     if beat_installed():
         register_schedules()
 
+    if results_installed():
+        register_results()
+
     site.add_link(
-        _("Tasks"),
+        _("Task catalogue"),
         route="site:tasks",
         icon="playlist_play",
         group=_("Tasks"),
@@ -534,3 +700,15 @@ def register_schedules() -> None:
 
         if not site.is_registered(model):
             site.register(model, resource_class)
+
+
+def register_results() -> None:
+    """Celery's results, as a resource of the Tasks group."""
+    try:
+        model = apps.get_model("django_celery_results", "TaskResult")
+    except LookupError:  # pragma: no cover - an older results release
+        logger.debug("django_celery_results has no TaskResult")
+        return
+
+    if not site.is_registered(model):
+        site.register(model, TaskResultResource)

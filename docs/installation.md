@@ -251,6 +251,7 @@ and installed again with `pip install -r requirements.txt`.
 | `events` | Channels, channels-redis, Daphne | live updates, notifications, watches over WebSocket |
 | `tasks` | Celery, redis | declared tasks run in the background |
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |
+| `results` | django-celery-results | every Celery task's result, read from the Tasks pages |
 | `wiki` | nh3 | the wiki (`generic.wiki`) |
 | `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
@@ -490,6 +491,8 @@ names what is missing, with the line to write:
 | `generic.W006` | Django 6.1 or later, and no `MAILERS` ([Mail](#mail)) |
 | `generic.W009` | `check --deploy` only: `ADMINS` is empty, so errors are mailed to nobody ([Logs](#logs-and-error-mails)) |
 | `generic.W010` | A registered model has a file field - or the wiki is installed - and `MEDIA_ROOT` is empty: files would be written relative to the working directory ([Files](forms.md#files)) |
+| `generic.W011` | `django_celery_results` is installed but Celery's result backend is not `django-db`: the Celery results page stays empty ([Tasks](tasks.md#celery-results)) |
+| `generic.W012` | `django_celery_results` is installed but `CELERY_RESULT_EXTENDED` is off: its rows have no task name ([Tasks](tasks.md#celery-results)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.
@@ -605,7 +608,8 @@ The `tasks` extra and a Celery app, imported by the project package's
 `__init__.py` as Celery's guide for Django does - otherwise the web
 server never loads it, and a task started from a page runs in the
 request instead of going to the worker. `beat` for schedules managed
-from the pages. See [Tasks](tasks.md).
+from the pages, `results` for every Celery task's result read there.
+See [Tasks](tasks.md).
 
 ### Mail
 
