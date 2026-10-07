@@ -145,16 +145,35 @@ request while the worker waits.
 
 ## The pages
 
-Three, in the **Tasks** group of the navigation:
+In the **Tasks** group of the navigation, each answering one question:
 
-- **Tasks** (`site:tasks`) — the catalogue: every declared task, what it
-  does, who it tells, how its last runs went, and a button. Needs
-  `generic.run_task`.
-- **Runs** — every run as a table like any other, with a page each
-  holding the result, the steps and the error. Read-only: a run is a
-  record of something that happened. *Run again* starts another.
-- **Schedules**, **Intervals**, **Crontabs**, **Clocked times** — the
-  scheduler's own models, when `django_celery_beat` is installed.
+| Page | Answers | Lists |
+| --- | --- | --- |
+| **Task catalogue** (`site:tasks`) | What can be run, and run it now | every task declared with `@managed_task`: what it does, who it tells, its schedules, its last runs, a **Run now** button; below, the **other Celery tasks** of the app, each with a **Run now** that sends it without arguments. Needs `generic.run_task` |
+| **Runs** | What did a declared task do | one row per run of a declared task - by hand, by a schedule or from code - with its steps, results, report and error. Read-only; *Run again* starts another |
+| **Celery results** | What did every Celery task return | one row per task a worker ran, declared or not, as django-celery-results keeps it (below) |
+| **Schedules**, **Intervals**, **Crontabs**, **Clocked times** | What runs by itself, and when | django-celery-beat's models (below) |
+
+### Plain Celery tasks
+
+A task written with `@shared_task` or `@app.task` needs nothing more
+to be started from the pages: the catalogue finds it in the Celery app
+(its task modules imported first, as for a schedule's list) and lists
+it under *Other Celery tasks*. Its *Run now* sends it to Celery with no
+arguments; a schedule's *Run now* sends it with the schedule's. It
+keeps no run - its history is the Celery results. Declaring it with
+`@managed_task` instead buys the run, the notifications and the
+report, at the cost of the function taking `run` first.
+
+Without a broker (and not eager), sending is refused at once with "no
+Celery broker is configured" rather than waiting on a queue nobody
+serves.
+
+A schedule only says *when*; what happened is in **Runs** for a task
+declared to the framework, and in **Celery results** for any task. A
+declared task that a schedule starts is in both: its run tells the
+story, its result is Celery's one line about it - and the result's
+page has a *Run* button leading to the run.
 
 `SHOW_TASKS` forces the pages on or off; left alone, they appear as soon
 as there is something to show. `TASK_RECENT_RUNS` is how many runs the
@@ -173,8 +192,20 @@ INSTALLED_APPS = [..., "django_celery_beat"]
 Its models then appear as resources in the **Tasks** group — the same
 tables, filters and forms as everything else, without sending anybody to
 `/admin/`. A schedule names the task it runs (`myapp.tasks.nightly_digest`,
-or whatever `name=` you gave it), and *Run now* starts a declared one
-immediately.
+or whatever `name=` you gave it), and *Run now* starts it immediately:
+a declared task as a run, any other Celery task sent to Celery as beat
+would send it - the schedule's arguments, its queue, and its name,
+which the [Celery results](#celery-results) record.
+
+The form offers that name as a list, never as text to type: every task
+declared to the framework, under its label (*Digest
+(myapp.tasks.nightly_digest)*), and every other task of the Celery app,
+under its name - the app's task modules are imported first, so a task
+only the worker would load is there too. Celery's own `celery.*` tasks
+and [operations](operations.md), which run on what their page chose,
+are left out. A name the list does not hold is refused, except the one
+a schedule already has: a schedule whose task has since disappeared
+shows it as *not registered* and still saves.
 
 Beat itself reads them with the database scheduler:
 
@@ -192,6 +223,41 @@ Django install it with `--no-deps`; it works, and that pin is the only
 thing in the way. It is a separate extra (`.[beat]`) for exactly that
 reason, and the framework works without it — a project that has no
 scheduler still gets the catalogue and the runs.
+
+## Celery results
+
+```bash
+pip install django-celery-results     # the framework's "results" extra
+```
+
+```python
+INSTALLED_APPS = [..., "django_celery_results"]
+
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_EXTENDED = True       # the task's name, arguments, schedule
+```
+
+Celery then writes a row for every task a worker runs, and the
+**Celery results** page in the **Tasks** group lists them - the
+history of plain Celery tasks, the ones no `@managed_task` declares,
+which have no run. Each row has the task, its state, the schedule that
+started it, when it started and ended, its arguments, what it returned
+and its traceback. The rows are Celery's: read-only here, and the old
+ones deleted from the list's bulk action (or by Celery's own
+`celery.backend_cleanup`, which beat runs every day at 4 a.m. when
+`result_expires` is set).
+
+A schedule's page has a **Celery results** button: the list, filtered
+on that schedule.
+
+`python manage.py check` says when the page would stay empty:
+`generic.W011` when the result backend is not `django-db` (or
+`django-cache`), `generic.W012` when the results are not extended - a
+row then has no task name to show.
+
+Tasks run eagerly (`CELERY_TASK_ALWAYS_EAGER`) only write a result with
+`CELERY_TASK_STORE_EAGER_RESULT = True`, as the example's development
+settings do.
 
 ### The framework's own task
 

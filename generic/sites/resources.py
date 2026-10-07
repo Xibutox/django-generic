@@ -38,7 +38,7 @@ from generic.sites.serializers import (
     with_row_key,
     without_fields,
 )
-from generic.views.datatable import filter_row_option
+from generic.views.datatable import filter_row_option, saved_view_options
 
 #: The bulk actions of a trash's table.
 TRASH_ACTIONS = ("restore_from_trash", "delete_selected")
@@ -237,6 +237,14 @@ class ModelResource(PagesMixin):
     detail_stats: Sequence[str] = ()
     #: Tables of related records below the sections: RelatedTable(...).
     related_tables: Sequence[Any] = ()
+    #: Records holding records of this model, unfolded as a tree: a tab
+    #: on the summary page and a page of the whole tree. ``Tree(...)``,
+    #: see ``generic.sites.trees``.
+    trees: Sequence[Any] = ()
+    #: The summary page's tabs to put first, in this order, by name: a
+    #: related table's name, ``tree-<name>`` and ``tree-<name>-up``.
+    #: The others follow as declared, related tables before trees.
+    tab_order: Sequence[str] = ()
 
     # -- charts ------------------------------------------------------------
 
@@ -248,6 +256,19 @@ class ModelResource(PagesMixin):
     #: Charts on the summary page: "<related table>.<chart of its
     #: resource>", narrowed to the record.
     detail_charts: Sequence[str] = ()
+
+    # -- the dashboard and the calendar ------------------------------------
+
+    #: Key figures on the dashboard: Kpi(...), a number over the rows the
+    #: list shows under a filter, opening that list (generic.sites.
+    #: dashboard).
+    kpis: Sequence[Any] = ()
+    #: Records drawn as cards on the dashboard: Cards(...), a few rows
+    #: under a filter and an order.
+    cards: Sequence[Any] = ()
+    #: Records on a calendar, by a date field: Calendar(...), a page each
+    #: (generic.sites.calendars).
+    calendars: Sequence[Any] = ()
 
     # -- live updates ------------------------------------------------------
 
@@ -773,16 +794,37 @@ class ModelResource(PagesMixin):
         return getattr(obj, "pk", obj)
 
     def get_page_declarations(self) -> list[Any]:
-        """The pages declared, and the *Trash* when ``trash`` keeps one
-        and nothing else is called that."""
-        declared = super().get_page_declarations()
+        """The pages declared, the page of each tree and calendar, and
+        the *Trash* when ``trash`` keeps one - each unless a page
+        declared takes its name."""
+        declared = list(super().get_page_declarations())
+        names = {getattr(page, "name", None) for page in declared}
 
-        if not self.trash or any(page.name == "trash" for page in declared):
-            return declared
+        if self.trees:
+            from generic.sites.trees import tree_page
 
-        from generic.sites.pages import trash_page
+            for bound in self.get_trees():
+                if bound.definition.page and bound.name not in names:
+                    declared.append(tree_page(bound))
 
-        declared.append(trash_page())
+                flat = bound.get_flat()
+
+                if flat is not None and flat.page_name not in names:
+                    from generic.sites.tree_rows import flat_page
+
+                    declared.append(flat_page(bound))
+
+        if self.calendars:
+            from generic.sites.calendars import calendar_page
+
+            for bound in self.get_calendars():
+                if bound.name not in names:
+                    declared.append(calendar_page(bound))
+
+        if self.trash and "trash" not in names:
+            from generic.sites.pages import trash_page
+
+            declared.append(trash_page())
 
         return declared
 
@@ -970,18 +1012,10 @@ class ModelResource(PagesMixin):
         return actions
 
     def get_table_options(self, request: Any) -> dict[str, Any]:
-        preferences = _preferences_for(request)
-        remember = (
-            preferences.remember_table_state
-            if preferences is not None
-            else True
-        )
-
         options: dict[str, Any] = {
             "pageLength": self.get_page_size(request),
             "lengthMenu": [10, 15, 25, 50, 100],
             "stateKey": self.state_key,
-            "stateSave": remember,
             "columnSelector": True,
             "filters": True,
             "filterRow": filter_row_option(self),
@@ -996,8 +1030,8 @@ class ModelResource(PagesMixin):
                 for entry in self.get_actions(request).values()
             ],
             "bulkActionsUrl": self.get_actions_url(),
-            "presets": self.get_presets(request),
-            "savedViewsUrl": self._reverse("generic:saved-view-list"),
+            # The Views menu: presets, saved views, the state left.
+            **saved_view_options(request, self.get_presets(request)),
             # Where "Send by e-mail on a schedule" leads, for who may.
             "mailingUrl": self.get_mailing_url(request),
             "realtimeTopic": self.topic_name if self.realtime else "",
@@ -1239,6 +1273,98 @@ class ModelResource(PagesMixin):
 
     def get_bound_related_table(self, name: str) -> Any:
         for bound in self.get_related_tables():
+            if bound.name == name:
+                return bound
+
+        return None
+
+    def get_trees(self) -> list[Any]:
+        """The declared trees, resolved once against this resource."""
+        bound = self.__dict__.get("_bound_trees")
+
+        if bound is None:
+            from generic.sites.trees import bind_tree
+
+            bound = [bind_tree(definition, self) for definition in self.trees]
+            names = [tree.name for tree in bound]
+
+            if len(set(names)) != len(names):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.trees declares the same name "
+                    f"twice."
+                )
+
+            self.__dict__["_bound_trees"] = bound
+
+        return list(bound)
+
+    def get_tree(self, name: str) -> Any:
+        for bound in self.get_trees():
+            if bound.name == name:
+                return bound
+
+        return None
+
+    def get_kpis(self) -> list[Any]:
+        """The declared key figures, checked once."""
+        checked = self.__dict__.get("_checked_kpis")
+
+        if checked is None:
+            from generic.sites.dashboard import Kpi, check_declarations
+
+            checked = check_declarations(self, "kpis", Kpi)
+            self.__dict__["_checked_kpis"] = checked
+
+        return list(checked)
+
+    def get_kpi(self, name: str) -> Any:
+        for kpi in self.get_kpis():
+            if kpi.name == name:
+                return kpi
+
+        return None
+
+    def get_cards(self) -> list[Any]:
+        """The declared cards, checked once."""
+        checked = self.__dict__.get("_checked_cards")
+
+        if checked is None:
+            from generic.sites.dashboard import Cards, check_declarations
+
+            checked = check_declarations(self, "cards", Cards)
+            self.__dict__["_checked_cards"] = checked
+
+        return list(checked)
+
+    def get_card_list(self, name: str) -> Any:
+        for cards in self.get_cards():
+            if cards.name == name:
+                return cards
+
+        return None
+
+    def get_calendars(self) -> list[Any]:
+        """The declared calendars, resolved once against this resource."""
+        bound = self.__dict__.get("_bound_calendars")
+
+        if bound is None:
+            from generic.sites.calendars import bind_calendar
+
+            bound = [bind_calendar(item, self) for item in self.calendars]
+            names = [calendar.name for calendar in bound]
+
+            if len(set(names)) != len(names):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.calendars declares the same "
+                    f"name twice."
+                )
+
+            self.__dict__["_bound_calendars"] = bound
+
+        return list(bound)
+
+    def get_calendar(self, name: str) -> Any:
+        for bound in self.get_calendars():
             if bound.name == name:
                 return bound
 

@@ -101,10 +101,6 @@ msgstr "%(missing)s n'est plus déclarée."
 msgid "%(operations)s is started from its own page, not from here."
 msgstr "%(operations)s se lance depuis sa propre page, pas d'ici."
 
-#: generic/tasks/resources.py:222
-msgid "%(count)s started. %(missing)s is not declared to the framework, so it can only run on its schedule."
-msgstr "%(count)s lancée(s). %(missing)s n'est pas déclarée au framework : elle ne peut s'exécuter que par sa planification."
-
 #: generic/watch/notify.py:59
 msgid "%(model)s changed: %(label)s"
 msgstr "%(model)s modifié : %(label)s"
@@ -775,8 +771,12 @@ msgid "Every record"
 msgstr "Tous les enregistrements"
 
 #: generic/tasks/resources.py:66
-msgid "Every run of every task, and what came of it."
-msgstr "Chaque exécution de chaque tâche, et ce qu'elle a produit."
+msgid ""
+"Every run of a task declared to the framework, step by step, and what came "
+"of it."
+msgstr ""
+"Chaque exécution d'une tâche déclarée au framework, étape par étape, et ce "
+"qu'elle a produit."
 
 #: generic/tasks/resources.py:259
 msgid "Every so many seconds, minutes, hours or days."
@@ -1873,6 +1873,10 @@ msgstr "exécution"
 msgid "task runs"
 msgstr "exécutions"
 
+#: generic/tasks/resources.py
+msgid "Task"
+msgstr "Tâche"
+
 #: generic/tasks/resources.py:62
 msgid "Tasks"
 msgstr "Tâches"
@@ -1904,6 +1908,10 @@ msgstr "L'export dépasse la limite de %(limit)s lignes. Affinez les filtres et 
 #: generic/api/renderers.py:68
 msgid "The request could not be processed."
 msgstr "La requête n'a pas pu être traitée."
+
+#: generic/tasks/resources.py
+msgid "The task this schedule runs."
+msgstr "La tâche que cette planification exécute."
 
 #: generic/templates/generic/wiki/page.html:156
 msgid "The wiki has no page yet."
@@ -2790,7 +2798,7 @@ msgstr "Vous ne pouvez pas faire cela à cet enregistrement."
 msgid "%(action)s: %(done)s done, %(skipped)s skipped (not in a state that allows it, or not allowed)."
 msgstr "%(action)s : %(done)s fait(s), %(skipped)s ignoré(s) (pas dans un état qui le permet, ou non autorisé)."
 
-#: generic/api/files.py
+#: generic/api/files.py generic/wiki/api.py
 msgid "The file is too large: at most %(limit)s."
 msgstr "Le fichier est trop volumineux : %(limit)s au plus."
 
@@ -2897,14 +2905,6 @@ msgstr "fichiers du wiki"
 #: generic/wiki/api.py
 msgid "Choose a file to upload."
 msgstr "Choisissez un fichier à envoyer."
-
-#: generic/wiki/api.py
-msgid "The file is empty."
-msgstr "Le fichier est vide."
-
-#: generic/wiki/api.py
-msgid "The file is too large: at most %(limit)s."
-msgstr "Le fichier est trop volumineux : %(limit)s au plus."
 
 #: generic/templates/generic/wiki/page.html
 msgid "Attachments"
@@ -3196,3 +3196,179 @@ msgid ""
 msgstr ""
 "Supprime définitivement ce qui est dans une corbeille depuis plus de "
 "GENERIC['TRASH_DAYS'] jours. À lancer une fois par jour."
+
+#: generic/tasks/resources.py
+msgid "%(name)s (not registered)"
+msgstr "%(name)s (non enregistrée)"
+
+msgid "Where used"
+msgstr "Cas d’emploi"
+
+msgid "This direction is not offered."
+msgstr "Ce sens n’est pas proposé."
+
+msgid "A record cannot contain itself."
+msgstr "Un enregistrement ne peut pas se contenir lui-même."
+
+msgid "%(child)s already contains %(parent)s: this would make it part of itself."
+msgstr "%(child)s contient déjà %(parent)s : il deviendrait une partie de lui-même."
+
+msgid "A whole number is expected."
+msgstr "Un nombre entier est attendu."
+
+msgid "Tree"
+msgstr "Arborescence"
+
+msgid "There is no such tree."
+msgstr "Cette arborescence n’existe pas."
+
+msgid "Open as a page"
+msgstr "Ouvrir en pleine page"
+
+msgid "Unfolded from"
+msgstr "Déplié depuis"
+
+msgid "The whole tree"
+msgstr "Toute l’arborescence"
+
+msgid "Every level"
+msgstr "Tous les niveaux"
+
+msgid "Places"
+msgstr "Emplacements"
+
+msgid "First level"
+msgstr "Premier niveau"
+
+msgid "Held by"
+msgstr "Contenu dans"
+
+msgid "Path"
+msgstr "Chemin"
+
+msgid "Total quantity"
+msgstr "Quantité totale"
+
+msgid "Name the record the table starts from."
+msgstr "Indiquez l’enregistrement dont part le tableau."
+
+msgid "Rows"
+msgstr "Lignes"
+
+msgid "One row per place"
+msgstr "Une ligne par emplacement"
+
+msgid "One row per record"
+msgstr "Une ligne par enregistrement"
+
+msgid "As a tree"
+msgstr "En arbre"
+
+msgid ""
+"Each record once, with how many places it takes and its quantities added "
+"up: what one of this record needs."
+msgstr ""
+"Chaque enregistrement une fois, avec son nombre d’emplacements et ses "
+"quantités additionnées : ce qu’il faut pour un de cet enregistrement."
+
+msgid "Each record once, with how many places it takes."
+msgstr "Chaque enregistrement une fois, avec son nombre d’emplacements."
+
+msgid ""
+"Every place a record takes below this one, with its level, what holds it "
+"and its quantity for one of this record."
+msgstr ""
+"Chaque emplacement d’un enregistrement sous celui-ci, avec son niveau, ce "
+"qui le contient et sa quantité pour un de cet enregistrement."
+
+msgid ""
+"Every place a record takes below this one, with its level and what holds "
+"it."
+msgstr ""
+"Chaque emplacement d’un enregistrement sous celui-ci, avec son niveau et ce "
+"qui le contient."
+
+msgid "The first %(count)s rows at most."
+msgstr "Au plus les %(count)s premières lignes."
+
+msgid "Task catalogue"
+msgstr "Catalogue des tâches"
+
+msgid "Celery result"
+msgstr "Résultat Celery"
+
+msgid "Celery results"
+msgstr "Résultats Celery"
+
+msgid ""
+"The tasks declared to the framework: run one now, see its schedules and its "
+"last runs."
+msgstr ""
+"Les tâches déclarées au framework : en lancer une maintenant, voir ses "
+"planifications et ses dernières exécutions."
+
+msgid ""
+"Every Celery task a worker ran, scheduled or not, and what it returned."
+msgstr ""
+"Chaque tâche Celery exécutée par un worker, planifiée ou non, et ce qu'elle "
+"a renvoyé."
+
+msgid "%(count)s sent to Celery: what came of it is in the Celery results."
+msgstr "%(count)s envoyée(s) à Celery : le résultat est dans les résultats Celery."
+
+msgid "Not sent: %(errors)s."
+msgstr "Non envoyée(s) : %(errors)s."
+
+msgid "no Celery broker is configured"
+msgstr "aucun broker Celery n'est configuré"
+
+msgid "%(task)s could not be sent: %(error)s"
+msgstr "%(task)s n'a pas pu être envoyée : %(error)s"
+
+msgid "%(task)s sent to Celery (%(id)s)."
+msgstr "%(task)s envoyée à Celery (%(id)s)."
+
+msgid "Other Celery tasks"
+msgstr "Autres tâches Celery"
+
+msgid "See the results"
+msgstr "Voir les résultats"
+
+msgid "Found in the Celery application, not declared to the framework: Run now sends one to Celery without arguments - a schedule's Run now sends its own. They keep no run: what came of them is in the Celery results."
+msgstr "Trouvées dans l'application Celery, non déclarées au framework : Lancer maintenant en envoie une à Celery sans arguments - le Lancer maintenant d'une planification envoie les siens. Elles ne gardent pas d'exécution : leur résultat est dans les résultats Celery."
+
+msgid "Calendar"
+msgstr "Calendrier"
+
+msgid "A date is expected (YYYY-MM-DD)."
+msgstr "Une date est attendue (AAAA-MM-JJ)."
+
+msgid "The end must come after the start."
+msgstr "La fin doit venir après le début."
+
+msgid "At most %(days)s days at a time."
+msgstr "Au plus %(days)s jours à la fois."
+
+msgid "Records of this calendar are not moved here."
+msgstr "Les enregistrements de ce calendrier ne se déplacent pas ici."
+
+msgid "Send the day to move it to."
+msgstr "Envoyez le jour où le déplacer."
+
+msgid "This record has no date to move."
+msgstr "Cet enregistrement n'a pas de date à déplacer."
+
+msgid "There is no such figure."
+msgstr "Cet indicateur n'existe pas."
+
+msgid "There are no such cards."
+msgstr "Ces cartes n'existent pas."
+
+msgid "There is no such calendar."
+msgstr "Ce calendrier n'existe pas."
+
+msgid "Key figures"
+msgstr "Indicateurs clés"
+
+msgid "See all"
+msgstr "Tout voir"

@@ -158,6 +158,11 @@ model nobody declared pages of its own. See
 | `detail_fieldsets` | The summary page's sections; the form's fieldsets by default |
 | `detail_stats` | Figures shown as tiles on the summary page |
 | `related_tables` | `RelatedTable` declarations: the summary page's tabs |
+| `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time, searched at any depth, laid flat as a table ([Trees](trees.md)) |
+| `tab_order` | The summary page's tabs to show first, by name; the others follow as declared ([below](#the-summary-page)) |
+| `kpis` | `Kpi` declarations: key figures on the dashboard, a count or an aggregate over the rows a filter selects, opening that list ([Key figures and cards](dashboard.md)) |
+| `cards` | `Cards` declarations: a few records drawn as cards on the dashboard ([Key figures and cards](dashboard.md)) |
+| `calendars` | `Calendar` declarations: records on their days, a page each, by month, week or list ([Calendars](calendars.md)) |
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | The form, admin style |
 | `form_overrides` | Presentation per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText` |
 | `form_serializer` | A hand-written `FormModelSerializer`, replacing the generated one |
@@ -208,7 +213,8 @@ table needs:
 - a **foreign key** is shown by the related record's name, links to
   that record's page when the user may open it, and is filtered by
   picking among the related records present — searched by their label,
-  never shipped whole to the browser,
+  never shipped whole to the browser — or by words in their name
+  (*contains*), without picking any,
 - a **many-to-many** is shown as a comma-separated list and filtered
   without listing a row twice, with *has all of* besides *any* and
   *none*,
@@ -339,7 +345,7 @@ The editor fits the column:
 
 | Column | Offers |
 | --- | --- |
-| Choice, relation, tags | The values present under the other filters, searchable, with a count beside each and tags in their colours; *is any of*, *is none of*, *has all of* (many-valued), *is empty* |
+| Choice, relation, tags | The values present under the other filters, searchable, with a count beside each and tags in their colours; *is any of*, *is none of*, *has all of* (many-valued), *is empty*. Once the values are searched, *Select the N values found* ticks every one listed at once; on a relation, *Contains "…"* turns the search itself into the filter — *contains* / *does not contain*, matching every record whose name holds the words, listed or not |
 | Text | *contains*, *does not contain*, *is*, *is not*, *starts with*, *ends with* — several values with commas, any of which may match — with the column's values suggested when it offers them |
 | Number | *=*, *≠*, *>*, *≥*, *<*, *≤*, *is between*, with the column's range as a hint |
 | Date | *is on*, *before*, *after*, *on or before*, *on or after*, *between*, and relative periods: today, this week, last month, this quarter, this year, in the last or next N days, more than N days ago |
@@ -402,7 +408,8 @@ list suggests the columns, then their values with their counts.
 | --- | --- |
 | `status:open,pending` | Status is any of Open, Pending (labels or values) |
 | `-tags:billing` | Tags is none of billing |
-| `team:front` | Team is the one whose name matches *front* |
+| `team:front` | Team is the one whose name matches *front*; when several or none do, every team whose name contains *front* |
+| `customer:~acme`, `-customer:~acme` | Customer's name contains (or does not contain) *acme* — a relation, without picking |
 | `hours:>=2`, `hours:2..8` | at least 2; between 2 and 8 |
 | `opened:30d`, `due:+7d` | in the last 30 days; in the next 7 |
 | `opened:this-month`, `opened:last-year` | a relative period |
@@ -467,6 +474,10 @@ A user saves the current layout under a name, marks one as their
 default, and gets it back on any device: views are stored on the
 server (`SavedView`), not in the browser. Whether a table also comes
 back as it was left is a per-user preference.
+
+The same menu is on a `DataResource`'s table and on a hand-built
+`DataTableView` page, with the same `presets` attribute
+([Interactive tables](ui.md#views)).
 
 ### Exports
 
@@ -610,6 +621,15 @@ so they stay within the record.
 The related model needs a registered resource: register it with
 `show_in_navigation = False` when it has no page of its own, like the
 example's ticket comments.
+
+The tabs come in the order declared: the related tables, then each
+tree's tab and its *Where used*. `tab_order` puts some first, by name -
+a related table's name, `tree-<name>`, `tree-<name>-up`:
+
+```python
+# The bill of materials to read, then its first level to edit.
+tab_order = ("tree-bom", "bom_lines")
+```
 
 Where records open is `object_page`: `"detail"`, the default, or
 `"change"` for the admin's behaviour. Table rows open there, and so do
@@ -798,6 +818,10 @@ dashboard**: a signpost must not be able to take the page down.
 The section is the `dashboard_shortcuts` block of
 `generic/site/index.html`, above `dashboard_intro`; a project that
 wants it lower moves the block.
+
+Below the hub, the resources' own key figures and record cards - the
+blocks `dashboard_kpis` and `dashboard_cards` - declared with `kpis`
+and `cards` ([Key figures and cards](dashboard.md)).
 
 A chart any resource declares can be drawn there, or on any page
 extending `generic/base.html` — nothing is drawn for a user who may not

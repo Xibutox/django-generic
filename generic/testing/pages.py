@@ -15,7 +15,8 @@ Each pass is cheap, and together they are the whole surface:
 * every resource's generated endpoints answer too - rows, the form
   schema, a summary and its history, each column's values, both
   exports, every chart, and where declared the import's schema and
-  template and a record's transitions - because those are generated
+  template, a record's transitions and each tree's first levels (both
+  ways), a search of it and its flat table - because those are generated
   per resource exactly as the pages are.
 
 A page whose address takes an argument nothing can fill fails
@@ -51,6 +52,8 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     # a permission is declared by a model: nobody adds one by hand.
     "site:generic_taskrun_add": (403,),
     "site:generic_historyentry_add": (403,),
+    # Celery writes its results; they are read here, not made.
+    "site:django_celery_results_taskresult_add": (403,),
     # An access is recorded when it happens, and kept as it was.
     "site:generic_accessentry_add": (403,),
     "site:generic_accessentry_delete": (403,),
@@ -548,7 +551,8 @@ class PageSweep:
         opener: Any,
         pooled: dict[str, Any],
     ) -> None:
-        """What a resource declares on top: an import, transitions."""
+        """What a resource declares on top: an import, transitions,
+        trees."""
         from generic.sites.imports import declaration_of
 
         entry = self.resource_named(resource)
@@ -570,6 +574,37 @@ class PageSweep:
             response = opener.get(f"{prefix}{record.pk}/transitions/")
 
             assert response.status_code == 200, f"{resource} transitions"
+
+        for tree in entry.get_trees():
+            url = f"{prefix}trees/{tree.name}/"
+            asked = [{}]
+
+            if record is not None:
+                asked.append({"node": record.pk})
+
+                if tree.definition.where_used:
+                    asked.append({"node": record.pk, "direction": "up"})
+
+            if record is not None:
+                asked.append({"node": record.pk, "find": "a"})
+
+            for params in asked:
+                response = opener.get(url, params)
+
+                assert response.status_code == 200, f"{resource} {url}"
+                assert "items" in response.json()
+
+            flat = tree.get_flat()
+
+            if flat is not None and record is not None:
+                url = f"{prefix}trees/{tree.name}/flat/"
+
+                for grouped in ("", "1"):
+                    response = opener.get(
+                        url, {"draw": 1, "root": record.pk, "grouped": grouped}
+                    )
+
+                    assert response.status_code == 200, f"{resource} {url}"
 
     def test_the_api_description(self, opener: Any) -> None:
         """The OpenAPI description, where the project mounts it."""
@@ -664,6 +699,16 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
                     name="Page sweep", task="page.sweep", crontab=nightly
                 ),
             }
+        )
+
+    if apps.is_installed("django_celery_results"):
+        result = apps.get_model("django_celery_results", "TaskResult")
+        records["django_celery_results.taskresult"] = result.objects.create(
+            task_id="page-sweep",
+            task_name="page.sweep",
+            status="SUCCESS",
+            result='"Nothing much"',
+            date_done=timezone.now(),
         )
 
     # Written by the saves above, since saving anything records a

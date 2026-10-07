@@ -335,3 +335,50 @@ def workshop(support_desk) -> dict:
         "headset": headset,
         "visit": visit,
     }
+
+
+@pytest.fixture
+def bom(db) -> dict:
+    """A bill of materials, three levels deep, sharing a screw, in the
+    example's article families."""
+    from example.models import Article, ArticleFamily, BomLine
+
+    bikes = ArticleFamily.objects.create(name="Bicycles")
+    wheels = ArticleFamily.objects.create(name="Wheels", parent=bikes)
+    hubs = ArticleFamily.objects.create(name="Hubs", parent=wheels)
+    articles = {
+        reference: Article.objects.create(
+            reference=reference, name=name, kind=kind, family=family
+        )
+        for reference, name, kind, family in (
+            ("BK-1", "City bicycle", "product", bikes),
+            ("WH-1", "Wheel", "assembly", wheels),
+            ("HB-1", "Hub", "assembly", hubs),
+            ("SP-1", "Spoke", "part", wheels),
+            ("SC-1", "Screw", "part", None),
+            ("LO-1", "Loose part", "part", None),
+        )
+    }
+    lines = {}
+
+    for parent, child, position, quantity in (
+        ("BK-1", "WH-1", 10, "2"),
+        ("BK-1", "SC-1", 20, "12"),
+        ("WH-1", "HB-1", 10, "1"),
+        ("WH-1", "SP-1", 20, "32"),
+        ("HB-1", "SC-1", 10, "4"),
+    ):
+        lines[(parent, child)] = BomLine.objects.create(
+            parent=articles[parent],
+            child=articles[child],
+            position=position,
+            quantity=Decimal(quantity),
+        )
+
+    return {
+        **articles,
+        "lines": lines,
+        "bikes": bikes,
+        "wheels": wheels,
+        "hubs": hubs,
+    }

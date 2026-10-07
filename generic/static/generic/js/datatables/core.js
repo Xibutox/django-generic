@@ -157,7 +157,9 @@
       multiselect: [
         op("any_of", t("is any of"), "choices"),
         op("none_of", t("is none of"), "choices"),
-        op("all_of", t("has all of"), "choices")
+        op("all_of", t("has all of"), "choices"),
+        op("contains", t("contains"), "many"),
+        op("not_contains", t("does not contain"), "many")
       ].concat(emptyOperators())
     });
 
@@ -168,9 +170,19 @@
   function operatorsFor(column) {
     var list = operators()[column.filterType] || operators().text;
 
-    if (column.filterType === FILTER_TYPES.MULTISELECT && !column.filterMany) {
+    if (column.filterType === FILTER_TYPES.MULTISELECT) {
       list = list.filter(function (entry) {
-        return entry.value !== "all_of";
+        if (entry.value === "all_of") {
+          return Boolean(column.filterMany);
+        }
+
+        // Words in the values' text: a relation, whose records the
+        // server searches by name.
+        if (entry.value === "contains" || entry.value === "not_contains") {
+          return Boolean(column.textSearch);
+        }
+
+        return true;
       });
     }
 

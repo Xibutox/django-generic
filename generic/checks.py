@@ -21,6 +21,8 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W009  (--deploy) ADMINS is empty: errors are mailed to nobody
     generic.E008  the OpenAPI pages without drf-spectacular
     generic.W010  a model with a file field, and MEDIA_ROOT is empty
+    generic.W011  django_celery_results installed, results kept elsewhere
+    generic.W012  django_celery_results installed, results not extended
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -305,8 +307,63 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
     messages.extend(check_search_rank())
     messages.extend(check_openapi())
     messages.extend(check_media_root())
+    messages.extend(check_celery_results())
 
     return messages
+
+
+def celery_setting(name: str) -> Any:
+    """A Celery setting, as the project's Celery app would read it.
+
+    The ``CELERY_`` Django setting when there is one (the namespace
+    Celery's guide for Django uses), else the loaded app's own value.
+    """
+    value = getattr(settings, f"CELERY_{name.upper()}", None)
+
+    if value is not None:
+        return value
+
+    try:
+        from celery import current_app
+    except ImportError:  # pragma: no cover - the results need Celery
+        return None
+
+    return current_app.conf.get(name)
+
+
+def check_celery_results() -> list:
+    """The Celery results page shows what Celery writes into it."""
+    from django.apps import apps
+
+    if not apps.is_installed("django_celery_results"):
+        return []
+
+    backend = str(celery_setting("result_backend") or "")
+
+    if backend not in ("django-db", "django-cache"):
+        return [
+            checks.Warning(
+                "django_celery_results is installed, but Celery keeps its "
+                f"results in {backend or 'no backend'!r}: the Celery "
+                "results page stays empty.",
+                hint="Set CELERY_RESULT_BACKEND = 'django-db' "
+                "(docs/tasks.md).",
+                id="generic.W011",
+            )
+        ]
+
+    if not celery_setting("result_extended"):
+        return [
+            checks.Warning(
+                "django_celery_results is installed, but Celery's results "
+                "are not extended: each row has a status and a result, "
+                "but no task name, arguments or schedule.",
+                hint="Set CELERY_RESULT_EXTENDED = True (docs/tasks.md).",
+                id="generic.W012",
+            )
+        ]
+
+    return []
 
 
 def check_openapi() -> list:

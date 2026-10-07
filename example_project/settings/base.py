@@ -244,6 +244,21 @@ try:
 except ImportError:
     pass
 
+# --- optional: Celery results, read from the Tasks group ---
+# What every Celery task returned, kept in this database and shown as
+# "Celery results"; extended, so a row says which task and which
+# schedule it was.
+try:
+    import django_celery_results  # noqa: F401
+
+    INSTALLED_APPS.insert(
+        INSTALLED_APPS.index("example"), "django_celery_results"
+    )
+    CELERY_RESULT_BACKEND = "django-db"
+    CELERY_RESULT_EXTENDED = True
+except ImportError:
+    pass
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -385,6 +400,8 @@ SPECTACULAR_SETTINGS = {
     # One name per choice set a column carries in several tables.
     "ENUM_NAME_OVERRIDES": {
         "TicketStatusEnum": "example.models.Ticket.Status",
+        "ArticleKindEnum": "example.models.Article.Kind",
+        "EquipmentKindEnum": "example.models.Equipment.Kind",
     },
 }
 

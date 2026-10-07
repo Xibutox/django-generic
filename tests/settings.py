@@ -56,6 +56,16 @@ try:  # pragma: no cover - a property of the environment, not the code
 except ImportError:
     pass
 
+# Celery's results too: their page where installed, skipped elsewhere.
+try:  # pragma: no cover - a property of the environment, not the code
+    import django_celery_results  # noqa: F401
+
+    INSTALLED_APPS.append("django_celery_results")
+    CELERY_RESULT_BACKEND = "django-db"
+    CELERY_RESULT_EXTENDED = True
+except ImportError:
+    pass
+
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",

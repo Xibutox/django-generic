@@ -131,6 +131,20 @@ class TestCompiledCatalogs:
         with pytest.raises(compiler.CatalogError, match="msgwhat"):
             compiler.parse(broken)
 
+    def test_the_compiler_refuses_a_duplicate_message(self, tmp_path):
+        catalog = tmp_path / "duplicate.po"
+        catalog.write_text(
+            'msgid ""\nmsgstr ""\n\n'
+            'msgid "Open"\nmsgstr "Ouvrir"\n\n'
+            'msgid "Open"\nmsgstr "Ouvrir"\n',
+            encoding="utf-8",
+        )
+        compiler = self.compiler()
+
+        # msgfmt (django-admin compilemessages) fails on it too.
+        with pytest.raises(compiler.CatalogError, match="line 4"):
+            compiler.parse(catalog)
+
 
 class TestOfferedLanguages:
     def test_the_project_narrows_what_it_offers(self):

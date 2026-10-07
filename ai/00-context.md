@@ -97,7 +97,8 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
-│   │                       RelatedTable, Grid, Chart, TagStyle, TabularInline,
+│   │                       RelatedTable, Grid, Tree, Calendar, Kpi, Cards, Chart,
+│   │                       TagStyle, TabularInline,
 │   │                       StackedInline, action, display, chart_payload
 │   ├── site.py             GenericSite: registry, URLs, navigation, search, chrome, add_link,
 │   │                       auto, complete_auto
@@ -110,10 +111,18 @@ generic/
 │   ├── serializers.py      list_display/fields -> generated table and form serializers
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
-│   │                       _grid, cells, rows)
+│   │                       _grid, cells, rows, trees/<name>/, kpis/<name>/,
+│   │                       cards/<name>/, calendars/<name>/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
+│   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
+│   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
+│   │                       (self FK or link model), a level at a time; no cycles
+│   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
+│   │                       days, a page each, moved by dragging (§5.20)
+│   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
+│   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
@@ -148,7 +157,7 @@ generic/
 ├── tasks/                  declared tasks: registry, runner (announce, run,
 │                           collect, report; in the request, a worker or a
 │                           thread), TaskRun, the catalogue page and the
-│                           django-celery-beat screens; operations.py:
+│                           django-celery-beat and -results screens; operations.py:
 │                           @operation, work a page starts (§13g)
 ├── reports.py              Report: a tree of levelled lines and sections that
 │                           fold, isolated sections (savepoint) (§13g)
@@ -214,6 +223,11 @@ generic/
     ├── js/charts.js        Alpine genericChart; Generic.charts (ECharts, lazy)
     ├── js/summary.js       Alpine recordSummary (summary page)
     ├── js/history.js       Alpine recordHistory (the History tab)
+    ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
+    ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
+    │                       element (tree, cards, calendar); loaded by base.html
+    ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
+    ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/wiki.js          Alpine wikiPage
     ├── js/datatables/      core (operators), columns (renderers), query (filter
@@ -405,7 +419,8 @@ mounted, `E005` wiki without nh3, `W001`-`W005`, `W006` Django ≥ 6.1
 without `MAILERS`, `W007` `search_rank` without `generic.search`,
 `E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
 drf-spectacular, `W010` a model with a file field - or the wiki - and
-no `MEDIA_ROOT`, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
+result backend / results not extended, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -592,7 +607,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
-| `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength` |
+| `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
 | `editable_fields` | `()` | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
 | `list_editable` | `False` | whether the resource's own list page offers those cells |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
@@ -614,6 +629,11 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `detail_fieldsets` | form fieldsets | summary page sections (may include read-only methods) |
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
+| `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
+| `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
+| `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
+| `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
+| `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -700,7 +720,8 @@ headers (there by default; the button beside *Filter* hides it, and that
 choice is remembered per table; `filter_row` on the resource),
 `name:value` words in the
 search box (`status:open,pending -tags:billing hours:>=2 opened:30d
-due:2026-01-01..2026-03-31 assignee:empty`), or a right click on a cell.
+due:2026-01-01..2026-03-31 assignee:empty customer:~acme`), or a right
+click on a cell.
 The search row has one field per column: text/number/date fields take
 the same syntax as after `name:` (`=exact`, `^start`, `>10`, `2..8`,
 `30d`, `this-month`, `empty`, `!` to exclude), a boolean is a list, a
@@ -711,7 +732,11 @@ words. Operators per type include *any of / none of / has all of*,
 *contains / is / starts with*, comparisons and *between*, relative dates
 (this month, last 30 days, more than N days ago), *is empty*; conditions
 combine with *all*/*any* and groups. The editor lists a column's values
-with counts from `facets/`. The editor applies as it changes (ticks and
+with counts from `facets/`; once searched, *Select the N values found*
+ticks them all, and on a relation *Contains "..."* filters by the words
+instead (`contains`/`not_contains` on a multiselect column whose
+`search_field` differs from its filter path: `FilterSpec.text_field`,
+`textSearch` in the column config). The editor applies as it changes (ticks and
 operators at once, typed values as typing pauses); *Done* closes,
 *Cancel* restores. The URL carries the filters on list pages.
 To make a column's values listable, keep it filterable (default for
@@ -938,7 +963,9 @@ def reports(request, term):
 ```
 
 Dashboard template blocks: `dashboard_pinned` (wiki pins),
-`dashboard_shortcuts` (the hub), `dashboard_intro`, `dashboard_extra`.
+`dashboard_shortcuts` (the hub), `dashboard_kpis` and `dashboard_cards`
+(the resources' `kpis` and `cards`, §5.19), `dashboard_intro`,
+`dashboard_extra`.
 
 ### 5.11 Pages worked out from the model (`auto`)
 
@@ -1017,7 +1044,7 @@ is empty. Filtering, search, ordering, facets and exports run in Python
 (`generic.api.rows`: `RowsDataTableViewSet`, `RowList`, `matches(q,
 row)` reading the same `Q` the filter engines build - same whitelist,
 400 on undeclared names). Other options: `list_display_links`,
-`list_per_page`, `show_export`, `filter_row`, `table_options`,
+`list_per_page`, `show_export`, `filter_row`, `presets`, `table_options`,
 `label_field`, `show_in_navigation`, `description`. Override `get_row`
 to fetch one row directly.
 
@@ -1279,6 +1306,131 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
 
 ---
 
+### 5.18 Trees (`Tree`)
+
+Records holding records of the same model, to any depth - a bill of
+materials, nested categories. Declared on the resource of the records
+(`docs/trees.md`):
+
+```python
+trees = (
+    # A model pointing at its parent.
+    Tree("families", parent="parent", columns=("article_count",)),
+    # A link model (a part in many assemblies, each with a quantity).
+    Tree("bom", through=BomLine, parent="parent", child="child",
+         title=_("Bill of materials"),
+         columns=("kind", "unit_cost"),          # the record's: summary-typed
+         link_columns=("position", "quantity"),  # the link's
+         ordering=("position", "child__reference"),
+         where_used=True,                        # a second tab, upwards
+         page_size=50, roots=None, tab=True, page=True, allow_add=True,
+         flat=True, flat_title=_("Exploded BOM"),  # every level as a table
+         quantity="quantity"),                   # multiplied down each path
+)
+```
+
+Each tree is a summary tab (`tree-<name>`, `tree-<name>-up`) with *Add*
+(a link with the parent filled in) and *Open as a page*, and a page
+`<model>/<name>/` (button on the list; `?root=<pk>` from one record).
+Levels are fetched as they are unfolded, a page at a time (*Show
+more*); a level larger than a page gets a search box at its top. Never
+render a whole tree. Records come from the resource's `get_queryset`,
+links from the link resource's (register the link model, usually
+`show_in_navigation = False`; without its view permission a reader sees
+no link values). Every generated form serializer of the link model (or
+of the model, self-FK) refuses a cycle (`check_links`): forms, cells,
+imports, API. A record met again below itself is drawn, not unfolded.
+The tree page and tabs carry the resource's own table above the tree,
+rows hidden (`get_filter_table_config`, `config.filterTable`): its
+search box and filter editor (`filters`, `search` on the tree
+endpoint, applied by the viewset's own backends, `tree` being a table
+action) select records at every level; without one, *Find at any
+depth* (`?find=`). Either walks every
+level below the top a level per query (≤ 50,000 records, ≤ 1,000 rows
+answered, `truncated`) and answers the branches leading to matches,
+nested (`items`, `match`); partial levels offer *Show them all*.
+`flat=True` (`generic/sites/tree_rows.py`): a page `<pk>/<name>-flat/`
+per record and `api/<app>/<model>/trees/<name>/flat/?root=<pk>`
+(`grouped=1`: one row per record, places, quantities added), a
+`RowsDataTableViewSet` registered by the site after the resource's:
+level, record, held by, path, `link_<name>`, columns, total quantity
+(link values need the link resource's view permission); ≤ 20,000 rows.
+JS: `Generic.tree.start(element)` (`js/tree.js`, `css/tree.css`),
+config from `bound.get_config(request, obj, direction, root)`. Example:
+`example.Article` / `BomLine` / `ArticleFamily`, `seed_example` (a
+1,200-part terminal rail). `PageSweep` opens each tree's levels, a
+search and the flat table.
+
+### 5.19 Key figures and cards on the dashboard (`Kpi`, `Cards`)
+
+Numbers and records the dashboard opens with, declared on the resource
+whose rows they are (`docs/dashboard.md`):
+
+```python
+from django.db.models import Avg, Sum
+from generic.sites import Cards, Kpi
+
+OPEN = {"column": "status", "operator": "any_of", "value": ["open", "pending"]}
+
+kpis = (
+    Kpi("open", title=_("Open tickets"), icon="inbox",
+        filters={"match": "all", "conditions": [OPEN]},   # a preset's tree
+        warning=150, danger=200),                        # higher is worse
+    Kpi("satisfaction", value=Avg("satisfaction"),       # or callable(request, qs)
+        unit="/ 5", decimals=1, warning=3.5, danger=3,   # danger < warning: lower is worse
+        filters={...}, permission=None, order=0, description=_("...")),
+)
+cards = (
+    Cards("pressing", title=_("Pressing tickets"), filters={...},
+          ordering=("due_on", "-opened_at"),             # nulls last, any database
+          subtitle="customer", fields=("priority", "due_on"),
+          image=None, limit=6),                          # image: a file field; limit 1-24
+)
+```
+
+`filters` is a filter tree over the **list's columns** (or the flat
+form), read by the table serializer's whitelist (`FilterTreeBuilder`):
+relative dates stay true, a column the list lacks raises
+`ImproperlyConfigured` at first use. The tile and *See all* open the
+list with the same tree (`?filters=`), so they agree. A figure is
+aggregated over `get_queryset` re-selected by key from the narrowed
+`get_list_queryset` (team scoping applies); none over no row (`-`).
+Cards: values typed by `describe_entry` (summary page), the label links
+to the record, `total` counts all matches. Shown on the dashboard to
+readers with the resource's view permission (+ `permission`), ordered
+by `order`, resource `order`, name; filled by `js/dashboard.js` from
+`kpis/<name>/` and `cards/<name>/`, refreshed on `resource.changed`.
+Declarations checked at registration (`check_declarations`). Example:
+`TicketResource.kpis`/`.cards`, `TimeEntryResource.kpis` (a `Sum` over
+`this_month`).
+
+### 5.20 Calendars (`Calendar`)
+
+```python
+calendars = (
+    Calendar("due", date="due_on",            # DateField or DateTimeField
+             end=None,                        # inclusive end: drawn on each day
+             title=_("Due dates"), icon="event", description=_("..."),
+             label=None,                      # event text; default the record's label
+             color="priority",                # a tag field: first tag's colour
+             fields=("customer", "status"),   # summary-typed values
+             editable=True,                   # drag = save_editable; date must be in editable_fields
+             views=("month", "week", "list"), navigation=True, permission=None),
+)
+```
+
+A page `<model>/<name>/` (button on the list; `navigation` adds a
+sidebar entry) with the resource's table above it, rows hidden (as a
+tree's page), whose `filters`/`search` the calendar follows (`calendar`
+is a table action). Month (6 weeks), week, list of days; the week
+starts on `FIRST_DAY_OF_WEEK`; `?view=&date=` in the address. Records
+of a range through `get_list_queryset`, a date-and-time placed on its
+local day with its time. Moving goes through `save_editable` (change
+permission, `can_edit_column`, form validation); a datetime keeps its
+time, `end` shifts by as many days. *Add* on a day opens the add form
+with the date filled. `docs/calendars.md`; example: *Support › Due
+dates*.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1308,6 +1460,10 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
+| `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
+| `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
+| `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
+| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,
@@ -1319,7 +1475,8 @@ on_or_after`, `between` `{"from","to"}`, `today yesterday this_week
 last_week this_month last_month this_quarter last_quarter this_year
 last_year` (no value), `last_days next_days older_than_days` (N);
 boolean `is_true is_false`; multiselect `any_of none_of all_of` (list of
-keys); every type `empty not_empty`. The older flat `advanced_filters`
+keys), and on a relation column (`text_field`) the text operators on the
+related record's name; every type `empty not_empty`. The older flat `advanced_filters`
 (`{"<column>": {"operator": "include"|"exact"|..., "value": ...}}`) is
 still accepted. Build filter URLs for links with `filters=` JSON.
 
@@ -1650,6 +1807,16 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   edge and the pin would have nothing to bring back. Below 1024px none
   of this applies: the navigation is already an overlay. `ui.js` owns
   the behaviour.
+- **The navigation's groups** are `<details>` (`chrome/nav_group.html`),
+  and this browser remembers which ones are closed: a map of the group's
+  label to a boolean under `generic.nav-groups` in `localStorage`, no
+  endpoint and no preference on the account. The inline script at the
+  end of `sidebar.html` applies it right after the navigation is parsed,
+  so a closed group never flashes open; `ui.js` writes it, on a click on
+  the summary only — the navigation filter opens groups to show what it
+  found, which is nobody's choice, and an emptied box restores the
+  saved state. The group holding `aria-current="page"` stays open
+  whatever was saved.
 
 ## 13a. Watching a record
 
@@ -1712,7 +1879,24 @@ def nightly_digest(run):
   or the web server runs every task in the request.
 - `django_celery_beat` installed puts its `PeriodicTask`, interval,
   crontab and clocked models in the **Tasks** group as resources, with
-  *Run now*. `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
+  *Run now*. A schedule's task is a list (`TaskChoiceField`, read again
+  per form by `schedulable_tasks()`): declared tasks by label, other
+  Celery tasks by name, no operations, no `celery.*`; any other name
+  is refused but the row's current one, kept as *not registered*.
+- `django_celery_results` installed (extra `results`;
+  `CELERY_RESULT_BACKEND = "django-db"`, `CELERY_RESULT_EXTENDED =
+  True`) puts its `TaskResult` in the group as *Celery results*,
+  read-only: every task a worker ran, declared or not (`Runs` hold
+  declared tasks only). A schedule's page links to its results
+  (`periodic_task_name`), a result to its run (`TaskRun.celery_id`).
+- Pages, one question each: *Task catalogue* (link, `site:tasks`:
+  declared tasks, *Run now*; then *Other Celery tasks*: the app's
+  undeclared tasks, `undeclared_tasks()`, *Run now* sends one with no
+  arguments via `send_to_celery()`), *Runs*, *Celery results*,
+  *Schedules* (*Run now*: declared -> `launch`, else `send_to_celery`
+  with the row's args, kwargs, queue and `periodic_task_name`; no
+  broker and not eager -> refused, not hung).
+  `SHOW_TASKS`, `TASK_RECENT_RUNS`. See `docs/tasks.md`.
 
 ## 13g. Operations and reports (the work behind a button)
 

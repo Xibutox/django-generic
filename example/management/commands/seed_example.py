@@ -32,6 +32,9 @@ from django.utils import timezone
 
 from example.models import (
     Agent,
+    Article,
+    ArticleFamily,
+    BomLine,
     Customer,
     Equipment,
     Maintenance,
@@ -174,6 +177,10 @@ VIEWER_PERMISSIONS = (
     "view_supplier",
     "view_equipment",
     "view_maintenance",
+    # The articles and their bills, read: the trees, without the Add.
+    "view_article",
+    "view_articlefamily",
+    "view_bomline",
 )
 
 SUPPLIERS = [
@@ -245,6 +252,104 @@ MAINTENANCE = [
 ]
 
 
+#: Families of articles: (name, parent).
+FAMILIES = [
+    ("Bicycles", None),
+    ("City bikes", "Bicycles"),
+    ("Mountain bikes", "Bicycles"),
+    ("Components", None),
+    ("Frames", "Components"),
+    ("Wheels", "Components"),
+    ("Drivetrain", "Components"),
+    ("Fasteners", "Components"),
+    ("Electrical", None),
+    ("Cabinets", "Electrical"),
+    ("Terminals", "Electrical"),
+    ("Cables", "Electrical"),
+    ("Materials", None),
+    ("Metals", "Materials"),
+    ("Coatings", "Materials"),
+]
+
+#: Articles: (reference, name, kind, unit, unit cost, family).
+ARTICLES = [
+    ("BK-100", "City bicycle", "product", "pcs", "0", "City bikes"),
+    ("BK-200", "Mountain bicycle", "product", "pcs", "0", "Mountain bikes"),
+    ("FR-200", "City frame assembly", "assembly", "pcs", "0", "Frames"),
+    ("FR-250", "Mountain frame assembly", "assembly", "pcs", "0", "Frames"),
+    ("TB-210", "Tube set", "assembly", "pcs", "0", "Frames"),
+    ("WH-300", "Wheel assembly", "assembly", "pcs", "0", "Wheels"),
+    ("HB-310", "Hub assembly", "assembly", "pcs", "0", "Wheels"),
+    ("BR-311", "Ball bearing 6001", "part", "pcs", "2.40", "Wheels"),
+    ("AX-312", "Hub axle", "assembly", "pcs", "0", "Wheels"),
+    ("RM-320", "Rim 28 inch", "assembly", "pcs", "0", "Wheels"),
+    ("SP-330", "Spoke 2 mm", "part", "pcs", "0.35", "Wheels"),
+    ("TY-340", "Tyre 700x35", "part", "pcs", "14.90", "Wheels"),
+    ("DT-400", "Drivetrain", "assembly", "pcs", "0", "Drivetrain"),
+    ("CH-410", "Chain 8 speed", "part", "pcs", "11.50", "Drivetrain"),
+    ("CR-420", "Crankset", "assembly", "pcs", "0", "Drivetrain"),
+    ("CA-421", "Crank arm", "part", "pcs", "9.80", "Drivetrain"),
+    ("SC-001", "Screw M5x12", "part", "pcs", "0.04", "Fasteners"),
+    ("NT-002", "Nut M5", "part", "pcs", "0.02", "Fasteners"),
+    ("MT-001", "Steel tube 28 mm", "material", "m", "6.20", "Metals"),
+    ("MT-002", "Steel bar 10 mm", "material", "kg", "3.10", "Metals"),
+    ("MT-003", "Aluminium profile", "material", "m", "4.75", "Metals"),
+    ("PT-001", "Powder coating", "material", "kg", "12.00", "Coatings"),
+    ("CB-900", "Control cabinet", "product", "pcs", "0", "Cabinets"),
+    ("EN-910", "Steel enclosure 800x600", "part", "pcs", "245.00", "Cabinets"),
+    ("TS-920", "Terminal rail assembly", "assembly", "pcs", "0", "Terminals"),
+    ("HN-930", "Cable harness", "assembly", "pcs", "0", "Cables"),
+]
+
+#: Bills of materials: assembly -> [(position, component, quantity)].
+BOMS = {
+    "BK-100": [
+        (10, "FR-200", "1"),
+        (20, "WH-300", "2"),
+        (30, "DT-400", "1"),
+        (40, "SC-001", "12"),
+        (50, "NT-002", "12"),
+    ],
+    "BK-200": [
+        (10, "FR-250", "1"),
+        (20, "WH-300", "2"),
+        (30, "DT-400", "1"),
+        (40, "SC-001", "16"),
+    ],
+    "FR-200": [(10, "TB-210", "1"), (20, "PT-001", "0.4")],
+    "FR-250": [
+        (10, "TB-210", "1"),
+        (20, "MT-003", "1.2"),
+        (30, "PT-001", "0.5"),
+    ],
+    "TB-210": [(10, "MT-001", "4.2")],
+    "WH-300": [
+        (10, "HB-310", "1"),
+        (20, "RM-320", "1"),
+        (30, "SP-330", "32"),
+        (40, "TY-340", "1"),
+    ],
+    "HB-310": [(10, "BR-311", "2"), (20, "AX-312", "1"), (30, "SC-001", "4")],
+    "AX-312": [(10, "MT-002", "0.35")],
+    "RM-320": [(10, "MT-003", "2.1")],
+    "DT-400": [(10, "CH-410", "1"), (20, "CR-420", "1")],
+    "CR-420": [(10, "CA-421", "2"), (20, "SC-001", "5")],
+    "CB-900": [
+        (10, "EN-910", "1"),
+        (20, "TS-920", "1"),
+        (30, "HN-930", "1"),
+        (40, "SC-001", "24"),
+    ],
+}
+
+#: The terminal rail holds this many terminal blocks: a level of more
+#: than a thousand records, unfolded a page at a time.
+TERMINAL_COUNT = 1200
+
+#: And the harness this many cables.
+CABLE_COUNT = 60
+
+
 class Command(BaseCommand):
     help = "Create the example users and a support desk."
 
@@ -276,6 +381,7 @@ class Command(BaseCommand):
         self.attach_a_file(tickets, users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
+        self.create_manufacturing()
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -285,7 +391,8 @@ class Command(BaseCommand):
                 f"{Ticket.objects.count()} tickets, "
                 f"{TicketComment.objects.count()} comments, "
                 f"{TimeEntry.objects.count()} time entries, "
-                f"{Equipment.objects.count()} pieces of equipment."
+                f"{Equipment.objects.count()} pieces of equipment, "
+                f"{Article.objects.count()} articles."
             )
         )
         self.stdout.write(
@@ -555,6 +662,99 @@ class Command(BaseCommand):
                     cost=Decimal(random.choice([0, 0, 35, 60, 120])),
                     is_done=visit > 0 or state != "repair",
                 )
+
+    def create_manufacturing(self) -> None:
+        """Article families, articles and their bills of materials.
+
+        A bicycle five levels deep, sharing its wheels with a second
+        one, and a control cabinet whose terminal rail holds more than
+        a thousand terminal blocks. Found again by reference: a second
+        run adds only what is missing.
+        """
+        families: dict[str, ArticleFamily] = {}
+
+        for name, parent in FAMILIES:
+            families[name], _created = ArticleFamily.objects.get_or_create(
+                name=name, defaults={"parent": families.get(parent)}
+            )
+
+        articles: dict[str, Article] = {}
+
+        for reference, name, kind, unit, cost, family in ARTICLES:
+            articles[reference], _created = Article.objects.get_or_create(
+                reference=reference,
+                defaults={
+                    "name": name,
+                    "kind": kind,
+                    "unit": unit,
+                    "unit_cost": Decimal(cost),
+                    "family": families[family],
+                },
+            )
+
+        def series(prefix, name, count, cost, family):
+            references = [
+                f"{prefix}-{index:04}" for index in range(1, count + 1)
+            ]
+            existing = set(
+                Article.objects.filter(reference__in=references).values_list(
+                    "reference", flat=True
+                )
+            )
+            Article.objects.bulk_create(
+                Article(
+                    reference=reference,
+                    name=f"{name} {reference[len(prefix) + 1:]}",
+                    kind="part",
+                    unit="pcs",
+                    unit_cost=Decimal(cost),
+                    family=families[family],
+                )
+                for reference in references
+                if reference not in existing
+            )
+
+            return list(
+                Article.objects.filter(reference__in=references).order_by(
+                    "reference"
+                )
+            )
+
+        terminals = series(
+            "TB", "Terminal block", TERMINAL_COUNT, "0.85", "Terminals"
+        )
+        cables = series("CBL", "Cable", CABLE_COUNT, "1.60", "Cables")
+        bills = {
+            reference: [
+                (position, articles[child], Decimal(quantity))
+                for position, child, quantity in lines
+            ]
+            for reference, lines in BOMS.items()
+        }
+        bills["TS-920"] = [
+            (index * 10, terminal, Decimal(1))
+            for index, terminal in enumerate(terminals, start=1)
+        ]
+        bills["HN-930"] = [
+            (index * 10, cable, Decimal(2))
+            for index, cable in enumerate(cables, start=1)
+        ]
+
+        for reference, lines in bills.items():
+            assembly = articles[reference]
+
+            if assembly.bom_lines.exists():
+                continue
+
+            BomLine.objects.bulk_create(
+                BomLine(
+                    parent=assembly,
+                    child=child,
+                    position=position,
+                    quantity=quantity,
+                )
+                for position, child, quantity in lines
+            )
 
     # -- users ---------------------------------------------------------
 

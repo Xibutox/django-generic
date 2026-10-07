@@ -1,0 +1,56 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# A tree laid flat (generic.sites.tree_rows): everything a record     #}
+{# holds, at every depth, as a table - a row per place, or per record. #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/tree.css' %}">
+{% endblock %}
+
+{% block page_content %}
+  <section class="card">
+    <div class="tree-flat__bar">
+      <div class="cluster" role="group" aria-label="{% translate 'Rows' %}">
+        <a class="button button--sm{% if grouped %} button--ghost{% endif %}"
+           href="{{ places_url }}"
+           {% if not grouped %}aria-current="page"{% endif %}>
+          {% icon "format_list_bulleted" "icon--sm" %}
+          {% translate "One row per place" %}
+        </a>
+        <a class="button button--sm{% if not grouped %} button--ghost{% endif %}"
+           href="{{ grouped_url }}"
+           {% if grouped %}aria-current="page"{% endif %}>
+          {% icon "functions" "icon--sm" %}
+          {% translate "One row per record" %}
+        </a>
+      </div>
+      {% if tree_url %}
+        <a class="button button--sm button--ghost" href="{{ tree_url }}">
+          {% icon "account_tree" "icon--sm" %}
+          {% translate "As a tree" %}
+        </a>
+      {% endif %}
+    </div>
+    <p class="muted tree-flat__help">
+      {% if grouped %}
+        {% if shows_quantity %}
+          {% translate "Each record once, with how many places it takes and its quantities added up: what one of this record needs." %}
+        {% else %}
+          {% translate "Each record once, with how many places it takes." %}
+        {% endif %}
+      {% else %}
+        {% if shows_quantity %}
+          {% translate "Every place a record takes below this one, with its level, what holds it and its quantity for one of this record." %}
+        {% else %}
+          {% translate "Every place a record takes below this one, with its level and what holds it." %}
+        {% endif %}
+      {% endif %}
+      {% blocktranslate with count=max_rows|stringformat:"d" trimmed %}
+        The first {{ count }} rows at most.
+      {% endblocktranslate %}
+    </p>
+    {% include "generic/components/table.html" with config=table id="tree-flat-table" %}
+  </section>
+{% endblock %}

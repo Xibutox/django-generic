@@ -1,0 +1,30 @@
+{% load i18n generic_ui %}
+{# Records drawn as cards (Cards, generic.sites.dashboard): a heading  #}
+{# per declaration, the cards themselves filled by js/dashboard.js     #}
+{# from the declaration's endpoint.                                    #}
+{% for cards in dashboard_cards %}
+  <section class="record-cards" data-cards-url="{{ cards.url }}"
+           data-resource="{{ cards.resource }}" data-topic="{{ cards.topic }}">
+    <div class="record-cards__header">
+      <h2 class="record-cards__title">
+        {% icon cards.icon "icon--sm" %}
+        <span>{{ cards.title }}</span>
+        <span class="badge record-cards__count" data-cards-count hidden></span>
+      </h2>
+      {% if cards.listUrl %}
+        <a class="button button--sm button--ghost" href="{{ cards.listUrl }}">
+          {% translate "See all" %}
+          {% icon "arrow_forward" "icon--sm" %}
+        </a>
+      {% endif %}
+    </div>
+    {% if cards.description %}
+      <p class="record-cards__description muted">{{ cards.description }}</p>
+    {% endif %}
+    <div class="record-cards__grid" data-cards-grid aria-busy="true">
+      {% for slot in ""|ljust:cards.limit %}
+        <div class="record-card record-card--loading" aria-hidden="true"></div>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}

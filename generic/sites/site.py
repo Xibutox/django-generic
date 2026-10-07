@@ -26,7 +26,7 @@ from rest_framework.routers import SimpleRouter
 from generic.conf import generic_settings
 from generic.history import recording as history
 from generic.i18n import language_menu
-from generic.sites import realtime
+from generic.sites import realtime, trees
 from generic.sites.imports import check_import, declaration_of
 from generic.sites.resources import ModelResource
 from generic.sites.shortcuts import (
@@ -162,6 +162,14 @@ class GenericSite:
             resource.check_pages()
             check_import(resource)
             resource.get_transitions()
+            # Trees are checked here too, and from now on the forms of
+            # the model holding their links refuse a cycle.
+            trees.guard(resource)
+            # Key figures, cards and calendars are checked where they
+            # are declared, not on the first dashboard drawn.
+            resource.get_kpis()
+            resource.get_cards()
+            resource.get_calendars()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)
@@ -218,6 +226,7 @@ class GenericSite:
 
             realtime.disconnect(resource)
             history.disconnect(resource)
+            trees.forget(resource)
 
     def register_data(self, resource_class: type) -> Any:
         """Give rows that are not a model's a list page and a page per
@@ -633,6 +642,17 @@ class GenericSite:
                 resource.get_viewset_class(),
                 basename=f"api_{name}",
             )
+
+            # A tree laid flat: a table of its own (generic.sites.tree_rows).
+            for bound in resource.get_trees():
+                flat = bound.get_flat()
+
+                if flat is not None:
+                    router.register(
+                        flat.get_url_prefix(),
+                        flat.get_viewset_class(),
+                        basename=flat.get_url_basename(),
+                    )
 
         # Rows that are not a model's: a list and a page per row, read
         # only, under data/.

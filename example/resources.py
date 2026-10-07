@@ -24,6 +24,9 @@ from django.utils.translation import ngettext, pgettext_lazy
 from example import external
 from example.models import (
     Agent,
+    Article,
+    ArticleFamily,
+    BomLine,
     Customer,
     Equipment,
     Supplier,
@@ -49,10 +52,13 @@ from generic.api import (
     TagsColumn,
 )
 from generic.sites import (
+    Calendar,
+    Cards,
     Chart,
     DataResource,
     Grid,
     Import,
+    Kpi,
     ModelResource,
     RelatedRows,
     RelatedTable,
@@ -61,6 +67,7 @@ from generic.sites import (
     StackedInline,
     TabularInline,
     TagStyle,
+    Tree,
     action,
     auto,
     display,
@@ -74,6 +81,14 @@ from generic.views.toolbar import ToolbarItem, toolbar_item_for_route
 
 #: Tickets someone still has to act on.
 OPEN_STATUSES = (Ticket.Status.OPEN, Ticket.Status.PENDING)
+
+#: The open tickets, as a filter tree's condition: the key figures, the
+#: cards and the list they open all read it.
+STILL_OPEN = {
+    "column": "status",
+    "operator": "any_of",
+    "value": ["open", "pending"],
+}
 
 
 def next_reference() -> str:
@@ -521,6 +536,123 @@ class TicketResource(ModelResource):
     # Above the list: they follow its filters, and a click filters it.
     list_charts = ("by_status", "opened")
 
+    # Key figures on the dashboard. Each is a filter tree over the
+    # list's columns - the one its tile opens the list with - and a
+    # count, or an aggregate. The thresholds colour the tile.
+    kpis = (
+        Kpi(
+            "open",
+            title=_("Open tickets"),
+            icon="inbox",
+            description=_("Open or waiting for the customer."),
+            filters={"match": "all", "conditions": [STILL_OPEN]},
+            warning=150,
+            danger=200,
+        ),
+        Kpi(
+            "urgent",
+            title=_("Urgent and open"),
+            icon="priority_high",
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "priority",
+                        "operator": "any_of",
+                        "value": ["urgent"],
+                    },
+                ],
+            },
+            warning=1,
+            danger=5,
+        ),
+        Kpi(
+            "overdue",
+            title=_("Overdue"),
+            icon="event_busy",
+            description=_("Still open, due more than a day ago."),
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "due_on",
+                        "operator": "older_than_days",
+                        "value": 1,
+                    },
+                ],
+            },
+            warning=1,
+            danger=10,
+        ),
+        Kpi(
+            "satisfaction",
+            title=_("Satisfaction"),
+            icon="sentiment_satisfied",
+            description=_("Average score of the closed tickets."),
+            filters={
+                "match": "all",
+                "conditions": [
+                    {
+                        "column": "status",
+                        "operator": "any_of",
+                        "value": ["closed"],
+                    }
+                ],
+            },
+            value=Avg("satisfaction"),
+            unit="/ 5",
+            decimals=1,
+            # Lower is worse: danger below warning.
+            warning=3.5,
+            danger=3,
+        ),
+    )
+
+    # A few tickets drawn as cards on the dashboard, the most pressing
+    # first; "See all" opens the list with the same filters.
+    cards = (
+        Cards(
+            "pressing",
+            title=_("Pressing tickets"),
+            icon="local_fire_department",
+            filters={
+                "match": "all",
+                "conditions": [
+                    STILL_OPEN,
+                    {
+                        "column": "priority",
+                        "operator": "any_of",
+                        "value": ["urgent", "high"],
+                    },
+                ],
+            },
+            ordering=("due_on", "-opened_at"),
+            subtitle="customer",
+            fields=("priority", "status", "assignee", "due_on"),
+            limit=6,
+        ),
+    )
+
+    # The tickets on the days they are due: a page with the list's
+    # filters above it. Dragging a ticket to another day writes its due
+    # date, through the same writer as the Triage grid (due_on is one
+    # of the editable_fields).
+    calendars = (
+        Calendar(
+            "due",
+            date="due_on",
+            title=_("Due dates"),
+            icon="event",
+            description=_("Every ticket on the day it is due."),
+            color="priority",
+            fields=("customer", "status", "assignee"),
+            editable=True,
+            navigation=True,
+        ),
+    )
+
     def get_record_links(self, request: Any, ticket: Ticket) -> list[Any]:
         """Where somebody reading a ticket usually goes next.
 
@@ -766,6 +898,30 @@ class TimeEntryResource(ModelResource):
         ),
     )
     list_charts = ("hours_by_month", "hours_by_agent")
+
+    # An aggregate rather than a count, over a period that moves with
+    # the calendar: "this month" is next month's this month too.
+    kpis = (
+        Kpi(
+            "hours-this-month",
+            title=_("Hours this month"),
+            icon="schedule",
+            filters={
+                "match": "all",
+                "conditions": [
+                    {
+                        "column": "spent_on",
+                        "operator": "this_month",
+                        "value": None,
+                    }
+                ],
+            },
+            value=Sum("hours"),
+            unit="h",
+            decimals=1,
+            order=1,
+        ),
+    )
 
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:
@@ -1147,6 +1303,163 @@ EQUIPMENT = _("Equipment")
 
 auto(Supplier, related=("equipment",), group=EQUIPMENT)
 auto(Equipment, related=("maintenances",), group=EQUIPMENT)
+
+
+# ---------------------------------------------------------------------
+# Manufacturing: records holding records, as trees
+# ---------------------------------------------------------------------
+#
+# A bill of materials is a tree of articles through a link model: an
+# assembly holds components, each in its own quantity, and a component
+# - a screw - goes into many assemblies. Declared once on the article,
+# it is a tab on every article's page (and its *Where used*), and a
+# page of the whole tree from the products nothing holds. Levels load
+# as they are unfolded, a page at a time: the control cabinet's
+# thousand-odd parts open as fast as the bicycle's handful.
+#
+# Families are the other shape: a model pointing at its parent.
+
+MANUFACTURING = _("Manufacturing")
+
+
+@register(Article)
+class ArticleResource(ModelResource):
+    icon = "precision_manufacturing"
+    group = MANUFACTURING
+    order = 0
+    description = _("What is made, bought or assembled, and of what.")
+
+    list_display = (
+        "reference",
+        "name",
+        "kind",
+        "unit",
+        "unit_cost",
+        "family",
+        "component_count",
+    )
+    search_fields = ("reference", "name")
+    ordering = ("reference",)
+    tag_fields = {
+        "kind": TagStyle(
+            colors={
+                "product": "#7c3aed",
+                "assembly": "#2563eb",
+                "part": "#0f766e",
+                "material": "#b45309",
+            }
+        )
+    }
+    fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
+    detail_stats = ("component_count", "used_in_count")
+    # The tree to read first, then the grid to edit it, then where used.
+    tab_order = ("tree-bom", "bom_lines")
+    # The first level of the bill, as a grid: change a quantity, swap a
+    # component, add a line, delete a few. One level and no deeper on
+    # purpose - a component's own bill is edited on that component,
+    # where it is the same for every assembly using it.
+    related_tables = (
+        RelatedTable(
+            "bom_lines",
+            title=_("Edit the BOM"),
+            icon="edit_note",
+            description=_(
+                "The article's direct components: edit a cell, add a "
+                "line, delete a few. A component's own components are "
+                "edited on that component."
+            ),
+            page_length=25,
+            editable=True,
+        ),
+    )
+    trees = (
+        Tree(
+            "bom",
+            through=BomLine,
+            parent="parent",
+            child="child",
+            title=_("Bill of materials"),
+            description=_(
+                "What the article is made of, level by level: unfold a "
+                "component to see its own."
+            ),
+            columns=("kind", "unit", "unit_cost"),
+            link_columns=("position", "quantity"),
+            ordering=("position", "child__reference"),
+            where_used=True,
+            # Every level as one table: an exploded BOM, with the
+            # quantity of each component for one article.
+            flat=True,
+            flat_title=_("Exploded BOM"),
+            quantity="quantity",
+        ),
+    )
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)
+            .annotate(components=Count("bom_lines"))
+        )
+
+    @display(description=_("Components"), ordering="components")
+    def component_count(self, article: Article) -> int:
+        components = getattr(article, "components", None)
+
+        return article.bom_lines.count() if components is None else components
+
+    @display(description=_("Used in"))
+    def used_in_count(self, article: Article) -> int:
+        return article.used_in_lines.count()
+
+
+@register(BomLine)
+class BomLineResource(ModelResource):
+    icon = "account_tree"
+    group = MANUFACTURING
+    # Reached from an article: its tree's links, and their Add.
+    show_in_navigation = False
+
+    list_display = ("parent", "position", "child", "quantity", "note")
+    # The article's "Edit the BOM" tab asks for these. The parent is
+    # not one of them: a line moves to another assembly on its form.
+    editable_fields = ("position", "child", "quantity", "note")
+    search_fields = ("parent__reference", "child__reference", "child__name")
+    fields = (("parent", "child"), ("position", "quantity"), "note")
+
+
+@register(ArticleFamily)
+class ArticleFamilyResource(ModelResource):
+    icon = "category"
+    group = MANUFACTURING
+    order = 1
+
+    list_display = ("name", "parent", "article_count")
+    search_fields = ("name",)
+    related_tables = (RelatedTable("articles"),)
+    trees = (
+        Tree(
+            "families",
+            parent="parent",
+            title=_("Family tree"),
+            columns=("article_count",),
+            where_used=True,
+            where_used_title=_("Belongs to"),
+        ),
+    )
+
+    def get_list_queryset(self, request: Any) -> QuerySet:
+        return (
+            super()
+            .get_list_queryset(request)
+            .annotate(article_total=Count("articles"))
+        )
+
+    @display(description=_("Articles"), ordering="article_total")
+    def article_count(self, family: ArticleFamily) -> int:
+        total = getattr(family, "article_total", None)
+
+        return family.articles.count() if total is None else total
 
 
 # ---------------------------------------------------------------------

@@ -16,10 +16,11 @@ filter controls and the server agree by construction.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import NoReverseMatch, reverse
+from django.utils.encoding import force_str
 from django.utils.translation import gettext
 from django.views.generic.base import TemplateView
 
@@ -50,6 +51,38 @@ def filter_row_option(owner: Any) -> str | bool:
     return value
 
 
+def saved_view_options(
+    request: Any, presets: Mapping[Any, Mapping[str, Any]]
+) -> dict[str, Any]:
+    """The client options behind a table's **Views** menu.
+
+    The layouts offered to everyone, the endpoint keeping each user's
+    own, and whether the table comes back as the user left it - their
+    preference. Without ``generic.urls`` mounted the menu only offers
+    the presets.
+    """
+    from generic.sites.resources import _preferences_for
+
+    preferences = _preferences_for(request)
+
+    try:
+        url = reverse("generic:saved-view-list")
+    except NoReverseMatch:
+        url = ""
+
+    return {
+        "stateSave": (
+            preferences.remember_table_state
+            if preferences is not None
+            else True
+        ),
+        "presets": {
+            force_str(name): dict(preset) for name, preset in presets.items()
+        },
+        "savedViewsUrl": url,
+    }
+
+
 class DataTableView(AccessMixin, ModelPageMixin, TemplateView):
     """Render a DataTables page bound to a ``DataTableViewSet``."""
 
@@ -73,6 +106,11 @@ class DataTableView(AccessMixin, ModelPageMixin, TemplateView):
     #: from the start, ``"toggle"`` behind a toolbar button, ``False``
     #: not offered.
     filter_row: str | bool = "open"
+
+    #: Named layouts offered to every user in the **Views** menu,
+    #: beside each user's own saved views: ``{"Open work": {"columns":
+    #: [...], "order": [["due_on", "asc"]], "filters": {...}}}``.
+    presets: dict[str, dict[str, Any]] = {}
 
     #: Extra client options, merged over the defaults.
     table_options: dict[str, Any] = {}
@@ -117,6 +155,9 @@ class DataTableView(AccessMixin, ModelPageMixin, TemplateView):
         """
         return f"{type(self).__module__}.{type(self).__name__}"
 
+    def get_presets(self) -> dict[str, dict[str, Any]]:
+        return dict(self.presets)
+
     def get_table_options(self) -> dict[str, Any]:
         options = {
             "pageLength": generic_settings.TABLE_PAGE_SIZE,
@@ -126,6 +167,9 @@ class DataTableView(AccessMixin, ModelPageMixin, TemplateView):
             "filterRow": filter_row_option(self),
             "excel": self.show_export,
             "syncUrl": True,
+            **saved_view_options(
+                getattr(self, "request", None), self.get_presets()
+            ),
         }
         options.update(self.table_options)
 

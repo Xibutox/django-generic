@@ -45,17 +45,33 @@ a page per row from a ``DataResource`` (``generic.sites.data``)::
         def get_rows(self, request):
             return statuspage.services()
 
+Records holding records - a category inside a category, the parts of
+an assembly - unfold as a tree, a level at a time
+(``generic.sites.trees``)::
+
+    trees = (Tree("bom", through=BomLine, parent="parent", child="child"),)
+
 Any resource may have pages of its own - a map, a timeline, a gallery,
 a report - declared on it, with any content (``generic.sites.pages``)::
 
     @page(title=_("Map"), icon="map", template="myapp/customer_map.html")
     def map(self, request):
         return {"customers": self.get_queryset(request)}
+
+Key figures and record cards on the dashboard
+(``generic.sites.dashboard``), and records on a calendar by a date
+field (``generic.sites.calendars``)::
+
+    kpis = (Kpi("open", title=_("Open"), filters={...}, danger=50),)
+    cards = (Cards("urgent", filters={...}, fields=("due_on",)),)
+    calendars = (Calendar("due", date="due_on", color="priority"),)
 """
 
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
+from generic.sites.calendars import Calendar
 from generic.sites.charts import Chart, chart_payload
+from generic.sites.dashboard import Cards, Kpi
 from generic.sites.data import DataResource, RelatedRows, RowLink
 from generic.sites.decorators import action, display
 from generic.sites.grids import Grid
@@ -73,16 +89,20 @@ from generic.sites.site import (
     site,
 )
 from generic.sites.sso import SsoProvider
+from generic.sites.trees import Tree
 
 __all__ = [
     "AlreadyRegistered",
     "AutoResource",
+    "Calendar",
+    "Cards",
     "Chart",
     "DataResource",
     "GenericSite",
     "Grid",
     "Import",
     "InlineResource",
+    "Kpi",
     "ModelResource",
     "RelatedRows",
     "RelatedTable",
@@ -95,6 +115,7 @@ __all__ = [
     "StackedInline",
     "TabularInline",
     "TagStyle",
+    "Tree",
     "action",
     "auto",
     "chart_payload",

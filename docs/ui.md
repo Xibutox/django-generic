@@ -220,7 +220,41 @@ The configuration is emitted with `json_script` and read from the DOM.
   fields under the headers on demand;
 - a column selector, with the choice remembered per view;
 - Excel and CSV exports of **every filtered row**, not just the page;
-- saved state — ordering, page length, hidden columns.
+- saved state — ordering, page length, hidden columns;
+- a **Views** menu: each user saves the layout under a name, and
+  `presets` offers some to everyone.
+
+### Views
+
+A `DataTableView` has the same **Views** menu as a resource's list
+([Sites › Views](sites.md#views)): each user saves the current layout -
+visible columns, their order, sorting, filters, search, page length -
+under a name, marks one as the table's default, and finds it again on
+any device. `presets` adds layouts for everyone. A column the viewset
+computes, an annotation or an aggregate, is filtered and sorted like
+any other, so a preset may use it:
+
+```python
+class TicketTablePage(DataTableView):
+    model = Ticket
+    viewset = TicketTableViewSet
+    api_url_name = "example_api:ticket-list"
+    presets = {
+        _("Most discussed"): {
+            "columns": ["reference", "title", "status", "comment_count"],
+            "filters": {"match": "all", "conditions": [
+                {"column": "comment_count", "operator": "gte", "value": 3},
+            ]},
+            "order": [["comment_count", "desc"]],
+        },
+    }
+```
+
+Saved views are kept per user and per table, under the view's state
+key (`get_state_key()`, the class's dotted path), and go through
+`api/generic/`: without `include("generic.urls", namespace="generic")`
+in the URLs, the menu only offers the presets. Override `get_presets()`
+for layouts that depend on the request.
 
 ### Supplying DataTables
 
@@ -540,6 +574,30 @@ Both states are written onto `<html>` before the first paint, so a page
 never opens with the navigation in the wrong place. `ui.js` changes
 them and `localStorage` remembers: `generic.sidebar` and
 `generic.sidebar-pinned`.
+
+### The groups stay as they were left
+
+A navigation group is a `<details>`, and which ones are closed is
+remembered too — `generic.nav-groups` in `localStorage`, a map of the
+group's label to a boolean. Nothing is sent to the server: this is a
+browser's own habit, not a setting on the account, so there is no
+endpoint and no migration.
+
+The state is applied by a short inline script at the end of
+`sidebar.html`, right after the navigation is parsed and before the
+first paint, the way the theme and the pin are: a group the reader
+closed never flashes open. Two rules keep it from hiding anything:
+
+- The group the page belongs to (the one holding `aria-current="page"`)
+  stays open whatever was saved.
+- The navigation filter opens a group to show what it found, and that is
+  not a choice to remember: `ui.js` saves only a click on the summary
+  (Enter and Space on it arrive as a click too), and an emptied filter
+  box restores the saved state.
+
+With JavaScript disabled every group is open, as the template renders
+it. A project that overrides `sidebar.html` keeps the behaviour by
+keeping that script and `data-nav-group-key` on each `<details>`.
 
 What decides whether a peek stays out is where the pointer *is*, not
 what it entered: the panel slides out to meet a pointer that need not

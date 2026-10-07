@@ -324,6 +324,91 @@
     }
   }
 
+  /* -- Navigation groups -----------------------------------------------
+   *
+   * Which groups are open is this browser's business: no endpoint, no
+   * preference on the account. The state is restored inline in
+   * sidebar.html, before the first paint; this half writes it, and only
+   * when the reader is the one who opened or closed a group - the
+   * filter below opens groups to show what it found, which is not a
+   * choice to remember.
+   */
+
+  var NAV_GROUPS_KEY = "generic.nav-groups";
+
+  function navGroups() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll("#sidebar details[data-nav-group-key]")
+    );
+  }
+
+  function readNavGroups() {
+    var saved = null;
+
+    try {
+      saved = JSON.parse(window.localStorage.getItem(NAV_GROUPS_KEY));
+    } catch (error) {
+      /* Private mode, or nothing saved yet. */
+    }
+
+    return saved && typeof saved === "object" ? saved : {};
+  }
+
+  function writeNavGroups(state) {
+    try {
+      window.localStorage.setItem(NAV_GROUPS_KEY, JSON.stringify(state));
+    } catch (error) {
+      /* Not being able to remember is survivable. */
+    }
+  }
+
+  //: The group the page belongs to is always open: the navigation has to
+  //: show where the reader is.
+  function isCurrentNavGroup(group) {
+    return group.querySelector('[aria-current="page"]') !== null;
+  }
+
+  function restoreNavGroups() {
+    var saved = readNavGroups();
+
+    navGroups().forEach(function (group) {
+      if (isCurrentNavGroup(group)) {
+        group.open = true;
+
+        return;
+      }
+
+      var state = saved[group.dataset.navGroupKey];
+
+      if (typeof state === "boolean") {
+        group.open = state;
+      }
+    });
+  }
+
+  function initNavGroups() {
+    navGroups().forEach(function (group) {
+      var summary = group.querySelector("summary");
+
+      if (!summary) {
+        return;
+      }
+
+      // The click is what tells a reader's choice from the filter's
+      // doing, and `toggle` cannot: it also fires for a group the
+      // filter opened. Enter and Space on the summary arrive here too.
+      // The state flips after this handler, hence the timeout.
+      summary.addEventListener("click", function () {
+        window.setTimeout(function () {
+          var saved = readNavGroups();
+
+          saved[group.dataset.navGroupKey] = group.open;
+          writeNavGroups(saved);
+        }, 0);
+      });
+    });
+  }
+
   /* -- Navigation filter ---------------------------------------------- */
 
   function initNavFilter() {
@@ -353,6 +438,12 @@
           group.open = true;
         }
       });
+
+      if (!query) {
+        // What the filter opened was the filter's, not the reader's:
+        // an emptied box leaves the navigation as they left it.
+        restoreNavGroups();
+      }
     }
 
     input.addEventListener("input", apply);
@@ -1310,6 +1401,7 @@
 
   Generic.ready(function () {
     initSidebar();
+    initNavGroups();
     initNavFilter();
     initMessages();
   });

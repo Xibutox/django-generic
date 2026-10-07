@@ -116,3 +116,17 @@
 .run-report {
   grid-column: 1 / -1;
 }
+
+/* -- Other Celery tasks: found in the app, not declared ---------------- */
+
+.task-others {
+  margin-top: var(--space-4);
+}
+
+.task-others__table {
+  width: 100%;
+}
+
+.task-others__run {
+  text-align: end;
+}

@@ -195,6 +195,12 @@ class TestTheListPage:
             "/data/services/{_pk}/"
         )
 
+    def test_it_offers_the_views_menu(self, admin_client):
+        options = admin_client.get(LIST).context["table_config"]["options"]
+
+        assert options["savedViewsUrl"] == "/api/generic/saved-views/"
+        assert options["presets"] == {}
+
     def test_it_is_in_the_navigation(self, admin_client):
         navigation = admin_client.get("/").context["chrome"]["navigation"]
         urls = [item["url"] for group in navigation for item in group["items"]]

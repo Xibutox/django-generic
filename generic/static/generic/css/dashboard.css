@@ -1,0 +1,218 @@
+/*
+ * The dashboard's key figures and record cards (generic.sites.dashboard,
+ * js/dashboard.js). Tokens only: the colours follow the theme and the
+ * appearance parameters.
+ */
+
+/* -- Key figures ----------------------------------------------------------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.kpi {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-inline-start: 0.25rem solid var(--kpi-accent, var(--color-accent));
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+a.kpi[href]:hover,
+a.kpi[href]:focus-visible {
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+
+.kpi--good {
+  --kpi-accent: var(--color-success);
+  --kpi-subtle: var(--color-success-subtle);
+}
+
+.kpi--warning {
+  --kpi-accent: var(--color-warning);
+  --kpi-subtle: var(--color-warning-subtle);
+}
+
+.kpi--danger {
+  --kpi-accent: var(--color-danger);
+  --kpi-subtle: var(--color-danger-subtle);
+}
+
+.kpi__icon {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--kpi-accent, var(--color-accent));
+  background: var(--kpi-subtle, var(--color-accent-subtle));
+  border-radius: var(--border-radius);
+}
+
+.kpi__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kpi__title {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.kpi__figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.kpi__value {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.kpi__unit {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.kpi__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* -- Record cards ------------------------------------------------------ */
+
+.record-cards {
+  margin-bottom: var(--space-5);
+}
+
+.record-cards__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.record-cards__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.record-cards__description {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.record-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+  gap: var(--space-3);
+}
+
+.record-cards__empty {
+  margin: 0;
+}
+
+.record-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.record-card--link {
+  cursor: pointer;
+}
+
+.record-card--link:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.record-card--loading {
+  min-height: 7rem;
+  background: var(--surface-sunken);
+  box-shadow: none;
+}
+
+.record-card__image {
+  display: block;
+  width: 100%;
+  height: 9rem;
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.record-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.record-card__label {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.record-card__subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.record-card__values {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.record-card__value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.record-card__value dt {
+  color: var(--text-muted);
+}
+
+.record-card__value dd {
+  margin: 0;
+  text-align: end;
+}

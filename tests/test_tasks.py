@@ -18,7 +18,11 @@ from generic.tasks import managed_task
 from generic.tasks.models import TaskRun
 from generic.tasks.registry import TaskDefinition, registry
 from generic.tasks.reporting import recipients
-from generic.tasks.resources import beat_installed, tasks_are_offered
+from generic.tasks.resources import (
+    beat_installed,
+    results_installed,
+    tasks_are_offered,
+)
 from generic.tasks.runner import can_queue, launch
 
 pytestmark = pytest.mark.django_db
@@ -29,6 +33,11 @@ RUNS = "/generic/taskrun/"
 beat_only = pytest.mark.skipif(
     not apps.is_installed("django_celery_beat"),
     reason="django-celery-beat is not installed in this environment",
+)
+
+results_only = pytest.mark.skipif(
+    not apps.is_installed("django_celery_results"),
+    reason="django-celery-results is not installed in this environment",
 )
 
 
@@ -511,7 +520,15 @@ class TestTheSchedules:
 
         assert run.arguments == {"team": "Front office"}
 
-    def test_running_an_undeclared_task_says_so(self, auth_client, user):
+    def test_a_task_celery_cannot_send_says_so(
+        self, auth_client, user, monkeypatch
+    ):
+        from generic.tasks import resources
+
+        def refuse(*args, **kwargs):
+            raise ConnectionError("broker down")
+
+        monkeypatch.setattr(resources, "send_to_celery", refuse)
         crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
         periodic = apps.get_model("django_celery_beat", "PeriodicTask")
         schedule = periodic.objects.create(
@@ -534,8 +551,334 @@ class TestTheSchedules:
         )
 
         assert response.status_code == 200, response.content
-        assert "elsewhere.cleanup" in response.json()["message"]
+        assert "broker down" in response.json()["message"]
         assert TaskRun.objects.count() == 0
+
+
+@beat_only
+class TestChoosingTheTask:
+    """A schedule's task is chosen from a list, never typed."""
+
+    URL = "/api/django_celery_beat/periodictask/"
+
+    @pytest.fixture
+    def manager(self, auth_client, user):
+        for codename in (
+            "view_periodictask",
+            "add_periodictask",
+            "change_periodictask",
+        ):
+            user.user_permissions.add(
+                permission(codename, app_label="django_celery_beat")
+            )
+
+        return auth_client
+
+    @pytest.fixture
+    def crontab(self):
+        model = apps.get_model("django_celery_beat", "CrontabSchedule")
+
+        return model.objects.create(minute="0", hour="7")
+
+    def choices(self, client):
+        response = client.get(f"{self.URL}form-schema/")
+
+        assert response.status_code == 200, response.content
+
+        field = next(
+            field
+            for field in response.json()["fields"]
+            if field["name"] == "task"
+        )
+
+        assert field["type"] == "select"
+
+        return {
+            choice["value"]: choice["label"] for choice in field["choices"]
+        }
+
+    def test_the_form_lists_the_tasks(self, manager, digest, declared):
+        @declared(name="tests.page-work", catalogue=False)
+        def page_work(run):  # pragma: no cover - not run here
+            pass
+
+        choices = self.choices(manager)
+
+        # Declared ones under their label, the framework's own included.
+        assert choices["tests.digest"] == "Digest (tests.digest)"
+        assert "generic.send_scheduled_mailings" in choices
+        # An operation runs on what its page chose: no schedule for it.
+        assert "tests.page-work" not in choices
+        # Celery's own machinery is not something to schedule.
+        assert not [name for name in choices if name.startswith("celery.")]
+
+    def test_a_task_nobody_declared_is_refused(self, manager, crontab):
+        response = manager.post(
+            self.URL,
+            {"name": "Typo", "task": "tests.digets", "crontab": crontab.pk},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400, response.content
+        assert "task" in response.json()
+
+    def test_a_listed_task_is_saved(self, manager, digest, crontab):
+        response = manager.post(
+            self.URL,
+            {"name": "Morning", "task": "tests.digest", "crontab": crontab.pk},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 201, response.content
+
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+
+        assert periodic.objects.get(name="Morning").task == "tests.digest"
+
+    def test_a_task_no_longer_known_survives_an_edit(self, manager, crontab):
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        schedule = periodic.objects.create(
+            name="Old one", task="gone.cleanup", crontab=crontab
+        )
+
+        response = manager.patch(
+            f"{self.URL}{schedule.pk}/",
+            {"description": "Still here", "task": "gone.cleanup"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+
+        schedule.refresh_from_db()
+
+        assert schedule.task == "gone.cleanup"
+        assert schedule.description == "Still here"
+
+
+class TestUndeclaredCeleryTasks:
+    """A plain Celery task can be started from the pages too."""
+
+    @pytest.fixture
+    def plain(self, monkeypatch):
+        from celery import current_app
+
+        # The suite's Celery app, eager: sent, and run right here.
+        monkeypatch.setitem(current_app.conf, "task_always_eager", True)
+        calls = []
+
+        @current_app.task(name="tests.plain_cleanup")
+        def plain_cleanup(*args, **kwargs):
+            calls.append((args, kwargs))
+            return "cleaned"
+
+        yield calls
+
+        current_app.tasks.pop("tests.plain_cleanup", None)
+
+    def test_the_catalogue_lists_and_sends_it(self, auth_client, user, plain):
+        user.user_permissions.add(permission("run_task"))
+
+        page = auth_client.get(TASKS).content.decode()
+
+        assert "tests.plain_cleanup" in page
+
+        response = auth_client.post(TASKS, {"task": "tests.plain_cleanup"})
+
+        assert response.status_code == 302
+        assert plain == [((), {})]
+        # No run: only a declared task keeps one.
+        assert TaskRun.objects.count() == 0
+
+    def test_without_a_broker_it_says_so(self, monkeypatch):
+        import celery
+
+        from generic.tasks.resources import send_to_celery
+
+        class Unconfigured:
+            conf = {"task_always_eager": False, "broker_url": None}
+            tasks = {}
+
+        monkeypatch.setattr(celery, "current_app", Unconfigured())
+
+        with pytest.raises(RuntimeError):
+            send_to_celery("tests.plain_cleanup")
+
+    def test_a_name_celery_does_not_know_is_refused(self, auth_client, user):
+        user.user_permissions.add(permission("run_task"))
+
+        response = auth_client.post(TASKS, {"task": "nowhere.at_all"})
+
+        assert response.status_code == 404
+
+    @beat_only
+    def test_a_schedule_sends_it_with_its_arguments(
+        self, auth_client, user, plain
+    ):
+        crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        schedule = periodic.objects.create(
+            name="Nightly cleanup",
+            task="tests.plain_cleanup",
+            crontab=crontab.objects.create(minute="0", hour="4"),
+            args="[30]",
+            kwargs='{"dry_run": true}',
+        )
+
+        for codename in ("view_periodictask", "change_periodictask"):
+            user.user_permissions.add(
+                permission(codename, app_label="django_celery_beat")
+            )
+
+        user.user_permissions.add(permission("run_task"))
+
+        response = auth_client.post(
+            reverse("site:api_django_celery_beat_periodictask-actions"),
+            {"action": "run_now", "ids": [schedule.pk]},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+        assert plain == [((30,), {"dry_run": True})]
+        assert "Celery" in response.json()["message"]
+
+
+@results_only
+class TestTheCeleryResults:
+    """What every Celery task returned, beside the framework's runs."""
+
+    URL = "/api/django_celery_results/taskresult/"
+
+    @pytest.fixture
+    def reader(self, auth_client, user):
+        user.user_permissions.add(
+            permission("view_taskresult", app_label="django_celery_results")
+        )
+
+        return auth_client
+
+    @pytest.fixture
+    def result(self):
+        import datetime
+
+        from django.utils import timezone
+
+        model = apps.get_model("django_celery_results", "TaskResult")
+        done = timezone.now()
+
+        return model.objects.create(
+            task_id="abc-123",
+            task_name="elsewhere.cleanup",
+            periodic_task_name="Nightly cleanup",
+            status="SUCCESS",
+            result='"42 removed"',
+            date_started=done - datetime.timedelta(seconds=75),
+            date_done=done,
+        )
+
+    def test_they_are_a_resource_of_the_tasks_group(self):
+        from generic.sites import site
+
+        model = apps.get_model("django_celery_results", "TaskResult")
+
+        assert site.is_registered(model)
+        assert str(site.get_resource(model).group) == "Tasks"
+        assert results_installed() is True
+        assert tasks_are_offered() is True
+
+    def test_a_task_nobody_declared_is_listed(self, reader, result):
+        response = reader.get(self.URL, {"draw": 1, "length": 10})
+
+        assert response.status_code == 200, response.content
+
+        rows = response.json()["data"]
+
+        assert [row["task_name"] for row in rows] == ["elsewhere.cleanup"]
+        assert rows[0]["duration"] == "1 min 15 s"
+
+    def test_they_are_read_only(self, reader, result):
+        response = reader.patch(
+            f"{self.URL}{result.pk}/",
+            {"status": "FAILURE"},
+            content_type="application/json",
+        )
+
+        assert response.status_code in (403, 405)
+
+    @beat_only
+    def test_a_schedule_leads_to_its_results(self, rf, user, result):
+        from generic.sites import site
+
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
+        schedule = periodic.objects.create(
+            name="Nightly cleanup",
+            task="elsewhere.cleanup",
+            crontab=crontab.objects.create(minute="0", hour="4"),
+        )
+        request = rf.get("/")
+        request.user = user
+        resource = site.get_resource(periodic)
+
+        # Nothing to offer someone who could not open the list.
+        assert resource.get_record_links(request, schedule) == []
+
+        user.user_permissions.add(
+            permission("view_taskresult", app_label="django_celery_results")
+        )
+        request.user = type(user).objects.get(pk=user.pk)
+
+        (link,) = resource.get_record_links(request, schedule)
+
+        assert "periodic_task_name" in link.url
+        assert "Nightly%20cleanup" in link.url
+
+    def test_a_declared_task_s_result_leads_to_its_run(
+        self, rf, user, result, digest
+    ):
+        from generic.sites import site
+
+        run = launch("tests.digest", user=user)
+        run.celery_id = result.task_id
+        run.save(update_fields=["celery_id"])
+        request = rf.get("/")
+        request.user = user
+        resource = site.get_resource(type(result))
+
+        # The starter may open their own run.
+        (link,) = resource.get_record_links(request, result)
+
+        assert link.url == run.get_absolute_url()
+
+    def test_the_catalogue_points_at_them(self, auth_client, user):
+        user.user_permissions.add(permission("run_task"))
+
+        response = auth_client.get(TASKS)
+
+        assert response.status_code == 200
+        assert (
+            reverse("site:django_celery_results_taskresult_list")
+            in response.content.decode()
+        )
+
+    def test_the_backend_has_to_be_the_database(self, settings):
+        from generic import checks
+
+        settings.CELERY_RESULT_BACKEND = "redis://localhost/1"
+
+        assert [m.id for m in checks.check_celery_results()] == [
+            "generic.W011"
+        ]
+
+        settings.CELERY_RESULT_BACKEND = "django-db"
+        settings.CELERY_RESULT_EXTENDED = False
+
+        assert [m.id for m in checks.check_celery_results()] == [
+            "generic.W012"
+        ]
+
+        settings.CELERY_RESULT_EXTENDED = True
+
+        assert checks.check_celery_results() == []
 
 
 class TestTheExample:
