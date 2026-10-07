@@ -1,0 +1,26 @@
+{% load i18n generic_ui %}
+{# Key figures the resources declare (Kpi, generic.sites.dashboard).  #}
+{# Drawn here without their numbers, which js/dashboard.js asks each  #}
+{# figure's endpoint for - and asks again when its records change.    #}
+<section class="kpis" aria-label="{% translate 'Key figures' %}">
+  {% for kpi in dashboard_kpis %}
+    <a class="kpi"
+       {% if kpi.listUrl %}href="{{ kpi.listUrl }}"{% endif %}
+       data-kpi-url="{{ kpi.url }}"
+       data-resource="{{ kpi.resource }}"
+       data-topic="{{ kpi.topic }}"
+       {% if kpi.description %}title="{{ kpi.description }}"{% endif %}>
+      <span class="kpi__icon">{% icon kpi.icon %}</span>
+      <span class="kpi__body">
+        <span class="kpi__title">{{ kpi.title }}</span>
+        <span class="kpi__figure">
+          <span class="kpi__value" data-kpi-value aria-live="polite">&hellip;</span>
+          <span class="kpi__unit" data-kpi-unit></span>
+        </span>
+        {% if kpi.description %}
+          <span class="kpi__description">{{ kpi.description }}</span>
+        {% endif %}
+      </span>
+    </a>
+  {% endfor %}
+</section>

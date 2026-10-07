@@ -1,0 +1,32 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# The page of a calendar (generic.sites.calendars): the resource's     #}
+{# records on the days of a month, a week, or as a list of days.       #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/calendar.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'generic/js/calendar.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  {{ calendar_config|json_script:"calendar-config" }}
+
+  <section class="card calendar-card">
+    {# The resource's table, its filters and search box only: the       #}
+    {# calendar shows the records they select.                          #}
+    <div class="calendar-filters">
+      {{ filter_table|json_script:"calendar-filter-table" }}
+      <table class="js-calendar-filters display" data-config="calendar-filter-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="generic-calendar" data-config="calendar-config" data-autostart></div>
+  </section>
+{% endblock %}

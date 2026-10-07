@@ -24,6 +24,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from generic.openapi import framework_schema
+from generic.sites.dashboard import dashboard_entries
 from generic.views.delete import GenericDeleteView
 from generic.views.mixins import POPUP_PARAM, PageMixin
 from generic.views.toolbar import Breadcrumb, ToolbarItem
@@ -78,6 +79,12 @@ class SiteIndexView(SiteViewMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["app_list"] = self.site.get_app_list(self.request)
         context["shortcuts"] = self.site.get_shortcuts(self.request)
+        context["dashboard_kpis"] = dashboard_entries(
+            self.site, self.request, "kpis"
+        )
+        context["dashboard_cards"] = dashboard_entries(
+            self.site, self.request, "cards"
+        )
         context.update(self.site.get_index_context(self.request))
 
         return context

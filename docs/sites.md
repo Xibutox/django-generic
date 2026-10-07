@@ -160,6 +160,9 @@ model nobody declared pages of its own. See
 | `related_tables` | `RelatedTable` declarations: the summary page's tabs |
 | `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time, searched at any depth, laid flat as a table ([Trees](trees.md)) |
 | `tab_order` | The summary page's tabs to show first, by name; the others follow as declared ([below](#the-summary-page)) |
+| `kpis` | `Kpi` declarations: key figures on the dashboard, a count or an aggregate over the rows a filter selects, opening that list ([Key figures and cards](dashboard.md)) |
+| `cards` | `Cards` declarations: a few records drawn as cards on the dashboard ([Key figures and cards](dashboard.md)) |
+| `calendars` | `Calendar` declarations: records on their days, a page each, by month, week or list ([Calendars](calendars.md)) |
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | The form, admin style |
 | `form_overrides` | Presentation per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText` |
 | `form_serializer` | A hand-written `FormModelSerializer`, replacing the generated one |
@@ -815,6 +818,10 @@ dashboard**: a signpost must not be able to take the page down.
 The section is the `dashboard_shortcuts` block of
 `generic/site/index.html`, above `dashboard_intro`; a project that
 wants it lower moves the block.
+
+Below the hub, the resources' own key figures and record cards - the
+blocks `dashboard_kpis` and `dashboard_cards` - declared with `kpis`
+and `cards` ([Key figures and cards](dashboard.md)).
 
 A chart any resource declares can be drawn there, or on any page
 extending `generic/base.html` — nothing is drawn for a user who may not

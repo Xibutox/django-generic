@@ -2073,3 +2073,30 @@ msgstr ""
 "Les composants directs de l'article : modifiez une cellule, ajoutez une "
 "ligne, supprimez-en. Les composants d'un composant se modifient sur ce "
 "composant."
+
+msgid "Open or waiting for the customer."
+msgstr "Ouverts ou en attente du client."
+
+msgid "Urgent and open"
+msgstr "Urgents et ouverts"
+
+msgid "Overdue"
+msgstr "En retard"
+
+msgid "Still open, due more than a day ago."
+msgstr "Encore ouverts, échus depuis plus d'un jour."
+
+msgid "Average score of the closed tickets."
+msgstr "Note moyenne des tickets fermés."
+
+msgid "Pressing tickets"
+msgstr "Tickets pressants"
+
+msgid "Due dates"
+msgstr "Échéances"
+
+msgid "Every ticket on the day it is due."
+msgstr "Chaque ticket au jour de son échéance."
+
+msgid "Hours this month"
+msgstr "Heures ce mois-ci"

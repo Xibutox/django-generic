@@ -488,6 +488,25 @@ under *Elsewhere* two cards leave the application — one to Django's
 documentation, one to a `mailto:`. Sign in as `guest` and most of them
 are gone: each card names the permission it needs.
 
+**Key figures and cards.** Under the hub, five tiles: *Open tickets*,
+*Urgent and open*, *Overdue*, *Satisfaction* (an average, red below 3,
+amber below 3.5) and *Hours this month* (a sum, in hours). Click one:
+the list opens with the same filter, and its count is the tile's. Then
+*Pressing tickets*, the urgent and high ones still open, soonest due
+first, as cards - *See all* opens them as a list. Resolve one of them
+in another window: the tiles and the cards redraw by themselves. As
+`guest`, none of them: they follow the tickets' view permission.
+`TicketResource.kpis` and `.cards` ([Key figures and cards](dashboard.md)).
+
+**Due dates.** *Support › Due dates* puts every ticket on the day it is
+due, coloured by priority. Switch to *Week* for each ticket's customer,
+status and assignee, or to *List* for the days that hold something.
+Type `vpn` in the search box above it, or filter on *Status*: the
+calendar shows what the list would. Drag a ticket to another day: its
+due date is written, as the Triage grid would write it. Hover a day and
+press *+* for a new ticket due that day. As `viewer`, nothing moves.
+`TicketResource.calendars` ([Calendars](calendars.md)).
+
 **On the People screens**, as `admin`. The seed makes two groups:
 *Desk agents*, which is what `viewer` belongs to, and *Read only*. Open
 *Groups* and both say how many members and how many permissions they

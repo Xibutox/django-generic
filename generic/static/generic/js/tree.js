@@ -77,83 +77,9 @@
     return el("span", "", text);
   }
 
-  /* -- Values, typed as a summary page types them ----------------------- */
+  /* -- Values, typed as a summary page types them (values.js) ---------- */
 
-  function tag(entry) {
-    var colors = Generic.colors;
-    var background = colors.clean(entry.background);
-    var color = colors.clean(entry.color);
-    var element = link(entry.url, entry.label);
-
-    element.className = background ? "tag tag--solid" : "tag";
-
-    if (background) {
-      element.style.setProperty("--tag-background", background);
-      element.style.setProperty("--tag-text", color || colors.readableOn(background));
-    } else if (color) {
-      element.style.setProperty("--tag-color", color);
-    }
-
-    if (entry.title) {
-      element.title = entry.title;
-    }
-
-    return element;
-  }
-
-  function value(entry) {
-    entry = entry || { empty: true };
-
-    var wrapper = el("span", "tree-value tree-value--" + (entry.type || "text"));
-
-    if (entry.empty) {
-      wrapper.appendChild(el("span", "muted", "\u2014"));
-      return wrapper;
-    }
-
-    switch (entry.type) {
-      case "boolean":
-        var yes = Boolean(entry.value);
-        var flag = el("span", "dt-boolean " + (yes ? "dt-boolean--yes" : "dt-boolean--no"));
-
-        flag.appendChild(icon(yes ? "check_circle" : "cancel"));
-        flag.appendChild(el("span", "", yes ? t("Yes") : t("No")));
-        wrapper.appendChild(flag);
-        break;
-      case "choice":
-        wrapper.appendChild(el("span", "badge", entry.display));
-        break;
-      case "link":
-      case "url":
-      case "file":
-        wrapper.appendChild(link(entry.url, entry.display));
-        break;
-      case "email":
-        wrapper.appendChild(link("mailto:" + entry.display, entry.display));
-        break;
-      case "links":
-        (entry.items || []).forEach(function (item, index) {
-          if (index) {
-            wrapper.appendChild(document.createTextNode(", "));
-          }
-          wrapper.appendChild(link(item.url, item.label));
-        });
-        break;
-      case "tags":
-        (entry.items || []).forEach(function (item) {
-          wrapper.appendChild(tag(item));
-        });
-        break;
-      default:
-        wrapper.textContent = entry.display === undefined ? "" : String(entry.display);
-    }
-
-    if (entry.more) {
-      wrapper.appendChild(el("span", "muted", " +" + entry.more));
-    }
-
-    return wrapper;
-  }
+  var value = Generic.values.render;
 
   /* -- The tree --------------------------------------------------------- */
 
