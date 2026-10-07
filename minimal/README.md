@@ -2,8 +2,9 @@
 
 The least a Django project needs to run django-generic: one settings
 file, one URL module, one app with one model, and its screens in one
-line - plus the wiki, and signing in with Microsoft through
-django-allauth once an app registration is given. No real time, no Celery, no API tokens, no
+line - plus a small product management app declared by hand, the wiki,
+and signing in with Microsoft through django-allauth once an app
+registration is given. No real time, no Celery, no API tokens, no
 production settings - for all of those, see the full example,
 `example/` and `example_project/` ([the example](../docs/example.md)).
 
@@ -16,9 +17,14 @@ minimal/
 │   └── wsgi.py
 ├── Dockerfile          the same, in a container (optional)
 ├── compose.yaml
-└── library/
-    ├── models.py       Book: a title, an author, pages, a status
-    ├── resources.py    auto(Book) - the whole interface
+├── library/
+│   ├── models.py       Book: a title, an author, pages, a status
+│   ├── resources.py    auto(Book) - the whole interface
+│   └── migrations/
+└── products/
+    ├── models.py       Product, its Milestones (dated steps), its Documents
+    ├── resources.py    the three ModelResources, two dashboard cards
+    ├── management/commands/seed_products.py
     └── migrations/
 ```
 
@@ -34,6 +40,7 @@ pip install -e ".[wiki]"
 cd minimal
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py seed_products      # optional: five products to look at
 python manage.py runserver
 ```
 
@@ -42,7 +49,8 @@ navigation - the list with its search, filters and export, the form, a
 page per book, the REST endpoint at `/api/library/book/` - and *Wiki*,
 at <http://127.0.0.1:8000/wiki/>: write its first page, with its
 editor, its menu, its history and its images, add other wikis, and
-download one as a PDF ([The wiki](../docs/wiki.md)).
+download one as a PDF ([The wiki](../docs/wiki.md)). *Products* is
+below: [Product management](#product-management).
 
 ### In Docker
 
@@ -53,10 +61,11 @@ and `runserver`:
 ```bash
 docker compose -f minimal/compose.yaml up --build
 docker compose -f minimal/compose.yaml exec web python manage.py createsuperuser
+docker compose -f minimal/compose.yaml exec web python manage.py seed_products
 ```
 
-The same pages at <http://localhost:8000/>. The database and the wiki's
-images are in the `data` volume (`DJANGO_DB_PATH=/data/db.sqlite3`,
+The same pages at <http://localhost:8000/>. The database, the wiki's
+images and the products' documents are in the `data` volume (`DJANGO_DB_PATH=/data/db.sqlite3`,
 `DJANGO_MEDIA_ROOT=/data/media`), so they outlive the container; `down -v` starts over. Like the example itself this is for
 trying it locally: the production stack, with Postgres, Redis and a
 proxy in front, is [`docker/`](../docker/) and
@@ -123,6 +132,39 @@ registration, and `GENERIC["SSO_PROVIDERS"]`, the button - and allauth's
 URLs under `accounts/` in `mysite/urls.py`. A project that always signs
 in with Microsoft writes the same lines without the `if`.
 
+### Product management
+
+The `products` app is a list of products, each going through dated
+steps - its milestones - with its files attached. Where `library` lets
+`auto` work the screens out, `products/resources.py` declares them with
+`ModelResource`, for what the model alone cannot say:
+
+- **Products** - the list shows each product's *next step* and its
+  date, its *progress* (steps done out of all), whether any step is
+  *late*, and how many documents it has; all four sort and filter,
+  being annotations of `get_list_queryset`. The *Views* menu offers
+  *Late* and *In development*. The form edits the milestones on a tab,
+  with the product, in one save (`inlines`). The product's page leads
+  with its progress and next step (`detail_stats`), then two tabs: its
+  milestones and its documents (`related_tables`), each with an *Add*
+  button filling the product in.
+- **Milestones** - every product's steps in one list, by date, each
+  with its state (*Done*, *Late*, *Upcoming*); *Views* offers *Late*
+  and *Next 30 days*.
+- **Documents** - a title, a kind and the file (`FileField`, stored
+  under `MEDIA_ROOT`). A file is never a public address: it downloads
+  through `/api/products/document/<id>/files/file/`, for whoever may
+  see the document. A document is added from the product's
+  *Documents* tab - a form of its own, since a file cannot ride in the
+  milestones' rows.
+- **The dashboard** - two cards, *Late milestones* with their count and
+  *Due in 30 days*, each opening the milestones list already filtered
+  (`site.add_shortcut`).
+
+`seed_products` creates five products whose dates count from today, so
+some steps are done, some late, some coming. The steps are free text:
+a product follows the ones it needs.
+
 ### Checks
 
 `python manage.py check` answers *no issues*: it is what names a
@@ -135,8 +177,8 @@ missing line when the wiring is copied into another project.
   authentication; the `request` context processor; session
   authentication for DRF, since the pages call the API as the signed-in
   user; `LOGIN_URL = "site:login"`; `MEDIA_ROOT`, where the wiki's
-  images are written (`media/` beside `manage.py`, or
-  `DJANGO_MEDIA_ROOT`) - served by the wiki itself, so no `MEDIA_URL`. `GENERIC["EVENTS_WEBSOCKET_URL"] =
+  images and the products' documents are written (`media/` beside `manage.py`, or
+  `DJANGO_MEDIA_ROOT`) - served by the wiki and the documents' endpoint, so no `MEDIA_URL`. `GENERIC["EVENTS_WEBSOCKET_URL"] =
   None` says there is no live updates, so the pages open no WebSocket
   even where Channels happens to be installed. Mail goes to the
   console, through `MAILERS` on Django 6.1 and later, `EMAIL_BACKEND`
@@ -148,13 +190,17 @@ missing line when the wiring is copied into another project.
 - **`library/resources.py`** - `auto(Book)` works the columns, the
   search, the tags and the form out from the model
   ([Pages from the model](../docs/auto.md)). A `ModelResource` says them
-  by hand ([Sites and resources](../docs/sites.md)).
+  by hand ([Sites and resources](../docs/sites.md)), as
+  **`products/resources.py`** does: computed columns, presets, an
+  inline, related tables, figures on the summary page, file downloads
+  ([Forms](../docs/forms.md#files)).
 
 The wiki's permissions - superusers write, everyone signed in reads;
 give a group `generic_wiki.add_wikipage`, `change_wikipage` and
 `delete_wikipage` for other editors - are in [The wiki](../docs/wiki.md).
-Without it, drop `generic.wiki` from `INSTALLED_APPS`, its line from
-`urls.py`, and `MEDIA_ROOT`: `pip install -e .` is then enough.
+Without it, drop `generic.wiki` from `INSTALLED_APPS` and its line
+from `urls.py`: `pip install -e .` is then enough (`MEDIA_ROOT` stays,
+for the products' documents).
 
 The next steps - a second language, the admin, file uploads, live
 updates, production - are in [Installation](../docs/installation.md)

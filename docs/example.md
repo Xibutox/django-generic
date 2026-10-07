@@ -2,7 +2,8 @@
 
 A runnable support desk that exercises every feature, so you can click
 through them rather than read about them. For the opposite - the
-least a project needs, one model and the wiki - see
+least a project needs, one model and the wiki, plus a small product
+management app (products, dated milestones, documents) - see
 [`minimal/`](../minimal/README.md); for a document manager - teams,
 folders, versioned files - [`docmanager/`](../docmanager/README.md).
 

@@ -100,6 +100,87 @@ PAGES = textwrap.dedent("""
     ):
         status = client.get(url).status_code
         assert status == 200, f"{url}: {status}"
+
+    # Products: the seed, every page, the next step and the late ones.
+    import json
+    import tempfile
+
+    from django.core.management import call_command
+
+    settings.MEDIA_ROOT = tempfile.mkdtemp()
+    call_command("seed_products", stdout=open(os.devnull, "w"))
+    from products.models import Document, Product
+
+    product = Product.objects.get(reference="PRD-002")
+    milestone = product.milestones.first()
+    document = product.documents.first()
+
+    for url in (
+        "/products/product/",
+        f"/products/product/{product.pk}/",
+        "/products/product/add/",
+        f"/products/product/{product.pk}/change/",
+        "/products/milestone/",
+        f"/products/milestone/{milestone.pk}/",
+        "/products/document/",
+        f"/products/document/{document.pk}/",
+        "/products/document/add/",
+        f"/api/products/document/{document.pk}/files/file/",
+    ):
+        status = client.get(url).status_code
+        assert status == 200, f"{url}: {status}"
+
+    rows = {
+        row["reference"]: row
+        for row in client.get("/api/products/product/").json()["data"]
+    }
+    assert rows["PRD-002"]["next_step"] == "Prototype", rows["PRD-002"]
+    assert rows["PRD-002"]["progress"] == "2 / 5", rows["PRD-002"]
+    assert rows["PRD-002"]["document_count"] == 2, rows["PRD-002"]
+    assert rows["PRD-001"]["next_step"] == "-", rows["PRD-001"]
+
+    late = json.dumps(
+        {
+            "match": "all",
+            "conditions": [{"column": "late", "operator": "is_true"}],
+        }
+    )
+    rows = client.get("/api/products/product/", {"filters": late}).json()
+    assert [row["reference"] for row in rows["data"]] == [
+        "PRD-002",
+        "PRD-003",
+    ], rows
+    assert b"Late milestones" in client.get("/").content
+
+    # A product and its steps in one save; a file sent with its form.
+    response = client.post(
+        "/api/products/product/",
+        {
+            "reference": "PRD-100",
+            "name": "Kettle",
+            "status": "planned",
+            "_inlines": {
+                "milestones": [{"step": "Concept", "due_on": "2030-01-01"}]
+            },
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 201, response.content
+    kettle = Product.objects.get(reference="PRD-100")
+    assert kettle.milestones.get().step == "Concept"
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    payload = {"product": kettle.pk, "title": "Specification", "kind": "other"}
+    response = client.post(
+        "/api/products/document/",
+        {
+            "_payload": json.dumps(payload),
+            "file": SimpleUploadedFile("spec.txt", b"Boils water."),
+        },
+    )
+    assert response.status_code == 201, response.content
+    assert Document.objects.get(product=kettle).file.read() == b"Boils water."
     print("ok")
     """)
 
