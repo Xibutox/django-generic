@@ -34,7 +34,8 @@ COPY generic/ ./generic/
 RUN pip install ".[wiki]" "django-allauth[socialaccount]>=65.0" \
     && rm -rf /src
 
-# The database and the wiki's images live in /data, a volume, so it outlives the container.
+# The database, the wiki's images and the products' documents live in
+# /data, a volume, so they outlive the container.
 RUN useradd --create-home app && mkdir /data && chown app /data
 
 WORKDIR /app

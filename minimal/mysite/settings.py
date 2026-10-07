@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "generic",  # the framework's
     "generic.wiki",  # the wiki: needs the extra, pip install ".[wiki]"
     "library",
+    "products",
 ]
 
 MIDDLEWARE = [
@@ -81,9 +82,10 @@ TIME_ZONE = "UTC"
 
 STATIC_URL = "/static/"
 
-# Where uploaded files are written: the wiki's images. Beside manage.py,
-# or in the Docker image's volume. No MEDIA_URL: each image is served
-# through the wiki, to whoever is signed in.
+# Where uploaded files are written: the wiki's images and the products'
+# documents. Beside manage.py, or in the Docker image's volume. No
+# MEDIA_URL: each file is served through the wiki or its record's
+# endpoint, to whoever may see it.
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT") or BASE_DIR / "media"
 
 # The site's own sign-in page.
@@ -112,7 +114,7 @@ else:
 # Everything has a default (docs/settings.md). No live updates: the
 # pages open no WebSocket, so plain WSGI and runserver serve them all.
 GENERIC = {
-    "SITE_TITLE": "Library",
+    "SITE_TITLE": "Minimal example",
     "EVENTS_WEBSOCKET_URL": None,
 }
 

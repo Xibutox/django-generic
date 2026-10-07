@@ -258,8 +258,14 @@ The **reference implementation** is `example/` (a support desk) with
 `example_project/`. `example/resources.py` shows every feature; mimic it.
 `minimal/` is the smallest project the framework runs in - one
 `settings.py` (no Channels, `EVENTS_WEBSOCKET_URL: None`), `urls.py`,
-one model with `auto(Book)`, and `generic.wiki` (the `wiki` extra,
-`MEDIA_ROOT` for its images) - run from its folder (`cd minimal &&
+one model with `auto(Book)`, a `products` app declared by hand
+(`Product`, its `Milestone`s - dated steps, edited as an inline - and
+its `Document`s - a `FileField`, a related table; computed columns
+*next step*, *progress*, *late* annotated in `get_list_queryset`,
+presets, `detail_stats`, a computed horizontal timeline (time axis
+through `options`, today marked) in `detail_charts`, two dashboard shortcuts; `seed_products`),
+and `generic.wiki` (the `wiki` extra, `MEDIA_ROOT` for its images and
+the documents) - run from its folder (`cd minimal &&
 python manage.py runserver`) or in Docker (`minimal/Dockerfile`, one
 service in `minimal/compose.yaml`, SQLite and the images in a volume
 through `DJANGO_DB_PATH` and `DJANGO_MEDIA_ROOT`), kept working by
