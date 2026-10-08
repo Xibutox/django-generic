@@ -227,6 +227,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
 - [Numbering](docs/numbering.md) — `allocate("{team}-{year}-{seq:04}", team="LEG")`: numbers from a pattern, each series counting on its own, under a lock
+- [User guide](docs/user-guide/guide-utilisateur.docx) — for the people using an application built on the framework: the everyday actions of every screen, in Word (French) and as a page every wiki starts with ([how](docs/wiki.md#the-user-guide))
 - [The wiki](docs/wiki.md) — several wikis, each exported as a PDF, who reads and who writes each; pages, editor, images and files uploaded into a page and ordered in it, history, the HTML it keeps
 - [Search without accents](docs/search.md) — `generic.search`: `societe` finds *Société* everywhere, trigram indexes, best match first
 - [Testing](docs/testing.md) — the suite, and `generic.testing.PageSweep`: every page and endpoint of a project swept from ten lines

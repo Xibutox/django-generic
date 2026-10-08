@@ -153,6 +153,7 @@ include = ["generic*"]
 [tool.setuptools.package-data]
 generic = [
     "templates/**/*",
+    "wiki/guide/*.html",
     "static/**/*",
     "locale/**/*",
     "CHANGELOG.md",
@@ -201,6 +202,7 @@ addopts = [
 ]
 markers = [
     "browser: drives the example through a real browser (tests/browser)",
+    "user_guide: keeps the wiki's user guide the migration writes (tests/wiki)",
 ]
 asyncio_mode = "auto"
 filterwarnings = ["error::DeprecationWarning:generic.*"]

@@ -179,6 +179,7 @@ generic/
 │                           own LICENSE and CHANGELOG.md files
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
+│                           guide.py + guide/ (the user guide, migration 0007, wiki_user_guide),
 │                           nh3 cleaning, WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
 ├── teams/                  optional app generic.teams: Team (members, leaders, colour),
 │                           the see_every_team permission, scoping.py (scope_to_teams,
@@ -1307,6 +1308,21 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   fetched, files listed. Fonts: `WIKI_PDF_FONTS` or DejaVu/Liberation/Arial
   found on disk, else Latin-1 core fonts. `pdf.available()` false
   without fpdf2: no button, `export.pdf` 404. See `docs/wiki.md#pdf`.
+- The user guide: `generic/wiki/guide/{en,fr}.html` (the everyday
+  actions of every screen, for readers; only tags the cleaning keeps),
+  `generic/wiki/guide.py` (`GUIDES` language -> (title, slug),
+  `GUIDE_SLUGS`, `guide_languages()` from `LANGUAGES`, English when
+  none, `install_user_guide(wiki=None, languages=None, update=False)`;
+  a page at its slug is skipped unless `update`, which keeps the old
+  text as a revision). Migration `0007_user_guide` puts it in the first
+  wiki (position 1000); `manage.py wiki_user_guide [--wiki]
+  [--language] [--update]`. tests/wiki/conftest.py deletes it before
+  each wiki test except those marked `user_guide`; a seed renaming the
+  first wiki checks its pages excluding `GUIDE_SLUGS` (docmanager).
+  The Word version, `docs/user-guide/guide-utilisateur.docx`, is built
+  by `scripts/build_user_guide.py` (python-docx) from the French text
+  and `docs/user-guide/images/` (`FIGURES`: heading -> screenshots):
+  change the HTML, then rebuild it. See `docs/wiki.md#the-user-guide`.
 
 ---
 

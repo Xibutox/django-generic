@@ -1,0 +1,153 @@
+<p>This page explains the everyday moves in an application built with django-generic: finding your way, finding a record, filtering a list, opening a record's page, adding, changing or deleting a record, and following what changes. Every screen of the application works the same way: what you learn on one list holds for all the others.</p>
+<p>The names of the menus and of the data depend on your application; the examples below speak of "tickets" or "customers" to fix ideas. What you see also depends on your permissions: a missing button is usually an action that is not open to you.</p>
+<h2>1. Finding your way</h2>
+<h3>Signing in</h3>
+<p>The application opens on the sign-in page: your username and password, or your organisation's sign-in button when one is offered. After several failures the account is locked for a few minutes. To sign out: the <strong>account menu</strong> (your initials, top right), then <em>Log out</em>.</p>
+<h3>The frame of every page</h3>
+<ul>
+<li><strong>The navigation</strong>, on the left, lists the screens you may open, in groups. A click on a group's title folds or unfolds it, and the choice is remembered. The <em>Filter navigation</em> box at the very top finds a screen by its name.</li>
+<li><strong>The top bar</strong> holds the button that opens or closes the navigation, the <strong>pin</strong> that keeps it beside the page (or lets it float: it then slides out of the left edge of the screen when the pointer reaches it), the application's name (back to the dashboard) and the <strong>breadcrumbs</strong>, which say where you are and take you up a level.</li>
+<li>On the right: the <strong>search</strong>, the <strong>notification bell</strong>, the <strong>theme</strong> button (light, dark or the system's) and the <strong>account menu</strong>.</li>
+</ul>
+<p>On a telephone or a small window, the navigation opens over the page with the same button.</p>
+<h2>2. The dashboard</h2>
+<p>It is the home page. Depending on what the application provides, it shows:</p>
+<ul>
+<li><strong>wiki pages pinned</strong> to it: announcements, instructions, how-tos;</li>
+<li><strong>shortcuts</strong>: cards leading straight to an already filtered list, a form or another site, sometimes with a count;</li>
+<li><strong>key figures</strong>: a click on a figure opens the list of the records it counts, filtered the same way;</li>
+<li><strong>record cards</strong>: the most urgent, the latest; <em>See all</em> opens the matching list.</li>
+</ul>
+<p>They refresh by themselves when the data changes.</p>
+<h2>3. Finding anything: the search</h2>
+<p>The <em>Search…</em> box of the top bar, or <strong>Ctrl+K</strong> (or the <strong>/</strong> key), opens the search palette. Type a few letters: it offers the screens, the records (by name or reference) and the wiki pages that match, grouped by kind. The <strong>arrows</strong> move through the results, <strong>Enter</strong> opens the chosen one, <strong>Escape</strong> closes the palette.</p>
+<h2>4. Lists</h2>
+<p>Each kind of record has its list: a table, with a search box and a toolbar above it (<em>Filter</em>, <em>Views</em>, <em>Columns</em>, <em>Export</em>, <em>Reload the rows</em>), and sometimes charts. The page's own buttons (<em>Add</em>, <em>Import</em>, <em>Watch every record</em>, a calendar…) are at the top right.</p>
+<h3>Reading and sorting</h3>
+<ul>
+<li>A click on a column's header sorts the table on it; a second click reverses the order.</li>
+<li>A name in the link colour is a link: it opens that record (a customer, an assignee…).</li>
+<li>Coloured values (a status, a priority, tags) are tags: they filter like any other value.</li>
+<li>Under the table: the number of rows, how many rows a page shows, and the pages.</li>
+</ul>
+<h3>Searching a list</h3>
+<p>The <em>Search or filter…</em> box searches every column meant for searching. Every word must be there: <code>invoice blank</code> finds the rows holding both words. A <code>!</code> before a word excludes it (<code>invoice !blank</code>), quotes search for a phrase as written (<code>"password reset"</code>).</p>
+<h3>Filtering</h3>
+<p>There are five ways to set a filter, all leading to the same result:</p>
+<ol>
+<li>the <strong>Filter</strong> button (or the <strong>F</strong> key): pick a column, then the condition;</li>
+<li>the <strong>funnel</strong> appearing in a column's header when the pointer is on it;</li>
+<li>the <strong>search row</strong> under the headers: a field per column (the button beside <em>Filter</em> shows or hides it);</li>
+<li>a <strong>typed filter</strong> in the search box, shaped <code>column:value</code>, such as <code>status:open,pending</code>; suggestions appear as you type;</li>
+<li>a <strong>right click on a cell</strong>: <em>Filter on this value</em>, or leave it out.</li>
+</ol>
+<p>The filter editor fits the column: a list of values to tick with how many rows hold each (statuses, relations, tags), "contains / starts with / is" for a text, "greater than / between" for a number, "today / this week / the last 30 days / between two dates" for a date, "yes / no" for a checkbox, and everywhere "is empty / is not empty". The filter applies while you change it; <em>Done</em> closes the editor, <em>Cancel</em> puts things back as they were.</p>
+<p>The filters in force are <strong>chips</strong> under the toolbar: a click on a chip changes it, its cross removes it, <em>Clear all</em> removes them all. With several filters, the start of the bar chooses whether rows must match <em>all of</em> them or <em>any of</em> them; <em>Add a group</em> combines both (such as "open AND (urgent OR opened more than 30 days ago)").</p>
+<p>In the search row and in typed filters, a few short forms are understood:</p>
+<ul>
+<li>text: <code>=Invoice</code> the exact value, <code>^SD-10</code> a start, <code>a,b</code> either;</li>
+<li>number: <code>5</code>, <code>&gt;10</code>, <code>&lt;=2.5</code>, <code>2..8</code> (between 2 and 8);</li>
+<li>date: <code>2026-01-01</code>, <code>&gt;=2026-01-01</code>, <code>2026-01-01..2026-03-31</code>, <code>30d</code> (the last 30 days), <code>+7d</code> (the next 7), <code>this-month</code>;</li>
+<li>everywhere: <code>empty</code> for rows without a value, and <code>!</code> before to exclude (<code>!empty</code>).</li>
+</ul>
+<p>The page's address keeps the filters and the search: a filtered list can be bookmarked, sent to a colleague or found again with the browser's Back button.</p>
+<h3>Charts above a list</h3>
+<p>They follow the table's filters and search. A click on a bar or a slice filters the table on that value. Their buttons show the figures as a table or download the chart as an image; some change their period (day, week, month…).</p>
+<h3>Views: a layout found again</h3>
+<p>The <strong>Views</strong> menu offers the views the application <em>suggests</em> and <em>your views</em>. <em>Save this view</em> keeps the current layout (columns, their order, sorting, filters, search, rows per page) under a name; a view can become the one the table opens with, and it follows you on every device. <em>Back to the default layout</em> undoes everything that was changed. Where the application allows it, <em>Send by e-mail on a schedule</em> mails the list regularly.</p>
+<h3>Choosing the columns</h3>
+<p>The <strong>Columns</strong> menu ticks the columns shown, with a box to find one by its name; <em>Show all</em> and <em>Default</em> are at its foot.</p>
+<h3>Exporting</h3>
+<p>The <strong>Export</strong> menu offers <em>Excel</em> and <em>CSV</em>: the file holds <strong>every row matching the filters and the search</strong>, not only the page on screen, with the visible columns in their order. <em>Copy to the clipboard</em> and <em>Print</em> take the page on screen only.</p>
+<h3>Acting on several rows</h3>
+<ol>
+<li>Tick the rows. The header's box ticks the whole page; a link then offers to <em>Select all N matching rows</em>, every row under the current filters.</li>
+<li>A bar appears: <em>Choose an action</em>, then <em>Apply</em>. Dangerous actions ask first.</li>
+<li><em>Clear selection</em> unticks everything.</li>
+</ol>
+<h3>A row's menu</h3>
+<p>The <strong>⋯</strong> button at the end of a row, or a <strong>right click</strong> on it, opens its menu: <em>Open</em>, <em>Edit</em>, <em>Delete</em> and the other actions you may run, with filters on the value clicked. A <strong>double click</strong> on a row opens the record.</p>
+<h3>Editing in a table</h3>
+<p>Some tables are grids: every cell that may be changed is already a field. A list, a switch or a date saves at once; a text saves with <strong>Enter</strong> (the cursor moves down a row, as in a spreadsheet) or when you leave the cell; <strong>Escape</strong> cancels the typing. A saved cell flashes green; an error shows under the cell. <em>Add a row</em> adds a row at the top of the table, sent with ✓ or Enter, discarded with ✕.</p>
+<h2>5. A record's page</h2>
+<p>A click on a record opens its <strong>page</strong> (its summary):</p>
+<ul>
+<li>at the top, its name, the <em>Watch</em> and <em>Edit</em> buttons, the <strong>⋯</strong> menu (<em>More actions</em>) and the actions of this kind of record (changing a status, for instance);</li>
+<li>a line says who changed it last, and when, with a <em>See the history</em> link;</li>
+<li><strong>figures</strong> as tiles and, sometimes, charts;</li>
+<li>its values, in sections that fold; a related record is a link to its own page, an attached file downloads with a click;</li>
+<li><strong>tabs</strong>, one per kind of related record (a customer's tickets, a ticket's time entries…), with their count. Each tab is a whole list: search, filters, views, export, actions. Its <em>Add</em> button creates a record already attached to this one. When the tabs do not fit, the last ones go behind a <strong>+N</strong> button.</li>
+</ul>
+<p>The page refreshes by itself when somebody changes the record while you are looking at it.</p>
+<h2>6. Adding, changing, deleting</h2>
+<h3>Adding</h3>
+<p>The <strong>Add</strong> button at the top of a list, a shortcut on the dashboard, or <em>Add</em> in a tab of a record's page open an empty form (in the last case, already attached to the record). In a calendar, a day's <strong>+</strong> opens the form with that date.</p>
+<h3>Filling in a form</h3>
+<ul>
+<li>An asterisk <strong>*</strong> marks a required field. Fields are grouped in sections, sometimes folded or in tabs.</li>
+<li>A list of choices is searched by typing a few letters; its cross empties it. Beside a list naming another record, the <strong>pencil</strong> edits the chosen one and the <strong>+</strong> creates a new one, in a small window: it is chosen as soon as it is saved, and nothing typed so far is lost.</li>
+<li>A file: <em>Choose a file</em>, or <em>Replace</em> and <em>Remove</em> for a file already there. The change happens when you save.</li>
+<li>Rows inside the form (comments, steps…) are filled in right there: <em>Add another…</em> adds a row, <em>Remove</em> takes one away (and <em>Undo</em> puts it back).</li>
+</ul>
+<h3>Saving</h3>
+<p>At the foot of the form: <strong>Save</strong> (back to the record's page), <strong>Save and continue editing</strong> (stay on the form), <strong>Save and add another</strong> (an empty form opens) and <em>Cancel</em>. <strong>Ctrl+S</strong> saves too. An error shows under its field, and nothing is saved until it is fixed. Leaving the page with unsaved changes asks first.</p>
+<h3>Changing</h3>
+<p>The <strong>Edit</strong> button of a record's page, or <em>Edit</em> in a row's menu, opens the same form, filled in. Its tabs also lead to the history; <em>Summary</em> goes back to the record's page.</p>
+<h3>Deleting</h3>
+<p><strong>Delete</strong> is at the foot of the form, in a row's menu, or among the bulk actions. Before deleting, a window shows <strong>everything that goes with the record</strong> (its comments, its lines…); <em>Yes, delete</em> confirms. When protected records depend on it, the deletion is refused and the window names them. When the screen has a <strong>trash</strong>, the record is only moved there (<em>Move to the trash</em>): the list's <em>Trash</em> page can <em>Restore</em> it.</p>
+<h2>7. History</h2>
+<p>Every change is kept. The <strong>History</strong> tab of a record's page (or the <em>See the history</em> link) lists its versions, newest first: who, when, and each value before → after. <em>Show this version in full</em> shows the record as it was then. The <em>Changes</em> page, when it is open to you, lists every change of the whole application, with the usual filters and exports.</p>
+<h2>8. Importing from a spreadsheet</h2>
+<p>When a list offers <strong>Import</strong>:</p>
+<ol>
+<li>choose or drop an Excel or CSV file; <em>Download a template</em> gives an empty workbook with the right headers;</li>
+<li>match each column of the file to a field;</li>
+<li>check the <em>Preview</em>: what will be created, updated, left unchanged, and the errors row by row;</li>
+<li><em>Import</em> writes everything, or nothing while a row is in error.</li>
+</ol>
+<h2>9. Other ways of looking at the data</h2>
+<h3>Calendar</h3>
+<p>Some dated records have a <strong>calendar</strong> (a button at the top of their list, or an entry in the navigation): <em>Month</em>, <em>Week</em> or <em>List</em>, the arrows to change the period, <em>Today</em> to come back. The list's search and filters choose what it shows. A record is <strong>dragged</strong> onto another day to change its date, when you may change it; a click opens it.</p>
+<h3>Tree</h3>
+<p>Records holding other records (a bill of materials, a hierarchy) show as a <strong>tree</strong>: a row's arrow unfolds it, and the number beside the name says how many it holds. With the keyboard: arrows up and down, right to unfold, left to fold, Enter to open. <em>Collapse all</em> and <em>Refresh</em> are above it; the search looks at every level.</p>
+<h2>10. Staying informed</h2>
+<ul>
+<li><strong>Watch</strong>: on a record's page, this button has you told when the record changes; the arrow beside it also offers to watch every record of its kind. On a list, <em>Watch every record</em> does the same.</li>
+<li><strong>Watching</strong>, in the account menu, lists what you watch and sets, for each, which changes matter and how you hear about them.</li>
+<li>The <strong>bell</strong> shows how many notifications are unread; its menu shows the latest, <em>Mark all as read</em> and <em>See all notifications</em>. A notification also shows as a message on the open page, and by e-mail if you chose it.</li>
+</ul>
+<h2>11. The wiki</h2>
+<p>The wiki holds what the team writes down. <strong>Wiki</strong>, in the navigation, lists the wikis; <em>Open</em> goes into one, <em>PDF</em> downloads the whole of it (portrait or landscape).</p>
+<ul>
+<li>On the left, the menu of its pages, as a tree, with a box to filter them; the other wikis unfold under its name.</li>
+<li><strong>Edit</strong> opens the editor: headings, bold, italics, lists, quotes, code, links, images and attached files (from the toolbar, dropped or pasted). The toolbar's arrows, or <strong>Alt+Up</strong> and <strong>Alt+Down</strong>, move the current line. The editor also sets the parent page, the position in the menu and whether the page is pinned to the dashboard. <em>Save</em> or <em>Cancel</em>.</li>
+<li><strong>Subpage</strong> creates a page under this one; the menu's <strong>+</strong> creates a page.</li>
+<li><strong>History</strong> lists the earlier versions; <em>Restore</em> brings one back (the current one is kept, so it can be undone).</li>
+<li>If somebody saved the page while you were editing it, your save is refused with their name, and your text stays in the editor to be copied.</li>
+</ul>
+<h2>12. Your account</h2>
+<p>The <strong>account menu</strong> (your initials) leads to the <em>Account settings</em>, <em>Notifications</em>, <em>Watching</em>, <em>Help</em> and <em>What changed</em> (the changes of each version); it changes the <strong>language</strong> and signs you out. The <em>Account settings</em> page holds:</p>
+<ul>
+<li><strong>Profile</strong>: first name, last name, e-mail address;</li>
+<li><strong>Appearance</strong>: the <em>System</em>, <em>Light</em> or <em>Dark</em> theme, ready-made palettes (<em>Soft</em>, <em>High contrast</em>…) and sliders for the colour, the contrast, the striped rows;</li>
+<li><strong>Preferences</strong>: language, navigation pinned or floating, rows per page, how you are notified (in the application, by e-mail or both), and <em>Remember table layouts</em> to find each list as you left it;</li>
+<li><strong>Security</strong>: <em>Change password</em>.</li>
+</ul>
+<p>These settings are kept on your account: they follow you from one computer to the next. The size of the text follows the browser's (Ctrl and + or −).</p>
+<h2>13. Keyboard shortcuts</h2>
+<ul>
+<li><strong>Ctrl+K</strong> or <strong>/</strong>: the search;</li>
+<li><strong>F</strong>: filter the list on screen;</li>
+<li><strong>Ctrl+S</strong>: save a form;</li>
+<li><strong>Escape</strong>: close a menu, a window, the palette;</li>
+<li><strong>Enter</strong>: confirm a cell, open the chosen result;</li>
+<li><strong>Alt+Up</strong> / <strong>Alt+Down</strong>: move a line in the wiki's editor;</li>
+<li><strong>Shift + right click</strong>: the browser's own menu in a table.</li>
+</ul>
+<h2>14. When something is wrong</h2>
+<ul>
+<li><strong>A button or a screen is missing</strong>: it is not open to your account; ask an administrator.</li>
+<li><strong>A list looks empty</strong>: look at the filter chips and the search box, or use <em>Back to the default layout</em> in the <em>Views</em> menu.</li>
+<li><strong>A page looks outdated</strong> after the application was updated: reload it with Ctrl+Shift+R.</li>
+<li><strong>A restart is announced</strong> by a banner: save your work before the time it gives.</li>
+</ul>

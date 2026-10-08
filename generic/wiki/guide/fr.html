@@ -1,0 +1,153 @@
+<p>Cette page explique les gestes de tous les jours dans une application construite avec django-generic : se repérer, retrouver une information, filtrer une liste, ouvrir une fiche, créer, modifier ou supprimer un enregistrement, suivre ce qui change. Chaque écran de l'application suit les mêmes règles : ce qui est appris sur une liste vaut pour toutes les autres.</p>
+<p>Les noms des menus et des données dépendent de votre application ; les exemples ci-dessous parlent de « tickets » ou de « clients » pour fixer les idées. Ce que vous voyez dépend aussi de vos droits : un bouton absent est souvent une action qui ne vous est pas ouverte.</p>
+<h2>1. Se repérer</h2>
+<h3>Se connecter</h3>
+<p>L'application s'ouvre sur la page de connexion : votre identifiant et votre mot de passe, ou le bouton de connexion de votre entreprise lorsqu'il est proposé. Après plusieurs échecs, le compte est bloqué quelques minutes. Pour vous déconnecter : le <strong>menu du compte</strong> (vos initiales, en haut à droite), puis <em>Déconnexion</em>.</p>
+<h3>Le cadre de chaque page</h3>
+<ul>
+<li><strong>La navigation</strong>, à gauche, liste les écrans auxquels vous avez accès, rangés par groupes. Un clic sur le titre d'un groupe le replie ou le déplie, et ce choix est mémorisé. La zone <em>Filtrer la navigation</em>, tout en haut, retrouve un écran par son nom.</li>
+<li><strong>La barre du haut</strong> porte le bouton qui ouvre ou ferme la navigation, l'<strong>épingle</strong> qui la fixe à côté de la page (ou la laisse flotter : elle sort alors du bord gauche de l'écran au passage de la souris), le nom de l'application (retour au tableau de bord) et le <strong>fil d'Ariane</strong>, qui indique où vous êtes et permet de remonter d'un niveau.</li>
+<li>À droite : la <strong>recherche</strong>, la <strong>cloche des notifications</strong>, le bouton de <strong>thème</strong> (clair, sombre ou celui du système) et le <strong>menu du compte</strong>.</li>
+</ul>
+<p>Sur un téléphone ou une petite fenêtre, la navigation s'ouvre par-dessus la page avec le même bouton.</p>
+<h2>2. Le tableau de bord</h2>
+<p>C'est la page d'accueil. Selon ce que l'application a prévu, on y trouve :</p>
+<ul>
+<li>des <strong>pages du wiki épinglées</strong> : annonces, consignes, mode d'emploi ;</li>
+<li>des <strong>raccourcis</strong> : des cartes qui mènent droit à une liste déjà filtrée, à un formulaire ou à un site extérieur, parfois avec un compteur ;</li>
+<li>des <strong>chiffres clés</strong> : un clic sur un chiffre ouvre la liste des enregistrements qui le composent, filtrée de la même façon ;</li>
+<li>des <strong>cartes d'enregistrements</strong> : les plus urgents, les plus récents ; <em>Tout voir</em> ouvre la liste correspondante.</li>
+</ul>
+<p>Ces éléments se mettent à jour d'eux-mêmes quand les données changent.</p>
+<h2>3. Retrouver n'importe quoi : la recherche</h2>
+<p>La zone <em>Rechercher…</em> de la barre du haut, ou le raccourci <strong>Ctrl+K</strong> (ou la touche <strong>/</strong>), ouvre la palette de recherche. Tapez quelques lettres : elle propose les écrans, les enregistrements (par leur nom ou leur référence) et les pages du wiki qui correspondent, regroupés par type. Les <strong>flèches</strong> se déplacent dans les résultats, <strong>Entrée</strong> ouvre celui qui est choisi, <strong>Échap</strong> ferme la palette.</p>
+<h2>4. Les listes</h2>
+<p>Chaque type d'enregistrement a sa liste : un tableau, avec au-dessus une zone de recherche et une barre d'outils (<em>Filtrer</em>, <em>Vues</em>, <em>Colonnes</em>, <em>Exporter</em>, <em>Recharger les lignes</em>), et parfois des graphiques. Les boutons de la page (<em>Ajouter</em>, <em>Importer</em>, <em>Suivre tous les enregistrements</em>, une vue calendrier…) sont en haut à droite.</p>
+<h3>Lire et trier</h3>
+<ul>
+<li>Un clic sur l'en-tête d'une colonne trie le tableau sur cette colonne ; un second clic inverse l'ordre.</li>
+<li>Un nom souligné est un lien : il ouvre l'enregistrement concerné (un client, un responsable…).</li>
+<li>Les valeurs en couleur (statut, priorité, étiquettes) sont des étiquettes : on peut filtrer dessus comme sur toute autre valeur.</li>
+<li>Sous le tableau : le nombre de lignes, le choix du nombre de lignes par page et la pagination.</li>
+</ul>
+<h3>Rechercher dans une liste</h3>
+<p>La zone <em>Rechercher ou filtrer…</em> cherche dans toutes les colonnes prévues pour la recherche. Chaque mot doit être présent : <code>facture vide</code> trouve les lignes qui contiennent les deux mots. Un <code>!</code> devant un mot l'exclut (<code>facture !vide</code>), des guillemets cherchent une expression exacte (<code>"mot de passe"</code>).</p>
+<h3>Filtrer</h3>
+<p>Il y a cinq façons de poser un filtre, qui aboutissent toutes au même résultat :</p>
+<ol>
+<li>le bouton <strong>Filtrer</strong> (ou la touche <strong>F</strong>) : choisissez une colonne, puis la condition ;</li>
+<li>l'<strong>entonnoir</strong> qui apparaît dans l'en-tête d'une colonne au passage de la souris ;</li>
+<li>la <strong>ligne de recherche</strong> sous les en-têtes : un champ par colonne (le bouton à côté de <em>Filtrer</em> l'affiche ou la masque) ;</li>
+<li>un <strong>filtre tapé</strong> dans la zone de recherche, de la forme <code>colonne:valeur</code>, par exemple <code>statut:ouvert</code> ; des suggestions apparaissent pendant la frappe ;</li>
+<li>un <strong>clic droit sur une cellule</strong> : <em>Filtrer sur cette valeur</em>, ou au contraire l'exclure.</li>
+</ol>
+<p>L'éditeur de filtre s'adapte à la colonne : une liste de valeurs à cocher avec leur nombre d'occurrences (statuts, relations, étiquettes), « contient / commence par / est » pour un texte, « supérieur à / entre » pour un nombre, « aujourd'hui / cette semaine / les 30 derniers jours / entre deux dates » pour une date, « oui / non » pour une case à cocher, et partout « est vide / n'est pas vide ». Le filtre s'applique pendant que vous le modifiez ; <em>Terminé</em> ferme l'éditeur, <em>Annuler</em> revient à l'état précédent.</p>
+<p>Les filtres actifs s'affichent en <strong>pastilles</strong> sous la barre d'outils : un clic sur une pastille la modifie, sa croix la retire, <em>Tout effacer</em> les retire toutes. Avec plusieurs filtres, l'en-tête de la barre choisit si les lignes doivent remplir <em>toutes les conditions</em> ou <em>au moins une</em> ; <em>Ajouter un groupe</em> combine les deux (par exemple « ouvert ET (urgent OU ouvert depuis plus de 30 jours) »).</p>
+<p>Dans la ligne de recherche et dans les filtres tapés, quelques écritures courtes sont comprises :</p>
+<ul>
+<li>texte : <code>=Facture</code> la valeur exacte, <code>^SD-10</code> un début, <code>a,b</code> l'une ou l'autre ;</li>
+<li>nombre : <code>5</code>, <code>&gt;10</code>, <code>&lt;=2.5</code>, <code>2..8</code> (entre 2 et 8) ;</li>
+<li>date : <code>2026-01-01</code>, <code>&gt;=2026-01-01</code>, <code>2026-01-01..2026-03-31</code>, <code>30d</code> (les 30 derniers jours), <code>+7d</code> (les 7 prochains), <code>this-month</code> ;</li>
+<li>partout : <code>empty</code> pour les lignes sans valeur, et <code>!</code> devant pour exclure (<code>!empty</code>).</li>
+</ul>
+<p>L'adresse de la page garde les filtres et la recherche : une liste filtrée peut être mise en favori, envoyée à un collègue ou retrouvée avec le bouton Précédent du navigateur.</p>
+<h3>Les graphiques au-dessus d'une liste</h3>
+<p>Ils suivent les filtres et la recherche du tableau. Un clic sur une barre ou une part filtre le tableau sur cette valeur. Leurs boutons affichent les chiffres sous forme de tableau ou téléchargent le graphique en image ; certains changent de période (jour, semaine, mois…).</p>
+<h3>Les vues : retrouver une disposition</h3>
+<p>Le menu <strong>Vues</strong> propose les <em>vues suggérées</em> par l'application et <em>vos vues</em>. <em>Enregistrer cette vue</em> mémorise la disposition actuelle (colonnes, ordre, tri, filtres, recherche, nombre de lignes) sous un nom ; une vue peut devenir celle qui s'ouvre par défaut, et elle vous suit sur tous vos appareils. <em>Revenir à la disposition par défaut</em> efface tout ce qui a été changé. Lorsque l'application le permet, <em>Envoyer par e-mail selon un calendrier</em> programme l'envoi régulier de la liste.</p>
+<h3>Choisir les colonnes</h3>
+<p>Le menu <strong>Colonnes</strong> coche ou décoche les colonnes affichées, avec une zone pour en trouver une par son nom ; <em>Tout afficher</em> et <em>Par défaut</em> sont en bas du menu.</p>
+<h3>Exporter</h3>
+<p>Le menu <strong>Exporter</strong> propose <em>Excel</em> et <em>CSV</em> : le fichier contient <strong>toutes les lignes qui correspondent aux filtres et à la recherche</strong>, pas seulement la page affichée, avec les colonnes visibles dans leur ordre. <em>Copier dans le presse-papiers</em> et <em>Imprimer</em> ne prennent que la page affichée.</p>
+<h3>Agir sur plusieurs lignes</h3>
+<ol>
+<li>Cochez les lignes voulues. La case de l'en-tête coche toute la page ; un lien propose ensuite de <em>Sélectionner les N lignes correspondantes</em>, c'est-à-dire toutes celles des filtres en cours.</li>
+<li>Une barre apparaît : <em>Choisir une action…</em>, puis <em>Appliquer</em>. Les actions dangereuses demandent une confirmation.</li>
+<li><em>Effacer la sélection</em> décoche tout.</li>
+</ol>
+<h3>Le menu d'une ligne</h3>
+<p>Le bouton <strong>⋯</strong> en bout de ligne, ou un <strong>clic droit</strong> sur la ligne, ouvre son menu : <em>Ouvrir</em>, <em>Modifier</em>, <em>Supprimer</em> et les autres actions permises, ainsi que les filtres sur la valeur cliquée. Un <strong>double-clic</strong> sur une ligne ouvre l'enregistrement.</p>
+<h3>Modifier directement dans un tableau</h3>
+<p>Certains tableaux sont des grilles de saisie : chaque cellule modifiable est déjà un champ. Une liste, une case ou une date s'enregistre aussitôt ; un texte s'enregistre avec <strong>Entrée</strong> (le curseur descend d'une ligne, comme dans un tableur) ou en quittant la cellule ; <strong>Échap</strong> annule la saisie. La cellule enregistrée s'éclaire en vert ; une erreur s'affiche sous la cellule. <em>Ajouter une ligne</em> crée une ligne en haut du tableau, envoyée avec ✓ ou Entrée, abandonnée avec ✕.</p>
+<h2>5. La fiche d'un enregistrement</h2>
+<p>Un clic sur un enregistrement ouvre sa <strong>fiche</strong> (son résumé) :</p>
+<ul>
+<li>en haut, son nom, les boutons <em>Suivre</em>, <em>Modifier</em>, le menu <strong>⋯</strong> (<em>Plus d'actions</em>) et les actions propres à ce type d'enregistrement (changer un statut, par exemple) ;</li>
+<li>une ligne indique qui l'a modifié en dernier, et quand, avec un lien <em>Voir l'historique</em> ;</li>
+<li>des <strong>chiffres</strong> en tuiles et, parfois, des graphiques ;</li>
+<li>ses valeurs, rangées par sections que l'on peut replier ; un enregistrement lié est un lien vers sa propre fiche, un fichier joint se télécharge d'un clic ;</li>
+<li>des <strong>onglets</strong>, un par type d'enregistrement lié (les tickets d'un client, les saisies de temps d'un ticket…), avec leur nombre. Chaque onglet est une liste complète : recherche, filtres, vues, export, actions. Son bouton <em>Ajouter</em> crée un enregistrement déjà rattaché à la fiche. Quand les onglets ne tiennent pas sur la largeur, les derniers passent derrière un bouton <strong>+N</strong>.</li>
+</ul>
+<p>La fiche se met à jour d'elle-même si quelqu'un modifie l'enregistrement pendant que vous la regardez.</p>
+<h2>6. Créer, modifier, supprimer</h2>
+<h3>Créer</h3>
+<p>Le bouton <strong>Ajouter</strong> en haut d'une liste, un raccourci du tableau de bord, ou <em>Ajouter</em> dans un onglet de fiche ouvrent un formulaire vide (dans le dernier cas, déjà rattaché à la fiche). Dans une vue calendrier, le <strong>+</strong> d'un jour ouvre le formulaire avec cette date.</p>
+<h3>Remplir un formulaire</h3>
+<ul>
+<li>Un astérisque <strong>*</strong> signale un champ obligatoire. Les champs sont rangés en sections, parfois repliées ou en onglets.</li>
+<li>Une liste de choix se recherche en tapant quelques lettres ; la croix la vide. À côté d'une liste qui désigne un autre enregistrement, le <strong>crayon</strong> modifie celui qui est choisi et le <strong>+</strong> en crée un nouveau, dans une petite fenêtre : il est sélectionné dès qu'il est enregistré, sans perdre ce qui a déjà été saisi.</li>
+<li>Un fichier : <em>Choisir un fichier</em>, ou <em>Remplacer</em> et <em>Retirer</em> pour un fichier déjà présent. Le changement n'a lieu qu'à l'enregistrement.</li>
+<li>Des lignes intégrées (des commentaires, des étapes…) se remplissent dans le formulaire même : <em>Ajouter un autre…</em> ajoute une ligne, <em>Retirer</em> enlève une ligne (et <em>Annuler</em> la remet).</li>
+</ul>
+<h3>Enregistrer</h3>
+<p>En bas du formulaire : <strong>Enregistrer</strong> (retour à la fiche), <strong>Enregistrer et continuer les modifications</strong> (on reste sur le formulaire), <strong>Enregistrer et ajouter un autre</strong> (un formulaire vide s'ouvre) et <em>Annuler</em>. <strong>Ctrl+S</strong> enregistre aussi. Une erreur s'affiche sous le champ concerné et rien n'est enregistré tant qu'elle n'est pas corrigée. Quitter la page avec des modifications non enregistrées demande une confirmation.</p>
+<h3>Modifier</h3>
+<p>Le bouton <strong>Modifier</strong> d'une fiche, ou <em>Modifier</em> dans le menu d'une ligne, ouvre le même formulaire, rempli. Ses onglets donnent aussi accès à l'historique ; <em>Résumé</em> revient à la fiche.</p>
+<h3>Supprimer</h3>
+<p><strong>Supprimer</strong> se trouve en bas du formulaire, dans le menu d'une ligne, ou parmi les actions groupées. Avant de supprimer, une fenêtre montre <strong>tout ce qui disparaîtra avec l'enregistrement</strong> (ses commentaires, ses lignes…) ; <em>Oui, supprimer</em> confirme. Si d'autres enregistrements protégés en dépendent, la suppression est refusée et la fenêtre dit lesquels. Lorsque l'écran dispose d'une <strong>corbeille</strong>, l'enregistrement y est seulement déplacé (<em>Mettre à la corbeille</em>) : la page <em>Corbeille</em> de la liste permet de le <em>Restaurer</em>.</p>
+<h2>7. L'historique</h2>
+<p>Chaque modification est conservée. L'onglet <strong>Historique</strong> d'une fiche (ou le lien <em>Voir l'historique</em>) liste les versions, de la plus récente à la plus ancienne : qui, quand, et chaque valeur avant → après. <em>Voir cette version en entier</em> montre l'enregistrement tel qu'il était à ce moment. La page <em>Modifications</em>, lorsqu'elle vous est ouverte, liste toutes les modifications de toute l'application, avec les filtres et les exports habituels.</p>
+<h2>8. Importer depuis un tableur</h2>
+<p>Lorsqu'une liste propose <strong>Importer</strong> :</p>
+<ol>
+<li>choisissez ou déposez un fichier Excel ou CSV ; <em>Télécharger un modèle</em> fournit un classeur vide avec les bons en-têtes ;</li>
+<li>associez chaque colonne du fichier à un champ ;</li>
+<li>vérifiez l'<em>Aperçu</em> : ce qui sera créé, mis à jour, inchangé, et les erreurs ligne par ligne ;</li>
+<li><em>Importer</em> écrit tout, ou rien si une ligne est en erreur.</li>
+</ol>
+<h2>9. Autres façons de voir les données</h2>
+<h3>Calendrier</h3>
+<p>Certains enregistrements datés ont une vue <strong>calendrier</strong> (un bouton en haut de leur liste, ou une entrée de la navigation) : <em>Mois</em>, <em>Semaine</em> ou <em>Liste</em>, les flèches pour changer de période, <em>Aujourd'hui</em> pour y revenir. La recherche et les filtres de la liste choisissent ce qui est affiché. Un enregistrement se <strong>glisse</strong> sur un autre jour pour changer sa date, lorsque vous avez le droit de le modifier ; un clic l'ouvre.</p>
+<h3>Arborescence</h3>
+<p>Les enregistrements qui en contiennent d'autres (une nomenclature, une hiérarchie) s'affichent en <strong>arborescence</strong> : la flèche d'une ligne la déplie, le chiffre à côté du nom indique combien d'éléments elle contient. Au clavier : flèches haut et bas, droite pour déplier, gauche pour replier, Entrée pour ouvrir. <em>Tout replier</em> et <em>Actualiser</em> sont au-dessus ; la recherche cherche à tous les niveaux.</p>
+<h2>10. Rester informé</h2>
+<ul>
+<li><strong>Suivre</strong> : sur une fiche, ce bouton vous fait prévenir quand l'enregistrement change ; la flèche à côté propose aussi de suivre tous les enregistrements du même type. Sur une liste, <em>Suivre tous les enregistrements</em> fait de même.</li>
+<li><strong>Suivis</strong>, dans le menu du compte, liste ce que vous suivez et règle, pour chacun, quels changements vous intéressent et comment vous en êtes prévenu.</li>
+<li>La <strong>cloche</strong> affiche le nombre de notifications non lues ; son menu montre les dernières, <em>Tout marquer comme lu</em> et <em>Voir toutes les notifications</em>. Une notification arrive aussi en bandeau sur la page ouverte, et par e-mail si vous l'avez choisi.</li>
+</ul>
+<h2>11. Le wiki</h2>
+<p>Le wiki rassemble la documentation écrite par l'équipe. <strong>Wiki</strong>, dans la navigation, liste les wikis ; <em>Ouvrir</em> entre dans l'un d'eux, <em>PDF</em> le télécharge en entier (portrait ou paysage).</p>
+<ul>
+<li>À gauche, le menu des pages, en arbre, avec une zone pour filtrer les pages ; les autres wikis sont dépliables sous son nom.</li>
+<li><strong>Modifier</strong> ouvre l'éditeur : titres, gras, italique, listes, citations, code, liens, images et fichiers joints (par la barre d'outils, en les déposant ou en les collant). Les flèches de la barre, ou <strong>Alt+Haut</strong> et <strong>Alt+Bas</strong>, déplacent la ligne en cours. Dans l'éditeur, on règle aussi la page parente, la position dans le menu et l'épinglage au tableau de bord. <em>Enregistrer</em> ou <em>Annuler</em>.</li>
+<li><strong>Sous-page</strong> crée une page rangée sous celle-ci ; le <strong>+</strong> du menu crée une page.</li>
+<li><strong>Historique</strong> liste les versions précédentes ; <em>Restaurer</em> en rétablit une (la version actuelle est gardée, on peut donc revenir en arrière).</li>
+<li>Si quelqu'un a enregistré la page pendant que vous la modifiiez, votre enregistrement est refusé avec son nom, et votre texte reste dans l'éditeur pour être recopié.</li>
+</ul>
+<h2>12. Votre compte</h2>
+<p>Le <strong>menu du compte</strong> (vos initiales) mène aux <em>Paramètres du compte</em>, aux <em>Notifications</em>, aux <em>Suivis</em>, à l'<em>Aide</em> et à <em>Ce qui a changé</em> (les nouveautés de chaque version) ; il change la <strong>langue</strong> et permet de se déconnecter. La page <em>Paramètres du compte</em> regroupe :</p>
+<ul>
+<li><strong>Profil</strong> : nom, prénom, adresse e-mail ;</li>
+<li><strong>Apparence</strong> : thème <em>Système</em>, <em>Clair</em> ou <em>Sombre</em>, des palettes toutes prêtes (<em>Doux</em>, <em>Contraste élevé</em>…) et des curseurs pour la couleur, le contraste, les lignes alternées ;</li>
+<li><strong>Préférences</strong> : langue, navigation fixée ou flottante, nombre de lignes par page, façon d'être notifié (dans l'application, par e-mail ou les deux), et <em>Mémoriser la disposition des tableaux</em> pour retrouver chaque liste comme vous l'avez laissée ;</li>
+<li><strong>Sécurité</strong> : <em>Modifier le mot de passe</em>.</li>
+</ul>
+<p>Ces réglages sont enregistrés sur votre compte : ils vous suivent d'un ordinateur à l'autre. La taille du texte suit celle du navigateur (Ctrl et + ou −).</p>
+<h2>13. Raccourcis clavier</h2>
+<ul>
+<li><strong>Ctrl+K</strong> ou <strong>/</strong> : la recherche ;</li>
+<li><strong>F</strong> : filtrer la liste affichée ;</li>
+<li><strong>Ctrl+S</strong> : enregistrer un formulaire ;</li>
+<li><strong>Échap</strong> : fermer un menu, une fenêtre, la palette ;</li>
+<li><strong>Entrée</strong> : valider une cellule, ouvrir le résultat choisi ;</li>
+<li><strong>Alt+Haut</strong> / <strong>Alt+Bas</strong> : déplacer une ligne dans l'éditeur du wiki ;</li>
+<li><strong>Maj + clic droit</strong> : le menu habituel du navigateur dans un tableau.</li>
+</ul>
+<h2>14. Si quelque chose ne va pas</h2>
+<ul>
+<li><strong>Un bouton ou un écran manque</strong> : il n'est pas ouvert à votre compte ; demandez à un administrateur.</li>
+<li><strong>Une liste semble vide</strong> : regardez les pastilles de filtre et la zone de recherche, ou utilisez <em>Revenir à la disposition par défaut</em> dans le menu <em>Vues</em>.</li>
+<li><strong>Une page semble ancienne</strong> après une mise à jour de l'application : rechargez-la avec Ctrl+Maj+R.</li>
+<li><strong>Un redémarrage est annoncé</strong> par un bandeau : enregistrez votre travail avant l'heure indiquée.</li>
+</ul>

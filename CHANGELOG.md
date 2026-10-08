@@ -13,6 +13,17 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- A user guide for every application built on the framework: the
+  everyday actions - finding one's way, the search, filtering, views,
+  exports, bulk actions, a record's page, the forms, deleting, the
+  history, the wiki, the account - written once, in English and French.
+  Every wiki starts with it: a migration puts *User guide* / *Guide
+  utilisateur* in the first wiki, one page per language of the site,
+  and `manage.py wiki_user_guide` puts it back or brings it up to date
+  (`--update`, the replaced text kept in the page's history). The same
+  text as a Word document, illustrated, is
+  `docs/user-guide/guide-utilisateur.docx`
+  (`scripts/build_user_guide.py`).
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
