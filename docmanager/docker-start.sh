@@ -25,5 +25,10 @@ raise SystemExit(0 if get_user_model().objects.exists() else 1)
 " || python manage.py createsuperuser --noinput
 fi
 
+# --limit-request-line: a table's request carries its columns, its
+# order and its filters in the URL; gunicorn refuses a line over 4094
+# bytes unless told (400, "request line is too large"). 8190 is the
+# most it takes, as much as nginx in front lets through.
 exec gunicorn docsite.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 300 \
+    --limit-request-line 8190 \
     --forwarded-allow-ips '*' --access-logfile -

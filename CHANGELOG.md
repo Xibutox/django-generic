@@ -10,6 +10,16 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Fixed
+- The document manager in Docker: gunicorn takes request lines up to
+  8190 bytes (`--limit-request-line`), not 4094, so a table with many
+  columns or filters no longer answers 400 "request line is too
+  large". Tables also ask for less: of what DataTables builds, they
+  send only what the endpoint reads (each column's name, the order, the
+  search box), not six parameters a column.
+
 ## [1.3.0] - 2026-10-05
 
 ### Added

@@ -1445,7 +1445,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 
 | Request | Does |
 | --- | --- |
-| `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `order[i]...`, `filters` JSON tree, `_related`) |
+| `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `columns[i][data]`, `order[i][column|dir]`, `filters` JSON tree, `_related`); `table.js` drops the rest of DataTables' request to keep the URL short |
 | `GET .../facets/?column=<name>` | a column's values with counts under the other filters (`q=` search, `ids=` labels), or `{"kind": "range", min, max, empty}` |
 | `POST api/<app>/<model>/` | create (JSON, `_inlines`; or multipart `_payload` + a part per file, §5.17) |
 | `GET/PATCH/DELETE api/<app>/<model>/<pk>/` | read (with `_display`, `_label`, `_inlines`), update, delete (refused with reason when protected) |
