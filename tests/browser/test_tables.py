@@ -220,3 +220,22 @@ def test_a_reader_is_offered_no_add_button(page, desk, viewer, sign_in):
     expect(page.get_by_role("link", name="Add Ticket")).to_have_count(0)
     # Nor bulk actions to change anything: nothing to tick.
     expect(page.locator(".dt-row-check")).to_have_count(0)
+
+
+def test_the_request_carries_only_what_the_endpoint_reads(ticket_list):
+    page = ticket_list
+
+    with page.expect_request(
+        lambda request: "order%5B0%5D" in request.url
+    ) as caught:
+        page.locator('#datatable th[title="Title"]').click()
+
+    url = caught.value.url
+
+    assert "columns%5B1%5D%5Bdata%5D=reference" in url
+    assert "order%5B0%5D%5Bdir%5D=asc" in url
+    assert "search%5Bvalue%5D=" in url
+
+    # Per column, DataTables builds six parameters; one is left.
+    for dropped in ("searchable", "orderable", "regex", "%5Bname%5D"):
+        assert dropped not in url

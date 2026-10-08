@@ -151,6 +151,33 @@
     });
   }
 
+  /**
+   * The request DataTables builds, cut down to what the endpoint reads:
+   * each column's name (the order points into them), the order and the
+   * search box. DataTables also sends, per column, its title, whether it
+   * is searchable and orderable and a search box of its own - six
+   * parameters a column, three times longer once encoded. A table of
+   * twenty columns made a request line over 4 KB, which gunicorn
+   * refuses (400, "request line is too large").
+   */
+  function compactRequest(requestData) {
+    if (Array.isArray(requestData.columns)) {
+      requestData.columns = requestData.columns.map(function (column) {
+        return { data: column.data };
+      });
+    }
+
+    if (Array.isArray(requestData.order)) {
+      requestData.order = requestData.order.map(function (entry) {
+        return { column: entry.column, dir: entry.dir };
+      });
+    }
+
+    if (requestData.search) {
+      requestData.search = { value: requestData.search.value };
+    }
+  }
+
   /* -- The box the table scrolls in -------------------------------------
    *
    * A table wider than its card scrolls sideways inside it. One that
@@ -323,6 +350,7 @@
         type: userAjax.type || "GET",
         data: function (requestData) {
           requestData.format = "datatables";
+          compactRequest(requestData);
 
           var filters = self.collectFilters();
 

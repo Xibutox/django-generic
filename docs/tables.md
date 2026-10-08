@@ -238,6 +238,12 @@ Request parameters:
 | `advanced_filters` | The older flat payload, still accepted |
 | `ordering` | `-title,pages` — a non-DataTables alternative |
 
+The table sends nothing else: of what DataTables builds, it keeps each
+column's `data`, the order's `column` and `dir` and the search box's
+`value`. The per-column titles, `searchable`, `orderable` and search
+boxes are dropped before the request leaves, so a wide table stays
+under the 4 KB request line some servers allow (gunicorn's default).
+
 ### The filter tree
 
 Conditions, grouped with `all` or `any`, groups nested up to four
