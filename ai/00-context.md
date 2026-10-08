@@ -1297,10 +1297,14 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   and `WikiPermission.has_object_permission` / `perform_create` -
   403); the wikis themselves still answer to the wiki permissions only.
   Never build a page's URL without its wiki: `page.get_absolute_url()`.
-- Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=)` -> bytes;
-  cover, table of contents (bookmarks), pages depth-first; uploaded
-  images embedded (data URIs), web images named and never fetched,
-  files listed. Fonts: `WIKI_PDF_FONTS` or DejaVu/Liberation/Arial
+- Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=,
+  orientation="portrait"|"landscape")` -> bytes, A4 (`?orientation=`
+  on `export.pdf`, anything else portrait; the button is a menu,
+  `wiki/pdf_menu.html`); cover, table of contents (bookmarks), pages
+  depth-first; uploaded images embedded (data URIs) with `width` /
+  `height` in points, shrunk to the text's width and a page's height
+  (`PageHTML(max_width=, max_height=)`), web images named and never
+  fetched, files listed. Fonts: `WIKI_PDF_FONTS` or DejaVu/Liberation/Arial
   found on disk, else Latin-1 core fonts. `pdf.available()` false
   without fpdf2: no button, `export.pdf` 404. See `docs/wiki.md#pdf`.
 

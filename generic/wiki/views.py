@@ -339,7 +339,8 @@ class WikiPdfView(View):
     """A whole wiki as one PDF, for whoever may read it.
 
     Downloaded, never cached by a shared cache, and written each time:
-    it is the wiki as it stands.
+    it is the wiki as it stands. ``?orientation=landscape`` turns the
+    paper; anything else is portrait.
     """
 
     def get(self, request: Any, wiki: str) -> Any:
@@ -354,7 +355,16 @@ class WikiPdfView(View):
         found = get_object_or_404(
             Wiki.objects.readable_by(request.user), slug=wiki
         )
-        content = pdf.render(found, base_url=request.build_absolute_uri("/"))
+        orientation = request.GET.get("orientation", "")
+
+        if orientation not in pdf.ORIENTATIONS:
+            orientation = pdf.ORIENTATIONS[0]
+
+        content = pdf.render(
+            found,
+            base_url=request.build_absolute_uri("/"),
+            orientation=orientation,
+        )
         response = HttpResponse(content, content_type="application/pdf")
         response["Content-Disposition"] = content_disposition_header(
             True, f"{found.slug}.pdf"

@@ -31,10 +31,7 @@
           {% icon "auto_stories" "icon--sm" %} <span>{{ wiki.name }}</span>
         </a>
         {% if pdf_url and menu %}
-          <a class="icon-button icon-button--sm" href="{{ pdf_url }}" title="{% translate 'Download the wiki as a PDF' %}">
-            {% translate "Download the wiki as a PDF" as pdf_label %}
-            {% icon "picture_as_pdf" "icon--sm" pdf_label %}
-          </a>
+          {% include "generic/wiki/pdf_menu.html" with url=pdf_url compact=True only %}
         {% endif %}
       </div>
       {% if other_wikis %}

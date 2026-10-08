@@ -4,7 +4,8 @@ Written with fpdf2 - pure Python, installed by pip alone on Linux,
 macOS and Windows, no system library to add - from the pages' cleaned
 HTML. A cover, a table of contents, then every page, a subpage after
 its parent; the images uploaded into a page are drawn where the page
-shows them, and the files attached to it are listed by name.
+shows them, never wider or taller than the paper, and the files
+attached to it are listed by name. Portrait or landscape, A4.
 
 Nothing is fetched: an image on the web, outside the wiki, is named
 rather than downloaded, so writing a PDF never makes the server call
@@ -116,6 +117,12 @@ HEADING_SIZES = {"h1": 15, "h2": 14, "h3": 12.5, "h4": 11.5}
 #: Sizes of the pages' titles, by their depth in the menu.
 TITLE_SIZES = (20, 17, 15, 13.5)
 
+#: The page orientations a PDF is written in, the first by default.
+ORIENTATIONS = ("portrait", "landscape")
+
+#: Points per CSS pixel: an image is drawn at the size a screen shows.
+POINTS_PER_PIXEL = 0.75
+
 ALIGN_CLASS = re.compile(r"\bql-align-(center|right|justify)\b")
 
 
@@ -189,10 +196,20 @@ class PageHTML(HTMLParser):
 
     BLOCKS = ("p", "h1", "h2", "h3", "h4", "blockquote", "pre")
 
-    def __init__(self, *, base_url: str, images: dict[int, str]) -> None:
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        images: dict[int, tuple[str, int, int]],
+        max_width: float = 0,
+        max_height: float = 0,
+    ) -> None:
         super().__init__(convert_charrefs=True)
         self.base_url = base_url.rstrip("/")
         self.images = images
+        # The room an image has, in points; 0: no limit.
+        self.max_width = max_width
+        self.max_height = max_height
         self.image_pattern = re.compile(_address_pattern("image") + "$")
         self.out: list[str] = []
         self.closing: list[str] = []
@@ -278,9 +295,9 @@ class PageHTML(HTMLParser):
     def image(self, attributes: dict[str, str]) -> str:
         source = attributes.get("src", "")
         match = self.image_pattern.match(source)
-        data = self.images.get(int(match.group("image"))) if match else None
+        found = self.images.get(int(match.group("image"))) if match else None
 
-        if data is None:
+        if found is None:
             # Never fetched: the page says which image it showed.
             label = attributes.get("alt") or source
 
@@ -288,18 +305,39 @@ class PageHTML(HTMLParser):
                 escape(gettext("Image: %(name)s") % {"name": label})
             )
 
-        width = attributes.get("width", "")
-        width_attribute = f' width="{int(width)}"' if width.isdigit() else ""
+        data, pixels_wide, pixels_high = found
+        width, height = self.size(
+            attributes.get("width", ""), pixels_wide, pixels_high
+        )
 
-        return f'<img src="{data}"{width_attribute}>'
+        return f'<img src="{data}" width="{width:.2f}" height="{height:.2f}">'
+
+    def size(
+        self, asked: str, pixels_wide: int, pixels_high: int
+    ) -> tuple[float, float]:
+        """An image's size in points: the width the editor gave it, or
+        its own, shrunk to the room the page has, its shape kept."""
+        ratio = pixels_high / pixels_wide if pixels_wide else 1
+        width = (
+            int(asked) if asked.isdigit() and int(asked) else pixels_wide
+        ) * POINTS_PER_PIXEL
+
+        if self.max_width and width > self.max_width:
+            width = self.max_width
+
+        if self.max_height and width * ratio > self.max_height:
+            width = self.max_height / ratio
+
+        return width, width * ratio
 
     def html(self) -> str:
         return "".join(self.out + list(reversed(self.closing)))
 
 
-def image_data(ids: Iterable[int]) -> dict[int, str]:
+def image_data(ids: Iterable[int]) -> dict[int, tuple[str, int, int]]:
     """The uploaded images ``ids`` as data addresses the PDF embeds,
-    scaled down to what a page's width needs."""
+    each with its width and height in pixels as a screen shows it;
+    the data scaled down to what a page needs."""
     from PIL import Image
 
     found = {}
@@ -316,6 +354,7 @@ def image_data(ids: Iterable[int]) -> dict[int, str]:
             # Not an image after all, or no longer readable: named.
             continue
 
+        size = picture.size
         # Wider than the page, at print resolution, is weight for
         # nothing; an animation keeps its first frame.
         picture.thumbnail((1600, 1600))
@@ -325,9 +364,10 @@ def image_data(ids: Iterable[int]) -> dict[int, str]:
 
         buffer = BytesIO()
         picture.save(buffer, format="PNG")
-        found[image.pk] = "data:image/png;base64," + base64.b64encode(
+        data = "data:image/png;base64," + base64.b64encode(
             buffer.getvalue()
         ).decode("ascii")
+        found[image.pk] = (data, *size)
 
     return found
 
@@ -335,8 +375,10 @@ def image_data(ids: Iterable[int]) -> dict[int, str]:
 class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
     """The PDF: a footer with the wiki's name and the page number."""
 
-    def __init__(self, *, wiki_name: str, unicode: bool) -> None:
-        super().__init__(format="A4")
+    def __init__(
+        self, *, wiki_name: str, unicode: bool, orientation: str = "portrait"
+    ) -> None:
+        super().__init__(orientation=orientation[0].upper(), format="A4")
         self.wiki_name = wiki_name
         self.unicode = unicode
         self.wiki_family = "helvetica"
@@ -360,13 +402,23 @@ class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
         self.set_text_color(0, 0, 0)
 
 
-def render(wiki: Any, *, base_url: str = "") -> bytes:
-    """``wiki`` as a PDF: a cover, a table of contents, its pages."""
+def render(
+    wiki: Any, *, base_url: str = "", orientation: str = "portrait"
+) -> bytes:
+    """``wiki`` as a PDF: a cover, a table of contents, its pages, on
+    A4 paper in ``orientation``, ``"portrait"`` or ``"landscape"``."""
     if FPDF is None:  # pragma: no cover - the extra is installed in tests
         raise RuntimeError("fpdf2 is needed to write a wiki as a PDF.")
 
+    if orientation not in ORIENTATIONS:
+        raise ValueError(f"Unknown orientation: {orientation!r}.")
+
     fonts = find_fonts()
-    pdf = WikiDocument(wiki_name=wiki.name, unicode=fonts is not None)
+    pdf = WikiDocument(
+        wiki_name=wiki.name,
+        unicode=fonts is not None,
+        orientation=orientation,
+    )
     family = "helvetica"
     mono = "courier"
 
@@ -503,7 +555,13 @@ def render(wiki: Any, *, base_url: str = "") -> bytes:
         )
         pdf.ln(3)
 
-        parser = PageHTML(base_url=base_url, images=images)
+        # An image fits the paper: the text's width, a page's height.
+        parser = PageHTML(
+            base_url=base_url,
+            images=images,
+            max_width=pdf.epw * pdf.k,
+            max_height=(pdf.eph - 2) * pdf.k,
+        )
         parser.feed(clean_html(page.content))
         parser.close()
         body = text(parser.html())
