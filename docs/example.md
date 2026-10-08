@@ -312,7 +312,7 @@ buttons.
 *Infrastructure runbooks*. As `admin`, *New wiki* adds a third, the
 pencil renames one; open one and its menu holds only its pages, with
 the other wikis folded under its name. *PDF* downloads a wiki as one
-document: a cover, a table of contents, every page in the menu's
+document, in portrait or landscape: a cover, a table of contents, every page in the menu's
 order, the images drawn, the files named. The old address
 `/wiki/triage/` still leads to the page, now `/wiki/main/triage/`.
 

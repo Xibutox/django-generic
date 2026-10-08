@@ -1,0 +1,31 @@
+{% load i18n generic_ui %}
+{# The wiki as a PDF, in portrait or landscape: the button opens the #}
+{# choice. ``url`` is the wiki's PDF; ``compact`` an icon alone.     #}
+<div class="dropdown wiki-pdf"
+     x-data="{ open: false }"
+     @keydown.escape.window="open = false"
+     @click.outside="open = false">
+  {% translate "Download the wiki as a PDF" as pdf_label %}
+  <button type="button"
+          class="{% if compact %}icon-button icon-button--sm{% else %}button button--ghost button--sm{% endif %}"
+          @click="open = !open"
+          :aria-expanded="open.toString()"
+          aria-haspopup="menu"
+          title="{{ pdf_label }}">
+    {% if compact %}
+      {% icon "picture_as_pdf" "icon--sm" pdf_label %}
+    {% else %}
+      {% icon "picture_as_pdf" "icon--sm" %} {% translate "PDF" %}
+    {% endif %}
+  </button>
+  <div class="dropdown__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak style="min-width: 11rem;">
+    <a class="menu-item" role="menuitem" href="{{ url }}">
+      {% icon "crop_portrait" %}
+      <span class="menu-item__label">{% translate "Portrait" %}</span>
+    </a>
+    <a class="menu-item" role="menuitem" href="{{ url }}?orientation=landscape">
+      {% icon "crop_landscape" %}
+      <span class="menu-item__label">{% translate "Landscape" %}</span>
+    </a>
+  </div>
+</div>

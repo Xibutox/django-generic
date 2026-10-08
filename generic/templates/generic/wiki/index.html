@@ -62,9 +62,7 @@
               </span>
               <span class="wiki-list__actions">
                 {% if pdf_available and wiki.page_count %}
-                  <a class="button button--ghost button--sm" href="{{ wiki.get_pdf_url }}">
-                    {% icon "picture_as_pdf" "icon--sm" %} {% translate "PDF" %}
-                  </a>
+                  {% include "generic/wiki/pdf_menu.html" with url=wiki.get_pdf_url compact=False only %}
                 {% endif %}
                 <a class="button button--sm" href="{{ wiki.get_absolute_url }}">
                   {% translate "Open" %}

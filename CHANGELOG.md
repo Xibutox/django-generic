@@ -12,7 +12,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Added
+- A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
+  *Landscape* (`export.pdf?orientation=landscape`;
+  `generic.wiki.pdf.render(wiki, orientation="landscape")`).
+
 ### Fixed
+- A large image no longer runs off a wiki's PDF: every image is drawn
+  at most the text's width and a page's height, its shape kept, and a
+  smaller one at the size the page shows it.
 - The document manager in Docker: gunicorn takes request lines up to
   8190 bytes (`--limit-request-line`), not 4094, so a table with many
   columns or filters no longer answers 400 "request line is too

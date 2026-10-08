@@ -55,7 +55,7 @@ belongs to one wiki, and its address is unique within it.
 | `wiki/` | The wikis, as cards: name, description, page count, *PDF*, *Open*; *New wiki*, *Edit* and *Delete* for those allowed |
 | `wiki/<wiki>/` | The wiki's first page, or an invitation to write it |
 | `wiki/<wiki>/<page>/` | A page, with its wiki's menu |
-| `wiki/<wiki>/export.pdf` | The whole wiki as a PDF ([PDF](#pdf)) |
+| `wiki/<wiki>/export.pdf` | The whole wiki as a PDF, portrait; `?orientation=landscape` turns the paper ([PDF](#pdf)) |
 
 - A reader who sees **one** wiki and may not add one goes from `wiki/`
   straight into it: a site with one wiki reads as before.
@@ -309,8 +309,9 @@ read from its text.
 ## PDF
 
 *PDF* on a wiki's card, or the PDF button beside its name in the menu,
-downloads the whole wiki as one PDF, `<wiki>.pdf`, written there and
-then from the pages as they stand:
+offers *Portrait* or *Landscape* and downloads the whole wiki as one
+A4 PDF, `<wiki>.pdf`, written there and then from the pages as they
+stand:
 
 - a **cover** - the wiki's name, its description, its number of pages
   and the date - then a **table of contents**, the PDF's bookmarks
@@ -321,7 +322,9 @@ then from the pages as they stand:
 - the text with its headings, emphasis, lists, quotes, code, tables and
   alignment; links stay links, made absolute;
 - the **images** uploaded into a page, drawn where the page shows them
-  (scaled down to what the page needs); an image on the web is named,
+  at the size the page shows them, never wider than the text nor taller
+  than a page - a larger one is shrunk, its shape kept, and a wide
+  screenshot reads better in landscape; an image on the web is named,
   `[Image: ...]`, never downloaded - writing a PDF never makes the
   server call an address a page holds;
 - each **file** block as *File: plan.pdf*, and the page's files listed

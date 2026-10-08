@@ -3027,6 +3027,12 @@ msgstr "Il n’y a pas encore de wiki."
 msgid "Download the wiki as a PDF"
 msgstr "Télécharger le wiki en PDF"
 
+msgid "Portrait"
+msgstr "Portrait"
+
+msgid "Landscape"
+msgstr "Paysage"
+
 msgid "Other wikis"
 msgstr "Autres wikis"
 

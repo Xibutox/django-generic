@@ -4,6 +4,7 @@ its files named, nothing fetched."""
 from __future__ import annotations
 
 import io
+from unittest import mock
 
 import pytest
 from django.core.files.base import ContentFile
@@ -22,9 +23,9 @@ def media(settings, tmp_path):
     return tmp_path
 
 
-def png() -> bytes:
+def png(size: tuple[int, int] = (40, 20)) -> bytes:
     buffer = io.BytesIO()
-    Image.new("RGB", (40, 20), (40, 120, 200)).save(buffer, "PNG")
+    Image.new("RGB", size, (40, 120, 200)).save(buffer, "PNG")
 
     return buffer.getvalue()
 
@@ -83,9 +84,11 @@ class TestOrder:
 
 
 class TestPageHtml:
-    def rewrite(self, html: str, images: dict | None = None) -> str:
+    def rewrite(
+        self, html: str, images: dict | None = None, **room: float
+    ) -> str:
         parser = pdf.PageHTML(
-            base_url="https://desk.test/", images=images or {}
+            base_url="https://desk.test/", images=images or {}, **room
         )
         parser.feed(html)
         parser.close()
@@ -98,8 +101,32 @@ class TestPageHtml:
 
         html = self.rewrite(f'<img src="{image.get_absolute_url()}">', data)
 
-        assert data[image.pk].startswith("data:image/png;base64,")
-        assert f'src="{data[image.pk]}"' in html
+        source, wide, high = data[image.pk]
+        assert source.startswith("data:image/png;base64,")
+        assert (wide, high) == (40, 20)
+        assert f'src="{source}" width="30.00" height="15.00"' in html
+
+    def test_a_wide_image_is_shrunk_to_the_page_width(self):
+        parser = pdf.PageHTML(
+            base_url="", images={}, max_width=500, max_height=700
+        )
+
+        assert parser.size("", 4000, 1000) == (500, 125)
+
+    def test_a_tall_image_is_shrunk_to_the_page_height(self):
+        parser = pdf.PageHTML(
+            base_url="", images={}, max_width=500, max_height=700
+        )
+
+        assert parser.size("", 1000, 4000) == (175, 700)
+
+    def test_the_editor_width_is_kept_when_it_fits(self):
+        parser = pdf.PageHTML(
+            base_url="", images={}, max_width=500, max_height=700
+        )
+
+        assert parser.size("200", 1000, 500) == (150, 75)
+        assert parser.size("2000", 1000, 500) == (500, 250)
 
     def test_an_image_on_the_web_is_named_never_fetched(self):
         html = self.rewrite('<img src="https://far.test/x.png" alt="far">')
@@ -136,6 +163,47 @@ class TestRender:
         content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
 
         assert content.startswith(b"%PDF")
+
+    def test_landscape_turns_the_paper(self, handbook):
+        portrait = pdf.render(handbook["wiki"])
+        landscape = pdf.render(handbook["wiki"], orientation="landscape")
+
+        assert b"/MediaBox [0 0 595.28 841.89]" in portrait
+        assert b"/MediaBox [0 0 841.89 595.28]" in landscape
+
+    def test_an_unknown_orientation_is_refused(self, handbook):
+        with pytest.raises(ValueError):
+            pdf.render(handbook["wiki"], orientation="sideways")
+
+    @pytest.mark.parametrize("orientation", pdf.ORIENTATIONS)
+    def test_a_large_image_stays_on_the_paper(self, handbook, orientation):
+        wiki = handbook["wiki"]
+        huge = WikiImage(original_name="huge.png")
+        huge.file.save("huge.png", ContentFile(png((5000, 7000))), save=False)
+        huge.save()
+        WikiPage.objects.create(
+            wiki=wiki,
+            title="Huge",
+            slug="huge",
+            position=3,
+            content=f'<p><img src="{huge.get_absolute_url()}"></p>',
+        )
+        drawn = []
+        image = pdf.WikiDocument.image
+
+        def spy(document, *args, **kwargs):
+            info = image(document, *args, **kwargs)
+            drawn.append((document, info.rendered_width, info.rendered_height))
+
+            return info
+
+        with mock.patch.object(pdf.WikiDocument, "image", spy):
+            pdf.render(wiki, orientation=orientation)
+
+        assert drawn
+        for document, width, height in drawn:
+            assert width <= document.epw + 0.01
+            assert height <= document.eph + 0.01
 
     def test_without_a_unicode_font_latin1_is_enough(
         self, handbook, monkeypatch
@@ -176,6 +244,15 @@ class TestView:
         assert response["X-Content-Type-Options"] == "nosniff"
         assert response.content.startswith(b"%PDF")
 
+    def test_landscape_is_asked_in_the_address(self, auth_client, handbook):
+        landscape = auth_client.get(
+            "/wiki/quality/export.pdf?orientation=landscape"
+        )
+        other = auth_client.get("/wiki/quality/export.pdf?orientation=x")
+
+        assert b"/MediaBox [0 0 841.89 595.28]" in landscape.content
+        assert b"/MediaBox [0 0 595.28 841.89]" in other.content
+
     def test_an_anonymous_visitor_is_sent_to_sign_in(self, client, handbook):
         response = client.get("/wiki/quality/export.pdf")
 
@@ -190,6 +267,9 @@ class TestView:
 
         assert response.context["pdf_url"] == "/wiki/quality/export.pdf"
         assert b"/wiki/quality/export.pdf" in response.content
+        assert b"/wiki/quality/export.pdf?orientation=landscape" in (
+            response.content
+        )
 
     def test_nothing_is_offered_without_fpdf2(
         self, auth_client, handbook, monkeypatch
