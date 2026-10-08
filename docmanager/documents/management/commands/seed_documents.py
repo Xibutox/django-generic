@@ -44,6 +44,7 @@ from documents.models import (
 )
 from generic.history import acting_as
 from generic.teams.models import Team
+from generic.wiki.guide import GUIDE_SLUGS
 from generic.wiki.models import DEFAULT_WIKI_SLUG, Wiki, WikiPage
 
 TEAMS = {
@@ -654,7 +655,8 @@ class Command(BaseCommand):
             (team, editing, description, pages),
         ) in enumerate(WIKIS.items()):
             # Everyone's wiki is the first one, the framework's own "main"
-            # - made by its migrations - renamed while still empty.
+            # - made by its migrations - renamed while it holds nothing
+            # but the framework's user guide.
             slug = DEFAULT_WIKI_SLUG if team is None else slugify(name)
             wiki, created = Wiki.objects.get_or_create(
                 slug=slug,
@@ -665,7 +667,11 @@ class Command(BaseCommand):
                 },
             )
 
-            if not created and wiki.name == "Wiki" and not wiki.pages.exists():
+            if (
+                not created
+                and wiki.name == "Wiki"
+                and not wiki.pages.exclude(slug__in=GUIDE_SLUGS).exists()
+            ):
                 wiki.name, wiki.description = name, description
                 wiki.save(update_fields=("name", "description"))
 

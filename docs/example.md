@@ -308,6 +308,11 @@ and restore the earlier version — the text you replaced is kept too.
 Pin a page to the dashboard. As `viewer`, the same pages are there to read, without the
 buttons.
 
+**The user guide.** The *Desk handbook* ends with *User guide* and
+*Guide utilisateur*: what every screen lets a reader do, the page every
+application built on the framework starts with
+([The user guide](wiki.md#the-user-guide)).
+
 **Several wikis.** `/wiki/` lists two: the *Desk handbook* and the
 *Infrastructure runbooks*. As `admin`, *New wiki* adds a third, the
 pencil renames one; open one and its menu holds only its pages, with

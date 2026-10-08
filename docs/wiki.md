@@ -42,6 +42,41 @@ python manage.py migrate
 
 That is all: the sidebar gets a *Wiki* entry, the dashboard shows the
 pinned pages, and the command palette finds pages by title and text.
+The first wiki already holds a page: the [user guide](#the-user-guide).
+
+## The user guide
+
+What every screen of the framework lets a reader do - find their way,
+search, filter a list, save a view, export, act on several rows, open
+a record's page, add, change and delete, read the history, follow a
+record, write in the wiki, set up their account - written once for
+every application built on it, not for one of them. A migration
+(`0007_user_guide`) puts it in the first wiki, after the pages a
+project writes (position 1000), one page per language of `LANGUAGES`
+it is written in - *User guide* (`user-guide`) in English, *Guide
+utilisateur* (`guide-utilisateur`) in French; a site in neither gets
+the English one. From then on it is a page like any other: edited,
+moved, pinned, deleted, in the PDF.
+
+```bash
+python manage.py wiki_user_guide                     # put it back, if deleted
+python manage.py wiki_user_guide --update            # the framework's latest text
+python manage.py wiki_user_guide --wiki handbook --language fr
+```
+
+A page already at the guide's address is left alone, unless
+`--update`: then it takes the framework's text, and the text it held
+goes to its history, to be restored. From code:
+`generic.wiki.guide.install_user_guide(wiki=None, languages=None,
+update=False)`.
+
+The text is `generic/wiki/guide/<language>.html` - only what the
+editor writes, so the cleaning keeps all of it. The same guide as a
+Word document, with screenshots of the example, is
+[`docs/user-guide/guide-utilisateur.docx`](user-guide/guide-utilisateur.docx),
+built from the French text by `scripts/build_user_guide.py`
+(`pip install python-docx`; `--language en` for an English one): run
+it again after changing the guide.
 
 ## Several wikis
 
