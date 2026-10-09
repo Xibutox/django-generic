@@ -172,6 +172,13 @@ class TestPageHtml:
 
         assert content.startswith(b"%PDF")
 
+    def test_a_table_is_framed_across_the_text(self):
+        html = self.rewrite("<table><tr><td>a</td></tr></table>")
+
+        assert html.startswith(
+            '<table border="1" width="100%" cellpadding="1.5">'
+        )
+
     def test_a_cell_with_one_format_keeps_it(self):
         html = self.rewrite(
             "<table><tr><td><strong>Total</strong></td></tr></table>"

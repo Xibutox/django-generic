@@ -59,6 +59,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   makes ("The row with index ... is too high") - is printed as lines of
   text, a row a line, its cells separated by " | ", rather than
   stopping the whole wiki's PDF.
+- A table in a wiki's PDF has its borders: every cell framed, as the
+  page shows it, and the table as wide as the text. fpdf2 drew only a
+  line over it.
 - A large image no longer runs off a wiki's PDF: every image is drawn
   at most the text's width and a page's height, its shape kept, and a
   smaller one at the size the page shows it.

@@ -282,7 +282,14 @@ class PageHTML(HTMLParser):
         elif tag in ("u", "s", "sub", "sup", "code", "blockquote", "pre"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
-        elif tag in ("ul", "ol", "li", "table", "thead", "tbody", "tr"):
+        elif tag == "table":
+            # Every cell framed, as the page draws it, and the text's
+            # width: fpdf2 draws a single line over a bare table.
+            self.out.append(
+                '<table border="1" width="100%" cellpadding="1.5">'
+            )
+            self.closing.append("</table>")
+        elif tag in ("ul", "ol", "li", "thead", "tbody", "tr"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
         elif tag in ("td", "th"):
@@ -674,6 +681,8 @@ def render(
                 lambda: body_of(tables_as_text=True),
                 font_family=family,
                 tag_styles=tag_styles,
+                # Lines between the rows too, not only the columns.
+                table_line_separators=True,
             )
         else:
             pdf.set_font(family, "I", 10)
