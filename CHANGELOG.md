@@ -47,6 +47,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   at most half the text's width). The PDF does the same: the image on
   its side, the following paragraphs in the room beside it until one
   starts below it.
+  Two images side by side - both to one side, or in a row of their
+  own - stay side by side on the page and on the dashboard however
+  narrow the text: they shrink rather than wrap.
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).

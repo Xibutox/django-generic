@@ -295,21 +295,37 @@
   border-radius: var(--border-radius-sm);
 }
 
-/* An image to one side, the text beside it - on the page and in the
-   editor - at most half the text's width. What follows the page's
-   last floated image stays inside the page. */
+/* An image to one side, the text beside it - on the page, on the
+   dashboard and in the editor - at most half the text's width, its
+   margin included: two images to the same side stay side by side
+   however narrow the text. What follows the page's last floated image
+   stays inside the page. */
 .wiki-content img.wiki-float-left,
 .wiki__quill .ql-editor img.wiki-float-left {
   float: left;
-  max-width: 50%;
+  max-width: calc(50% - 1.5em);
   margin: 0.25em 1.25em 0.75em 0;
 }
 
 .wiki-content img.wiki-float-right,
 .wiki__quill .ql-editor img.wiki-float-right {
   float: right;
-  max-width: 50%;
+  max-width: calc(50% - 1.5em);
   margin: 0.25em 0 0.75em 1.25em;
+}
+
+/* Images in a row, none to one side: they shrink to stay on their row
+   when the text is narrower than in the editor - on the dashboard, on
+   a small screen. */
+.wiki-content p:has(> img + img):not(:has(> img[class*="wiki-float"])) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.wiki-content p:has(> img + img):not(:has(> img[class*="wiki-float"])) > img {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .wiki-content::after {

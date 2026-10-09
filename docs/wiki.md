@@ -421,8 +421,11 @@ text's size the PDF prints it at).
 selected - then the image menu: *Image on the left, text beside it*,
 *on the right*, or *Image in the line*. The image gets a class,
 `wiki-float-left` or `wiki-float-right` (`IMAGE_FLOATS`), floats at
-most half the text's width, and the following paragraphs run beside
-it. fpdf2 does not wrap text round an image, so the PDF lays it out
+most half the text's width, its margin included - two images to the
+same side stay side by side however narrow the text, on the dashboard
+too - and the following paragraphs run beside it. Images in a row of
+their own, none to one side, shrink to keep their row when the text is
+narrower than in the editor. fpdf2 does not wrap text round an image, so the PDF lays it out
 itself (`write_beside` in `generic/wiki/pdf.py`): the image is drawn on
 its side, before the block that holds it, and the blocks after it are
 written with the margin moved past it, until one starts below the

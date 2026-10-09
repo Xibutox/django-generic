@@ -236,3 +236,36 @@ def test_a_size_and_a_title_from_the_style_menus(
     expect(page.locator(".wiki-content h1 .ql-size-large")).to_have_text(
         "How the desk works."
     )
+
+
+@pytest.fixture
+def side_by_side(illustrated):
+    """Two images to the left, then two in a row of their own."""
+    image = WikiImage.objects.get()
+    src = image.get_absolute_url()
+    illustrated.content = (
+        f'<p><img class="wiki-float-left" src="{src}">'
+        f'<img class="wiki-float-left" src="{src}"></p>'
+        "<p>Text beside them.</p>"
+        f'<p><img src="{src}"><img src="{src}"></p>'
+    )
+    illustrated.save()
+
+    return illustrated
+
+
+def test_two_images_stay_side_by_side_in_narrow_text(
+    page, side_by_side, admin, sign_in
+):
+    sign_in(admin)
+    # Narrower than the two images and their margins.
+    page.set_viewport_size({"width": 420, "height": 900})
+    page.goto("/wiki/handbook/")
+
+    images = page.locator(".wiki-content img")
+    expect(images).to_have_count(4)
+    tops = images.evaluate_all(
+        "images => images.map(img => img.getBoundingClientRect().top)"
+    )
+    assert tops[0] == tops[1]
+    assert tops[2] == tops[3]
