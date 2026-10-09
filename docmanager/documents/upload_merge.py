@@ -18,9 +18,11 @@ dropped with the request.
 
 To take it to another project on the framework, copy this file,
 ``merge.py``, ``templates/documents/upload_merge.html`` and
-``static/documents/upload_merge.js`` and ``merge.css``; then mount the
-page before ``site.urls`` and call :func:`add_link` from a
-``resources.py`` (see ``docsite/urls.py`` and ``resources.py`` here).
+``static/documents/upload_merge.js`` and ``merge.css`` into an app of
+its own, keeping those paths (``merge.py`` is imported relatively);
+then mount the page before ``site.urls`` and call :func:`add_link`
+from a ``resources.py`` (see ``docsite/urls.py`` and ``resources.py``
+here).
 """
 
 from __future__ import annotations
@@ -39,9 +41,10 @@ from django.utils.translation import gettext_noop
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.generic import TemplateView
 
-from documents.merge import PLACEHOLDER
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
+
+from .merge import PLACEHOLDER
 
 #: Documents merged at once, at most, the template aside.
 MAX_FILES = 50
@@ -179,7 +182,7 @@ class UploadMergePage(SiteViewMixin, TemplateView):
         return context
 
     def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        from documents.merge import DocxMergeError, docx_response, merge_docx
+        from .merge import DocxMergeError, docx_response, merge_docx
 
         documents = request.FILES.getlist("documents")
         template = request.FILES.get("template")
