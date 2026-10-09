@@ -111,6 +111,16 @@
   );
   --color-info-subtle: light-dark(oklch(0.965 0.02 235), oklch(0.28 0.04 235));
 
+  /* -- Wiki text: the colours a writer gives a run of text ----------- */
+  /* Fixed hues, read on the page in both schemes. The PDF prints the
+     light ones: TEXT_COLORS in generic/wiki/sanitize.py. */
+  --wiki-text-red: light-dark(oklch(0.53 0.19 27), oklch(0.77 0.14 27));
+  --wiki-text-orange: light-dark(oklch(0.53 0.16 50), oklch(0.77 0.12 50));
+  --wiki-text-green: light-dark(oklch(0.53 0.15 150), oklch(0.77 0.11 150));
+  --wiki-text-blue: light-dark(oklch(0.53 0.17 255), oklch(0.77 0.13 255));
+  --wiki-text-purple: light-dark(oklch(0.53 0.19 310), oklch(0.77 0.14 310));
+  --wiki-text-gray: light-dark(oklch(0.53 0 0), oklch(0.77 0 0));
+
   /* -- Surfaces ------------------------------------------------------ */
   --surface-page: light-dark(
     oklch(calc(0.97 - 0.025 * var(--_c)) var(--_nc) var(--_h)),
@@ -279,6 +289,13 @@
     --color-warning-subtle: #fff8eb;
     --color-info: #0369a1;
     --color-info-subtle: #eff8ff;
+
+    --wiki-text-red: #c22826;
+    --wiki-text-orange: #b14700;
+    --wiki-text-green: #008238;
+    --wiki-text-blue: #096acb;
+    --wiki-text-purple: #8d41bc;
+    --wiki-text-gray: #6c6c6c;
 
     --surface-page: #f6f7f9;
     --surface-raised: #ffffff;

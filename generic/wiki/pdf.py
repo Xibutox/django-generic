@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import base64
 import re
+from copy import deepcopy
 from html import escape
 from html.parser import HTMLParser
 from io import BytesIO
@@ -30,14 +31,23 @@ from django.utils.translation import gettext
 from generic.conf import generic_settings
 from generic.sites.files import is_stored
 from generic.wiki.models import WikiImage, WikiPage, _address_pattern
-from generic.wiki.sanitize import clean_html
+from generic.wiki.sanitize import (
+    COLOR_TAGS,
+    TEXT_COLORS,
+    TEXT_SIZES,
+    clean_html,
+)
 
 try:  # The wiki extra; without it, no PDF is offered.
     from fpdf import FPDF
+    from fpdf.errors import FPDFException
     from fpdf.fonts import FontFace, TextStyle
+    from fpdf.html import HTML2FPDF
     from fpdf.outline import TableOfContents
 except ImportError:  # pragma: no cover - the extra is installed in tests
     FPDF = None
+    FPDFException = Exception
+    HTML2FPDF = object
 
 
 def available() -> bool:
@@ -124,6 +134,65 @@ ORIENTATIONS = ("portrait", "landscape")
 POINTS_PER_PIXEL = 0.75
 
 ALIGN_CLASS = re.compile(r"\bql-align-(center|right|justify)\b")
+COLOR_CLASS = re.compile(r"\bql-color-([a-z]+)\b")
+SIZE_CLASS = re.compile(r"\bql-size-([a-z]+)\b")
+INDENT_CLASS = re.compile(r"\bql-indent-([1-8])\b")
+
+#: Millimetres a level of the editor's indentation moves a line: the
+#: page's 2em, at the text's size.
+INDENT_STEP = 8
+
+#: Size of the text, in points; a resized run is a share of it.
+TEXT_SIZE = 11
+
+#: A tab, as the PDF draws it: four spaces that do not collapse.
+TAB = "\u00a0" * 4
+
+#: A cell fpdf2 can draw: one run of text, the same format throughout -
+#: or one image. Text partly bold, a word in another colour, is refused
+#: by its table renderer ("Unsupported nested HTML tags inside <td>").
+_RUN_TAGS = r"(?:b|i|u|s|sub|sup|code|font|a)"
+DRAWABLE_CELL = re.compile(
+    rf"(?:<{_RUN_TAGS}\b[^>]*>)*[^<]*(?:</{_RUN_TAGS}>)*|<img\b[^>]*>"
+)
+TAG = re.compile(r"<[^>]+>")
+
+TABLE_TAGS = ("table", "thead", "tbody", "tfoot", "tr", "td", "th")
+
+FLOAT_CLASS = re.compile(r"\bwiki-float-(left|right)\b")
+
+#: Millimetres between an image beside the text and the text, or the
+#: next image beside it.
+FLOAT_GAP = 4
+
+#: The narrowest room, in millimetres, text is written in beside an
+#: image; narrower, it goes below.
+MIN_BESIDE = 30
+
+
+class Mark(str):
+    """A place in a page's HTML that writes nothing: the end of a
+    top-level block; with ``image``, where an image beside the text
+    goes, before the block that holds it; with ``row``, a line of
+    images side by side; with ``clear``, a heading, which starts below
+    the images beside the text."""
+
+    image: int | None = None
+    row: int | None = None
+    clear = False
+
+    def __new__(
+        cls,
+        image: int | None = None,
+        row: int | None = None,
+        clear: bool = False,
+    ) -> "Mark":
+        mark = super().__new__(cls, "")
+        mark.image = image
+        mark.row = row
+        mark.clear = clear
+
+        return mark
 
 
 def find_fonts() -> dict[str, str] | None:
@@ -188,7 +257,8 @@ def ordered_pages(wiki: Any) -> list[tuple[WikiPage, int]]:
 class PageHTML(HTMLParser):
     """A page's cleaned HTML, rewritten for fpdf2's HTML renderer.
 
-    The editor's alignment classes become ``align``, headings become
+    The editor's alignment classes become ``align``, its text colours
+    ``<font color>``, headings become
     bold lines (only the pages' titles go to the table of contents),
     uploaded images become data the PDF embeds, an image on the web
     its name, a file block its name, and relative links absolute.
@@ -203,8 +273,12 @@ class PageHTML(HTMLParser):
         images: dict[int, tuple[str, int, int]],
         max_width: float = 0,
         max_height: float = 0,
+        tables_as_text: bool = False,
     ) -> None:
         super().__init__(convert_charrefs=True)
+        # Each row of a table a line of text, its cells side by side.
+        self.tables_as_text = tables_as_text
+        self.row_has_cell = False
         self.base_url = base_url.rstrip("/")
         self.images = images
         # The room an image has, in points; 0: no limit.
@@ -214,13 +288,46 @@ class PageHTML(HTMLParser):
         self.out: list[str] = []
         self.closing: list[str] = []
         self.in_file_block = False
+        # Where each open table cell starts in ``out``.
+        self.cells: list[int] = []
+        # The images beside the text: data, width and height in points,
+        # side; where the open top-level block starts; tables open.
+        self.floats: list[tuple[str, float, float, str]] = []
+        self.block_start: int | None = None
+        self.tables = 0
+        # The lines of images side by side, each image's data, width
+        # and height in points; the open top-level block's tag, whether
+        # it has text, its images in the line.
+        self.rows: list[list[tuple[str, float, float]]] = []
+        self.block_tag = ""
+        self.block_text = False
+        self.block_images: list[tuple[str, int, int, str]] = []
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         attributes = {name: value or "" for name, value in attrs}
         align = ALIGN_CLASS.search(attributes.get("class", ""))
         align_attribute = f' align="{align.group(1)}"' if align else ""
+        indent = INDENT_CLASS.search(attributes.get("class", ""))
+        # Read by WikiHTML: the paragraph's left margin, in levels.
+        align_attribute += (
+            f' data-indent="{indent.group(1)}"' if indent else ""
+        )
 
-        if tag in HEADING_SIZES:
+        if not self.closing:
+            if tag in HEADING_SIZES:
+                self.out.append(Mark(clear=True))
+
+            self.block_start = len(self.out)
+            self.block_tag = tag
+            self.block_text = False
+            self.block_images = []
+
+        if tag == "table":
+            self.tables += 1
+
+        if self.tables_as_text and tag in TABLE_TAGS:
+            self.table_as_text(tag)
+        elif tag in HEADING_SIZES:
             self.out.append(
                 f"<p{align_attribute}>"
                 f'<font size="{HEADING_SIZES[tag]}"><b>'
@@ -255,13 +362,27 @@ class PageHTML(HTMLParser):
         elif tag in ("em", "i"):
             self.out.append("<i>")
             self.closing.append("</i>")
-        elif tag in ("u", "s", "sub", "sup", "code", "blockquote", "pre"):
+        elif tag == "blockquote":
+            self.out.append(f"<blockquote{align_attribute}>")
+            self.closing.append("</blockquote>")
+        elif tag in ("u", "s", "sub", "sup", "code", "pre"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
-        elif tag in ("ul", "ol", "li", "table", "thead", "tbody", "tr"):
+        elif tag == "table":
+            # Every cell framed, as the page draws it, and the text's
+            # width: fpdf2 draws a single line over a bare table.
+            self.out.append(
+                '<table border="1" width="100%" cellpadding="1.5">'
+            )
+            self.closing.append("</table>")
+        elif tag == "li":
+            self.out.append(f"<li{align_attribute}>")
+            self.closing.append("</li>")
+        elif tag in ("ul", "ol", "thead", "tbody", "tr"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
         elif tag in ("td", "th"):
+            self.cells.append(len(self.out) + 1)
             span = attributes.get("colspan")
             self.out.append(
                 f'<{tag} colspan="{int(span)}">'
@@ -273,18 +394,104 @@ class PageHTML(HTMLParser):
             # A span and whatever else: its text, without the tag.
             self.closing.append("")
 
+        color = COLOR_CLASS.search(attributes.get("class", ""))
+        size = SIZE_CLASS.search(attributes.get("class", ""))
+
+        if tag in COLOR_TAGS and size and size.group(1) in TEXT_SIZES:
+            points = round(TEXT_SIZE * TEXT_SIZES[size.group(1)], 1)
+            self.out.append(f'<font size="{points}">')
+            self.closing[-1] = "</font>" + self.closing[-1]
+
+        if tag in COLOR_TAGS and color and color.group(1) in TEXT_COLORS:
+            self.out.append(f'<font color="{TEXT_COLORS[color.group(1)]}">')
+            self.closing[-1] = "</font>" + self.closing[-1]
+
     def handle_endtag(self, tag: str) -> None:
         if tag in ("img", "br", "hr"):
             return
 
+        if tag == "table":
+            self.tables = max(self.tables - 1, 0)
+
+        if self.tables_as_text and tag in TABLE_TAGS:
+            if self.closing:
+                self.out.append(self.closing.pop())
+
+            if not self.closing:
+                self.end_block()
+
+            return
+
+        if tag in ("td", "th") and self.cells:
+            self.plain_cell(self.cells.pop())
+
         if self.closing:
             self.out.append(self.closing.pop())
+
+            if not self.closing:
+                self.end_block()
 
         if tag == "p":
             self.in_file_block = False
 
+    def end_block(self) -> None:
+        """The end of a top-level block: a paragraph of images alone,
+        two or more, becomes a line of them, each at most its share of
+        the text's width, as on the page."""
+        images = self.block_images
+
+        if (
+            self.block_tag == "p"
+            and len(images) > 1
+            and not self.block_text
+            and self.block_start is not None
+        ):
+            room = self.max_width
+            self.max_width = room / len(images) if room else 0
+            row = [
+                (data, *self.size(asked, wide, high))
+                for data, wide, high, asked in images
+            ]
+            self.max_width = room
+            self.out[self.block_start :] = [Mark(row=len(self.rows))]
+            self.rows.append(row)
+
+        self.block_images = []
+        self.out.append(Mark())
+
     def handle_data(self, data: str) -> None:
-        self.out.append(escape(data, quote=False))
+        if data.strip():
+            self.block_text = True
+
+        self.out.append(escape(data, quote=False).replace("\t", TAB))
+
+    def table_as_text(self, tag: str) -> None:
+        """A table's tag, when the table is written as lines of text."""
+        if tag == "tr":
+            self.row_has_cell = False
+            self.out.append("<p>")
+            self.closing.append("</p>")
+        elif tag in ("td", "th"):
+            if self.row_has_cell:
+                self.out.append(" | ")
+
+            self.row_has_cell = True
+            self.closing.append("")
+        else:
+            self.closing.append("")
+
+    def plain_cell(self, start: int) -> None:
+        """The cell begun at ``out[start]`` as fpdf2 can draw it: kept
+        when its text has one format, else its text alone - a cell
+        pasted from a spreadsheet, partly bold, is not worth a PDF that
+        cannot be written."""
+        content = "".join(self.out[start:])
+
+        if DRAWABLE_CELL.fullmatch(content):
+            return
+
+        text = TAG.sub("", content.replace("<br>", " "))
+        self.out[start:] = [" ".join(text.split())]
 
     def absolute(self, href: str) -> str:
         if href.startswith("/") and not href.startswith("//"):
@@ -306,6 +513,29 @@ class PageHTML(HTMLParser):
             )
 
         data, pixels_wide, pixels_high = found
+        side = FLOAT_CLASS.search(attributes.get("class", ""))
+
+        if side and not self.tables and self.block_start is not None:
+            # Beside the text: at most half its width, its gap
+            # included, as on the page; drawn by write_beside(), before
+            # the block holding it.
+            room = self.max_width
+            self.max_width = room / 2 - FLOAT_GAP * 72 / 25.4 if room else 0
+            width, height = self.size(
+                attributes.get("width", ""), pixels_wide, pixels_high
+            )
+            self.max_width = room
+            self.floats.append((data, width, height, side.group(1)))
+            self.out.insert(self.block_start, Mark(len(self.floats) - 1))
+            self.block_start += 1
+
+            return ""
+
+        if not self.tables and self.block_start is not None:
+            self.block_images.append(
+                (data, pixels_wide, pixels_high, attributes.get("width", ""))
+            )
+
         width, height = self.size(
             attributes.get("width", ""), pixels_wide, pixels_high
         )
@@ -332,6 +562,31 @@ class PageHTML(HTMLParser):
 
     def html(self) -> str:
         return "".join(self.out + list(reversed(self.closing)))
+
+    def pieces(self) -> list[str]:
+        """The page as its top-level blocks' HTML, with a ``Mark`` for
+        each image beside the text, and each line of images, where it
+        goes."""
+        found: list[str] = []
+        current: list[str] = []
+
+        for part in self.out + list(reversed(self.closing)):
+            if isinstance(part, Mark):
+                if current:
+                    found.append("".join(current))
+                    current = []
+
+                if part.image is not None or part.row is not None:
+                    found.append(part)
+                elif part.clear:
+                    found.append(part)
+            else:
+                current.append(part)
+
+        if current:
+            found.append("".join(current))
+
+        return found
 
 
 def image_data(ids: Iterable[int]) -> dict[int, tuple[str, int, int]]:
@@ -372,8 +627,52 @@ def image_data(ids: Iterable[int]) -> dict[int, tuple[str, int, int]]:
     return found
 
 
+class WikiHTML(HTML2FPDF):  # type: ignore
+    """fpdf2's HTML renderer, with the editor's indentation: a paragraph,
+    heading, quote or list item's ``data-indent`` levels move it right,
+    as on the page."""
+
+    #: How far right the open block's images start, in millimetres.
+    wiki_indent: float = 0
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        level = dict(attrs).get("data-indent") or ""
+        style = self.tag_styles.get(tag)
+        margin = getattr(style, "l_margin", None)
+
+        if tag == "img" and self.wiki_indent and not self.table_row:
+            # fpdf2 draws an image where the cursor is: at the margin.
+            self.pdf.set_x(self.pdf.l_margin + self.wiki_indent)
+
+        if tag in ("p", "li", "blockquote"):
+            self.wiki_indent = (
+                int(level) * INDENT_STEP if level.isdigit() else 0
+            )
+
+        if not level.isdigit() or not isinstance(margin, (int, float)):
+            super().handle_starttag(tag, attrs)
+            return
+
+        self.tag_styles[tag] = style.replace(
+            l_margin=margin + int(level) * INDENT_STEP
+        )
+
+        try:
+            super().handle_starttag(tag, attrs)
+        finally:
+            self.tag_styles[tag] = style
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("p", "li", "blockquote"):
+            self.wiki_indent = 0
+
+        super().handle_endtag(tag)
+
+
 class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
     """The PDF: a footer with the wiki's name and the page number."""
+
+    HTML2FPDF_CLASS = WikiHTML
 
     def __init__(
         self, *, wiki_name: str, unicode: bool, orientation: str = "portrait"
@@ -400,6 +699,157 @@ class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
         self.set_x(self.l_margin)
         self.cell(0, 6, f"{self.page_no()} / {{nb}}", align="R")
         self.set_text_color(0, 0, 0)
+
+
+def write_page(pdf: Any, body: str, as_text: Any, **options: Any) -> None:
+    """A page's HTML written into ``pdf``; with its tables as lines of
+    text if fpdf2 cannot draw them as tables.
+
+    fpdf2's tables refuse some of what a page may hold - a row taller
+    than the paper, as a wide table pasted from a spreadsheet makes, or
+    cells it cannot lay out - and one page must not stop the whole
+    wiki's PDF. Only a page with a table is copied first: the copy is
+    the document so far.
+    """
+    if "<table" not in body:
+        pdf.write_html(body, warn_on_tags_not_matching=False, **options)
+        return
+
+    before = deepcopy(vars(pdf))
+
+    try:
+        pdf.write_html(body, warn_on_tags_not_matching=False, **options)
+    except (ValueError, NotImplementedError, FPDFException):
+        vars(pdf).clear()
+        vars(pdf).update(before)
+        pdf.write_html(as_text(), warn_on_tags_not_matching=False, **options)
+
+
+def write_beside(
+    pdf: Any,
+    pieces: list[str],
+    as_text: list[str],
+    floats: list[tuple[str, float, float, str]],
+    rows: list[list[tuple[str, float, float]]] | None = None,
+    **options: Any,
+) -> None:
+    """A page holding images beside the text, or lines of images,
+    written block by block.
+
+    fpdf2 does not wrap text round an image, nor put images side by
+    side: each image beside the text is drawn on its side - next to the
+    ones already there, as the page floats them, or below them when the
+    room is gone - and the blocks after it are written in the room left
+    beside them, margins moved. A line of images is drawn side by side,
+    in the room the text has. A heading starts below them all, as on
+    the page.
+    """
+    margins = (pdf.l_margin, pdf.r_margin)
+    # The images beside the text: left, right, bottom, side.
+    beside: list[tuple[float, float, float, str]] = []
+    page = pdf.page
+    after_image = False
+
+    def room() -> tuple[float, float]:
+        """Where the text has room, left and right, beside the images
+        still beside it."""
+        nonlocal page
+
+        if pdf.page != page:
+            beside.clear()
+            page = pdf.page
+
+        beside[:] = [image for image in beside if image[2] > pdf.y]
+        left = max(
+            [margins[0]]
+            + [image[1] + FLOAT_GAP for image in beside if image[3] == "left"]
+        )
+        right = min(
+            [pdf.w - margins[1]]
+            + [image[0] - FLOAT_GAP for image in beside if image[3] != "left"]
+        )
+
+        return left, right
+
+    def make_room(width: float) -> tuple[float, float]:
+        """Down past the images beside the text until ``width`` fits."""
+        left, right = room()
+
+        while beside and right - left < width:
+            pdf.set_y(min(image[2] for image in beside) + FLOAT_GAP / 2)
+            left, right = room()
+
+        return left, right
+
+    def to_text_room(left: float, right: float) -> None:
+        pdf.set_left_margin(left)
+        pdf.set_right_margin(pdf.w - right)
+        pdf.set_x(left)
+
+    def new_page_for(height: float) -> None:
+        if pdf.will_page_break(height):
+            to_text_room(margins[0], pdf.w - margins[1])
+            pdf.add_page()
+
+    def clear() -> None:
+        room()
+
+        if beside:
+            pdf.set_y(max(image[2] for image in beside) + FLOAT_GAP / 2)
+            beside.clear()
+
+        to_text_room(margins[0], pdf.w - margins[1])
+
+    for piece, text_piece in zip(pieces, as_text):
+        if isinstance(piece, Mark) and piece.clear:
+            clear()
+            after_image = False
+        elif isinstance(piece, Mark) and piece.image is not None:
+            data, width, height, side = floats[piece.image]
+            width, height = width / pdf.k, height / pdf.k
+            new_page_for(height)
+            left, right = make_room(width)
+            x = left if side == "left" else right - width
+            pdf.image(data, x=x, y=pdf.y, w=width, h=height)
+            beside.append((x, x + width, pdf.y + height, side))
+            after_image = True
+        elif isinstance(piece, Mark) and piece.row is not None:
+            images = (rows or [])[piece.row]
+            left, right = make_room(MIN_BESIDE)
+            # Each at most its share of the room, as on the page.
+            share = (right - left) / len(images)
+            sizes = []
+
+            for _data, width, height in images:
+                width, height = width / pdf.k, height / pdf.k
+                scale = min(1, share / width) if width else 1
+                sizes.append((width * scale, height * scale))
+
+            tallest = max(height for _width, height in sizes)
+            new_page_for(tallest)
+            left, _right = room()
+            top = pdf.y
+
+            for (data, _width, _height), (width, height) in zip(images, sizes):
+                # On one line, their bottoms level, as the page has them.
+                pdf.image(
+                    data, x=left, y=top + tallest - height, w=width, h=height
+                )
+                left += width
+
+            pdf.set_y(top + tallest + FLOAT_GAP / 2)
+            after_image = False
+        elif after_image and not TAG.sub("", piece).strip():
+            # The paragraph that held only the image: the text beside
+            # it starts level with its top.
+            after_image = False
+        elif piece.strip():
+            after_image = False
+            to_text_room(*make_room(MIN_BESIDE))
+            write_page(pdf, piece, lambda: str(text_piece), **options)
+
+    # What follows the page starts below its images.
+    clear()
 
 
 def render(
@@ -555,25 +1005,55 @@ def render(
         )
         pdf.ln(3)
 
-        # An image fits the paper: the text's width, a page's height.
-        parser = PageHTML(
-            base_url=base_url,
-            images=images,
-            max_width=pdf.epw * pdf.k,
-            max_height=(pdf.eph - 2) * pdf.k,
-        )
-        parser.feed(clean_html(page.content))
-        parser.close()
+        content = clean_html(page.content)
+
+        def parsed(tables_as_text: bool = False) -> PageHTML:
+            # An image fits the paper: the text's width, a page's height.
+            parser = PageHTML(
+                base_url=base_url,
+                images=images,
+                max_width=pdf.epw * pdf.k,
+                max_height=(pdf.eph - 2) * pdf.k,
+                tables_as_text=tables_as_text,
+            )
+            parser.feed(content)
+            parser.close()
+
+            return parser
+
+        parser = parsed()
         body = text(parser.html())
+        options = {
+            "font_family": family,
+            "tag_styles": tag_styles,
+            # Lines between the rows too, not only the columns.
+            "table_line_separators": True,
+        }
 
         pdf.set_font(family, "", 11)
 
-        if body.strip():
-            pdf.write_html(
+        if parser.floats or parser.rows:
+            pieces = [
+                piece if isinstance(piece, Mark) else text(piece)
+                for piece in parser.pieces()
+            ]
+            as_text = [
+                piece if isinstance(piece, Mark) else text(piece)
+                for piece in parsed(tables_as_text=True).pieces()
+            ]
+
+            if len(as_text) != len(pieces):
+                as_text = pieces
+
+            write_beside(
+                pdf, pieces, as_text, parser.floats, parser.rows, **options
+            )
+        elif body.strip():
+            write_page(
+                pdf,
                 body,
-                font_family=family,
-                tag_styles=tag_styles,
-                warn_on_tags_not_matching=False,
+                lambda: text(parsed(tables_as_text=True).html()),
+                **options,
             )
         else:
             pdf.set_font(family, "I", 10)

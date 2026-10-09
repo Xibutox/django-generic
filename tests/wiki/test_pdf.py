@@ -30,6 +30,23 @@ def png(size: tuple[int, int] = (40, 20)) -> bytes:
     return buffer.getvalue()
 
 
+def marked(pieces: list) -> list:
+    """A page's pieces, each mark said by what it stands for."""
+    found = []
+
+    for piece in pieces:
+        if not isinstance(piece, pdf.Mark):
+            found.append(piece)
+        elif piece.image is not None:
+            found.append(("image", piece.image))
+        elif piece.row is not None:
+            found.append(("row", piece.row))
+        else:
+            found.append("clear")
+
+    return found
+
+
 @pytest.fixture
 def handbook() -> dict:
     wiki = Wiki.objects.create(
@@ -106,6 +123,72 @@ class TestPageHtml:
         assert (wide, high) == (40, 20)
         assert f'src="{source}" width="30.00" height="15.00"' in html
 
+    def test_an_image_beside_the_text_goes_before_its_block(self, handbook):
+        image = handbook["image"]
+        data = pdf.image_data([image.pk])
+        parser = pdf.PageHTML(
+            base_url="", images=data, max_width=500, max_height=700
+        )
+        parser.feed(
+            "<p>Intro</p>"
+            f'<p><img src="{image.get_absolute_url()}" '
+            'class="wiki-float-right" width="2000">Beside</p>'
+            "<p>After</p>"
+        )
+        parser.close()
+
+        assert marked(parser.pieces()) == [
+            "<p>Intro</p>",
+            ("image", 0),
+            "<p>Beside</p>",
+            "<p>After</p>",
+        ]
+        source, width, height, side = parser.floats[0]
+        assert source == data[image.pk][0]
+        # At most half the room, its gap included, as on the page.
+        assert side == "right"
+        assert width == pytest.approx(250 - pdf.FLOAT_GAP * 72 / 25.4)
+        assert height == pytest.approx(width / 2)
+
+    def test_a_line_of_images_alone_is_a_row(self, handbook):
+        image = handbook["image"]
+        data = pdf.image_data([image.pk])
+        url = image.get_absolute_url()
+        parser = pdf.PageHTML(
+            base_url="", images=data, max_width=600, max_height=700
+        )
+        parser.feed(
+            f'<p><img src="{url}" width="2000"><img src="{url}">'
+            f'<img src="{url}"></p>'
+            f'<p>Text and <img src="{url}"><img src="{url}"></p>'
+            "<h2>Next</h2>"
+        )
+        parser.close()
+
+        pieces = marked(parser.pieces())
+        assert pieces[0] == ("row", 0)
+        # With text, the images stay in its line.
+        assert pieces[1].startswith("<p>Text and <img")
+        assert pieces[2] == "clear"
+        row = parser.rows[0]
+        assert len(row) == 3
+        # Each at most its share of the room, as on the page.
+        assert row[0][1:] == (200, 100)
+        assert row[1][1:] == (30, 15)
+
+    def test_an_image_beside_the_text_in_a_table_stays_in_it(self, handbook):
+        image = handbook["image"]
+        data = pdf.image_data([image.pk])
+        parser = pdf.PageHTML(base_url="", images=data)
+        parser.feed(
+            f'<table><tr><td><img src="{image.get_absolute_url()}" '
+            'class="wiki-float-left"></td></tr></table>'
+        )
+        parser.close()
+
+        assert not parser.floats
+        assert "<img" in parser.html()
+
     def test_a_wide_image_is_shrunk_to_the_page_width(self):
         parser = pdf.PageHTML(
             base_url="", images={}, max_width=500, max_height=700
@@ -151,6 +234,144 @@ class TestPageHtml:
             '<p align="right"><a href="https://desk.test/wiki/a/b/">b</a></p>'
         )
 
+    def test_a_text_colour_is_printed(self):
+        html = self.rewrite(
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><font color="#c22826">a</font>'
+            '<b><font color="#096acb">b</font></b></p>'
+        )
+
+    def test_a_text_colour_survives_the_render(self, handbook):
+        handbook["second"].content = (
+            '<p><span class="ql-color-green">green</span></p>'
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
+    def test_indentation_is_kept_as_levels(self):
+        html = self.rewrite(
+            '<p class="ql-indent-2">a</p><ul><li class="ql-indent-1">b</li>'
+            '</ul><h2 class="ql-indent-1">c</h2>'
+        )
+
+        assert '<p data-indent="2">a</p>' in html
+        assert '<li data-indent="1">b</li>' in html
+        assert '<p data-indent="1"><font size=' in html
+
+    def test_a_tab_is_four_spaces_that_stay(self):
+        html = self.rewrite("<p>a\tb</p>")
+
+        assert html == "<p>a\u00a0\u00a0\u00a0\u00a0b</p>"
+
+    def test_a_text_size_is_printed(self):
+        html = self.rewrite(
+            '<p><span class="ql-size-large">a</span>'
+            '<strong class="ql-size-small">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><font size="14.9">a</font>'
+            '<b><font size="8.8">b</font></b></p>'
+        )
+
+    def test_an_indented_line_starts_further_right(self):
+        document = pdf.WikiDocument(wiki_name="W", unicode=False)
+        document.add_page()
+        document.set_font("helvetica", "", 11)
+        indents = []
+        new_paragraph = pdf.WikiHTML._new_paragraph
+
+        def record(html, *args, **kwargs):
+            indents.append(kwargs.get("indent", 0))
+
+            return new_paragraph(html, *args, **kwargs)
+
+        with mock.patch.object(pdf.WikiHTML, "_new_paragraph", record):
+            document.write_html(
+                '<p>flush</p><p data-indent="2">deep</p><p>flush</p>'
+            )
+
+        assert indents == [0, 2 * pdf.INDENT_STEP, 0]
+
+    def test_a_table_is_framed_across_the_text(self):
+        html = self.rewrite("<table><tr><td>a</td></tr></table>")
+
+        assert html.startswith(
+            '<table border="1" width="100%" cellpadding="1.5">'
+        )
+
+    def test_a_cell_with_one_format_keeps_it(self):
+        html = self.rewrite(
+            "<table><tr><td><strong>Total</strong></td></tr></table>"
+        )
+
+        assert "<td><b>Total</b></td>" in html
+
+    def test_a_cell_with_mixed_formats_is_its_text(self):
+        html = self.rewrite(
+            "<table><tr><td><strong>Total</strong> <em>(EUR)</em><br>"
+            "x<sub>2</sub></td></tr></table>"
+        )
+
+        assert "<td>Total (EUR) x2</td>" in html
+
+    def test_a_table_with_formatted_cells_is_drawn(self, handbook):
+        handbook["second"].content = (
+            "<table><tbody><tr><td><strong>Total</strong> 12</td>"
+            '<td>a <span class="ql-color-red">b</span> <em>c</em></td></tr>'
+            "</tbody></table>"
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
+    def test_a_table_too_tall_for_the_paper_is_written_as_text(self, handbook):
+        words = " ".join(f"word{index}" for index in range(150))
+        handbook["second"].content = (
+            "<p>Before</p><table><tbody><tr>"
+            + "".join(f"<td>H{index}</td>" for index in range(12))
+            + "</tr><tr>"
+            + "".join(f"<td>{words}</td>" for _ in range(12))
+            + "</tr></tbody></table><p>After</p>"
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
+    def test_a_table_as_text_is_a_line_per_row(self):
+        parser = pdf.PageHTML(
+            base_url="https://desk.test/", images={}, tables_as_text=True
+        )
+        parser.feed(
+            "<table><tbody><tr><td><b>a</b></td><td>b</td></tr>"
+            "<tr><td>c</td><td></td></tr></tbody></table>"
+        )
+        parser.close()
+
+        assert parser.html() == "<p><b>a</b> | b</p><p>c | </p>"
+
+    def test_a_table_with_empty_cells_is_drawn(self, handbook):
+        handbook["second"].content = (
+            "<table><tbody><tr><td>a</td><td></td></tr>"
+            "<tr><td></td><td></td></tr></tbody></table>"
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
     def test_headings_are_not_sections(self):
         html = self.rewrite("<h2>Part</h2>")
 
@@ -174,6 +395,168 @@ class TestRender:
     def test_an_unknown_orientation_is_refused(self, handbook):
         with pytest.raises(ValueError):
             pdf.render(handbook["wiki"], orientation="sideways")
+
+    def test_the_text_runs_beside_an_image(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        words = "Words beside the image. " * 30
+        handbook["second"].content = (
+            f'<p><img src="{url}" class="wiki-float-left" width="200"></p>'
+            f"<p>{words}</p>"
+            f'<p><img src="{url}" class="wiki-float-right">{words}</p>'
+            "<p>After.</p>"
+        )
+        handbook["second"].save()
+        drawn = []
+        image = pdf.WikiDocument.image
+        margins = []
+        write_html = pdf.WikiDocument.write_html
+
+        def spy(document, *args, **kwargs):
+            drawn.append((kwargs["x"], kwargs.get("y"), kwargs["w"]))
+
+            return image(document, *args, **kwargs)
+
+        def write(document, html, **kwargs):
+            if "Words beside" in html or "After." in html:
+                margins.append((document.l_margin, document.r_margin))
+
+            return write_html(document, html, **kwargs)
+
+        with (
+            mock.patch.object(pdf.WikiDocument, "image", spy),
+            mock.patch.object(pdf.WikiDocument, "write_html", write),
+        ):
+            pdf.render(handbook["wiki"])
+
+        (left_x, _, left_w), (right_x, _, right_w) = drawn[-2:]
+        # The text beside the left image starts after it, the text
+        # beside the right one stops before it, the last line is back
+        # between the page's own margins.
+        assert margins[0][0] == pytest.approx(left_x + left_w + pdf.FLOAT_GAP)
+        assert margins[1][1] > 18 + right_w
+        assert margins[-1] == (18, 18)
+
+    def spy_images(self, handbook, content: str) -> tuple[list, list]:
+        """The images ``content`` draws, x, y, width and height, and
+        where each block of text starts: its margins and y."""
+        handbook["second"].content = content
+        handbook["second"].save()
+        drawn: list = []
+        written: list = []
+        image = pdf.WikiDocument.image
+        write_html = pdf.WikiDocument.write_html
+
+        def spy(document, *args, **kwargs):
+            drawn.append(
+                (kwargs["x"], kwargs.get("y"), kwargs["w"], kwargs.get("h"))
+            )
+
+            return image(document, *args, **kwargs)
+
+        def write(document, html, **kwargs):
+            written.append(
+                (html, document.l_margin, document.r_margin, document.y)
+            )
+
+            return write_html(document, html, **kwargs)
+
+        with (
+            mock.patch.object(pdf.WikiDocument, "image", spy),
+            mock.patch.object(pdf.WikiDocument, "write_html", write),
+        ):
+            pdf.render(handbook["wiki"])
+
+        return drawn, written
+
+    def test_images_to_one_side_stand_side_by_side(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        drawn, written = self.spy_images(
+            handbook,
+            f'<p><img src="{url}" class="wiki-float-left" width="150">'
+            f'<img src="{url}" class="wiki-float-left" width="150"></p>'
+            f'<p><img src="{url}" class="wiki-float-right" width="150"></p>'
+            "<p>Words beside them.</p>",
+        )
+
+        (x1, y1, w1, _), (x2, y2, w2, _), (x3, y3, w3, _) = drawn[-3:]
+        # Level, the second after the first, the third on the right.
+        assert y1 == y2 == y3
+        assert x2 == pytest.approx(x1 + w1 + pdf.FLOAT_GAP)
+        assert x3 + w3 == pytest.approx(210 - 18, abs=0.01)
+        text = next(entry for entry in written if "Words" in entry[0])
+        assert text[1] == pytest.approx(x2 + w2 + pdf.FLOAT_GAP)
+        assert text[2] == pytest.approx(18 + w3 + pdf.FLOAT_GAP)
+
+    def test_an_image_without_room_beside_goes_below(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        drawn, _written = self.spy_images(
+            handbook,
+            f'<p><img src="{url}" class="wiki-float-left" width="2000">'
+            f'<img src="{url}" class="wiki-float-right" width="2000">'
+            f'<img src="{url}" class="wiki-float-left" width="2000"></p>',
+        )
+
+        (x1, y1, _w, h1), (_x2, y2, _w2, _h), (x3, y3, _w3, _h3) = drawn[-3:]
+        # Two halves fill the line; the third starts below them.
+        assert y1 == y2
+        assert x3 == x1
+        assert y3 > y1 + h1
+
+    def test_a_line_of_images_stays_on_one_line(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        drawn, written = self.spy_images(
+            handbook,
+            f'<p><img src="{url}" width="2000"><img src="{url}">'
+            f'<img src="{url}" width="2000"></p>'
+            "<p>After.</p>",
+        )
+
+        row = drawn[-3:]
+        share = (210 - 2 * 18) / 3
+        # Side by side, their bottoms level, each its share at most.
+        assert row[1][0] == pytest.approx(row[0][0] + row[0][2])
+        assert row[2][0] == pytest.approx(row[1][0] + row[1][2])
+        assert {round(y + h, 3) for _x, y, _w, h in row} == {
+            round(row[0][1] + row[0][3], 3)
+        }
+        assert row[0][2] == pytest.approx(share, rel=1e-3)
+        assert row[1][2] == pytest.approx(
+            40 * pdf.POINTS_PER_PIXEL / 72 * 25.4
+        )
+        after = next(entry for entry in written if "After." in entry[0])
+        assert after[3] > row[0][1] + row[0][3]
+
+    def test_a_heading_starts_below_the_images_beside_the_text(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        drawn, written = self.spy_images(
+            handbook,
+            f'<p><img src="{url}" class="wiki-float-left" width="300"></p>'
+            "<p>Short.</p><h2>Next part</h2><p>Its text.</p>",
+        )
+
+        _x, y, _w, h = drawn[-1]
+        heading = next(entry for entry in written if "Next part" in entry[0])
+        assert heading[1:3] == (18, 18)
+        assert heading[3] >= y + h
+
+    def test_an_indented_image_starts_further_right(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        handbook["second"].content = (
+            f'<p class="ql-indent-2"><img src="{url}"></p>'
+        )
+        handbook["second"].save()
+        drawn = []
+        image = pdf.WikiDocument.image
+
+        def spy(document, *args, **kwargs):
+            drawn.append(kwargs["x"])
+
+            return image(document, *args, **kwargs)
+
+        with mock.patch.object(pdf.WikiDocument, "image", spy):
+            pdf.render(handbook["wiki"])
+
+        assert drawn[-1] == pytest.approx(18 + 2 * pdf.INDENT_STEP)
 
     @pytest.mark.parametrize("orientation", pdf.ORIENTATIONS)
     def test_a_large_image_stays_on_the_paper(self, handbook, orientation):

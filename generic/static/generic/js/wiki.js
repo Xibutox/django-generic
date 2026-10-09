@@ -21,21 +21,94 @@
   var Generic = window.Generic;
   var t = Generic.t;
 
+  //: The colours text may take - the server keeps these and no other
+  //: (TEXT_COLORS in generic/wiki/sanitize.py) - each written as a
+  //: class, ``ql-color-red``, and drawn by the ``--wiki-text-*`` tokens.
+  var TEXT_COLORS = ["red", "orange", "green", "blue", "purple", "gray"];
+
+  //: The style menu's paragraph styles, and the text sizes beside it -
+  //: the server keeps these classes (``ql-size-small``...), no other.
+  var HEADER_LABELS = {
+    1: "Heading 1",
+    2: "Heading 2",
+    3: "Heading 3",
+    4: "Heading 4",
+    "": "Normal"
+  };
+
+  var TEXT_SIZES = ["small", false, "large", "huge"];
+
+  var SIZE_LABELS = {
+    small: "Small",
+    large: "Large",
+    huge: "Huge",
+    "": "Normal size"
+  };
+
+  //: Where an image sits: in the line (no value), or to one side with
+  //: the text running beside it - ``wiki-float-left`` and ``-right``.
+  var IMAGE_FLOATS = ["left", "right"];
+
+  var FLOAT_LABELS = {
+    left: "Image on the left, text beside it",
+    right: "Image on the right, text beside it",
+    "": "Image in the line"
+  };
+
+  //: What the table menu does to the table holding the cursor: each
+  //: action, the Quill table module's method, and its label.
+  var TABLE_ACTIONS = [
+    "rowAbove",
+    "rowBelow",
+    "columnLeft",
+    "columnRight",
+    "deleteRow",
+    "deleteColumn",
+    "deleteTable"
+  ];
+
+  var TABLE_METHODS = {
+    rowAbove: { method: "insertRowAbove", label: "Insert a row above" },
+    rowBelow: { method: "insertRowBelow", label: "Insert a row below" },
+    columnLeft: { method: "insertColumnLeft", label: "Insert a column left" },
+    columnRight: { method: "insertColumnRight", label: "Insert a column right" },
+    deleteRow: { method: "deleteRow", label: "Delete the row" },
+    deleteColumn: { method: "deleteColumn", label: "Delete the column" },
+    deleteTable: { method: "deleteTable", label: "Delete the table" }
+  };
+
+  //: A new table's size: enough to start, rows and columns added from
+  //: the table menu.
+  var NEW_TABLE = { rows: 3, columns: 3 };
+
   var TOOLBAR = [
-    [{ header: [2, 3, 4, false] }],
+    [{ header: [1, 2, 3, 4, false] }, { size: TEXT_SIZES }],
     ["bold", "italic", "underline", "strike", "code"],
+    [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-    ["blockquote", "code-block", "link", "image", "attach"],
+    ["blockquote", "code-block", "link", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
+    ["table", { tableEdit: TABLE_ACTIONS }],
     [{ align: [] }],
     ["moveUp", "moveDown"],
     ["clean"]
   ];
 
-  //: The toolbar's own buttons, which Quill has no icon for.
+  //: The toolbar's own buttons, named, with the icon Quill has none for.
   var BUTTONS = {
     attach: { icon: "attach_file", label: "Attach a file" },
+    table: { label: "Insert a table (Ctrl+Alt+T)" },
     moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
     moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
+  };
+
+  //: The colour picker's own names for its swatches.
+  var COLOR_LABELS = {
+    red: "Red",
+    orange: "Orange",
+    green: "Green",
+    blue: "Blue",
+    purple: "Purple",
+    gray: "Gray"
   };
 
   //: The images a page may hold, as the upload endpoint takes them.
@@ -55,6 +128,310 @@
    * - which the server's cleaning keeps. One block for the editor: it
    * moves, and is deleted, as a whole.
    */
+  /**
+   * A new table where the cursor is - on a line of its own - unless the
+   * cursor is already in one: tables do not nest.
+   */
+  function insertTable(editor) {
+    var table = editor.getModule("table");
+    var range = editor.getSelection(true);
+
+    if (table.getTable(range)[0]) {
+      return;
+    }
+
+    var line = editor.getLine(range.index)[0];
+
+    // A table replaces no text: it starts on a fresh line.
+    if (line && line.length() > 1) {
+      var end = editor.getIndex(line) + line.length() - 1;
+
+      editor.insertText(end, "\n", "user");
+      editor.setSelection(end + 1, 0, "silent");
+    }
+
+    table.insertTable(NEW_TABLE.rows, NEW_TABLE.columns);
+  }
+
+  //: What a pasted cell's content may not hold: a cell of the editor is
+  //: one line, so its blocks become runs of text, side by side.
+  var CELL_BLOCKS = "address, article, blockquote, caption, dd, div, dl, dt, " +
+    "figure, h1, h2, h3, h4, h5, h6, header, footer, li, ol, p, pre, " +
+    "section, table, tbody, td, tfoot, th, thead, tr, ul";
+
+  //: The largest span a pasted cell is taken at: a damaged span must not
+  //: build a table of thousands of cells.
+  var MAX_SPAN = 50;
+
+  /** A pasted cell's content as one line: blocks and breaks become spaces. */
+  function cellLine(cell) {
+    var doc = cell.ownerDocument;
+    var copy = cell.cloneNode(true);
+
+    copy.querySelectorAll("br").forEach(function (node) {
+      node.replaceWith(doc.createTextNode(" "));
+    });
+    copy.querySelectorAll("style, script, colgroup, col").forEach(function (node) {
+      node.remove();
+    });
+    // Deepest first, so a block inside a block is unwrapped before it.
+    Array.prototype.slice.call(copy.querySelectorAll(CELL_BLOCKS)).reverse().forEach(function (node) {
+      var parent = node.parentNode;
+
+      parent.insertBefore(doc.createTextNode(" "), node);
+      while (node.firstChild) {
+        parent.insertBefore(node.firstChild, node);
+      }
+      parent.insertBefore(doc.createTextNode(" "), node);
+      parent.removeChild(node);
+    });
+
+    return copy.innerHTML.replace(/(\s|&nbsp;)+/g, " ").trim();
+  }
+
+  /**
+   * A pasted table as the editor can hold it: a plain grid of cells,
+   * each one line. A merged cell - ``colspan``, ``rowspan``, as Excel,
+   * Word and web pages write them - keeps its content in its first
+   * cell, and the cells it covered are empty, so every row has the same
+   * number of cells and every value stays in its column. Headers become
+   * cells, a caption a line of text above the table.
+   */
+  function gridTable(table) {
+    var doc = table.ownerDocument;
+    var rows = Array.prototype.slice.call(table.rows);
+    var grid = rows.map(function () {
+      return [];
+    });
+    var width = 0;
+
+    rows.forEach(function (row, y) {
+      var x = 0;
+
+      Array.prototype.forEach.call(row.cells, function (cell) {
+        var across = Math.min(Math.max(cell.colSpan || 1, 1), MAX_SPAN);
+        // rowspan="0" runs to the end of the table.
+        var down = cell.rowSpan === 0 ? rows.length - y : cell.rowSpan || 1;
+
+        down = Math.min(Math.max(down, 1), rows.length - y, MAX_SPAN);
+
+        while (grid[y][x] !== undefined) {
+          x += 1;
+        }
+
+        for (var dy = 0; dy < down; dy += 1) {
+          for (var dx = 0; dx < across; dx += 1) {
+            grid[y + dy][x + dx] = dy === 0 && dx === 0 ? cellLine(cell) : "";
+          }
+        }
+
+        x += across;
+        width = Math.max(width, x);
+      });
+      width = Math.max(width, grid[y].length);
+    });
+
+    var fragment = doc.createDocumentFragment();
+
+    // One cell - a value copied from a spreadsheet - is its text.
+    if (grid.length === 1 && width === 1) {
+      var value = doc.createElement("span");
+
+      value.innerHTML = grid[0][0];
+      fragment.appendChild(value);
+
+      return fragment;
+    }
+
+    var caption = table.caption && cellLine(table.caption);
+
+    if (caption) {
+      var line = doc.createElement("p");
+
+      line.innerHTML = caption;
+      fragment.appendChild(line);
+    }
+
+    var result = doc.createElement("table");
+    var body = doc.createElement("tbody");
+
+    grid.forEach(function (cells) {
+      var tr = doc.createElement("tr");
+
+      for (var x = 0; x < width; x += 1) {
+        var td = doc.createElement("td");
+
+        // An empty cell holds a break: without it, Quill drops the cell.
+        td.innerHTML = cells[x] || "<br>";
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    });
+    result.appendChild(body);
+    fragment.appendChild(result);
+
+    return fragment;
+  }
+
+  /**
+   * Pasted HTML with its tables made plain grids, or ``null`` when it
+   * holds none. A table inside a table becomes the text of its cell, a
+   * table of one cell its text.
+   */
+  function pastedTables(html) {
+    var doc = new window.DOMParser().parseFromString(html, "text/html");
+    var tables = Array.prototype.filter.call(doc.body.querySelectorAll("table"), function (table) {
+      return !table.parentElement.closest("table");
+    });
+
+    if (!tables.length) {
+      return null;
+    }
+
+    tables.forEach(function (table) {
+      if (table.rows.length) {
+        table.replaceWith(gridTable(table));
+      } else {
+        table.remove();
+      }
+    });
+
+    return doc.body.innerHTML;
+  }
+
+  /**
+   * Pasted tables, put where the cursor is: on a line of their own,
+   * replacing the selection. Inside a table - tables do not nest - only
+   * their text, each row a run of cells.
+   */
+  function pasteTables(editor, html, text) {
+    var range = editor.getSelection(true);
+
+    if (editor.getModule("table").getTable(range)[0]) {
+      editor.deleteText(range.index, range.length, "user");
+      editor.insertText(range.index, text.replace(/\s+/g, " ").trim(), "user");
+      return;
+    }
+
+    editor.deleteText(range.index, range.length, "user");
+
+    var index = range.index;
+    var found = editor.getLine(index);
+
+    // A table is a block: it starts a line, the rest of the line after it.
+    if (found[0] && found[1] > 0 && /<table/i.test(html)) {
+      editor.insertText(index, "\n", "user");
+      index += 1;
+    }
+
+    var before = editor.getLength();
+
+    editor.clipboard.dangerouslyPasteHTML(index, html, "user");
+    editor.setSelection(index + editor.getLength() - before, 0, "user");
+  }
+
+  /** An action of the table menu on the table holding the cursor. */
+  function editTable(editor, action) {
+    var found = TABLE_METHODS[action];
+
+    if (found) {
+      editor.getModule("table")[found.method]();
+    }
+  }
+
+  /**
+   * An image to one side of the text, the text running beside it: a
+   * class on the image, ``wiki-float-left`` or ``-right``, which Quill
+   * keeps as the image's ``float`` format.
+   */
+  function registerImageFloat(Quill) {
+    var Image = Quill.import("formats/image");
+
+    if (Image.wikiFloat) {
+      return;
+    }
+
+    var formats = Image.formats;
+    var format = Image.prototype.format;
+
+    Image.wikiFloat = true;
+    Image.formats = function (node, scroll) {
+      var found = formats.call(this, node, scroll);
+      var side = /\bwiki-float-(left|right)\b/.exec(node.className || "");
+
+      if (side) {
+        found.float = side[1];
+      }
+
+      return found;
+    };
+    // On the image itself: as an inline format, Quill would wrap the
+    // image in a span for it.
+    Image.prototype.format = function (name, value) {
+      if (name !== "float") {
+        format.call(this, name, value);
+        return;
+      }
+
+      var node = this.domNode;
+
+      IMAGE_FLOATS.forEach(function (side) {
+        node.classList.remove("wiki-float-" + side);
+      });
+
+      if (IMAGE_FLOATS.indexOf(value) !== -1) {
+        node.classList.add("wiki-float-" + value);
+      }
+
+      if (!node.className) {
+        node.removeAttribute("class");
+      }
+    };
+  }
+
+  /**
+   * The images selected - or, with the cursor only, the image just
+   * before it - put to ``side`` of the text, or back in the line.
+   */
+  function floatImages(editor, side) {
+    var range = editor.getSelection(true);
+    var start = range.length ? range.index : Math.max(range.index - 1, 0);
+    var length = range.length || 1;
+    var index = start;
+    var found = false;
+
+    editor.getContents(start, length).ops.forEach(function (op) {
+      var size = typeof op.insert === "string" ? op.insert.length : 1;
+
+      if (op.insert && op.insert.image) {
+        editor.formatText(index, 1, "float", side || false, "user");
+        found = true;
+      }
+
+      index += size;
+    });
+
+    return found;
+  }
+
+  /**
+   * Text colours as classes from the palette, not Quill's default
+   * inline style - which the server's cleaning removes, as it removes
+   * any style a page is pasted with.
+   */
+  function registerTextColor(Quill) {
+    var Parchment = Quill.import("parchment");
+
+    Quill.register(
+      "formats/color",
+      new Parchment.ClassAttributor("color", "ql-color", {
+        scope: Parchment.Scope.INLINE,
+        whitelist: TEXT_COLORS
+      }),
+      true
+    );
+  }
+
   function registerFileBlock(Quill) {
     if (Quill.imports["formats/wikiFile"]) {
       return;
@@ -344,6 +721,8 @@
             });
           });
 
+          registerTextColor(window.Quill);
+          registerImageFloat(window.Quill);
           registerFileBlock(window.Quill);
 
           var editor = new window.Quill(document.getElementById("wiki-editor"), {
@@ -359,6 +738,17 @@
                   attach: function () {
                     self.chooseFiles();
                   },
+                  table: function () {
+                    insertTable(editor);
+                  },
+                  tableEdit: function (action) {
+                    editTable(editor, action);
+                  },
+                  imageFloat: function (side) {
+                    if (!floatImages(editor, side)) {
+                      Generic.toast(t("Click an image first."), "info");
+                    }
+                  },
                   moveUp: function () {
                     moveLine(editor, -1);
                   },
@@ -367,8 +757,18 @@
                   }
                 }
               },
+              table: true,
               keyboard: {
                 bindings: {
+                  insertTable: {
+                    key: ["t", "T"],
+                    shortKey: true,
+                    altKey: true,
+                    handler: function () {
+                      insertTable(editor);
+                      return false;
+                    }
+                  },
                   moveUp: {
                     key: "ArrowUp",
                     altKey: true,
@@ -396,13 +796,144 @@
             if (button) {
               button.title = t(BUTTONS[name].label);
               button.setAttribute("aria-label", t(BUTTONS[name].label));
-              button.appendChild(icon(BUTTONS[name].icon));
+              if (BUTTONS[name].icon) {
+                button.appendChild(icon(BUTTONS[name].icon));
+              }
             }
           });
 
+          this.acceptTables(editor);
+          this.selectImages(editor);
+          this.labelPicker(editor, "header", HEADER_LABELS, "Style");
+          this.labelPicker(editor, "size", SIZE_LABELS, "Text size");
+          this.labelPicker(editor, "imageFloat", FLOAT_LABELS, "Image and text");
+          this.iconPicker(editor, "imageFloat", "art_track");
+          this.labelColors(editor);
+          this.labelTableMenu(editor);
           this.acceptFiles(editor);
 
           return editor;
+        },
+
+        /**
+         * Tables pasted from Excel, Word or a web page, made plain grids
+         * before Quill sees them: left to it, a merged cell shifts the
+         * cells after it out of their column, and a cell holding several
+         * lines is torn into several cells, or tables.
+         */
+        acceptTables: function (editor) {
+          editor.root.addEventListener(
+            "paste",
+            function (event) {
+              var data = event.clipboardData;
+              var html = data && data.getData("text/html");
+              var cleaned = html && /<table/i.test(html) && pastedTables(html);
+
+              if (!cleaned) {
+                return;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+              pasteTables(editor, cleaned, data.getData("text/plain") || "");
+            },
+            true
+          );
+        },
+
+        /** A click on an image selects it, for the image menu to act on. */
+        selectImages: function (editor) {
+          editor.root.addEventListener("click", function (event) {
+            if (event.target.tagName !== "IMG") {
+              return;
+            }
+
+            var blot = window.Quill.find(event.target);
+
+            if (blot && blot.scroll === editor.scroll) {
+              editor.setSelection(editor.getIndex(blot), 1, "user");
+            }
+          });
+        },
+
+        /** A picker's options named in the reader's language. */
+        labelPicker: function (editor, name, labels, title) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-" + name);
+
+          if (!picker) {
+            return;
+          }
+
+          var label = picker.querySelector(".ql-picker-label");
+
+          picker.title = t(title);
+          label.setAttribute("aria-label", t(title));
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var value = item.getAttribute("data-value") || "";
+
+            if (labels[value]) {
+              item.setAttribute("data-label", t(labels[value]));
+
+              if (item.classList.contains("ql-selected")) {
+                label.setAttribute("data-label", t(labels[value]));
+              }
+            }
+          });
+        },
+
+        /** A picker shown as an icon, its options named. */
+        iconPicker: function (editor, name, symbol) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-" + name);
+
+          if (picker) {
+            var label = picker.querySelector(".ql-picker-label");
+
+            label.removeAttribute("data-label");
+            label.insertBefore(icon(symbol), label.firstChild);
+          }
+        },
+
+        /** The table menu: an icon, and each action named. */
+        labelTableMenu: function (editor) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-tableEdit");
+
+          if (!picker) {
+            return;
+          }
+
+          var label = picker.querySelector(".ql-picker-label");
+
+          picker.title = t("Edit the table");
+          label.setAttribute("aria-label", t("Edit the table"));
+          label.insertBefore(icon("table_edit"), label.firstChild);
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var action = TABLE_METHODS[item.getAttribute("data-value")];
+
+            if (action) {
+              item.setAttribute("data-label", t(action.label));
+            }
+          });
+        },
+
+        /** The colour picker and its swatches, named for every reader. */
+        labelColors: function (editor) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-color");
+
+          if (!picker) {
+            return;
+          }
+
+          picker.title = t("Text colour");
+          picker.querySelectorAll(".ql-picker-label").forEach(function (label) {
+            label.setAttribute("aria-label", t("Text colour"));
+          });
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var name = item.getAttribute("data-value");
+            var label = t(name ? COLOR_LABELS[name] : "Default colour");
+
+            item.title = label;
+            item.setAttribute("aria-label", label);
+          });
         },
 
         /**

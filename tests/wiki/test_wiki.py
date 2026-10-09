@@ -78,6 +78,51 @@ class TestCleaning:
 
         assert html == '<p class="ql-align-center">x</p>'
 
+    def test_a_text_colour_from_the_palette_is_kept(self):
+        html = clean_html(
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+    def test_a_colour_outside_the_palette_or_a_style_is_dropped(self):
+        html = clean_html(
+            '<p><span class="ql-color-pink" style="color:#fff">a</span></p>'
+        )
+
+        assert "ql-color" not in html
+        assert "style" not in html
+
+    def test_a_table_from_the_editor_is_kept_without_its_row_ids(self):
+        html = clean_html(
+            '<table><tbody><tr><td data-row="row-ab12">a</td>'
+            '<td data-row="row-ab12"></td></tr></tbody></table>'
+        )
+
+        assert html == (
+            "<table><tbody><tr><td>a</td><td></td></tr></tbody></table>"
+        )
+
+    def test_a_text_size_and_an_image_side_are_kept(self):
+        html = clean_html(
+            '<p><span class="ql-size-huge">a</span>'
+            '<img src="/wiki/images/1/" class="wiki-float-right"></p>'
+        )
+
+        assert html == (
+            '<p><span class="ql-size-huge">a</span>'
+            '<img src="/wiki/images/1/" class="wiki-float-right"></p>'
+        )
+
+    def test_an_image_side_on_text_is_dropped(self):
+        html = clean_html('<p><span class="wiki-float-left">a</span></p>')
+
+        assert "wiki-float" not in html
+
     def test_inline_image_data_is_dropped(self):
         html = clean_html('<img src="data:image/png;base64,AAAA" alt="x">')
 

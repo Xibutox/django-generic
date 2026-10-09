@@ -56,6 +56,47 @@ ATTRIBUTES = {
     "th": {"colspan", "rowspan"},
 }
 
+#: The colours the editor offers for text, by name, each with the one
+#: the PDF prints - the screen's own, light and dark, are the
+#: ``--wiki-text-<name>`` tokens. Text takes a colour from this list
+#: only, as a class, ``ql-color-red``: never an inline style, which the
+#: cleaning removes, so a page cannot paint white on white.
+TEXT_COLORS = {
+    "red": "#c22826",
+    "orange": "#b14700",
+    "green": "#008238",
+    "blue": "#096acb",
+    "purple": "#8d41bc",
+    "gray": "#6c6c6c",
+}
+
+_COLOR_CLASSES = {f"ql-color-{name}" for name in TEXT_COLORS}
+
+#: The text sizes the editor offers, as classes, ``ql-size-large``,
+#: each with the size the PDF prints it at, relative to the text's.
+TEXT_SIZES = {"small": 0.8, "large": 1.35, "huge": 1.8}
+
+_SIZE_CLASSES = {f"ql-size-{name}" for name in TEXT_SIZES}
+
+#: Where an image sits beside the text: ``wiki-float-left``, ``-right``.
+IMAGE_FLOATS = ("left", "right")
+
+#: The tags a coloured - or resized - run of text may be, as the editor
+#: writes it.
+COLOR_TAGS = (
+    "a",
+    "b",
+    "code",
+    "em",
+    "i",
+    "s",
+    "span",
+    "strong",
+    "sub",
+    "sup",
+    "u",
+)
+
 #: The editor's alignment and indentation classes, and nothing else:
 #: an arbitrary class could borrow the application's own styles.
 _EDITOR_CLASSES = {
@@ -74,6 +115,8 @@ CLASSES = {
     # the link to it: ``<p class="wiki-file"><a href=...>``.
     "p": _EDITOR_CLASSES | {"wiki-file"},
     "pre": {"ql-syntax"},
+    **{tag: _COLOR_CLASSES | _SIZE_CLASSES for tag in COLOR_TAGS},
+    "img": {f"wiki-float-{side}" for side in IMAGE_FLOATS},
 }
 
 #: Links and images point at the web, a mailbox or a phone; relative

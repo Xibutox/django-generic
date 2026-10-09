@@ -1546,6 +1546,138 @@ msgid "Move down (Alt+Down)"
 msgstr "Descendre (Alt+Bas)"
 
 #: generic/static/generic/js/wiki.js
+msgid "Text colour"
+msgstr "Couleur du texte"
+
+#: generic/static/generic/js/wiki.js
+msgid "Default colour"
+msgstr "Couleur par défaut"
+
+#: generic/static/generic/js/wiki.js
+msgid "Red"
+msgstr "Rouge"
+
+#: generic/static/generic/js/wiki.js
+msgid "Orange"
+msgstr "Orange"
+
+#: generic/static/generic/js/wiki.js
+msgid "Green"
+msgstr "Vert"
+
+#: generic/static/generic/js/wiki.js
+msgid "Blue"
+msgstr "Bleu"
+
+#: generic/static/generic/js/wiki.js
+msgid "Purple"
+msgstr "Violet"
+
+#: generic/static/generic/js/wiki.js
+msgid "Gray"
+msgstr "Gris"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a table (Ctrl+Alt+T)"
+msgstr "Insérer un tableau (Ctrl+Alt+T)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Edit the table"
+msgstr "Modifier le tableau"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a row above"
+msgstr "Insérer une ligne au-dessus"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a row below"
+msgstr "Insérer une ligne en dessous"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a column left"
+msgstr "Insérer une colonne à gauche"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a column right"
+msgstr "Insérer une colonne à droite"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the row"
+msgstr "Supprimer la ligne"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the column"
+msgstr "Supprimer la colonne"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the table"
+msgstr "Supprimer le tableau"
+
+#: generic/static/generic/js/wiki.js
+msgid "Heading 1"
+msgstr "Titre 1"
+
+#: generic/static/generic/js/wiki.js
+msgid "Heading 2"
+msgstr "Titre 2"
+
+#: generic/static/generic/js/wiki.js
+msgid "Heading 3"
+msgstr "Titre 3"
+
+#: generic/static/generic/js/wiki.js
+msgid "Heading 4"
+msgstr "Titre 4"
+
+#: generic/static/generic/js/wiki.js
+msgid "Normal"
+msgstr "Normal"
+
+#: generic/static/generic/js/wiki.js
+msgid "Style"
+msgstr "Style"
+
+#: generic/static/generic/js/wiki.js
+msgid "Small"
+msgstr "Petit"
+
+#: generic/static/generic/js/wiki.js
+msgid "Large"
+msgstr "Grand"
+
+#: generic/static/generic/js/wiki.js
+msgid "Huge"
+msgstr "Très grand"
+
+#: generic/static/generic/js/wiki.js
+msgid "Normal size"
+msgstr "Taille normale"
+
+#: generic/static/generic/js/wiki.js
+msgid "Text size"
+msgstr "Taille du texte"
+
+#: generic/static/generic/js/wiki.js
+msgid "Image on the left, text beside it"
+msgstr "Image à gauche, texte à côté"
+
+#: generic/static/generic/js/wiki.js
+msgid "Image on the right, text beside it"
+msgstr "Image à droite, texte à côté"
+
+#: generic/static/generic/js/wiki.js
+msgid "Image in the line"
+msgstr "Image dans la ligne"
+
+#: generic/static/generic/js/wiki.js
+msgid "Image and text"
+msgstr "Image et texte"
+
+#: generic/static/generic/js/wiki.js
+msgid "Click an image first."
+msgstr "Cliquez d'abord sur une image."
+
+#: generic/static/generic/js/wiki.js
 msgid "Only images can be added to this wiki."
 msgstr "Seules des images peuvent être ajoutées à ce wiki."
 

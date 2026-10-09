@@ -24,11 +24,65 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   text as a Word document, illustrated, is
   `docs/user-guide/guide-utilisateur.docx`
   (`scripts/build_user_guide.py`).
+- Text colour in the wiki's editor: the *A* in its toolbar colours the
+  selected text red, orange, green, blue, purple or gray, or gives it
+  back its own colour. The colours read in the light and the dark
+  scheme (`--wiki-text-*` tokens) and are printed in the wiki's PDF;
+  the server keeps only these (`TEXT_COLORS` in
+  `generic.wiki.sanitize`, as `ql-color-<name>` classes), never an
+  inline style.
+- Tables in the wiki's editor: the table button in its toolbar, or
+  Ctrl+Alt+T, puts a 3 x 3 table on a line of its own; the menu next to
+  it adds a row above or below, a column left or right, or deletes the
+  row, the column or the table. A table already in a page is now kept
+  as a table when the page is edited (Quill's table module), and an
+  empty cell keeps a line's height on the page.
+- More styles in the wiki's editor: *Heading 1* joins the style menu
+  (Heading 1 to 4, Normal), and a size menu beside it makes text
+  small, large or huge (`ql-size-*` classes, printed in the PDF). The
+  menus' names are translated.
+- Text beside an image in the wiki: click an image, then the image
+  menu puts it on the left or the right with the text running beside
+  it, or back in the line (`wiki-float-left` / `-right` on the image,
+  at most half the text's width). The PDF does the same: the image on
+  its side, the following paragraphs in the room beside it until one
+  starts below it.
+- Several images side by side look the same in the wiki's editor, on
+  its page, on the dashboard and in the PDF: images in a line of their
+  own stay on it, each at most its share of the width; images to one
+  side stand next to each other, the next below when the line is full;
+  a heading starts below the images beside the text.
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
 ### Fixed
+- A table pasted into the wiki's editor from Excel, Word, Google
+  Sheets or a web page no longer breaks the page. Merged cells no
+  longer push the cells after them into the wrong column: the content
+  stays in the first cell and the covered cells are left empty. A cell
+  holding several paragraphs or a list stays one cell, the text on one
+  line, instead of being torn into several cells or tables. Headers
+  become plain cells and a caption becomes a line above the table. A
+  single copied cell pastes as plain text, and a table pasted inside a
+  table pastes as its text.
+- A wiki's PDF no longer fails on a table cell whose text is partly
+  formatted - a bold word, a coloured figure, as Excel and Word paste
+  them - which fpdf2 refuses: such a cell is printed as its text, and a
+  cell formatted throughout keeps its format. A table fpdf2 still
+  cannot draw - a row taller than the paper, as a wide spreadsheet
+  makes ("The row with index ... is too high") - is printed as lines of
+  text, a row a line, its cells separated by " | ", rather than
+  stopping the whole wiki's PDF.
+- A wiki's PDF keeps the editor's indentation - a paragraph, heading,
+  quote or list item moved right with the indent buttons or Tab is
+  moved right in the PDF too, an image in it included - and a tab
+  typed in a line is printed as
+  space, not dropped. On the page, tabs and runs of spaces show as in
+  the editor.
+- A table in a wiki's PDF has its borders: every cell framed, as the
+  page shows it, and the table as wide as the text. fpdf2 drew only a
+  line over it.
 - A large image no longer runs off a wiki's PDF: every image is drawn
   at most the text's width and a page's height, its shape kept, and a
   smaller one at the size the page shows it.

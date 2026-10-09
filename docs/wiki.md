@@ -196,8 +196,8 @@ it was last changed and by whom, and - for editors - *Edit*, *Subpage*,
 *Edit* turns the page into the editor: its title, its parent page, its
 position among its siblings, its address, whether it is pinned to the
 dashboard, and the text, in [Quill](https://quilljs.com): headings,
-bold and italics, lists, quotes, code, links, images - uploaded or
-by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
+bold and italics, text colour, lists, quotes, code, tables, links,
+images - uploaded or by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
 page as the server draws it; *Cancel* and leaving the page ask first
 when something changed.
 
@@ -236,8 +236,17 @@ shown - against an allowlist of what the editor produces:
   wiki (`/wiki/images/<id>/`, relative, so it is kept), or on the
   web - never inlined in the page;
 - only the editor's own classes (alignment, indentation, code blocks,
-  `wiki-file` on a paragraph), so a page cannot borrow the
-  application's styles.
+  `wiki-file` on a paragraph, a text colour), so a page cannot borrow
+  the application's styles.
+
+**Text colour** is a palette, not a free choice: red, orange, green,
+blue, purple, gray - `TEXT_COLORS` in `generic/wiki/sanitize.py` -
+written as a class on the run of text, `<span class="ql-color-red">`,
+never as an inline style. A pasted `style="color: ..."` is dropped
+with every other style, so a page cannot write white on white, and a
+colour stays readable in both schemes: the page draws it with the
+`--wiki-text-<name>` token (`tokens.css`), lighter in the dark one.
+The PDF prints the colour of the light scheme.
 
 On the page, the content also sits under `x-ignore`: Alpine never reads
 anything in it as a directive.
@@ -354,8 +363,12 @@ stand:
 - every **page**, from its own page of paper, in the menu's order: a
   page, then its subpages, siblings by position and title; the title's
   size says its depth;
-- the text with its headings, emphasis, lists, quotes, code, tables and
-  alignment; links stay links, made absolute;
+- the text with its headings, emphasis, text colours, lists, quotes,
+  code, tables (every cell framed, as wide as the text) and alignment;
+  a table cell whose text is partly formatted, which fpdf2 cannot draw,
+  printed as its text, and a table it cannot draw at all (a row taller
+  than the paper) printed as lines of text, a row a line, its cells
+  separated by ` | `; links stay links, made absolute;
 - the **images** uploaded into a page, drawn where the page shows them
   at the size the page shows them, never wider than the text nor taller
   than a page - a larger one is shrunk, its shape kept, and a wide
@@ -396,6 +409,80 @@ Spanish, German are whole; typographic quotes and dashes become plain
 ones, and other characters `?`. The Docker image installs DejaVu
 (`fonts-dejavu-core`).
 
+## Styles, sizes and images beside the text
+
+The style menu sets a line's kind: *Heading 1* to *Heading 4*, or
+*Normal*. The size menu beside it makes the selected text *Small*,
+*Large* or *Huge* - a class, `ql-size-small`, `-large`, `-huge`
+(`TEXT_SIZES` in `generic/wiki/sanitize.py`, with the share of the
+text's size the PDF prints it at).
+
+**An image beside the text**: click an image in the editor - it is
+selected - then the image menu: *Image on the left, text beside it*,
+*on the right*, or *Image in the line*. The image gets a class,
+`wiki-float-left` or `wiki-float-right` (`IMAGE_FLOATS`), floats at
+most half the text's width, its margin included, and the following
+paragraphs run beside it. Images to the same side stand side by side,
+the next one below them when the line is full; a heading starts below
+them all.
+
+**Images side by side**: two or more images in a line of their own,
+none to one side, stay on that line, each at most its share of the
+text's width (`calc(100% / n)`, up to six) - in the editor, on the page
+and on the dashboard, however wide the window.
+
+The PDF lays all of this out the same way. fpdf2 neither wraps text
+round an image nor puts images side by side, so `write_beside` in
+`generic/wiki/pdf.py` does it: an image beside the text is drawn on its
+side, before the block that holds it, next to the ones already there
+or below them when the room is gone; the blocks after it are written
+with the margins moved past them, until one starts below them or on
+another page; a heading starts below them. A paragraph of images alone
+(`PageHTML.rows`) is drawn as a line, each image its share of the room,
+their bottoms level. A paragraph is not split: one longer than the
+image stays narrow to its end. An image beside the text inside a table
+stays in its cell.
+
+**Indentation and tabs**: the indent buttons (or Tab at the start of a
+list item) move a line right by levels, `ql-indent-1` to `-8`; the PDF
+moves it - and an image in it - by `INDENT_STEP` millimetres a level (`generic/wiki/pdf.py`,
+through `WikiHTML`, fpdf2's renderer told the paragraph's level). A tab
+typed inside a line is kept: the page shows it as the editor does, and
+the PDF as four spaces.
+
+## Tables
+
+The table button in the editor's toolbar - or **Ctrl+Alt+T** - puts a
+table of 3 rows and 3 columns where the cursor is, on a line of its
+own; inside a table it does nothing, tables do not nest. The menu next
+to it works on the table holding the cursor: insert a row above or
+below, a column left or right, delete the row, the column or the whole
+table. *Tab* moves to the next cell.
+
+The editor is Quill's table module: plain cells (`<td>`), no header
+row and no merged cells; a header row pasted in becomes a row of plain
+cells. The size of a new table is `NEW_TABLE` in `generic/js/wiki.js`.
+
+**Pasting a table** - from Excel, Word, Google Sheets, a web page - goes
+through `pastedTables` in `generic/js/wiki.js` before Quill sees it,
+which makes it a grid the editor can hold:
+
+- a merged cell (`colspan`, `rowspan`) keeps its content in its first
+  cell, and the cells it covered are empty: every row has the same
+  number of cells, every value stays in its column;
+- a cell holding paragraphs, line breaks or a list is one line, its
+  pieces side by side; bold, italics and links in it are kept;
+- header cells are plain cells, a caption a line above the table, a
+  table inside a cell the text of that cell;
+- a single cell - a value copied from a spreadsheet - pastes as its
+  text, not as a table;
+- inside a table, a pasted table pastes as its text.
+
+A table starts a line of its own: pasted in the middle of a line, the
+rest of the line goes after it.
+On the page a table is as wide as the text, an empty cell as high as a
+line; the PDF draws it with the rest.
+
 ## Ordering a page
 
 The editor's **up and down arrows** - or **Alt+Up** and **Alt+Down** -
@@ -426,7 +513,10 @@ editors built on ProseMirror need a bundler.
   the `dashboard_pinned` block of `generic/site/index.html`.
 - The editor's toolbar is `TOOLBAR` in `generic/js/wiki.js`. Adding a
   format there means allowing its HTML in `generic/wiki/sanitize.py`
-  too - the server has the last word. The file block is the Quill blot
+  too - the server has the last word. A colour added to the palette
+  goes in `TEXT_COLORS` (`sanitize.py`, with the PDF's colour), in
+  `TEXT_COLORS` and `COLOR_LABELS` (`wiki.js`), and gets its
+  `--wiki-text-<name>` token (`tokens.css`) and rules (`wiki.css`). The file block is the Quill blot
   `wikiFile`, registered there too.
 - Without the framework's endpoints mounted (`generic.urls`), the
   editor offers no upload: images by address only, no paperclip.
