@@ -67,10 +67,16 @@ def orm_beside_playwright():
 
 @pytest.fixture(scope="session")
 def django_db_modify_db_settings(
+    orm_beside_playwright,
     django_db_modify_db_settings,
     tmp_path_factory,
 ):
     """SQLite in a file rather than in memory, for the live server.
+
+    After ``orm_beside_playwright``: the test database is made under
+    Playwright's loop too, and an autouse fixture is not promised to
+    come first - with pytest-django 4.14 and pytest-playwright 0.10,
+    django_db_setup ran before it and every test failed to start.
 
     In memory, the server's threads would all share the tests' one
     connection, and a page asking for its table and two charts at once
