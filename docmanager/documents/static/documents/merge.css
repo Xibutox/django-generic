@@ -76,3 +76,35 @@
   align-items: center;
   margin-top: var(--space-4);
 }
+
+/* The "Merge uploaded Word files" page: where files are dropped. */
+
+.merge__drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-5) var(--space-3);
+  color: var(--text-secondary);
+  border: 0.125rem dashed var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  text-align: center;
+}
+
+.merge__drop:hover,
+.merge__drop:focus-within,
+.merge__drop.is-over {
+  color: var(--text-primary);
+  border-color: var(--color-accent);
+  background: var(--surface-sunken);
+}
+
+.merge__template {
+  margin-top: var(--space-3);
+}
+
+.merge__template .button {
+  cursor: pointer;
+}

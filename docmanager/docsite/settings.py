@@ -168,3 +168,11 @@ GENERIC = {
 # console backend above, until EMAIL_HOST / MAILERS name a real server.
 DOCUMENT_REVIEW_CHANNELS = ["notification", "mail"]
 DEFAULT_FROM_EMAIL = "documents@localhost"
+
+# The Merge uploaded Word files page (documents/upload_merge.py): Word
+# files uploaded, put in order, merged with an uploaded template and
+# sent back, nothing kept. Off unless turned on here, or with
+# DOCUMENT_UPLOAD_MERGE=1 in the environment.
+DOCUMENT_UPLOAD_MERGE = os.environ.get("DOCUMENT_UPLOAD_MERGE") == "1"
+# Bytes one merge may upload, every file together: held in memory.
+DOCUMENT_UPLOAD_MERGE_MAX_SIZE = 50 * 1024 * 1024
