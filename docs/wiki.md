@@ -422,12 +422,17 @@ selected - then the image menu: *Image on the left, text beside it*,
 *on the right*, or *Image in the line*. The image gets a class,
 `wiki-float-left` or `wiki-float-right` (`IMAGE_FLOATS`), floats at
 most half the text's width, and the following paragraphs run beside
-it. The PDF draws it in its line: fpdf2 does not wrap text round an
-image.
+it. fpdf2 does not wrap text round an image, so the PDF lays it out
+itself (`write_beside` in `generic/wiki/pdf.py`): the image is drawn on
+its side, before the block that holds it, and the blocks after it are
+written with the margin moved past it, until one starts below the
+image or on another page. A paragraph is not split: one longer than
+the image stays narrow to its end. An image beside the text inside a
+table stays in its cell.
 
 **Indentation and tabs**: the indent buttons (or Tab at the start of a
 list item) move a line right by levels, `ql-indent-1` to `-8`; the PDF
-moves it by `INDENT_STEP` millimetres a level (`generic/wiki/pdf.py`,
+moves it - and an image in it - by `INDENT_STEP` millimetres a level (`generic/wiki/pdf.py`,
 through `WikiHTML`, fpdf2's renderer told the paragraph's level). A tab
 typed inside a line is kept: the page shows it as the editor does, and
 the PDF as four spaces.

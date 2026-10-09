@@ -44,8 +44,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - Text beside an image in the wiki: click an image, then the image
   menu puts it on the left or the right with the text running beside
   it, or back in the line (`wiki-float-left` / `-right` on the image,
-  at most half the text's width). The PDF draws such an image in its
-  line - fpdf2 does not wrap text round an image.
+  at most half the text's width). The PDF does the same: the image on
+  its side, the following paragraphs in the room beside it until one
+  starts below it.
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
@@ -70,7 +71,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   stopping the whole wiki's PDF.
 - A wiki's PDF keeps the editor's indentation - a paragraph, heading,
   quote or list item moved right with the indent buttons or Tab is
-  moved right in the PDF too - and a tab typed in a line is printed as
+  moved right in the PDF too, an image in it included - and a tab
+  typed in a line is printed as
   space, not dropped. On the page, tabs and runs of spaces show as in
   the editor.
 - A table in a wiki's PDF has its borders: every cell framed, as the

@@ -106,6 +106,44 @@ class TestPageHtml:
         assert (wide, high) == (40, 20)
         assert f'src="{source}" width="30.00" height="15.00"' in html
 
+    def test_an_image_beside_the_text_goes_before_its_block(self, handbook):
+        image = handbook["image"]
+        data = pdf.image_data([image.pk])
+        parser = pdf.PageHTML(
+            base_url="", images=data, max_width=500, max_height=700
+        )
+        parser.feed(
+            "<p>Intro</p>"
+            f'<p><img src="{image.get_absolute_url()}" '
+            'class="wiki-float-right" width="2000">Beside</p>'
+            "<p>After</p>"
+        )
+        parser.close()
+
+        assert parser.pieces() == [
+            "<p>Intro</p>",
+            0,
+            "<p>Beside</p>",
+            "<p>After</p>",
+        ]
+        source, width, height, side = parser.floats[0]
+        assert source == data[image.pk][0]
+        # At most half the room, as on the page.
+        assert (width, height, side) == (250, 125, "right")
+
+    def test_an_image_beside_the_text_in_a_table_stays_in_it(self, handbook):
+        image = handbook["image"]
+        data = pdf.image_data([image.pk])
+        parser = pdf.PageHTML(base_url="", images=data)
+        parser.feed(
+            f'<table><tr><td><img src="{image.get_absolute_url()}" '
+            'class="wiki-float-left"></td></tr></table>'
+        )
+        parser.close()
+
+        assert not parser.floats
+        assert "<img" in parser.html()
+
     def test_a_wide_image_is_shrunk_to_the_page_width(self):
         parser = pdf.PageHTML(
             base_url="", images={}, max_width=500, max_height=700
@@ -312,6 +350,65 @@ class TestRender:
     def test_an_unknown_orientation_is_refused(self, handbook):
         with pytest.raises(ValueError):
             pdf.render(handbook["wiki"], orientation="sideways")
+
+    def test_the_text_runs_beside_an_image(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        words = "Words beside the image. " * 30
+        handbook["second"].content = (
+            f'<p><img src="{url}" class="wiki-float-left" width="200"></p>'
+            f"<p>{words}</p>"
+            f'<p><img src="{url}" class="wiki-float-right">{words}</p>'
+            "<p>After.</p>"
+        )
+        handbook["second"].save()
+        drawn = []
+        image = pdf.WikiDocument.image
+        margins = []
+        write_html = pdf.WikiDocument.write_html
+
+        def spy(document, *args, **kwargs):
+            drawn.append((kwargs["x"], kwargs.get("y"), kwargs["w"]))
+
+            return image(document, *args, **kwargs)
+
+        def write(document, html, **kwargs):
+            if "Words beside" in html or "After." in html:
+                margins.append((document.l_margin, document.r_margin))
+
+            return write_html(document, html, **kwargs)
+
+        with (
+            mock.patch.object(pdf.WikiDocument, "image", spy),
+            mock.patch.object(pdf.WikiDocument, "write_html", write),
+        ):
+            pdf.render(handbook["wiki"])
+
+        (left_x, _, left_w), (right_x, _, right_w) = drawn[-2:]
+        # The text beside the left image starts after it, the text
+        # beside the right one stops before it, the last line is back
+        # between the page's own margins.
+        assert margins[0][0] == pytest.approx(left_x + left_w + pdf.FLOAT_GAP)
+        assert margins[1][1] > 18 + right_w
+        assert margins[-1] == (18, 18)
+
+    def test_an_indented_image_starts_further_right(self, handbook):
+        url = handbook["image"].get_absolute_url()
+        handbook["second"].content = (
+            f'<p class="ql-indent-2"><img src="{url}"></p>'
+        )
+        handbook["second"].save()
+        drawn = []
+        image = pdf.WikiDocument.image
+
+        def spy(document, *args, **kwargs):
+            drawn.append(kwargs["x"])
+
+            return image(document, *args, **kwargs)
+
+        with mock.patch.object(pdf.WikiDocument, "image", spy):
+            pdf.render(handbook["wiki"])
+
+        assert drawn[-1] == pytest.approx(18 + 2 * pdf.INDENT_STEP)
 
     @pytest.mark.parametrize("orientation", pdf.ORIENTATIONS)
     def test_a_large_image_stays_on_the_paper(self, handbook, orientation):

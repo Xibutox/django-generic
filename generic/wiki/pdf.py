@@ -159,6 +159,25 @@ TAG = re.compile(r"<[^>]+>")
 
 TABLE_TAGS = ("table", "thead", "tbody", "tfoot", "tr", "td", "th")
 
+FLOAT_CLASS = re.compile(r"\bwiki-float-(left|right)\b")
+
+#: Millimetres between an image beside the text and the text.
+FLOAT_GAP = 4
+
+
+class Mark(str):
+    """A place in a page's HTML that writes nothing: the end of a
+    top-level block, or - with ``image`` - where an image beside the
+    text goes, before the block that holds it."""
+
+    image: int | None = None
+
+    def __new__(cls, image: int | None = None) -> "Mark":
+        mark = super().__new__(cls, "")
+        mark.image = image
+
+        return mark
+
 
 def find_fonts() -> dict[str, str] | None:
     """The fonts to write with: ``WIKI_PDF_FONTS``, or the first set
@@ -255,6 +274,11 @@ class PageHTML(HTMLParser):
         self.in_file_block = False
         # Where each open table cell starts in ``out``.
         self.cells: list[int] = []
+        # The images beside the text: data, width and height in points,
+        # side; where the open top-level block starts; tables open.
+        self.floats: list[tuple[str, float, float, str]] = []
+        self.block_start: int | None = None
+        self.tables = 0
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         attributes = {name: value or "" for name, value in attrs}
@@ -265,6 +289,12 @@ class PageHTML(HTMLParser):
         align_attribute += (
             f' data-indent="{indent.group(1)}"' if indent else ""
         )
+
+        if not self.closing:
+            self.block_start = len(self.out)
+
+        if tag == "table":
+            self.tables += 1
 
         if self.tables_as_text and tag in TABLE_TAGS:
             self.table_as_text(tag)
@@ -351,9 +381,15 @@ class PageHTML(HTMLParser):
         if tag in ("img", "br", "hr"):
             return
 
+        if tag == "table":
+            self.tables = max(self.tables - 1, 0)
+
         if self.tables_as_text and tag in TABLE_TAGS:
             if self.closing:
                 self.out.append(self.closing.pop())
+
+            if not self.closing:
+                self.out.append(Mark())
 
             return
 
@@ -362,6 +398,9 @@ class PageHTML(HTMLParser):
 
         if self.closing:
             self.out.append(self.closing.pop())
+
+            if not self.closing:
+                self.out.append(Mark())
 
         if tag == "p":
             self.in_file_block = False
@@ -417,6 +456,23 @@ class PageHTML(HTMLParser):
             )
 
         data, pixels_wide, pixels_high = found
+        side = FLOAT_CLASS.search(attributes.get("class", ""))
+
+        if side and not self.tables and self.block_start is not None:
+            # Beside the text: at most half its width, as on the page;
+            # drawn by write_beside(), before the block holding it.
+            room = self.max_width
+            self.max_width = room / 2 if room else 0
+            width, height = self.size(
+                attributes.get("width", ""), pixels_wide, pixels_high
+            )
+            self.max_width = room
+            self.floats.append((data, width, height, side.group(1)))
+            self.out.insert(self.block_start, Mark(len(self.floats) - 1))
+            self.block_start += 1
+
+            return ""
+
         width, height = self.size(
             attributes.get("width", ""), pixels_wide, pixels_high
         )
@@ -443,6 +499,28 @@ class PageHTML(HTMLParser):
 
     def html(self) -> str:
         return "".join(self.out + list(reversed(self.closing)))
+
+    def pieces(self) -> list[str | int]:
+        """The page as its top-level blocks' HTML, with the index of
+        each image beside the text where it goes."""
+        found: list[str | int] = []
+        current: list[str] = []
+
+        for part in self.out + list(reversed(self.closing)):
+            if isinstance(part, Mark):
+                if current:
+                    found.append("".join(current))
+                    current = []
+
+                if part.image is not None:
+                    found.append(part.image)
+            else:
+                current.append(part)
+
+        if current:
+            found.append("".join(current))
+
+        return found
 
 
 def image_data(ids: Iterable[int]) -> dict[int, tuple[str, int, int]]:
@@ -488,10 +566,22 @@ class WikiHTML(HTML2FPDF):  # type: ignore
     heading, quote or list item's ``data-indent`` levels move it right,
     as on the page."""
 
+    #: How far right the open block's images start, in millimetres.
+    wiki_indent: float = 0
+
     def handle_starttag(self, tag: str, attrs: list) -> None:
         level = dict(attrs).get("data-indent") or ""
         style = self.tag_styles.get(tag)
         margin = getattr(style, "l_margin", None)
+
+        if tag == "img" and self.wiki_indent and not self.table_row:
+            # fpdf2 draws an image where the cursor is: at the margin.
+            self.pdf.set_x(self.pdf.l_margin + self.wiki_indent)
+
+        if tag in ("p", "li", "blockquote"):
+            self.wiki_indent = (
+                int(level) * INDENT_STEP if level.isdigit() else 0
+            )
 
         if not level.isdigit() or not isinstance(margin, (int, float)):
             super().handle_starttag(tag, attrs)
@@ -505,6 +595,12 @@ class WikiHTML(HTML2FPDF):  # type: ignore
             super().handle_starttag(tag, attrs)
         finally:
             self.tag_styles[tag] = style
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("p", "li", "blockquote"):
+            self.wiki_indent = 0
+
+        super().handle_endtag(tag)
 
 
 class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
@@ -561,6 +657,77 @@ def write_page(pdf: Any, body: str, as_text: Any, **options: Any) -> None:
         vars(pdf).clear()
         vars(pdf).update(before)
         pdf.write_html(as_text(), warn_on_tags_not_matching=False, **options)
+
+
+def write_beside(
+    pdf: Any,
+    pieces: list[str | int],
+    as_text: list[str | int],
+    floats: list[tuple[str, float, float, str]],
+    **options: Any,
+) -> None:
+    """A page holding images beside the text, written block by block.
+
+    fpdf2 does not wrap text round an image: each image is drawn on its
+    side, and the blocks after it are written in the room left beside
+    it - margins moved - until one starts below it, or on another page.
+    """
+    margins = (pdf.l_margin, pdf.r_margin)
+    beside: tuple[float, int] | None = None  # the image's bottom, page
+    after_image = False
+
+    def clear(below: bool) -> None:
+        nonlocal beside
+
+        if beside is None:
+            return
+
+        bottom, page = beside
+        pdf.set_left_margin(margins[0])
+        pdf.set_right_margin(margins[1])
+        pdf.set_x(margins[0])
+
+        if below and pdf.page == page and pdf.y < bottom:
+            pdf.set_y(bottom + FLOAT_GAP / 2)
+
+        beside = None
+
+    for piece, text_piece in zip(pieces, as_text):
+        if beside is not None and (
+            pdf.page != beside[1] or pdf.y >= beside[0]
+        ):
+            clear(below=False)
+
+        if isinstance(piece, int):
+            clear(below=True)
+            data, width, height, side = floats[piece]
+            width, height = width / pdf.k, height / pdf.k
+
+            if pdf.will_page_break(height):
+                pdf.add_page()
+
+            left = margins[0] if side == "left" else pdf.w - margins[1] - width
+            top = pdf.get_y()
+            pdf.image(data, x=left, y=top, w=width, h=height)
+            pdf.set_y(top)
+
+            if side == "left":
+                pdf.set_left_margin(margins[0] + width + FLOAT_GAP)
+            else:
+                pdf.set_right_margin(margins[1] + width + FLOAT_GAP)
+
+            pdf.set_x(pdf.l_margin)
+            beside = (top + height, pdf.page)
+            after_image = True
+        elif after_image and not TAG.sub("", piece).strip():
+            # The paragraph that held only the image: the text beside
+            # it starts level with its top.
+            after_image = False
+        elif piece.strip():
+            after_image = False
+            write_page(pdf, piece, lambda: str(text_piece), **options)
+
+    clear(below=True)
 
 
 def render(
@@ -718,7 +885,7 @@ def render(
 
         content = clean_html(page.content)
 
-        def body_of(tables_as_text: bool = False) -> str:
+        def parsed(tables_as_text: bool = False) -> PageHTML:
             # An image fits the paper: the text's width, a page's height.
             parser = PageHTML(
                 base_url=base_url,
@@ -730,21 +897,39 @@ def render(
             parser.feed(content)
             parser.close()
 
-            return text(parser.html())
+            return parser
 
-        body = body_of()
+        parser = parsed()
+        body = text(parser.html())
+        options = {
+            "font_family": family,
+            "tag_styles": tag_styles,
+            # Lines between the rows too, not only the columns.
+            "table_line_separators": True,
+        }
 
         pdf.set_font(family, "", 11)
 
-        if body.strip():
+        if parser.floats:
+            pieces = [
+                piece if isinstance(piece, int) else text(piece)
+                for piece in parser.pieces()
+            ]
+            as_text = [
+                piece if isinstance(piece, int) else text(piece)
+                for piece in parsed(tables_as_text=True).pieces()
+            ]
+
+            if len(as_text) != len(pieces):
+                as_text = pieces
+
+            write_beside(pdf, pieces, as_text, parser.floats, **options)
+        elif body.strip():
             write_page(
                 pdf,
                 body,
-                lambda: body_of(tables_as_text=True),
-                font_family=family,
-                tag_styles=tag_styles,
-                # Lines between the rows too, not only the columns.
-                table_line_separators=True,
+                lambda: text(parsed(tables_as_text=True).html()),
+                **options,
             )
         else:
             pdf.set_font(family, "I", 10)
