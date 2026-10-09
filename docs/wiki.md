@@ -196,8 +196,8 @@ it was last changed and by whom, and - for editors - *Edit*, *Subpage*,
 *Edit* turns the page into the editor: its title, its parent page, its
 position among its siblings, its address, whether it is pinned to the
 dashboard, and the text, in [Quill](https://quilljs.com): headings,
-bold and italics, lists, quotes, code, links, images - uploaded or
-by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
+bold and italics, text colour, lists, quotes, code, links, images -
+uploaded or by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
 page as the server draws it; *Cancel* and leaving the page ask first
 when something changed.
 
@@ -236,8 +236,17 @@ shown - against an allowlist of what the editor produces:
   wiki (`/wiki/images/<id>/`, relative, so it is kept), or on the
   web - never inlined in the page;
 - only the editor's own classes (alignment, indentation, code blocks,
-  `wiki-file` on a paragraph), so a page cannot borrow the
-  application's styles.
+  `wiki-file` on a paragraph, a text colour), so a page cannot borrow
+  the application's styles.
+
+**Text colour** is a palette, not a free choice: red, orange, green,
+blue, purple, gray - `TEXT_COLORS` in `generic/wiki/sanitize.py` -
+written as a class on the run of text, `<span class="ql-color-red">`,
+never as an inline style. A pasted `style="color: ..."` is dropped
+with every other style, so a page cannot write white on white, and a
+colour stays readable in both schemes: the page draws it with the
+`--wiki-text-<name>` token (`tokens.css`), lighter in the dark one.
+The PDF prints the colour of the light scheme.
 
 On the page, the content also sits under `x-ignore`: Alpine never reads
 anything in it as a directive.
@@ -354,8 +363,8 @@ stand:
 - every **page**, from its own page of paper, in the menu's order: a
   page, then its subpages, siblings by position and title; the title's
   size says its depth;
-- the text with its headings, emphasis, lists, quotes, code, tables and
-  alignment; links stay links, made absolute;
+- the text with its headings, emphasis, text colours, lists, quotes,
+  code, tables and alignment; links stay links, made absolute;
 - the **images** uploaded into a page, drawn where the page shows them
   at the size the page shows them, never wider than the text nor taller
   than a page - a larger one is shrunk, its shape kept, and a wide
@@ -426,7 +435,10 @@ editors built on ProseMirror need a bundler.
   the `dashboard_pinned` block of `generic/site/index.html`.
 - The editor's toolbar is `TOOLBAR` in `generic/js/wiki.js`. Adding a
   format there means allowing its HTML in `generic/wiki/sanitize.py`
-  too - the server has the last word. The file block is the Quill blot
+  too - the server has the last word. A colour added to the palette
+  goes in `TEXT_COLORS` (`sanitize.py`, with the PDF's colour), in
+  `TEXT_COLORS` and `COLOR_LABELS` (`wiki.js`), and gets its
+  `--wiki-text-<name>` token (`tokens.css`) and rules (`wiki.css`). The file block is the Quill blot
   `wikiFile`, registered there too.
 - Without the framework's endpoints mounted (`generic.urls`), the
   editor offers no upload: images by address only, no paperclip.

@@ -1183,7 +1183,8 @@ class Command(BaseCommand):
                 "triage",
                 0,
                 False,
-                "<p>Escalate when an <strong>urgent</strong> ticket has "
+                '<p>Escalate when an <strong class="ql-color-red">urgent'
+                "</strong> ticket has "
                 "had no answer within the hour, or when the customer asks "
                 "for it.</p><ol><li>Say why in a comment.</li><li>Tell "
                 "the account manager, named on the customer's summary."

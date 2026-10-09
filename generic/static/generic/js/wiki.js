@@ -21,9 +21,15 @@
   var Generic = window.Generic;
   var t = Generic.t;
 
+  //: The colours text may take - the server keeps these and no other
+  //: (TEXT_COLORS in generic/wiki/sanitize.py) - each written as a
+  //: class, ``ql-color-red``, and drawn by the ``--wiki-text-*`` tokens.
+  var TEXT_COLORS = ["red", "orange", "green", "blue", "purple", "gray"];
+
   var TOOLBAR = [
     [{ header: [2, 3, 4, false] }],
     ["bold", "italic", "underline", "strike", "code"],
+    [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
     ["blockquote", "code-block", "link", "image", "attach"],
     [{ align: [] }],
@@ -36,6 +42,16 @@
     attach: { icon: "attach_file", label: "Attach a file" },
     moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
     moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
+  };
+
+  //: The colour picker's own names for its swatches.
+  var COLOR_LABELS = {
+    red: "Red",
+    orange: "Orange",
+    green: "Green",
+    blue: "Blue",
+    purple: "Purple",
+    gray: "Gray"
   };
 
   //: The images a page may hold, as the upload endpoint takes them.
@@ -55,6 +71,24 @@
    * - which the server's cleaning keeps. One block for the editor: it
    * moves, and is deleted, as a whole.
    */
+  /**
+   * Text colours as classes from the palette, not Quill's default
+   * inline style - which the server's cleaning removes, as it removes
+   * any style a page is pasted with.
+   */
+  function registerTextColor(Quill) {
+    var Parchment = Quill.import("parchment");
+
+    Quill.register(
+      "formats/color",
+      new Parchment.ClassAttributor("color", "ql-color", {
+        scope: Parchment.Scope.INLINE,
+        whitelist: TEXT_COLORS
+      }),
+      true
+    );
+  }
+
   function registerFileBlock(Quill) {
     if (Quill.imports["formats/wikiFile"]) {
       return;
@@ -344,6 +378,7 @@
             });
           });
 
+          registerTextColor(window.Quill);
           registerFileBlock(window.Quill);
 
           var editor = new window.Quill(document.getElementById("wiki-editor"), {
@@ -400,9 +435,31 @@
             }
           });
 
+          this.labelColors(editor);
           this.acceptFiles(editor);
 
           return editor;
+        },
+
+        /** The colour picker and its swatches, named for every reader. */
+        labelColors: function (editor) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-color");
+
+          if (!picker) {
+            return;
+          }
+
+          picker.title = t("Text colour");
+          picker.querySelectorAll(".ql-picker-label").forEach(function (label) {
+            label.setAttribute("aria-label", t("Text colour"));
+          });
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var name = item.getAttribute("data-value");
+            var label = t(name ? COLOR_LABELS[name] : "Default colour");
+
+            item.title = label;
+            item.setAttribute("aria-label", label);
+          });
         },
 
         /**

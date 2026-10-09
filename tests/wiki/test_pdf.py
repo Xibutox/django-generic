@@ -151,6 +151,27 @@ class TestPageHtml:
             '<p align="right"><a href="https://desk.test/wiki/a/b/">b</a></p>'
         )
 
+    def test_a_text_colour_is_printed(self):
+        html = self.rewrite(
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><font color="#c22826">a</font>'
+            '<b><font color="#096acb">b</font></b></p>'
+        )
+
+    def test_a_text_colour_survives_the_render(self, handbook):
+        handbook["second"].content = (
+            '<p><span class="ql-color-green">green</span></p>'
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
     def test_headings_are_not_sections(self):
         html = self.rewrite("<h2>Part</h2>")
 

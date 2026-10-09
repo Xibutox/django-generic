@@ -56,6 +56,37 @@ ATTRIBUTES = {
     "th": {"colspan", "rowspan"},
 }
 
+#: The colours the editor offers for text, by name, each with the one
+#: the PDF prints - the screen's own, light and dark, are the
+#: ``--wiki-text-<name>`` tokens. Text takes a colour from this list
+#: only, as a class, ``ql-color-red``: never an inline style, which the
+#: cleaning removes, so a page cannot paint white on white.
+TEXT_COLORS = {
+    "red": "#c22826",
+    "orange": "#b14700",
+    "green": "#008238",
+    "blue": "#096acb",
+    "purple": "#8d41bc",
+    "gray": "#6c6c6c",
+}
+
+_COLOR_CLASSES = {f"ql-color-{name}" for name in TEXT_COLORS}
+
+#: The tags a coloured run of text may be, as the editor writes it.
+COLOR_TAGS = (
+    "a",
+    "b",
+    "code",
+    "em",
+    "i",
+    "s",
+    "span",
+    "strong",
+    "sub",
+    "sup",
+    "u",
+)
+
 #: The editor's alignment and indentation classes, and nothing else:
 #: an arbitrary class could borrow the application's own styles.
 _EDITOR_CLASSES = {
@@ -74,6 +105,7 @@ CLASSES = {
     # the link to it: ``<p class="wiki-file"><a href=...>``.
     "p": _EDITOR_CLASSES | {"wiki-file"},
     "pre": {"ql-syntax"},
+    **{tag: _COLOR_CLASSES for tag in COLOR_TAGS},
 }
 
 #: Links and images point at the web, a mailbox or a phone; relative

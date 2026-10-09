@@ -78,6 +78,25 @@ class TestCleaning:
 
         assert html == '<p class="ql-align-center">x</p>'
 
+    def test_a_text_colour_from_the_palette_is_kept(self):
+        html = clean_html(
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><span class="ql-color-red">a</span>'
+            '<strong class="ql-color-blue">b</strong></p>'
+        )
+
+    def test_a_colour_outside_the_palette_or_a_style_is_dropped(self):
+        html = clean_html(
+            '<p><span class="ql-color-pink" style="color:#fff">a</span></p>'
+        )
+
+        assert "ql-color" not in html
+        assert "style" not in html
+
     def test_inline_image_data_is_dropped(self):
         html = clean_html('<img src="data:image/png;base64,AAAA" alt="x">')
 

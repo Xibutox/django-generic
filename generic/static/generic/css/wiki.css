@@ -398,6 +398,93 @@
 .wiki-content .ql-indent-7 { padding-left: 14em; }
 .wiki-content .ql-indent-8 { padding-left: 16em; }
 
+/* Text colours: the editor's palette, on the page and in the editor. */
+
+.wiki-content .ql-color-red,
+.wiki__quill .ql-editor .ql-color-red {
+  color: var(--wiki-text-red);
+}
+
+.wiki-content .ql-color-orange,
+.wiki__quill .ql-editor .ql-color-orange {
+  color: var(--wiki-text-orange);
+}
+
+.wiki-content .ql-color-green,
+.wiki__quill .ql-editor .ql-color-green {
+  color: var(--wiki-text-green);
+}
+
+.wiki-content .ql-color-blue,
+.wiki__quill .ql-editor .ql-color-blue {
+  color: var(--wiki-text-blue);
+}
+
+.wiki-content .ql-color-purple,
+.wiki__quill .ql-editor .ql-color-purple {
+  color: var(--wiki-text-purple);
+}
+
+.wiki-content .ql-color-gray,
+.wiki__quill .ql-editor .ql-color-gray {
+  color: var(--wiki-text-gray);
+}
+
+/* The picker's swatches, and its icon, in the same colours - Quill
+   paints them with the CSS colour of the same name. The first swatch
+   takes the colour away: the text's own. */
+.wiki__quill .ql-snow .ql-color .ql-picker-item:not([data-value]) {
+  background-color: var(--text-primary);
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="red"] {
+  background-color: var(--wiki-text-red) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="red"] .ql-color-label {
+  stroke: var(--wiki-text-red) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="orange"] {
+  background-color: var(--wiki-text-orange) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="orange"] .ql-color-label {
+  stroke: var(--wiki-text-orange) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="green"] {
+  background-color: var(--wiki-text-green) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="green"] .ql-color-label {
+  stroke: var(--wiki-text-green) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="blue"] {
+  background-color: var(--wiki-text-blue) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="blue"] .ql-color-label {
+  stroke: var(--wiki-text-blue) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="purple"] {
+  background-color: var(--wiki-text-purple) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="purple"] .ql-color-label {
+  stroke: var(--wiki-text-purple) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-item[data-value="gray"] {
+  background-color: var(--wiki-text-gray) !important;
+}
+
+.wiki__quill .ql-snow .ql-color .ql-picker-label[data-value="gray"] .ql-color-label {
+  stroke: var(--wiki-text-gray) !important;
+}
+
 /* -- Editor: Quill's "snow" theme, on the tokens ----------------------- */
 
 .wiki__editor {

@@ -1546,6 +1546,38 @@ msgid "Move down (Alt+Down)"
 msgstr "Descendre (Alt+Bas)"
 
 #: generic/static/generic/js/wiki.js
+msgid "Text colour"
+msgstr "Couleur du texte"
+
+#: generic/static/generic/js/wiki.js
+msgid "Default colour"
+msgstr "Couleur par défaut"
+
+#: generic/static/generic/js/wiki.js
+msgid "Red"
+msgstr "Rouge"
+
+#: generic/static/generic/js/wiki.js
+msgid "Orange"
+msgstr "Orange"
+
+#: generic/static/generic/js/wiki.js
+msgid "Green"
+msgstr "Vert"
+
+#: generic/static/generic/js/wiki.js
+msgid "Blue"
+msgstr "Bleu"
+
+#: generic/static/generic/js/wiki.js
+msgid "Purple"
+msgstr "Violet"
+
+#: generic/static/generic/js/wiki.js
+msgid "Gray"
+msgstr "Gris"
+
+#: generic/static/generic/js/wiki.js
 msgid "Only images can be added to this wiki."
 msgstr "Seules des images peuvent être ajoutées à ce wiki."
 

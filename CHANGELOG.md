@@ -24,6 +24,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   text as a Word document, illustrated, is
   `docs/user-guide/guide-utilisateur.docx`
   (`scripts/build_user_guide.py`).
+- Text colour in the wiki's editor: the *A* in its toolbar colours the
+  selected text red, orange, green, blue, purple or gray, or gives it
+  back its own colour. The colours read in the light and the dark
+  scheme (`--wiki-text-*` tokens) and are printed in the wiki's PDF;
+  the server keeps only these (`TEXT_COLORS` in
+  `generic.wiki.sanitize`, as `ql-color-<name>` classes), never an
+  inline style.
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).

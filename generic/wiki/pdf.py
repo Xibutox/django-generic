@@ -30,7 +30,7 @@ from django.utils.translation import gettext
 from generic.conf import generic_settings
 from generic.sites.files import is_stored
 from generic.wiki.models import WikiImage, WikiPage, _address_pattern
-from generic.wiki.sanitize import clean_html
+from generic.wiki.sanitize import COLOR_TAGS, TEXT_COLORS, clean_html
 
 try:  # The wiki extra; without it, no PDF is offered.
     from fpdf import FPDF
@@ -124,6 +124,7 @@ ORIENTATIONS = ("portrait", "landscape")
 POINTS_PER_PIXEL = 0.75
 
 ALIGN_CLASS = re.compile(r"\bql-align-(center|right|justify)\b")
+COLOR_CLASS = re.compile(r"\bql-color-([a-z]+)\b")
 
 
 def find_fonts() -> dict[str, str] | None:
@@ -188,7 +189,8 @@ def ordered_pages(wiki: Any) -> list[tuple[WikiPage, int]]:
 class PageHTML(HTMLParser):
     """A page's cleaned HTML, rewritten for fpdf2's HTML renderer.
 
-    The editor's alignment classes become ``align``, headings become
+    The editor's alignment classes become ``align``, its text colours
+    ``<font color>``, headings become
     bold lines (only the pages' titles go to the table of contents),
     uploaded images become data the PDF embeds, an image on the web
     its name, a file block its name, and relative links absolute.
@@ -272,6 +274,12 @@ class PageHTML(HTMLParser):
         else:
             # A span and whatever else: its text, without the tag.
             self.closing.append("")
+
+        color = COLOR_CLASS.search(attributes.get("class", ""))
+
+        if tag in COLOR_TAGS and color and color.group(1) in TEXT_COLORS:
+            self.out.append(f'<font color="{TEXT_COLORS[color.group(1)]}">')
+            self.closing[-1] = "</font>" + self.closing[-1]
 
     def handle_endtag(self, tag: str) -> None:
         if tag in ("img", "br", "hr"):
