@@ -126,6 +126,15 @@ POINTS_PER_PIXEL = 0.75
 ALIGN_CLASS = re.compile(r"\bql-align-(center|right|justify)\b")
 COLOR_CLASS = re.compile(r"\bql-color-([a-z]+)\b")
 
+#: A cell fpdf2 can draw: one run of text, the same format throughout -
+#: or one image. Text partly bold, a word in another colour, is refused
+#: by its table renderer ("Unsupported nested HTML tags inside <td>").
+_RUN_TAGS = r"(?:b|i|u|s|sub|sup|code|font|a)"
+DRAWABLE_CELL = re.compile(
+    rf"(?:<{_RUN_TAGS}\b[^>]*>)*[^<]*(?:</{_RUN_TAGS}>)*|<img\b[^>]*>"
+)
+TAG = re.compile(r"<[^>]+>")
+
 
 def find_fonts() -> dict[str, str] | None:
     """The fonts to write with: ``WIKI_PDF_FONTS``, or the first set
@@ -216,6 +225,8 @@ class PageHTML(HTMLParser):
         self.out: list[str] = []
         self.closing: list[str] = []
         self.in_file_block = False
+        # Where each open table cell starts in ``out``.
+        self.cells: list[int] = []
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         attributes = {name: value or "" for name, value in attrs}
@@ -264,6 +275,7 @@ class PageHTML(HTMLParser):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
         elif tag in ("td", "th"):
+            self.cells.append(len(self.out) + 1)
             span = attributes.get("colspan")
             self.out.append(
                 f'<{tag} colspan="{int(span)}">'
@@ -285,6 +297,9 @@ class PageHTML(HTMLParser):
         if tag in ("img", "br", "hr"):
             return
 
+        if tag in ("td", "th") and self.cells:
+            self.plain_cell(self.cells.pop())
+
         if self.closing:
             self.out.append(self.closing.pop())
 
@@ -293,6 +308,19 @@ class PageHTML(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         self.out.append(escape(data, quote=False))
+
+    def plain_cell(self, start: int) -> None:
+        """The cell begun at ``out[start]`` as fpdf2 can draw it: kept
+        when its text has one format, else its text alone - a cell
+        pasted from a spreadsheet, partly bold, is not worth a PDF that
+        cannot be written."""
+        content = "".join(self.out[start:])
+
+        if DRAWABLE_CELL.fullmatch(content):
+            return
+
+        text = TAG.sub("", content.replace("<br>", " "))
+        self.out[start:] = [" ".join(text.split())]
 
     def absolute(self, href: str) -> str:
         if href.startswith("/") and not href.startswith("//"):

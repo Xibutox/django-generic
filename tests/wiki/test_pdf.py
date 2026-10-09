@@ -172,6 +172,33 @@ class TestPageHtml:
 
         assert content.startswith(b"%PDF")
 
+    def test_a_cell_with_one_format_keeps_it(self):
+        html = self.rewrite(
+            "<table><tr><td><strong>Total</strong></td></tr></table>"
+        )
+
+        assert "<td><b>Total</b></td>" in html
+
+    def test_a_cell_with_mixed_formats_is_its_text(self):
+        html = self.rewrite(
+            "<table><tr><td><strong>Total</strong> <em>(EUR)</em><br>"
+            "x<sub>2</sub></td></tr></table>"
+        )
+
+        assert "<td>Total (EUR) x2</td>" in html
+
+    def test_a_table_with_formatted_cells_is_drawn(self, handbook):
+        handbook["second"].content = (
+            "<table><tbody><tr><td><strong>Total</strong> 12</td>"
+            '<td>a <span class="ql-color-red">b</span> <em>c</em></td></tr>'
+            "</tbody></table>"
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
     def test_a_table_with_empty_cells_is_drawn(self, handbook):
         handbook["second"].content = (
             "<table><tbody><tr><td>a</td><td></td></tr>"
