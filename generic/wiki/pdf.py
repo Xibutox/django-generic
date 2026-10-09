@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import base64
 import re
+from copy import deepcopy
 from html import escape
 from html.parser import HTMLParser
 from io import BytesIO
@@ -34,10 +35,12 @@ from generic.wiki.sanitize import COLOR_TAGS, TEXT_COLORS, clean_html
 
 try:  # The wiki extra; without it, no PDF is offered.
     from fpdf import FPDF
+    from fpdf.errors import FPDFException
     from fpdf.fonts import FontFace, TextStyle
     from fpdf.outline import TableOfContents
 except ImportError:  # pragma: no cover - the extra is installed in tests
     FPDF = None
+    FPDFException = Exception
 
 
 def available() -> bool:
@@ -135,6 +138,8 @@ DRAWABLE_CELL = re.compile(
 )
 TAG = re.compile(r"<[^>]+>")
 
+TABLE_TAGS = ("table", "thead", "tbody", "tfoot", "tr", "td", "th")
+
 
 def find_fonts() -> dict[str, str] | None:
     """The fonts to write with: ``WIKI_PDF_FONTS``, or the first set
@@ -214,8 +219,12 @@ class PageHTML(HTMLParser):
         images: dict[int, tuple[str, int, int]],
         max_width: float = 0,
         max_height: float = 0,
+        tables_as_text: bool = False,
     ) -> None:
         super().__init__(convert_charrefs=True)
+        # Each row of a table a line of text, its cells side by side.
+        self.tables_as_text = tables_as_text
+        self.row_has_cell = False
         self.base_url = base_url.rstrip("/")
         self.images = images
         # The room an image has, in points; 0: no limit.
@@ -233,7 +242,9 @@ class PageHTML(HTMLParser):
         align = ALIGN_CLASS.search(attributes.get("class", ""))
         align_attribute = f' align="{align.group(1)}"' if align else ""
 
-        if tag in HEADING_SIZES:
+        if self.tables_as_text and tag in TABLE_TAGS:
+            self.table_as_text(tag)
+        elif tag in HEADING_SIZES:
             self.out.append(
                 f"<p{align_attribute}>"
                 f'<font size="{HEADING_SIZES[tag]}"><b>'
@@ -297,6 +308,12 @@ class PageHTML(HTMLParser):
         if tag in ("img", "br", "hr"):
             return
 
+        if self.tables_as_text and tag in TABLE_TAGS:
+            if self.closing:
+                self.out.append(self.closing.pop())
+
+            return
+
         if tag in ("td", "th") and self.cells:
             self.plain_cell(self.cells.pop())
 
@@ -308,6 +325,21 @@ class PageHTML(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         self.out.append(escape(data, quote=False))
+
+    def table_as_text(self, tag: str) -> None:
+        """A table's tag, when the table is written as lines of text."""
+        if tag == "tr":
+            self.row_has_cell = False
+            self.out.append("<p>")
+            self.closing.append("</p>")
+        elif tag in ("td", "th"):
+            if self.row_has_cell:
+                self.out.append(" | ")
+
+            self.row_has_cell = True
+            self.closing.append("")
+        else:
+            self.closing.append("")
 
     def plain_cell(self, start: int) -> None:
         """The cell begun at ``out[start]`` as fpdf2 can draw it: kept
@@ -436,6 +468,30 @@ class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
         self.set_x(self.l_margin)
         self.cell(0, 6, f"{self.page_no()} / {{nb}}", align="R")
         self.set_text_color(0, 0, 0)
+
+
+def write_page(pdf: Any, body: str, as_text: Any, **options: Any) -> None:
+    """A page's HTML written into ``pdf``; with its tables as lines of
+    text if fpdf2 cannot draw them as tables.
+
+    fpdf2's tables refuse some of what a page may hold - a row taller
+    than the paper, as a wide table pasted from a spreadsheet makes, or
+    cells it cannot lay out - and one page must not stop the whole
+    wiki's PDF. Only a page with a table is copied first: the copy is
+    the document so far.
+    """
+    if "<table" not in body:
+        pdf.write_html(body, warn_on_tags_not_matching=False, **options)
+        return
+
+    before = deepcopy(vars(pdf))
+
+    try:
+        pdf.write_html(body, warn_on_tags_not_matching=False, **options)
+    except (ValueError, NotImplementedError, FPDFException):
+        vars(pdf).clear()
+        vars(pdf).update(before)
+        pdf.write_html(as_text(), warn_on_tags_not_matching=False, **options)
 
 
 def render(
@@ -591,25 +647,33 @@ def render(
         )
         pdf.ln(3)
 
-        # An image fits the paper: the text's width, a page's height.
-        parser = PageHTML(
-            base_url=base_url,
-            images=images,
-            max_width=pdf.epw * pdf.k,
-            max_height=(pdf.eph - 2) * pdf.k,
-        )
-        parser.feed(clean_html(page.content))
-        parser.close()
-        body = text(parser.html())
+        content = clean_html(page.content)
+
+        def body_of(tables_as_text: bool = False) -> str:
+            # An image fits the paper: the text's width, a page's height.
+            parser = PageHTML(
+                base_url=base_url,
+                images=images,
+                max_width=pdf.epw * pdf.k,
+                max_height=(pdf.eph - 2) * pdf.k,
+                tables_as_text=tables_as_text,
+            )
+            parser.feed(content)
+            parser.close()
+
+            return text(parser.html())
+
+        body = body_of()
 
         pdf.set_font(family, "", 11)
 
         if body.strip():
-            pdf.write_html(
+            write_page(
+                pdf,
                 body,
+                lambda: body_of(tables_as_text=True),
                 font_family=family,
                 tag_styles=tag_styles,
-                warn_on_tags_not_matching=False,
             )
         else:
             pdf.set_font(family, "I", 10)

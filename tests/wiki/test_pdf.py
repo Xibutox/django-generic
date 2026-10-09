@@ -199,6 +199,33 @@ class TestPageHtml:
 
         assert content.startswith(b"%PDF")
 
+    def test_a_table_too_tall_for_the_paper_is_written_as_text(self, handbook):
+        words = " ".join(f"word{index}" for index in range(150))
+        handbook["second"].content = (
+            "<p>Before</p><table><tbody><tr>"
+            + "".join(f"<td>H{index}</td>" for index in range(12))
+            + "</tr><tr>"
+            + "".join(f"<td>{words}</td>" for _ in range(12))
+            + "</tr></tbody></table><p>After</p>"
+        )
+        handbook["second"].save()
+
+        content = pdf.render(handbook["wiki"], base_url="https://desk.test/")
+
+        assert content.startswith(b"%PDF")
+
+    def test_a_table_as_text_is_a_line_per_row(self):
+        parser = pdf.PageHTML(
+            base_url="https://desk.test/", images={}, tables_as_text=True
+        )
+        parser.feed(
+            "<table><tbody><tr><td><b>a</b></td><td>b</td></tr>"
+            "<tr><td>c</td><td></td></tr></tbody></table>"
+        )
+        parser.close()
+
+        assert parser.html() == "<p><b>a</b> | b</p><p>c | </p>"
+
     def test_a_table_with_empty_cells_is_drawn(self, handbook):
         handbook["second"].content = (
             "<table><tbody><tr><td>a</td><td></td></tr>"

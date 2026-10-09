@@ -54,7 +54,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - A wiki's PDF no longer fails on a table cell whose text is partly
   formatted - a bold word, a coloured figure, as Excel and Word paste
   them - which fpdf2 refuses: such a cell is printed as its text, and a
-  cell formatted throughout keeps its format.
+  cell formatted throughout keeps its format. A table fpdf2 still
+  cannot draw - a row taller than the paper, as a wide spreadsheet
+  makes ("The row with index ... is too high") - is printed as lines of
+  text, a row a line, its cells separated by " | ", rather than
+  stopping the whole wiki's PDF.
 - A large image no longer runs off a wiki's PDF: every image is drawn
   at most the text's width and a page's height, its shape kept, and a
   smaller one at the size the page shows it.

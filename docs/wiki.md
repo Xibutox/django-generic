@@ -365,7 +365,9 @@ stand:
   size says its depth;
 - the text with its headings, emphasis, text colours, lists, quotes,
   code, tables and alignment - a table cell whose text is partly
-  formatted, which fpdf2 cannot draw, printed as its text; links stay links, made absolute;
+  formatted, which fpdf2 cannot draw, printed as its text, and a table
+  it cannot draw at all (a row taller than the paper) printed as lines
+  of text, a row a line, its cells separated by ` | `; links stay links, made absolute;
 - the **images** uploaded into a page, drawn where the page shows them
   at the size the page shows them, never wider than the text nor taller
   than a page - a larger one is shrunk, its shape kept, and a wide
