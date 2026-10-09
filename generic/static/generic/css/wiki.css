@@ -295,6 +295,63 @@
   border-radius: var(--border-radius-sm);
 }
 
+/* An image to one side, the text beside it - on the page and in the
+   editor - at most half the text's width. What follows the page's
+   last floated image stays inside the page. */
+.wiki-content img.wiki-float-left,
+.wiki__quill .ql-editor img.wiki-float-left {
+  float: left;
+  max-width: 50%;
+  margin: 0.25em 1.25em 0.75em 0;
+}
+
+.wiki-content img.wiki-float-right,
+.wiki__quill .ql-editor img.wiki-float-right {
+  float: right;
+  max-width: 50%;
+  margin: 0.25em 0 0.75em 1.25em;
+}
+
+.wiki-content::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.wiki__quill .ql-editor img {
+  cursor: pointer;
+}
+
+/* Text sizes, from the editor's size menu. */
+.wiki-content .ql-size-small,
+.wiki__quill .ql-editor .ql-size-small {
+  font-size: 0.8em;
+}
+
+.wiki-content .ql-size-large,
+.wiki__quill .ql-editor .ql-size-large {
+  font-size: 1.35em;
+}
+
+.wiki-content .ql-size-huge,
+.wiki__quill .ql-editor .ql-size-huge {
+  font-size: 1.8em;
+  line-height: 1.3;
+}
+
+/* Tabs and runs of spaces as the editor shows them. */
+.wiki-content p,
+.wiki-content li,
+.wiki-content h1,
+.wiki-content h2,
+.wiki-content h3,
+.wiki-content h4,
+.wiki-content td,
+.wiki-content th {
+  white-space: pre-wrap;
+  tab-size: 4;
+}
+
 /* A file attached from the editor: a block of its own, in the page and
    in the editor alike. */
 .wiki-content .wiki-file,
@@ -620,6 +677,44 @@
 
 .wiki__quill .ql-snow .ql-picker.ql-tableEdit .ql-picker-item::before {
   content: attr(data-label);
+}
+
+/* The image menu, the same way. */
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat {
+  width: 40px;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat .ql-picker-label {
+  display: flex;
+  align-items: center;
+  padding-left: 2px;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat .ql-picker-label .icon {
+  font-size: 18px;
+  line-height: 18px;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat .ql-picker-label svg {
+  width: 14px;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat .ql-picker-options {
+  width: max-content;
+  min-width: 14rem;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-imageFloat .ql-picker-item::before {
+  content: attr(data-label);
+}
+
+/* The style menu wide enough for its names, in any language. */
+.wiki__quill .ql-snow .ql-picker.ql-header {
+  width: 8.5rem;
+}
+
+.wiki__quill .ql-snow .ql-picker.ql-size {
+  width: 7.5rem;
 }
 
 /* A table in the editor, drawn as the page draws it. */

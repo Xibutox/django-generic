@@ -26,6 +26,35 @@
   //: class, ``ql-color-red``, and drawn by the ``--wiki-text-*`` tokens.
   var TEXT_COLORS = ["red", "orange", "green", "blue", "purple", "gray"];
 
+  //: The style menu's paragraph styles, and the text sizes beside it -
+  //: the server keeps these classes (``ql-size-small``...), no other.
+  var HEADER_LABELS = {
+    1: "Heading 1",
+    2: "Heading 2",
+    3: "Heading 3",
+    4: "Heading 4",
+    "": "Normal"
+  };
+
+  var TEXT_SIZES = ["small", false, "large", "huge"];
+
+  var SIZE_LABELS = {
+    small: "Small",
+    large: "Large",
+    huge: "Huge",
+    "": "Normal size"
+  };
+
+  //: Where an image sits: in the line (no value), or to one side with
+  //: the text running beside it - ``wiki-float-left`` and ``-right``.
+  var IMAGE_FLOATS = ["left", "right"];
+
+  var FLOAT_LABELS = {
+    left: "Image on the left, text beside it",
+    right: "Image on the right, text beside it",
+    "": "Image in the line"
+  };
+
   //: What the table menu does to the table holding the cursor: each
   //: action, the Quill table module's method, and its label.
   var TABLE_ACTIONS = [
@@ -53,11 +82,11 @@
   var NEW_TABLE = { rows: 3, columns: 3 };
 
   var TOOLBAR = [
-    [{ header: [2, 3, 4, false] }],
+    [{ header: [1, 2, 3, 4, false] }, { size: TEXT_SIZES }],
     ["bold", "italic", "underline", "strike", "code"],
     [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-    ["blockquote", "code-block", "link", "image", "attach"],
+    ["blockquote", "code-block", "link", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
     ["table", { tableEdit: TABLE_ACTIONS }],
     [{ align: [] }],
     ["moveUp", "moveDown"],
@@ -308,6 +337,81 @@
     if (found) {
       editor.getModule("table")[found.method]();
     }
+  }
+
+  /**
+   * An image to one side of the text, the text running beside it: a
+   * class on the image, ``wiki-float-left`` or ``-right``, which Quill
+   * keeps as the image's ``float`` format.
+   */
+  function registerImageFloat(Quill) {
+    var Image = Quill.import("formats/image");
+
+    if (Image.wikiFloat) {
+      return;
+    }
+
+    var formats = Image.formats;
+    var format = Image.prototype.format;
+
+    Image.wikiFloat = true;
+    Image.formats = function (node, scroll) {
+      var found = formats.call(this, node, scroll);
+      var side = /\bwiki-float-(left|right)\b/.exec(node.className || "");
+
+      if (side) {
+        found.float = side[1];
+      }
+
+      return found;
+    };
+    // On the image itself: as an inline format, Quill would wrap the
+    // image in a span for it.
+    Image.prototype.format = function (name, value) {
+      if (name !== "float") {
+        format.call(this, name, value);
+        return;
+      }
+
+      var node = this.domNode;
+
+      IMAGE_FLOATS.forEach(function (side) {
+        node.classList.remove("wiki-float-" + side);
+      });
+
+      if (IMAGE_FLOATS.indexOf(value) !== -1) {
+        node.classList.add("wiki-float-" + value);
+      }
+
+      if (!node.className) {
+        node.removeAttribute("class");
+      }
+    };
+  }
+
+  /**
+   * The images selected - or, with the cursor only, the image just
+   * before it - put to ``side`` of the text, or back in the line.
+   */
+  function floatImages(editor, side) {
+    var range = editor.getSelection(true);
+    var start = range.length ? range.index : Math.max(range.index - 1, 0);
+    var length = range.length || 1;
+    var index = start;
+    var found = false;
+
+    editor.getContents(start, length).ops.forEach(function (op) {
+      var size = typeof op.insert === "string" ? op.insert.length : 1;
+
+      if (op.insert && op.insert.image) {
+        editor.formatText(index, 1, "float", side || false, "user");
+        found = true;
+      }
+
+      index += size;
+    });
+
+    return found;
   }
 
   /**
@@ -618,6 +722,7 @@
           });
 
           registerTextColor(window.Quill);
+          registerImageFloat(window.Quill);
           registerFileBlock(window.Quill);
 
           var editor = new window.Quill(document.getElementById("wiki-editor"), {
@@ -638,6 +743,11 @@
                   },
                   tableEdit: function (action) {
                     editTable(editor, action);
+                  },
+                  imageFloat: function (side) {
+                    if (!floatImages(editor, side)) {
+                      Generic.toast(t("Click an image first."), "info");
+                    }
                   },
                   moveUp: function () {
                     moveLine(editor, -1);
@@ -693,6 +803,11 @@
           });
 
           this.acceptTables(editor);
+          this.selectImages(editor);
+          this.labelPicker(editor, "header", HEADER_LABELS, "Style");
+          this.labelPicker(editor, "size", SIZE_LABELS, "Text size");
+          this.labelPicker(editor, "imageFloat", FLOAT_LABELS, "Image and text");
+          this.iconPicker(editor, "imageFloat", "art_track");
           this.labelColors(editor);
           this.labelTableMenu(editor);
           this.acceptFiles(editor);
@@ -724,6 +839,58 @@
             },
             true
           );
+        },
+
+        /** A click on an image selects it, for the image menu to act on. */
+        selectImages: function (editor) {
+          editor.root.addEventListener("click", function (event) {
+            if (event.target.tagName !== "IMG") {
+              return;
+            }
+
+            var blot = window.Quill.find(event.target);
+
+            if (blot && blot.scroll === editor.scroll) {
+              editor.setSelection(editor.getIndex(blot), 1, "user");
+            }
+          });
+        },
+
+        /** A picker's options named in the reader's language. */
+        labelPicker: function (editor, name, labels, title) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-" + name);
+
+          if (!picker) {
+            return;
+          }
+
+          var label = picker.querySelector(".ql-picker-label");
+
+          picker.title = t(title);
+          label.setAttribute("aria-label", t(title));
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var value = item.getAttribute("data-value") || "";
+
+            if (labels[value]) {
+              item.setAttribute("data-label", t(labels[value]));
+
+              if (item.classList.contains("ql-selected")) {
+                label.setAttribute("data-label", t(labels[value]));
+              }
+            }
+          });
+        },
+
+        /** A picker shown as an icon, its options named. */
+        iconPicker: function (editor, name, symbol) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-" + name);
+
+          if (picker) {
+            var label = picker.querySelector(".ql-picker-label");
+
+            label.removeAttribute("data-label");
+            label.insertBefore(icon(symbol), label.firstChild);
+          }
         },
 
         /** The table menu: an icon, and each action named. */

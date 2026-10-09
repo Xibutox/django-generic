@@ -172,6 +172,51 @@ class TestPageHtml:
 
         assert content.startswith(b"%PDF")
 
+    def test_indentation_is_kept_as_levels(self):
+        html = self.rewrite(
+            '<p class="ql-indent-2">a</p><ul><li class="ql-indent-1">b</li>'
+            '</ul><h2 class="ql-indent-1">c</h2>'
+        )
+
+        assert '<p data-indent="2">a</p>' in html
+        assert '<li data-indent="1">b</li>' in html
+        assert '<p data-indent="1"><font size=' in html
+
+    def test_a_tab_is_four_spaces_that_stay(self):
+        html = self.rewrite("<p>a\tb</p>")
+
+        assert html == "<p>a\u00a0\u00a0\u00a0\u00a0b</p>"
+
+    def test_a_text_size_is_printed(self):
+        html = self.rewrite(
+            '<p><span class="ql-size-large">a</span>'
+            '<strong class="ql-size-small">b</strong></p>'
+        )
+
+        assert html == (
+            '<p><font size="14.9">a</font>'
+            '<b><font size="8.8">b</font></b></p>'
+        )
+
+    def test_an_indented_line_starts_further_right(self):
+        document = pdf.WikiDocument(wiki_name="W", unicode=False)
+        document.add_page()
+        document.set_font("helvetica", "", 11)
+        indents = []
+        new_paragraph = pdf.WikiHTML._new_paragraph
+
+        def record(html, *args, **kwargs):
+            indents.append(kwargs.get("indent", 0))
+
+            return new_paragraph(html, *args, **kwargs)
+
+        with mock.patch.object(pdf.WikiHTML, "_new_paragraph", record):
+            document.write_html(
+                '<p>flush</p><p data-indent="2">deep</p><p>flush</p>'
+            )
+
+        assert indents == [0, 2 * pdf.INDENT_STEP, 0]
+
     def test_a_table_is_framed_across_the_text(self):
         html = self.rewrite("<table><tr><td>a</td></tr></table>")
 

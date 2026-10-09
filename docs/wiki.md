@@ -409,6 +409,29 @@ Spanish, German are whole; typographic quotes and dashes become plain
 ones, and other characters `?`. The Docker image installs DejaVu
 (`fonts-dejavu-core`).
 
+## Styles, sizes and images beside the text
+
+The style menu sets a line's kind: *Heading 1* to *Heading 4*, or
+*Normal*. The size menu beside it makes the selected text *Small*,
+*Large* or *Huge* - a class, `ql-size-small`, `-large`, `-huge`
+(`TEXT_SIZES` in `generic/wiki/sanitize.py`, with the share of the
+text's size the PDF prints it at).
+
+**An image beside the text**: click an image in the editor - it is
+selected - then the image menu: *Image on the left, text beside it*,
+*on the right*, or *Image in the line*. The image gets a class,
+`wiki-float-left` or `wiki-float-right` (`IMAGE_FLOATS`), floats at
+most half the text's width, and the following paragraphs run beside
+it. The PDF draws it in its line: fpdf2 does not wrap text round an
+image.
+
+**Indentation and tabs**: the indent buttons (or Tab at the start of a
+list item) move a line right by levels, `ql-indent-1` to `-8`; the PDF
+moves it by `INDENT_STEP` millimetres a level (`generic/wiki/pdf.py`,
+through `WikiHTML`, fpdf2's renderer told the paragraph's level). A tab
+typed inside a line is kept: the page shows it as the editor does, and
+the PDF as four spaces.
+
 ## Tables
 
 The table button in the editor's toolbar - or **Ctrl+Alt+T** - puts a

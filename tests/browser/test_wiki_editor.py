@@ -3,10 +3,14 @@ elsewhere."""
 
 from __future__ import annotations
 
+import io
+
 import pytest
+from django.core.files.base import ContentFile
+from PIL import Image
 from playwright.sync_api import expect
 
-from generic.wiki.models import WikiPage
+from generic.wiki.models import WikiImage, WikiPage
 
 #: A selection copied from Excel: a header merged across two columns
 #: twice, a name merged down two rows, an empty cell, Excel's own
@@ -170,3 +174,65 @@ def test_a_table_pasted_in_a_table_is_its_text(page, handbook, admin, sign_in):
     expect(editor.locator("table")).to_have_count(1)
     first = editor.locator("table td").first
     expect(first).to_have_text("Quarter 1 Quarter 2 Jan Feb")
+
+
+@pytest.fixture
+def illustrated(transactional_db, settings, tmp_path):
+    """The handbook with an image, then a paragraph to run beside it."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    buffer = io.BytesIO()
+    Image.new("RGB", (240, 160), (40, 120, 200)).save(buffer, "PNG")
+    image = WikiImage(original_name="chart.png")
+    image.file.save("chart.png", ContentFile(buffer.getvalue()), save=False)
+    image.save()
+
+    return WikiPage.objects.create(
+        title="Handbook",
+        slug="handbook",
+        content=(
+            "<p>How the desk works.</p>"
+            f'<p><img src="{image.get_absolute_url()}"></p>'
+            "<p>" + "Text that runs beside the image. " * 10 + "</p>"
+        ),
+    )
+
+
+def test_an_image_put_to_the_left_has_the_text_beside_it(
+    page, illustrated, admin, sign_in
+):
+    sign_in(admin)
+    page.goto("/wiki/handbook/")
+    page.get_by_role("button", name="Edit").click()
+    editor = page.locator("#wiki-editor .ql-editor")
+    editor.locator("img").click()
+    page.locator(".ql-picker.ql-imageFloat .ql-picker-label").click()
+    page.locator('.ql-picker.ql-imageFloat [data-value="left"]').click()
+    expect(editor.locator("img")).to_have_class("wiki-float-left")
+    save(page)
+
+    image = page.locator(".wiki-content img")
+    expect(image).to_have_class("wiki-float-left")
+    assert image.evaluate("img => getComputedStyle(img).float") == "left"
+    illustrated.refresh_from_db()
+    assert 'class="wiki-float-left"' in illustrated.content
+
+
+def test_a_size_and_a_title_from_the_style_menus(
+    page, handbook, admin, sign_in
+):
+    sign_in(admin)
+    edit(page)
+    page.keyboard.press("Shift+Home")
+    page.locator(".ql-picker.ql-size .ql-picker-label").click()
+    page.locator(
+        '.ql-picker.ql-size .ql-picker-item[data-value="large"]'
+    ).click()
+    page.locator(".ql-picker.ql-header .ql-picker-label").click()
+    page.locator(
+        '.ql-picker.ql-header .ql-picker-item[data-value="1"]'
+    ).click()
+    save(page)
+
+    expect(page.locator(".wiki-content h1 .ql-size-large")).to_have_text(
+        "How the desk works."
+    )

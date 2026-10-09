@@ -72,7 +72,17 @@ TEXT_COLORS = {
 
 _COLOR_CLASSES = {f"ql-color-{name}" for name in TEXT_COLORS}
 
-#: The tags a coloured run of text may be, as the editor writes it.
+#: The text sizes the editor offers, as classes, ``ql-size-large``,
+#: each with the size the PDF prints it at, relative to the text's.
+TEXT_SIZES = {"small": 0.8, "large": 1.35, "huge": 1.8}
+
+_SIZE_CLASSES = {f"ql-size-{name}" for name in TEXT_SIZES}
+
+#: Where an image sits beside the text: ``wiki-float-left``, ``-right``.
+IMAGE_FLOATS = ("left", "right")
+
+#: The tags a coloured - or resized - run of text may be, as the editor
+#: writes it.
 COLOR_TAGS = (
     "a",
     "b",
@@ -105,7 +115,8 @@ CLASSES = {
     # the link to it: ``<p class="wiki-file"><a href=...>``.
     "p": _EDITOR_CLASSES | {"wiki-file"},
     "pre": {"ql-syntax"},
-    **{tag: _COLOR_CLASSES for tag in COLOR_TAGS},
+    **{tag: _COLOR_CLASSES | _SIZE_CLASSES for tag in COLOR_TAGS},
+    "img": {f"wiki-float-{side}" for side in IMAGE_FLOATS},
 }
 
 #: Links and images point at the web, a mailbox or a phone; relative

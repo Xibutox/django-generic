@@ -107,6 +107,22 @@ class TestCleaning:
             "<table><tbody><tr><td>a</td><td></td></tr></tbody></table>"
         )
 
+    def test_a_text_size_and_an_image_side_are_kept(self):
+        html = clean_html(
+            '<p><span class="ql-size-huge">a</span>'
+            '<img src="/wiki/images/1/" class="wiki-float-right"></p>'
+        )
+
+        assert html == (
+            '<p><span class="ql-size-huge">a</span>'
+            '<img src="/wiki/images/1/" class="wiki-float-right"></p>'
+        )
+
+    def test_an_image_side_on_text_is_dropped(self):
+        html = clean_html('<p><span class="wiki-float-left">a</span></p>')
+
+        assert "wiki-float" not in html
+
     def test_inline_image_data_is_dropped(self):
         html = clean_html('<img src="data:image/png;base64,AAAA" alt="x">')
 

@@ -31,16 +31,23 @@ from django.utils.translation import gettext
 from generic.conf import generic_settings
 from generic.sites.files import is_stored
 from generic.wiki.models import WikiImage, WikiPage, _address_pattern
-from generic.wiki.sanitize import COLOR_TAGS, TEXT_COLORS, clean_html
+from generic.wiki.sanitize import (
+    COLOR_TAGS,
+    TEXT_COLORS,
+    TEXT_SIZES,
+    clean_html,
+)
 
 try:  # The wiki extra; without it, no PDF is offered.
     from fpdf import FPDF
     from fpdf.errors import FPDFException
     from fpdf.fonts import FontFace, TextStyle
+    from fpdf.html import HTML2FPDF
     from fpdf.outline import TableOfContents
 except ImportError:  # pragma: no cover - the extra is installed in tests
     FPDF = None
     FPDFException = Exception
+    HTML2FPDF = object
 
 
 def available() -> bool:
@@ -128,6 +135,18 @@ POINTS_PER_PIXEL = 0.75
 
 ALIGN_CLASS = re.compile(r"\bql-align-(center|right|justify)\b")
 COLOR_CLASS = re.compile(r"\bql-color-([a-z]+)\b")
+SIZE_CLASS = re.compile(r"\bql-size-([a-z]+)\b")
+INDENT_CLASS = re.compile(r"\bql-indent-([1-8])\b")
+
+#: Millimetres a level of the editor's indentation moves a line: the
+#: page's 2em, at the text's size.
+INDENT_STEP = 8
+
+#: Size of the text, in points; a resized run is a share of it.
+TEXT_SIZE = 11
+
+#: A tab, as the PDF draws it: four spaces that do not collapse.
+TAB = "\u00a0" * 4
 
 #: A cell fpdf2 can draw: one run of text, the same format throughout -
 #: or one image. Text partly bold, a word in another colour, is refused
@@ -241,6 +260,11 @@ class PageHTML(HTMLParser):
         attributes = {name: value or "" for name, value in attrs}
         align = ALIGN_CLASS.search(attributes.get("class", ""))
         align_attribute = f' align="{align.group(1)}"' if align else ""
+        indent = INDENT_CLASS.search(attributes.get("class", ""))
+        # Read by WikiHTML: the paragraph's left margin, in levels.
+        align_attribute += (
+            f' data-indent="{indent.group(1)}"' if indent else ""
+        )
 
         if self.tables_as_text and tag in TABLE_TAGS:
             self.table_as_text(tag)
@@ -279,7 +303,10 @@ class PageHTML(HTMLParser):
         elif tag in ("em", "i"):
             self.out.append("<i>")
             self.closing.append("</i>")
-        elif tag in ("u", "s", "sub", "sup", "code", "blockquote", "pre"):
+        elif tag == "blockquote":
+            self.out.append(f"<blockquote{align_attribute}>")
+            self.closing.append("</blockquote>")
+        elif tag in ("u", "s", "sub", "sup", "code", "pre"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
         elif tag == "table":
@@ -289,7 +316,10 @@ class PageHTML(HTMLParser):
                 '<table border="1" width="100%" cellpadding="1.5">'
             )
             self.closing.append("</table>")
-        elif tag in ("ul", "ol", "li", "thead", "tbody", "tr"):
+        elif tag == "li":
+            self.out.append(f"<li{align_attribute}>")
+            self.closing.append("</li>")
+        elif tag in ("ul", "ol", "thead", "tbody", "tr"):
             self.out.append(f"<{tag}>")
             self.closing.append(f"</{tag}>")
         elif tag in ("td", "th"):
@@ -306,6 +336,12 @@ class PageHTML(HTMLParser):
             self.closing.append("")
 
         color = COLOR_CLASS.search(attributes.get("class", ""))
+        size = SIZE_CLASS.search(attributes.get("class", ""))
+
+        if tag in COLOR_TAGS and size and size.group(1) in TEXT_SIZES:
+            points = round(TEXT_SIZE * TEXT_SIZES[size.group(1)], 1)
+            self.out.append(f'<font size="{points}">')
+            self.closing[-1] = "</font>" + self.closing[-1]
 
         if tag in COLOR_TAGS and color and color.group(1) in TEXT_COLORS:
             self.out.append(f'<font color="{TEXT_COLORS[color.group(1)]}">')
@@ -331,7 +367,7 @@ class PageHTML(HTMLParser):
             self.in_file_block = False
 
     def handle_data(self, data: str) -> None:
-        self.out.append(escape(data, quote=False))
+        self.out.append(escape(data, quote=False).replace("\t", TAB))
 
     def table_as_text(self, tag: str) -> None:
         """A table's tag, when the table is written as lines of text."""
@@ -447,8 +483,34 @@ def image_data(ids: Iterable[int]) -> dict[int, tuple[str, int, int]]:
     return found
 
 
+class WikiHTML(HTML2FPDF):  # type: ignore
+    """fpdf2's HTML renderer, with the editor's indentation: a paragraph,
+    heading, quote or list item's ``data-indent`` levels move it right,
+    as on the page."""
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        level = dict(attrs).get("data-indent") or ""
+        style = self.tag_styles.get(tag)
+        margin = getattr(style, "l_margin", None)
+
+        if not level.isdigit() or not isinstance(margin, (int, float)):
+            super().handle_starttag(tag, attrs)
+            return
+
+        self.tag_styles[tag] = style.replace(
+            l_margin=margin + int(level) * INDENT_STEP
+        )
+
+        try:
+            super().handle_starttag(tag, attrs)
+        finally:
+            self.tag_styles[tag] = style
+
+
 class WikiDocument(FPDF if FPDF is not None else object):  # type: ignore
     """The PDF: a footer with the wiki's name and the page number."""
+
+    HTML2FPDF_CLASS = WikiHTML
 
     def __init__(
         self, *, wiki_name: str, unicode: bool, orientation: str = "portrait"
