@@ -62,6 +62,9 @@ services:
       # 1: the demo's teams, people and documents (password demo).
       # 0: an empty document manager, with this administrator if set.
       DEMO_DATA: ${DEMO_DATA:-1}
+      # 1: the Merge uploaded Word files page (nothing kept). Off by
+      # default.
+      DOCUMENT_UPLOAD_MERGE: ${DOCUMENT_UPLOAD_MERGE:-0}
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-}
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-}

@@ -39,6 +39,8 @@ docmanager/
     ├── workflows.py    the review circuits: steps, tasks, who is told what
     ├── merge.py        Word files merged with a template (python-docx)
     ├── merging.py      the Merge Word files page: what may be merged, and how
+    ├── upload_merge.py the Merge uploaded Word files page: files uploaded,
+    │                   merged, sent back, nothing kept (off by default)
     ├── wikis.py        who reads and who writes which wiki
     │                   (GENERIC["WIKI_ACCESS"], ["WIKI_EDIT_ACCESS"])
     ├── templates/documents/merge.html, static/documents/   that page
@@ -222,6 +224,16 @@ not the internet: its secret key and passwords are public.
   the merged file becomes a document of its own, at version 1. Only
   Word files (`.docx`, `.dotx`) of the reader's teams are offered or
   accepted.
+- **Merging files that are not stored here.** Off by default: set
+  `DOCUMENT_UPLOAD_MERGE = True` in `docsite/settings.py` (or
+  `DOCUMENT_UPLOAD_MERGE=1` in the environment, as `compose.yaml`
+  passes it on). *Documents › Merge uploaded Word files* then lets any
+  signed-in person drop Word files on the page, put them in order,
+  choose a template file from their computer, and *Merge and download*.
+  Nothing is saved: the uploads are held in memory for the request
+  only (up to `DOCUMENT_UPLOAD_MERGE_MAX_SIZE`, 50 MB, every file
+  together), and a file that is not Word is refused by name. Turned
+  off, the address answers 404 and the navigation hides it.
 - **A wiki per team.** *Wiki* in the navigation lists the wikis the
   reader may read: *Company*, everyone's, and their teams' handbooks -
   `bob` sees *Engineering handbook*, never *Legal handbook* (its pages
@@ -358,7 +370,13 @@ What the framework gives this project, and where to read about it:
 
 The Word merge and the review circuits are this project's, not the
 framework's: `documents/merge.py` and `documents/workflows.py` can be
-copied into any project that needs them.
+copied into any project that needs them. The upload page travels the
+same way: `documents/upload_merge.py` with `merge.py`, its template
+`upload_merge.html` and `static/documents/upload_merge.js` and
+`merge.css`; mount `UploadMergePage.as_view(site=site)` before
+`site.urls` under the name `upload_merge.ROUTE`, and call
+`upload_merge.add_link(site, group=...)` from a `resources.py`
+(`docsite/urls.py` and the end of `documents/resources.py` here).
 
 ## Its own repository
 

@@ -1114,3 +1114,43 @@ msgstr "Retire le document : il reste ici, marqué comme n'étant plus utilisé.
 
 msgid "Puts the selected Word files together into one, with a template."
 msgstr "Assemble les fichiers Word sélectionnés en un seul, avec un modèle."
+
+msgid "Merge uploaded Word files"
+msgstr "Fusionner des fichiers Word téléversés"
+
+msgid "Upload Word files, put them in order, add a template: the merged file comes back, and nothing is kept."
+msgstr "Téléversez des fichiers Word, mettez-les dans l'ordre, ajoutez un modèle : le fichier fusionné vous revient, et rien n'est conservé."
+
+#, python-format
+msgid "The files weigh more than %(size)s MB together."
+msgstr "Les fichiers pèsent plus de %(size)s Mo à eux tous."
+
+msgid "Word documents (.docx or .dotx), in the order they will follow each other. They are only read to be merged: nothing is kept."
+msgstr "Des documents Word (.docx ou .dotx), dans l'ordre où ils se suivront. Ils ne sont lus que pour être fusionnés : rien n'est conservé."
+
+msgid "Drop Word files here, or choose them"
+msgstr "Déposez des fichiers Word ici, ou choisissez-les"
+
+msgid "Choose a template"
+msgstr "Choisir un modèle"
+
+msgid "Remove"
+msgstr "Retirer"
+
+#, python-format
+msgid "%(count)s file(s), %(size)s"
+msgstr "%(count)s fichier(s), %(size)s"
+
+#, python-format
+msgid "Not a Word file (.docx or .dotx): %(names)s"
+msgstr "Pas un fichier Word (.docx ou .dotx) : %(names)s"
+
+#, python-format
+msgid "The files weigh more than %(size)s together."
+msgstr "Les fichiers pèsent plus de %(size)s à eux tous."
+
+msgid "The merged file is ready."
+msgstr "Le fichier fusionné est prêt."
+
+msgid "The request failed. Please try again."
+msgstr "La requête a échoué. Veuillez réessayer."

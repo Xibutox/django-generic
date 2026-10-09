@@ -383,6 +383,94 @@ MERGE_SCENARIO = PRELUDE + textwrap.dedent("""
     """)
 
 
+#: Word files uploaded, merged and sent back, nothing kept - only once
+#: DOCUMENT_UPLOAD_MERGE is on.
+UPLOAD_MERGE_SCENARIO = PRELUDE + textwrap.dedent("""
+    import io
+
+    from django.test import override_settings
+    from docx import Document as WordFile
+
+    from documents.upload_merge import InMemoryUploadHandler
+
+    PAGE = "/merge-uploads/"
+
+    def word(name, *lines):
+        document = WordFile()
+        for line in lines:
+            document.add_paragraph(line)
+        output = io.BytesIO()
+        document.save(output)
+        return SimpleUploadedFile(name, output.getvalue())
+
+    def paragraphs(content):
+        return [
+            p.text for p in WordFile(io.BytesIO(content)).paragraphs if p.text
+        ]
+
+    def navigation(client):
+        page = client.get("/")
+        return [
+            str(item["label"])
+            for group in page.context["chrome"]["navigation"]
+            for item in group["items"]
+        ]
+
+    bob = signed_in("bob")
+    count = Document.objects.count()
+
+    # Off by default: no page, no entry, nothing merged.
+    assert bob.get(PAGE).status_code == 404
+    assert bob.post(PAGE, {"documents": [word("a.docx", "A")]}).status_code == 404
+    assert "Merge uploaded Word files" not in navigation(bob)
+
+    with override_settings(DOCUMENT_UPLOAD_MERGE=True):
+        assert "Merge uploaded Word files" in navigation(bob)
+        assert bob.get(PAGE).status_code == 200
+        assert Client().get(PAGE).status_code == 302
+
+        # In the order sent, inside the template where it says.
+        merged = bob.post(PAGE, {
+            "documents": [word("b.docx", "B"), word("a.docx", "A")],
+            "template": word("t.docx", "Header", "{{ documents }}", "End"),
+            "name": "Pack",
+        })
+        assert merged.status_code == 200, merged.content[:300]
+        assert 'filename="Pack.docx"' in merged["Content-Disposition"]
+        assert paragraphs(merged.content) == ["Header", "B", "A", "End"]
+
+        # What went wrong, said as JSON.
+        none = bob.post(PAGE, {"name": "x"})
+        assert none.status_code == 400
+        assert none.json()["detail"] == "Choose at least one document."
+        text = bob.post(PAGE, {
+            "documents": [SimpleUploadedFile("notes.txt", b"plain")]
+        })
+        assert text.status_code == 400 and "notes.txt" in text.json()["detail"]
+
+        with override_settings(DOCUMENT_UPLOAD_MERGE_MAX_SIZE=1000):
+            heavy = bob.post(PAGE, {"documents": [word("a.docx", "A" * 5000)]})
+            assert heavy.status_code == 413, heavy.status_code
+
+        # The token is checked, once the uploads are read in memory.
+        strict = Client(enforce_csrf_checks=True)
+        strict.force_login(get_user_model().objects.get(username="bob"))
+        assert strict.post(
+            PAGE, {"documents": [word("a.docx", "A")]}
+        ).status_code == 403
+
+    # Nothing kept.
+    assert Document.objects.count() == count
+
+    # A file larger than FILE_UPLOAD_MAX_MEMORY_SIZE stays in memory too.
+    with override_settings(FILE_UPLOAD_MAX_MEMORY_SIZE=10):
+        handler = InMemoryUploadHandler(None, limit=10_000)
+        handler.handle_raw_input(None, {}, 5000, "boundary")
+        assert handler.activated
+
+    print("ok")
+    """)
+
 #: Numbers given by each team's pattern, documents without a file,
 #: review circuits run step by step with their messages, check-outs, and
 #: the teams writing in each wiki.
@@ -1218,6 +1306,15 @@ def test_word_files_are_found_by_format_and_merged():
     pytest.importorskip("docx")
     pytest.importorskip("docxcompose")
     result = manage("-c", MERGE_SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_uploaded_word_files_are_merged_when_turned_on():
+    pytest.importorskip("docx")
+    pytest.importorskip("docxcompose")
+    result = manage("-c", UPLOAD_MERGE_SCENARIO)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")

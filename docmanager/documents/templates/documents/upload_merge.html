@@ -1,0 +1,141 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# documents/upload_merge.py: Word files uploaded, put in order, merged #}
+{# with a template, sent back. The files stay in the browser until the  #}
+{# merge, and nothing is kept on the server.                            #}
+
+{% block bodyclass %}page-upload-merge{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'documents/merge.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'documents/upload_merge.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  {{ upload_merge_config|json_script:"upload-merge-config" }}
+
+
+  <form class="merge stack" x-data="uploadMerge('upload-merge-config')" @submit.prevent="submit()">
+    {% csrf_token %}
+
+    <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+      <span x-text="error"></span>
+    </div>
+
+    {# 1. The files, in order. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "library_books" %} {% translate "Files to merge" %}</h2>
+        <span class="badge" x-text="files.length"></span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          Word documents (.docx or .dotx), in the order they will follow
+          each other. They are only read to be merged: nothing is kept.
+        {% endblocktranslate %}
+      </p>
+
+      <ol class="merge__list" x-show="files.length" x-cloak>
+        <template x-for="(entry, index) in files" :key="entry.id">
+          <li class="merge__item">
+            <span class="merge__position" x-text="index + 1"></span>
+            <span class="merge__name">
+              <strong x-text="entry.file.name"></strong>
+              <span class="muted" x-text="size(entry.file.size)"></span>
+            </span>
+            <span class="merge__tools">
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, -1)" :disabled="index === 0"
+                      title="{% translate 'Move up' %}" aria-label="{% translate 'Move up' %}">
+                {% icon "arrow_upward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="move(index, 1)" :disabled="index === files.length - 1"
+                      title="{% translate 'Move down' %}" aria-label="{% translate 'Move down' %}">
+                {% icon "arrow_downward" "icon--sm" %}
+              </button>
+              <button type="button" class="icon-button icon-button--sm" @click="remove(index)"
+                      title="{% translate 'Remove' %}" aria-label="{% translate 'Remove' %}">
+                {% icon "close" "icon--sm" %}
+              </button>
+            </span>
+          </li>
+        </template>
+      </ol>
+
+      <label class="merge__drop" :class="{'is-over': over}"
+             @dragover.prevent="over = true" @dragleave="over = false" @drop.prevent="drop($event)">
+        {% icon "upload_file" %}
+        <span>{% translate "Drop Word files here, or choose them" %}</span>
+        <input type="file" class="sr-only" multiple accept="{{ accept }}" @change="add($event.target.files); $event.target.value = ''">
+      </label>
+    </section>
+
+    {# 2. The template. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "description" %} {% translate "Template" %}</h2>
+        <span class="badge">{% translate "Optional" %}</span>
+      </div>
+
+      <p class="card__description">
+        {% blocktranslate trimmed with marker=placeholder %}
+          The merged file is made from it: its styles, headers and footers.
+          A paragraph reading {{ marker }} in it marks where the files go;
+          otherwise they follow its text. Without a template, the first file is the base.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="merge__template">
+        <template x-if="template">
+          <span class="merge__item">
+            <span class="merge__name">
+              <strong x-text="template.name"></strong>
+              <span class="muted" x-text="size(template.size)"></span>
+            </span>
+            <span class="merge__tools">
+              <button type="button" class="icon-button icon-button--sm" @click="template = null"
+                      title="{% translate 'Remove' %}" aria-label="{% translate 'Remove' %}">
+                {% icon "close" "icon--sm" %}
+              </button>
+            </span>
+          </span>
+        </template>
+        <label class="button" x-show="!template">
+          {% icon "upload" "icon--sm" %} {% translate "Choose a template" %}
+          <input type="file" class="sr-only" accept="{{ accept }}" @change="setTemplate($event.target.files); $event.target.value = ''">
+        </label>
+      </div>
+    </section>
+
+    {# 3. The result. #}
+    <section class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "merge_type" %} {% translate "Merged file" %}</h2>
+      </div>
+
+      <div class="merge__options">
+        <div class="field-box merge__field">
+          <label for="upload-merge-name">{% translate "File name" %}</label>
+          <input id="upload-merge-name" type="text" class="input" maxlength="200"
+                 placeholder="merged.docx" x-model="name">
+        </div>
+        <div class="field-checkbox">
+          <input id="upload-merge-breaks" type="checkbox" x-model="pageBreaks">
+          <label for="upload-merge-breaks">{% translate "Start each file on a new page" %}</label>
+        </div>
+      </div>
+
+      <div class="cluster merge__actions">
+        <button type="submit" class="button button--primary" :disabled="!files.length || busy">
+          {% icon "download" "icon--sm" %} {% translate "Merge and download" %}
+        </button>
+        <span class="spinner" x-show="busy" x-cloak aria-hidden="true"></span>
+        <span class="muted" x-text="total()"></span>
+      </div>
+    </section>
+  </form>
+{% endblock %}

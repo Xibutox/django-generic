@@ -30,7 +30,14 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from documents import codification, merging, preview, versions, workflows
+from documents import (
+    codification,
+    merging,
+    preview,
+    upload_merge,
+    versions,
+    workflows,
+)
 from documents.models import (
     Codification,
     Comment,
@@ -2180,3 +2187,7 @@ site.add_shortcut(
     description=_("Documents and versions put together with a template."),
     permission="documents.view_document",
 )
+
+# Files uploaded for the occasion, merged, nothing kept: shown only when
+# DOCUMENT_UPLOAD_MERGE is on (documents/upload_merge.py).
+upload_merge.add_link(site, group=GROUP)
