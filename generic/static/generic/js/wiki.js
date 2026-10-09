@@ -124,6 +124,183 @@
     table.insertTable(NEW_TABLE.rows, NEW_TABLE.columns);
   }
 
+  //: What a pasted cell's content may not hold: a cell of the editor is
+  //: one line, so its blocks become runs of text, side by side.
+  var CELL_BLOCKS = "address, article, blockquote, caption, dd, div, dl, dt, " +
+    "figure, h1, h2, h3, h4, h5, h6, header, footer, li, ol, p, pre, " +
+    "section, table, tbody, td, tfoot, th, thead, tr, ul";
+
+  //: The largest span a pasted cell is taken at: a damaged span must not
+  //: build a table of thousands of cells.
+  var MAX_SPAN = 50;
+
+  /** A pasted cell's content as one line: blocks and breaks become spaces. */
+  function cellLine(cell) {
+    var doc = cell.ownerDocument;
+    var copy = cell.cloneNode(true);
+
+    copy.querySelectorAll("br").forEach(function (node) {
+      node.replaceWith(doc.createTextNode(" "));
+    });
+    copy.querySelectorAll("style, script, colgroup, col").forEach(function (node) {
+      node.remove();
+    });
+    // Deepest first, so a block inside a block is unwrapped before it.
+    Array.prototype.slice.call(copy.querySelectorAll(CELL_BLOCKS)).reverse().forEach(function (node) {
+      var parent = node.parentNode;
+
+      parent.insertBefore(doc.createTextNode(" "), node);
+      while (node.firstChild) {
+        parent.insertBefore(node.firstChild, node);
+      }
+      parent.insertBefore(doc.createTextNode(" "), node);
+      parent.removeChild(node);
+    });
+
+    return copy.innerHTML.replace(/(\s|&nbsp;)+/g, " ").trim();
+  }
+
+  /**
+   * A pasted table as the editor can hold it: a plain grid of cells,
+   * each one line. A merged cell - ``colspan``, ``rowspan``, as Excel,
+   * Word and web pages write them - keeps its content in its first
+   * cell, and the cells it covered are empty, so every row has the same
+   * number of cells and every value stays in its column. Headers become
+   * cells, a caption a line of text above the table.
+   */
+  function gridTable(table) {
+    var doc = table.ownerDocument;
+    var rows = Array.prototype.slice.call(table.rows);
+    var grid = rows.map(function () {
+      return [];
+    });
+    var width = 0;
+
+    rows.forEach(function (row, y) {
+      var x = 0;
+
+      Array.prototype.forEach.call(row.cells, function (cell) {
+        var across = Math.min(Math.max(cell.colSpan || 1, 1), MAX_SPAN);
+        // rowspan="0" runs to the end of the table.
+        var down = cell.rowSpan === 0 ? rows.length - y : cell.rowSpan || 1;
+
+        down = Math.min(Math.max(down, 1), rows.length - y, MAX_SPAN);
+
+        while (grid[y][x] !== undefined) {
+          x += 1;
+        }
+
+        for (var dy = 0; dy < down; dy += 1) {
+          for (var dx = 0; dx < across; dx += 1) {
+            grid[y + dy][x + dx] = dy === 0 && dx === 0 ? cellLine(cell) : "";
+          }
+        }
+
+        x += across;
+        width = Math.max(width, x);
+      });
+      width = Math.max(width, grid[y].length);
+    });
+
+    var fragment = doc.createDocumentFragment();
+
+    // One cell - a value copied from a spreadsheet - is its text.
+    if (grid.length === 1 && width === 1) {
+      var value = doc.createElement("span");
+
+      value.innerHTML = grid[0][0];
+      fragment.appendChild(value);
+
+      return fragment;
+    }
+
+    var caption = table.caption && cellLine(table.caption);
+
+    if (caption) {
+      var line = doc.createElement("p");
+
+      line.innerHTML = caption;
+      fragment.appendChild(line);
+    }
+
+    var result = doc.createElement("table");
+    var body = doc.createElement("tbody");
+
+    grid.forEach(function (cells) {
+      var tr = doc.createElement("tr");
+
+      for (var x = 0; x < width; x += 1) {
+        var td = doc.createElement("td");
+
+        // An empty cell holds a break: without it, Quill drops the cell.
+        td.innerHTML = cells[x] || "<br>";
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    });
+    result.appendChild(body);
+    fragment.appendChild(result);
+
+    return fragment;
+  }
+
+  /**
+   * Pasted HTML with its tables made plain grids, or ``null`` when it
+   * holds none. A table inside a table becomes the text of its cell, a
+   * table of one cell its text.
+   */
+  function pastedTables(html) {
+    var doc = new window.DOMParser().parseFromString(html, "text/html");
+    var tables = Array.prototype.filter.call(doc.body.querySelectorAll("table"), function (table) {
+      return !table.parentElement.closest("table");
+    });
+
+    if (!tables.length) {
+      return null;
+    }
+
+    tables.forEach(function (table) {
+      if (table.rows.length) {
+        table.replaceWith(gridTable(table));
+      } else {
+        table.remove();
+      }
+    });
+
+    return doc.body.innerHTML;
+  }
+
+  /**
+   * Pasted tables, put where the cursor is: on a line of their own,
+   * replacing the selection. Inside a table - tables do not nest - only
+   * their text, each row a run of cells.
+   */
+  function pasteTables(editor, html, text) {
+    var range = editor.getSelection(true);
+
+    if (editor.getModule("table").getTable(range)[0]) {
+      editor.deleteText(range.index, range.length, "user");
+      editor.insertText(range.index, text.replace(/\s+/g, " ").trim(), "user");
+      return;
+    }
+
+    editor.deleteText(range.index, range.length, "user");
+
+    var index = range.index;
+    var found = editor.getLine(index);
+
+    // A table is a block: it starts a line, the rest of the line after it.
+    if (found[0] && found[1] > 0 && /<table/i.test(html)) {
+      editor.insertText(index, "\n", "user");
+      index += 1;
+    }
+
+    var before = editor.getLength();
+
+    editor.clipboard.dangerouslyPasteHTML(index, html, "user");
+    editor.setSelection(index + editor.getLength() - before, 0, "user");
+  }
+
   /** An action of the table menu on the table holding the cursor. */
   function editTable(editor, action) {
     var found = TABLE_METHODS[action];
@@ -515,11 +692,38 @@
             }
           });
 
+          this.acceptTables(editor);
           this.labelColors(editor);
           this.labelTableMenu(editor);
           this.acceptFiles(editor);
 
           return editor;
+        },
+
+        /**
+         * Tables pasted from Excel, Word or a web page, made plain grids
+         * before Quill sees them: left to it, a merged cell shifts the
+         * cells after it out of their column, and a cell holding several
+         * lines is torn into several cells, or tables.
+         */
+        acceptTables: function (editor) {
+          editor.root.addEventListener(
+            "paste",
+            function (event) {
+              var data = event.clipboardData;
+              var html = data && data.getData("text/html");
+              var cleaned = html && /<table/i.test(html) && pastedTables(html);
+
+              if (!cleaned) {
+                return;
+              }
+
+              event.preventDefault();
+              event.stopPropagation();
+              pasteTables(editor, cleaned, data.getData("text/plain") || "");
+            },
+            true
+          );
         },
 
         /** The table menu: an icon, and each action named. */

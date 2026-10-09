@@ -42,6 +42,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
 ### Fixed
+- A table pasted into the wiki's editor from Excel, Word, Google
+  Sheets or a web page no longer breaks the page. Merged cells no
+  longer push the cells after them into the wrong column: the content
+  stays in the first cell and the covered cells are left empty. A cell
+  holding several paragraphs or a list stays one cell, the text on one
+  line, instead of being torn into several cells or tables. Headers
+  become plain cells and a caption becomes a line above the table. A
+  single copied cell pastes as plain text, and a table pasted inside a
+  table pastes as its text.
 - A large image no longer runs off a wiki's PDF: every image is drawn
   at most the text's width and a page's height, its shape kept, and a
   smaller one at the size the page shows it.

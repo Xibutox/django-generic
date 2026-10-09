@@ -417,6 +417,24 @@ table. *Tab* moves to the next cell.
 The editor is Quill's table module: plain cells (`<td>`), no header
 row and no merged cells; a header row pasted in becomes a row of plain
 cells. The size of a new table is `NEW_TABLE` in `generic/js/wiki.js`.
+
+**Pasting a table** - from Excel, Word, Google Sheets, a web page - goes
+through `pastedTables` in `generic/js/wiki.js` before Quill sees it,
+which makes it a grid the editor can hold:
+
+- a merged cell (`colspan`, `rowspan`) keeps its content in its first
+  cell, and the cells it covered are empty: every row has the same
+  number of cells, every value stays in its column;
+- a cell holding paragraphs, line breaks or a list is one line, its
+  pieces side by side; bold, italics and links in it are kept;
+- header cells are plain cells, a caption a line above the table, a
+  table inside a cell the text of that cell;
+- a single cell - a value copied from a spreadsheet - pastes as its
+  text, not as a table;
+- inside a table, a pasted table pastes as its text.
+
+A table starts a line of its own: pasted in the middle of a line, the
+rest of the line goes after it.
 On the page a table is as wide as the text, an empty cell as high as a
 line; the PDF draws it with the rest.
 
