@@ -1578,6 +1578,42 @@ msgid "Gray"
 msgstr "Gris"
 
 #: generic/static/generic/js/wiki.js
+msgid "Insert a table (Ctrl+Alt+T)"
+msgstr "Insérer un tableau (Ctrl+Alt+T)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Edit the table"
+msgstr "Modifier le tableau"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a row above"
+msgstr "Insérer une ligne au-dessus"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a row below"
+msgstr "Insérer une ligne en dessous"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a column left"
+msgstr "Insérer une colonne à gauche"
+
+#: generic/static/generic/js/wiki.js
+msgid "Insert a column right"
+msgstr "Insérer une colonne à droite"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the row"
+msgstr "Supprimer la ligne"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the column"
+msgstr "Supprimer la colonne"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete the table"
+msgstr "Supprimer le tableau"
+
+#: generic/static/generic/js/wiki.js
 msgid "Only images can be added to this wiki."
 msgstr "Seules des images peuvent être ajoutées à ce wiki."
 

@@ -26,20 +26,48 @@
   //: class, ``ql-color-red``, and drawn by the ``--wiki-text-*`` tokens.
   var TEXT_COLORS = ["red", "orange", "green", "blue", "purple", "gray"];
 
+  //: What the table menu does to the table holding the cursor: each
+  //: action, the Quill table module's method, and its label.
+  var TABLE_ACTIONS = [
+    "rowAbove",
+    "rowBelow",
+    "columnLeft",
+    "columnRight",
+    "deleteRow",
+    "deleteColumn",
+    "deleteTable"
+  ];
+
+  var TABLE_METHODS = {
+    rowAbove: { method: "insertRowAbove", label: "Insert a row above" },
+    rowBelow: { method: "insertRowBelow", label: "Insert a row below" },
+    columnLeft: { method: "insertColumnLeft", label: "Insert a column left" },
+    columnRight: { method: "insertColumnRight", label: "Insert a column right" },
+    deleteRow: { method: "deleteRow", label: "Delete the row" },
+    deleteColumn: { method: "deleteColumn", label: "Delete the column" },
+    deleteTable: { method: "deleteTable", label: "Delete the table" }
+  };
+
+  //: A new table's size: enough to start, rows and columns added from
+  //: the table menu.
+  var NEW_TABLE = { rows: 3, columns: 3 };
+
   var TOOLBAR = [
     [{ header: [2, 3, 4, false] }],
     ["bold", "italic", "underline", "strike", "code"],
     [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
     ["blockquote", "code-block", "link", "image", "attach"],
+    ["table", { tableEdit: TABLE_ACTIONS }],
     [{ align: [] }],
     ["moveUp", "moveDown"],
     ["clean"]
   ];
 
-  //: The toolbar's own buttons, which Quill has no icon for.
+  //: The toolbar's own buttons, named, with the icon Quill has none for.
   var BUTTONS = {
     attach: { icon: "attach_file", label: "Attach a file" },
+    table: { label: "Insert a table (Ctrl+Alt+T)" },
     moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
     moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
   };
@@ -71,6 +99,40 @@
    * - which the server's cleaning keeps. One block for the editor: it
    * moves, and is deleted, as a whole.
    */
+  /**
+   * A new table where the cursor is - on a line of its own - unless the
+   * cursor is already in one: tables do not nest.
+   */
+  function insertTable(editor) {
+    var table = editor.getModule("table");
+    var range = editor.getSelection(true);
+
+    if (table.getTable(range)[0]) {
+      return;
+    }
+
+    var line = editor.getLine(range.index)[0];
+
+    // A table replaces no text: it starts on a fresh line.
+    if (line && line.length() > 1) {
+      var end = editor.getIndex(line) + line.length() - 1;
+
+      editor.insertText(end, "\n", "user");
+      editor.setSelection(end + 1, 0, "silent");
+    }
+
+    table.insertTable(NEW_TABLE.rows, NEW_TABLE.columns);
+  }
+
+  /** An action of the table menu on the table holding the cursor. */
+  function editTable(editor, action) {
+    var found = TABLE_METHODS[action];
+
+    if (found) {
+      editor.getModule("table")[found.method]();
+    }
+  }
+
   /**
    * Text colours as classes from the palette, not Quill's default
    * inline style - which the server's cleaning removes, as it removes
@@ -394,6 +456,12 @@
                   attach: function () {
                     self.chooseFiles();
                   },
+                  table: function () {
+                    insertTable(editor);
+                  },
+                  tableEdit: function (action) {
+                    editTable(editor, action);
+                  },
                   moveUp: function () {
                     moveLine(editor, -1);
                   },
@@ -402,8 +470,18 @@
                   }
                 }
               },
+              table: true,
               keyboard: {
                 bindings: {
+                  insertTable: {
+                    key: ["t", "T"],
+                    shortKey: true,
+                    altKey: true,
+                    handler: function () {
+                      insertTable(editor);
+                      return false;
+                    }
+                  },
                   moveUp: {
                     key: "ArrowUp",
                     altKey: true,
@@ -431,14 +509,39 @@
             if (button) {
               button.title = t(BUTTONS[name].label);
               button.setAttribute("aria-label", t(BUTTONS[name].label));
-              button.appendChild(icon(BUTTONS[name].icon));
+              if (BUTTONS[name].icon) {
+                button.appendChild(icon(BUTTONS[name].icon));
+              }
             }
           });
 
           this.labelColors(editor);
+          this.labelTableMenu(editor);
           this.acceptFiles(editor);
 
           return editor;
+        },
+
+        /** The table menu: an icon, and each action named. */
+        labelTableMenu: function (editor) {
+          var picker = editor.getModule("toolbar").container.querySelector(".ql-picker.ql-tableEdit");
+
+          if (!picker) {
+            return;
+          }
+
+          var label = picker.querySelector(".ql-picker-label");
+
+          picker.title = t("Edit the table");
+          label.setAttribute("aria-label", t("Edit the table"));
+          label.insertBefore(icon("table_edit"), label.firstChild);
+          picker.querySelectorAll(".ql-picker-item").forEach(function (item) {
+            var action = TABLE_METHODS[item.getAttribute("data-value")];
+
+            if (action) {
+              item.setAttribute("data-label", t(action.label));
+            }
+          });
         },
 
         /** The colour picker and its swatches, named for every reader. */

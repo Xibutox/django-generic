@@ -31,6 +31,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   the server keeps only these (`TEXT_COLORS` in
   `generic.wiki.sanitize`, as `ql-color-<name>` classes), never an
   inline style.
+- Tables in the wiki's editor: the table button in its toolbar, or
+  Ctrl+Alt+T, puts a 3 x 3 table on a line of its own; the menu next to
+  it adds a row above or below, a column left or right, or deletes the
+  row, the column or the table. A table already in a page is now kept
+  as a table when the page is edited (Quill's table module), and an
+  empty cell keeps a line's height on the page.
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).

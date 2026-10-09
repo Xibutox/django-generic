@@ -97,6 +97,16 @@ class TestCleaning:
         assert "ql-color" not in html
         assert "style" not in html
 
+    def test_a_table_from_the_editor_is_kept_without_its_row_ids(self):
+        html = clean_html(
+            '<table><tbody><tr><td data-row="row-ab12">a</td>'
+            '<td data-row="row-ab12"></td></tr></tbody></table>'
+        )
+
+        assert html == (
+            "<table><tbody><tr><td>a</td><td></td></tr></tbody></table>"
+        )
+
     def test_inline_image_data_is_dropped(self):
         html = clean_html('<img src="data:image/png;base64,AAAA" alt="x">')
 

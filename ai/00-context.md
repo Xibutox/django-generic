@@ -180,7 +180,7 @@ generic/
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
 │                           guide.py + guide/ (the user guide, migration 0007, wiki_user_guide),
-│                           nh3 cleaning (text colours: TEXT_COLORS), WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
+│                           nh3 cleaning (text colours: TEXT_COLORS; tables from Quill's table module), WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
 ├── teams/                  optional app generic.teams: Team (members, leaders, colour),
 │                           the see_every_team permission, scoping.py (scope_to_teams,
 │                           teams_of, in_teams_of, leaders_of), the People › Teams screen;

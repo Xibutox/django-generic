@@ -196,8 +196,8 @@ it was last changed and by whom, and - for editors - *Edit*, *Subpage*,
 *Edit* turns the page into the editor: its title, its parent page, its
 position among its siblings, its address, whether it is pinned to the
 dashboard, and the text, in [Quill](https://quilljs.com): headings,
-bold and italics, text colour, lists, quotes, code, links, images -
-uploaded or by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
+bold and italics, text colour, lists, quotes, code, tables, links,
+images - uploaded or by address - files, and alignment. *Save* sends everything to the API as JSON and reloads the
 page as the server draws it; *Cancel* and leaving the page ask first
 when something changed.
 
@@ -404,6 +404,21 @@ With none found, the PDF's own fonts are used: Latin-1 only - French,
 Spanish, German are whole; typographic quotes and dashes become plain
 ones, and other characters `?`. The Docker image installs DejaVu
 (`fonts-dejavu-core`).
+
+## Tables
+
+The table button in the editor's toolbar - or **Ctrl+Alt+T** - puts a
+table of 3 rows and 3 columns where the cursor is, on a line of its
+own; inside a table it does nothing, tables do not nest. The menu next
+to it works on the table holding the cursor: insert a row above or
+below, a column left or right, delete the row, the column or the whole
+table. *Tab* moves to the next cell.
+
+The editor is Quill's table module: plain cells (`<td>`), no header
+row and no merged cells; a header row pasted in becomes a row of plain
+cells. The size of a new table is `NEW_TABLE` in `generic/js/wiki.js`.
+On the page a table is as wide as the text, an empty cell as high as a
+line; the PDF draws it with the rest.
 
 ## Ordering a page
 
