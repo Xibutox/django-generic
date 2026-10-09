@@ -161,20 +161,36 @@ TABLE_TAGS = ("table", "thead", "tbody", "tfoot", "tr", "td", "th")
 
 FLOAT_CLASS = re.compile(r"\bwiki-float-(left|right)\b")
 
-#: Millimetres between an image beside the text and the text.
+#: Millimetres between an image beside the text and the text, or the
+#: next image beside it.
 FLOAT_GAP = 4
+
+#: The narrowest room, in millimetres, text is written in beside an
+#: image; narrower, it goes below.
+MIN_BESIDE = 30
 
 
 class Mark(str):
     """A place in a page's HTML that writes nothing: the end of a
-    top-level block, or - with ``image`` - where an image beside the
-    text goes, before the block that holds it."""
+    top-level block; with ``image``, where an image beside the text
+    goes, before the block that holds it; with ``row``, a line of
+    images side by side; with ``clear``, a heading, which starts below
+    the images beside the text."""
 
     image: int | None = None
+    row: int | None = None
+    clear = False
 
-    def __new__(cls, image: int | None = None) -> "Mark":
+    def __new__(
+        cls,
+        image: int | None = None,
+        row: int | None = None,
+        clear: bool = False,
+    ) -> "Mark":
         mark = super().__new__(cls, "")
         mark.image = image
+        mark.row = row
+        mark.clear = clear
 
         return mark
 
@@ -279,6 +295,13 @@ class PageHTML(HTMLParser):
         self.floats: list[tuple[str, float, float, str]] = []
         self.block_start: int | None = None
         self.tables = 0
+        # The lines of images side by side, each image's data, width
+        # and height in points; the open top-level block's tag, whether
+        # it has text, its images in the line.
+        self.rows: list[list[tuple[str, float, float]]] = []
+        self.block_tag = ""
+        self.block_text = False
+        self.block_images: list[tuple[str, int, int, str]] = []
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         attributes = {name: value or "" for name, value in attrs}
@@ -291,7 +314,13 @@ class PageHTML(HTMLParser):
         )
 
         if not self.closing:
+            if tag in HEADING_SIZES:
+                self.out.append(Mark(clear=True))
+
             self.block_start = len(self.out)
+            self.block_tag = tag
+            self.block_text = False
+            self.block_images = []
 
         if tag == "table":
             self.tables += 1
@@ -389,7 +418,7 @@ class PageHTML(HTMLParser):
                 self.out.append(self.closing.pop())
 
             if not self.closing:
-                self.out.append(Mark())
+                self.end_block()
 
             return
 
@@ -400,12 +429,40 @@ class PageHTML(HTMLParser):
             self.out.append(self.closing.pop())
 
             if not self.closing:
-                self.out.append(Mark())
+                self.end_block()
 
         if tag == "p":
             self.in_file_block = False
 
+    def end_block(self) -> None:
+        """The end of a top-level block: a paragraph of images alone,
+        two or more, becomes a line of them, each at most its share of
+        the text's width, as on the page."""
+        images = self.block_images
+
+        if (
+            self.block_tag == "p"
+            and len(images) > 1
+            and not self.block_text
+            and self.block_start is not None
+        ):
+            room = self.max_width
+            self.max_width = room / len(images) if room else 0
+            row = [
+                (data, *self.size(asked, wide, high))
+                for data, wide, high, asked in images
+            ]
+            self.max_width = room
+            self.out[self.block_start :] = [Mark(row=len(self.rows))]
+            self.rows.append(row)
+
+        self.block_images = []
+        self.out.append(Mark())
+
     def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.block_text = True
+
         self.out.append(escape(data, quote=False).replace("\t", TAB))
 
     def table_as_text(self, tag: str) -> None:
@@ -459,10 +516,11 @@ class PageHTML(HTMLParser):
         side = FLOAT_CLASS.search(attributes.get("class", ""))
 
         if side and not self.tables and self.block_start is not None:
-            # Beside the text: at most half its width, as on the page;
-            # drawn by write_beside(), before the block holding it.
+            # Beside the text: at most half its width, its gap
+            # included, as on the page; drawn by write_beside(), before
+            # the block holding it.
             room = self.max_width
-            self.max_width = room / 2 if room else 0
+            self.max_width = room / 2 - FLOAT_GAP * 72 / 25.4 if room else 0
             width, height = self.size(
                 attributes.get("width", ""), pixels_wide, pixels_high
             )
@@ -472,6 +530,11 @@ class PageHTML(HTMLParser):
             self.block_start += 1
 
             return ""
+
+        if not self.tables and self.block_start is not None:
+            self.block_images.append(
+                (data, pixels_wide, pixels_high, attributes.get("width", ""))
+            )
 
         width, height = self.size(
             attributes.get("width", ""), pixels_wide, pixels_high
@@ -500,10 +563,11 @@ class PageHTML(HTMLParser):
     def html(self) -> str:
         return "".join(self.out + list(reversed(self.closing)))
 
-    def pieces(self) -> list[str | int]:
-        """The page as its top-level blocks' HTML, with the index of
-        each image beside the text where it goes."""
-        found: list[str | int] = []
+    def pieces(self) -> list[str]:
+        """The page as its top-level blocks' HTML, with a ``Mark`` for
+        each image beside the text, and each line of images, where it
+        goes."""
+        found: list[str] = []
         current: list[str] = []
 
         for part in self.out + list(reversed(self.closing)):
@@ -512,8 +576,10 @@ class PageHTML(HTMLParser):
                     found.append("".join(current))
                     current = []
 
-                if part.image is not None:
-                    found.append(part.image)
+                if part.image is not None or part.row is not None:
+                    found.append(part)
+                elif part.clear:
+                    found.append(part)
             else:
                 current.append(part)
 
@@ -661,73 +727,129 @@ def write_page(pdf: Any, body: str, as_text: Any, **options: Any) -> None:
 
 def write_beside(
     pdf: Any,
-    pieces: list[str | int],
-    as_text: list[str | int],
+    pieces: list[str],
+    as_text: list[str],
     floats: list[tuple[str, float, float, str]],
+    rows: list[list[tuple[str, float, float]]] | None = None,
     **options: Any,
 ) -> None:
-    """A page holding images beside the text, written block by block.
+    """A page holding images beside the text, or lines of images,
+    written block by block.
 
-    fpdf2 does not wrap text round an image: each image is drawn on its
-    side, and the blocks after it are written in the room left beside
-    it - margins moved - until one starts below it, or on another page.
+    fpdf2 does not wrap text round an image, nor put images side by
+    side: each image beside the text is drawn on its side - next to the
+    ones already there, as the page floats them, or below them when the
+    room is gone - and the blocks after it are written in the room left
+    beside them, margins moved. A line of images is drawn side by side,
+    in the room the text has. A heading starts below them all, as on
+    the page.
     """
     margins = (pdf.l_margin, pdf.r_margin)
-    beside: tuple[float, int] | None = None  # the image's bottom, page
+    # The images beside the text: left, right, bottom, side.
+    beside: list[tuple[float, float, float, str]] = []
+    page = pdf.page
     after_image = False
 
-    def clear(below: bool) -> None:
-        nonlocal beside
+    def room() -> tuple[float, float]:
+        """Where the text has room, left and right, beside the images
+        still beside it."""
+        nonlocal page
 
-        if beside is None:
-            return
+        if pdf.page != page:
+            beside.clear()
+            page = pdf.page
 
-        bottom, page = beside
-        pdf.set_left_margin(margins[0])
-        pdf.set_right_margin(margins[1])
-        pdf.set_x(margins[0])
+        beside[:] = [image for image in beside if image[2] > pdf.y]
+        left = max(
+            [margins[0]]
+            + [image[1] + FLOAT_GAP for image in beside if image[3] == "left"]
+        )
+        right = min(
+            [pdf.w - margins[1]]
+            + [image[0] - FLOAT_GAP for image in beside if image[3] != "left"]
+        )
 
-        if below and pdf.page == page and pdf.y < bottom:
-            pdf.set_y(bottom + FLOAT_GAP / 2)
+        return left, right
 
-        beside = None
+    def make_room(width: float) -> tuple[float, float]:
+        """Down past the images beside the text until ``width`` fits."""
+        left, right = room()
+
+        while beside and right - left < width:
+            pdf.set_y(min(image[2] for image in beside) + FLOAT_GAP / 2)
+            left, right = room()
+
+        return left, right
+
+    def to_text_room(left: float, right: float) -> None:
+        pdf.set_left_margin(left)
+        pdf.set_right_margin(pdf.w - right)
+        pdf.set_x(left)
+
+    def new_page_for(height: float) -> None:
+        if pdf.will_page_break(height):
+            to_text_room(margins[0], pdf.w - margins[1])
+            pdf.add_page()
+
+    def clear() -> None:
+        room()
+
+        if beside:
+            pdf.set_y(max(image[2] for image in beside) + FLOAT_GAP / 2)
+            beside.clear()
+
+        to_text_room(margins[0], pdf.w - margins[1])
 
     for piece, text_piece in zip(pieces, as_text):
-        if beside is not None and (
-            pdf.page != beside[1] or pdf.y >= beside[0]
-        ):
-            clear(below=False)
-
-        if isinstance(piece, int):
-            clear(below=True)
-            data, width, height, side = floats[piece]
+        if isinstance(piece, Mark) and piece.clear:
+            clear()
+            after_image = False
+        elif isinstance(piece, Mark) and piece.image is not None:
+            data, width, height, side = floats[piece.image]
             width, height = width / pdf.k, height / pdf.k
-
-            if pdf.will_page_break(height):
-                pdf.add_page()
-
-            left = margins[0] if side == "left" else pdf.w - margins[1] - width
-            top = pdf.get_y()
-            pdf.image(data, x=left, y=top, w=width, h=height)
-            pdf.set_y(top)
-
-            if side == "left":
-                pdf.set_left_margin(margins[0] + width + FLOAT_GAP)
-            else:
-                pdf.set_right_margin(margins[1] + width + FLOAT_GAP)
-
-            pdf.set_x(pdf.l_margin)
-            beside = (top + height, pdf.page)
+            new_page_for(height)
+            left, right = make_room(width)
+            x = left if side == "left" else right - width
+            pdf.image(data, x=x, y=pdf.y, w=width, h=height)
+            beside.append((x, x + width, pdf.y + height, side))
             after_image = True
+        elif isinstance(piece, Mark) and piece.row is not None:
+            images = (rows or [])[piece.row]
+            left, right = make_room(MIN_BESIDE)
+            # Each at most its share of the room, as on the page.
+            share = (right - left) / len(images)
+            sizes = []
+
+            for _data, width, height in images:
+                width, height = width / pdf.k, height / pdf.k
+                scale = min(1, share / width) if width else 1
+                sizes.append((width * scale, height * scale))
+
+            tallest = max(height for _width, height in sizes)
+            new_page_for(tallest)
+            left, _right = room()
+            top = pdf.y
+
+            for (data, _width, _height), (width, height) in zip(images, sizes):
+                # On one line, their bottoms level, as the page has them.
+                pdf.image(
+                    data, x=left, y=top + tallest - height, w=width, h=height
+                )
+                left += width
+
+            pdf.set_y(top + tallest + FLOAT_GAP / 2)
+            after_image = False
         elif after_image and not TAG.sub("", piece).strip():
             # The paragraph that held only the image: the text beside
             # it starts level with its top.
             after_image = False
         elif piece.strip():
             after_image = False
+            to_text_room(*make_room(MIN_BESIDE))
             write_page(pdf, piece, lambda: str(text_piece), **options)
 
-    clear(below=True)
+    # What follows the page starts below its images.
+    clear()
 
 
 def render(
@@ -910,20 +1032,22 @@ def render(
 
         pdf.set_font(family, "", 11)
 
-        if parser.floats:
+        if parser.floats or parser.rows:
             pieces = [
-                piece if isinstance(piece, int) else text(piece)
+                piece if isinstance(piece, Mark) else text(piece)
                 for piece in parser.pieces()
             ]
             as_text = [
-                piece if isinstance(piece, int) else text(piece)
+                piece if isinstance(piece, Mark) else text(piece)
                 for piece in parsed(tables_as_text=True).pieces()
             ]
 
             if len(as_text) != len(pieces):
                 as_text = pieces
 
-            write_beside(pdf, pieces, as_text, parser.floats, **options)
+            write_beside(
+                pdf, pieces, as_text, parser.floats, parser.rows, **options
+            )
         elif body.strip():
             write_page(
                 pdf,

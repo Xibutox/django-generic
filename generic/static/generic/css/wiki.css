@@ -314,18 +314,55 @@
   margin: 0.25em 0 0.75em 1.25em;
 }
 
-/* Images in a row, none to one side: they shrink to stay on their row
-   when the text is narrower than in the editor - on the dashboard, on
-   a small screen. */
-.wiki-content p:has(> img + img):not(:has(> img[class*="wiki-float"])) {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
+/* Images in a line of their own stay on that line, each at most its
+   share of the text's width - in the editor, on the page and in the
+   PDF alike, however wide the window. Images to one side keep theirs,
+   above. */
+.wiki-content p:has(> img:nth-of-type(2))
+  > img:not(.wiki-float-left, .wiki-float-right),
+.wiki__quill .ql-editor p:has(> img:nth-of-type(2))
+  > img:not(.wiki-float-left, .wiki-float-right) {
+  max-width: calc(100% / 2 - 1px);
 }
 
-.wiki-content p:has(> img + img):not(:has(> img[class*="wiki-float"])) > img {
-  flex: 0 1 auto;
-  min-width: 0;
+.wiki-content p:has(> img:nth-of-type(3))
+  > img:not(.wiki-float-left, .wiki-float-right),
+.wiki__quill .ql-editor p:has(> img:nth-of-type(3))
+  > img:not(.wiki-float-left, .wiki-float-right) {
+  max-width: calc(100% / 3 - 1px);
+}
+
+.wiki-content p:has(> img:nth-of-type(4))
+  > img:not(.wiki-float-left, .wiki-float-right),
+.wiki__quill .ql-editor p:has(> img:nth-of-type(4))
+  > img:not(.wiki-float-left, .wiki-float-right) {
+  max-width: calc(100% / 4 - 1px);
+}
+
+.wiki-content p:has(> img:nth-of-type(5))
+  > img:not(.wiki-float-left, .wiki-float-right),
+.wiki__quill .ql-editor p:has(> img:nth-of-type(5))
+  > img:not(.wiki-float-left, .wiki-float-right) {
+  max-width: calc(100% / 5 - 1px);
+}
+
+.wiki-content p:has(> img:nth-of-type(6))
+  > img:not(.wiki-float-left, .wiki-float-right),
+.wiki__quill .ql-editor p:has(> img:nth-of-type(6))
+  > img:not(.wiki-float-left, .wiki-float-right) {
+  max-width: calc(100% / 6 - 1px);
+}
+
+/* A heading starts a new part: below the images beside the text. */
+.wiki-content h1,
+.wiki-content h2,
+.wiki-content h3,
+.wiki-content h4,
+.wiki__quill .ql-editor h1,
+.wiki__quill .ql-editor h2,
+.wiki__quill .ql-editor h3,
+.wiki__quill .ql-editor h4 {
+  clear: both;
 }
 
 .wiki-content::after {

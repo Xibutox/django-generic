@@ -262,10 +262,48 @@ def test_two_images_stay_side_by_side_in_narrow_text(
     page.set_viewport_size({"width": 420, "height": 900})
     page.goto("/wiki/handbook/")
 
-    images = page.locator(".wiki-content img")
-    expect(images).to_have_count(4)
-    tops = images.evaluate_all(
-        "images => images.map(img => img.getBoundingClientRect().top)"
+    for images in (
+        lambda: page.locator(".wiki-content img"),
+        lambda: edit_images(page),
+    ):
+        images = images()
+        expect(images.first).to_be_visible()
+        expect(images).to_have_count(4)
+        tops = images.evaluate_all(
+            "images => images.map(img => img.getBoundingClientRect().top)"
+        )
+        assert tops[0] == tops[1]
+        assert tops[2] == tops[3]
+
+
+def edit_images(page):
+    """The page's images, in its editor, opened."""
+    page.get_by_role("button", name="Edit").click()
+
+    return page.locator("#wiki-editor .ql-editor img")
+
+
+def test_a_heading_starts_below_an_image_beside_the_text(
+    page, illustrated, admin, sign_in
+):
+    image = WikiImage.objects.get()
+    illustrated.content = (
+        f'<p><img class="wiki-float-left" src="{image.get_absolute_url()}">'
+        "</p><p>Short.</p><h2>Next part</h2>"
     )
-    assert tops[0] == tops[1]
-    assert tops[2] == tops[3]
+    illustrated.save()
+    sign_in(admin)
+    page.goto("/wiki/handbook/")
+
+    for root in (".wiki-content", "#wiki-editor .ql-editor"):
+        if root != ".wiki-content":
+            page.get_by_role("button", name="Edit").click()
+
+        expect(page.locator(f"{root} h2")).to_be_visible()
+        bottom = page.locator(f"{root} img").evaluate(
+            "img => img.getBoundingClientRect().bottom"
+        )
+        top = page.locator(f"{root} h2").evaluate(
+            "h2 => h2.getBoundingClientRect().top"
+        )
+        assert top >= bottom
