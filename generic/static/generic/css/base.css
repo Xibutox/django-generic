@@ -311,8 +311,10 @@ html:not(.sidebar-unpinned).sidebar-closed .sidebar {
   white-space: nowrap;
 }
 
+/* Inset as the links below, so the box and their highlight share both
+   edges and its icon sits in their icons' column. */
 .sidebar__search {
-  padding: var(--space-3) var(--space-4) var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
   flex: 0 0 auto;
 }
 
@@ -422,7 +424,7 @@ html:not(.sidebar-unpinned).sidebar-closed .sidebar {
 
 .sidebar__footer {
   flex: 0 0 auto;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--border-color);
   color: var(--text-muted);
   font-size: var(--font-size-xs);

@@ -20,6 +20,16 @@
   margin-top: var(--space-5);
 }
 
+/* In a stack or a grid the gap spaces the cards. With the margin as
+   well, cards in a stack stood twice as far apart as anywhere else,
+   and in a grid every card but the first started a step lower. */
+.stack > .module + .module,
+.stack > .card + .card,
+.grid-auto > .module + .module,
+.grid-auto > .card + .card {
+  margin-top: 0;
+}
+
 .card__header {
   display: flex;
   align-items: center;
@@ -1608,9 +1618,11 @@ dialog.dialog::backdrop {
   gap: var(--space-3);
 }
 
+/* Top-aligned: a description on two lines no longer drops the title
+   below the titles of the cards beside it. */
 .shortcut {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   color: var(--text-primary);
@@ -1707,6 +1719,13 @@ dialog.dialog::backdrop {
 
 .app-card__row:last-child {
   border-bottom: none;
+}
+
+/* Rows in a flush card (the account page's Watching) start where the
+   card's title does. */
+.card.module--flush .app-card__row,
+.card.module--flush .empty-state {
+  padding-inline: var(--space-5);
 }
 
 .app-card__row .icon {

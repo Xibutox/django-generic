@@ -72,6 +72,12 @@
   max-width: 32rem;
 }
 
+/* A control tall, so the box lines up with the input beside it rather
+   than with that input's bottom edge. */
+.merge__options > .field-checkbox {
+  min-height: var(--control-height);
+}
+
 .merge__actions {
   align-items: center;
   margin-top: var(--space-4);

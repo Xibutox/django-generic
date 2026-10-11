@@ -14,6 +14,11 @@
   margin-bottom: var(--space-4);
 }
 
+/* Side by side: the legend starts level with the map. */
+.customer-map > .card + .card {
+  margin-top: 0;
+}
+
 .customer-map__drawing {
   padding: var(--space-3);
 }
