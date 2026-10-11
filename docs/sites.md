@@ -141,6 +141,7 @@ model nobody declared pages of its own. See
 | `list_display` | Columns: fields, `related__paths`, resource methods, model attributes, `"__str__"` |
 | `list_display_links` | Columns linking to the record's page; the first by default |
 | `list_display_hidden` | Columns of `list_display` the table starts without: the column selector still offers them, filters and exports still know them |
+| `list_display_align` | Where columns of `list_display` place their content, header included: `{"logo": "center", "price": "right"}` — see below |
 | `list_select_related`, `list_prefetch_related` | Extra joins; the ones the columns need are added for you |
 | `list_per_page` | First page size, before the user's own preference |
 | `search_fields` | What the search box, the autocomplete and the palette match |
@@ -227,6 +228,28 @@ table needs:
 A method column is sortable when `@display(ordering=...)` names an ORM
 path — typically an annotation made in `get_list_queryset` — and
 filterable when `@display(filter_field=...)` does.
+
+### Alignment
+
+Text sits on the left of its column, numbers and dates on the right.
+`list_display_align` places a column otherwise — `"left"`, `"center"`
+or `"right"`, the cells and the header together — and a method column
+says it on its `@display`:
+
+```python
+list_display = ("name", "code", "is_active", "logo", "budget")
+list_display_align = {"code": "center", "is_active": "center"}
+
+@display(description=_("Site"), icons=True, align="center")
+def logo(self, customer):
+    return [{"icon": "language", "label": _("Website"),
+             "url": customer.website, "target": "_blank"}]
+```
+
+A column of icons — logos, shortcuts — starts on the left like any
+other; `align="center"` puts it in the middle. Any other word is an
+error when the table is built. A hand-written column takes the same
+option: `CharColumn(align="right")`.
 
 ### Tags
 

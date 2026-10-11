@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 from types import SimpleNamespace
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from django.contrib.admin.utils import NestedObjects
 from django.contrib.auth import get_permission_codename
@@ -131,6 +131,10 @@ class ModelResource(PagesMixin):
     #: Columns of ``list_display`` the table starts without: the column
     #: selector still offers them, and a saved view may show them.
     list_display_hidden: Sequence[Any] = ()
+    #: Where columns of ``list_display`` place their content, header
+    #: included: ``{"logo": "center", "price": "right"}``. ``left``,
+    #: ``center`` or ``right``; the others keep the table's own.
+    list_display_align: Mapping[Any, str] = {}
     list_select_related: Sequence[str] = ()
     list_prefetch_related: Sequence[str] = ()
     list_per_page: int | None = None

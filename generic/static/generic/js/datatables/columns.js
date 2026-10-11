@@ -422,6 +422,24 @@
     };
   }
 
+  var ALIGNMENTS = ["left", "center", "right"];
+
+  /**
+   * The cells' classes, plus the one placing their content when the
+   * column asks for it: `align: "center"` centres a column of logos,
+   * header included, whatever DataTables made of its values' type.
+   */
+  function alignedClassName(column) {
+    var classes = column.className ? [column.className] : [];
+    var align = String(column.align || "").trim().toLowerCase();
+
+    if (ALIGNMENTS.indexOf(align) !== -1) {
+      classes.push("dt-align-" + align);
+    }
+
+    return classes.join(" ");
+  }
+
   /**
    * Turn the server's column declaration into DataTables' own shape.
    */
@@ -446,7 +464,7 @@
         defaultContent: column.defaultContent != null
           ? column.defaultContent
           : "",
-        className: column.className || "",
+        className: alignedClassName(column),
         filterType: filterType,
         displayType: displayType,
         filterKey:

@@ -391,6 +391,11 @@ class TableSerializerBuilder:
             "title": title if title else prettify_field_name(name)
         }
 
+        align = getattr(function, "align", None)
+
+        if align:
+            options["align"] = align
+
         ordering = getattr(function, "admin_order_field", None)
 
         if ordering:
@@ -734,7 +739,8 @@ class TableSerializerBuilder:
     # -- links ---------------------------------------------------------
 
     def column_overrides(self) -> dict[str, dict[str, Any]]:
-        """The link columns, and the ones the table starts without."""
+        """The link columns, the ones the table starts without, and
+        where each places its content."""
         overrides = self.link_overrides()
 
         for entry in getattr(self.resource, "list_display_hidden", ()):
@@ -742,6 +748,14 @@ class TableSerializerBuilder:
 
             if name in self.declared and name != ROW_KEY:
                 overrides.setdefault(name, {})["visible"] = False
+
+        aligns = getattr(self.resource, "list_display_align", None) or {}
+
+        for entry, align in aligns.items():
+            name = self.entry_names.get(entry, entry)
+
+            if name in self.declared and name != ROW_KEY:
+                overrides.setdefault(name, {})["align"] = align
 
         return overrides
 

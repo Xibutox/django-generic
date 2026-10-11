@@ -586,6 +586,35 @@ table.dataTable td.dt-col--wide {
   white-space: normal;
 }
 
+/*
+ * A column placed by its declaration (`align`): the cells and the
+ * header together, over DataTables' own placing by type - a number or
+ * a date to the right.
+ */
+table.dataTable thead tr.dt-column-titles th.dt-align-left,
+table.dataTable tbody td.dt-align-left {
+  text-align: left;
+}
+
+table.dataTable thead tr.dt-column-titles th.dt-align-center,
+table.dataTable tbody td.dt-align-center {
+  text-align: center;
+}
+
+table.dataTable thead tr.dt-column-titles th.dt-align-right,
+table.dataTable tbody td.dt-align-right {
+  text-align: right;
+}
+
+/*
+ * The sort and filter icons stay after the title, whatever the side:
+ * DataTables turns a number's header around, which left its sort icon
+ * alone at the far left, a column away from the title it sorts.
+ */
+table.dataTable thead tr.dt-column-titles th div.dt-column-header {
+  flex-direction: row;
+}
+
 /* -- Filters: the bar --------------------------------------------------
  *
  * The filters in force, as chips under the toolbar. The bar only exists
