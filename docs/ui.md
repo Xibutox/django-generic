@@ -481,6 +481,23 @@ take the token as their `height` and keep their padding horizontal;
 textareas, multiple selects and file inputs keep theirs, because their
 content is not one line.
 
+The small controls follow the same rule with `--control-height-sm`:
+`button--sm`, an input or a select marked `input--sm`, and a table's
+tools - the filter-row toggle, the reload button, the page buttons -
+are all that tall, so a row of them lines up.
+
+**Cards in a layout.** A card that follows another takes a margin, for
+a page's own flow. Laid out by a `stack` or a `grid-auto`, cards take
+only the gap: with the margin as well, a stack's cards stood twice as
+far apart, and in a grid every card but the first started a step
+lower. A project's own grid of cards says the same:
+
+```css
+.my-grid > .card + .card {
+  margin-top: 0;
+}
+```
+
 Two tokens exist for text on a filled surface, and the difference
 matters. `--text-inverse` is text on an accent or danger fill, and
 flips with the theme. `--text-on-header` is text on the header, which

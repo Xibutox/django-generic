@@ -57,6 +57,24 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
 ### Fixed
+- Small misalignments across the interface, the style unchanged. The
+  navigation's filter box shares the edges of the links below it, and
+  the version in the sidebar's foot their icons' column. A table's
+  tools are one height: the filter-row toggle, the reload button and
+  the page buttons now match the small buttons beside them, and the
+  server-rendered list's *Apply* its action picker. A chart's period
+  picker is a small control again, so a chart card holding one has
+  the header height of the card beside it. Cards laid out by a grid or
+  a stack take only its gap: the wiki's page starts level with its
+  menu, every task card on the task catalogue level with the first,
+  the customer map's legend level with the map, and the cards of the
+  account page, the help and the import pages no longer stand twice as
+  far apart as anywhere else. The account page's *Watching* rows start
+  where the card's title does. The dashboard's shortcuts keep their
+  titles on one line across a row, a two-line description no longer
+  pushing one down. *Yes* and *No* in a table sit on the line of the
+  row's text, not a pixel above. In the document manager, *Start each
+  file on a new page* lines up with the file name beside it.
 - A table pasted into the wiki's editor from Excel, Word, Google
   Sheets or a web page no longer breaks the page. Merged cells no
   longer push the cells after them into the wrong column: the content

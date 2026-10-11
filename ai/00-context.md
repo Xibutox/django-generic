@@ -1568,6 +1568,13 @@ linking `generic/css/summary.css` in `extrastyle` — `stat`, `stat__label`,
 Tokens: `var(--color-accent)`, `--text-primary|secondary|muted`,
 `--surface-raised|sunken|page`, `--border-color`, `--space-1..7`,
 `--font-size-xs..xl`, `--border-radius(-sm|-lg|-pill)`.
+Controls side by side are one height: `button--sm`, `input--sm` (an
+input or a select) and a table's tools are `--control-height-sm`, the
+full-size ones `--control-height`. A card after a card takes a margin
+for a page's flow; in a `stack` or a `grid-auto` the gap alone spaces
+them, and a grid of cards of one's own does the same
+(`.my-grid > .card + .card { margin-top: 0; }`), or every card but the
+first starts a step lower. `tests/browser/test_alignment.py` measures.
 
 ### JavaScript (`window.Generic`)
 

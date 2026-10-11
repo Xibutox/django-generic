@@ -12,6 +12,12 @@
   align-items: start;
 }
 
+/* The grid spaces its cards; the margin a card takes after another in
+   a page's flow pushed every card but the first down a step. */
+.task-grid > .card + .card {
+  margin-top: 0;
+}
+
 .task-card {
   display: flex;
   flex-direction: column;

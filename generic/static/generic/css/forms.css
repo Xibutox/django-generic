@@ -237,7 +237,11 @@ select.input:not([multiple]),
   font-size: var(--font-size-sm);
 }
 
-input.input--sm:not([type="file"]) {
+/* The small select too: without it, the one-line rule above kept it a
+   full control tall, and a chart card holding a period picker had a
+   taller header than the card beside it. */
+input.input--sm:not([type="file"]),
+select.input--sm:not([multiple]) {
   height: var(--control-height-sm);
 }
 

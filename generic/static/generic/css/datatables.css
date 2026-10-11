@@ -62,6 +62,7 @@
 .dt-container .dt-paging .dt-paging-button,
 .dt-container .dt-paging button {
   min-width: 2rem;
+  min-height: var(--control-height-sm);
   padding: var(--space-1) var(--space-2) !important;
   margin-left: var(--space-1) !important;
   color: var(--text-primary) !important;
@@ -167,11 +168,14 @@ table.dataTable td.dt-empty {
   text-align: center;
 }
 
+/* On its line's top: on the baseline, the box sat on its icon's
+   baseline and lifted "Yes" a pixel above the text of the row. */
 .dt-boolean {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   font-weight: 500;
+  vertical-align: top;
 }
 
 .dt-boolean .icon {
@@ -260,6 +264,14 @@ table.dataTable th.dt-row-actions {
   align-items: center;
   gap: var(--space-2);
   margin-left: auto;
+}
+
+/* The reload button keeps its full-size icon in a box as tall as the
+   small buttons beside it: a grid's "Add a row" no longer sat beside a
+   taller hover box. */
+.dt-toolbar__tools > .icon-button {
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
 }
 
 .dt-tool .badge-count {
@@ -942,6 +954,12 @@ table.dataTable thead tr.dt-column-filters > td {
 
 .dt-filter-field__select option {
   color: var(--text-primary);
+}
+
+/* As tall as the Filter button it sits against. */
+.dt-filter-row-toggle {
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
 }
 
 .dt-filter-row-toggle.is-active {

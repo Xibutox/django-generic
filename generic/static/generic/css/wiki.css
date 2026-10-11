@@ -7,6 +7,12 @@
   gap: var(--space-4);
 }
 
+/* The page starts level with the menu: the margin a card takes after
+   another card is for a page's flow, the grid has its gap. */
+.wiki > .card + .card {
+  margin-top: 0;
+}
+
 @media (max-width: 900px) {
   .wiki {
     grid-template-columns: minmax(0, 1fr);
