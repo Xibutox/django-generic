@@ -88,14 +88,22 @@ def test_cards_in_a_stack_take_only_its_gap(signed_in):
     page.goto("/account/")
 
     column = page.locator(".stack:has(> .card + .card)").first
-    first, second = column.locator("> .card").nth(0), column.locator(
-        "> .card"
-    ).nth(1)
-    gap = page.evaluate(
-        "el => parseFloat(getComputedStyle(el).rowGap)",
+    # The profile and preferences forms load their schema after the
+    # page: measured before they are drawn, the first card grows
+    # between one reading and the next.
+    expect(column.locator(".js-schema-form .schema-form")).to_have_count(
+        column.locator(".js-schema-form").count()
+    )
+    space, gap = page.evaluate(
+        """el => {
+            const [first, second] = el.querySelectorAll(":scope > .card");
+            return [
+                second.getBoundingClientRect().top
+                    - first.getBoundingClientRect().bottom,
+                parseFloat(getComputedStyle(el).rowGap),
+            ];
+        }""",
         column.element_handle(),
     )
 
-    assert box(second)["y"] - (box(first)["y"] + box(first)["height"]) == (
-        pytest.approx(gap, abs=0.5)
-    )
+    assert space == pytest.approx(gap, abs=0.5)
