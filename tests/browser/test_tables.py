@@ -239,3 +239,30 @@ def test_the_request_carries_only_what_the_endpoint_reads(ticket_list):
     # Per column, DataTables builds six parameters; one is left.
     for dropped in ("searchable", "orderable", "regex", "%5Bname%5D"):
         assert dropped not in url
+
+
+def test_a_column_declared_centred_is_centred(page, desk, admin, sign_in):
+    """``list_display_align``: the cells and the header, over what
+    DataTables makes of the values' type."""
+    sign_in(admin)
+    page.goto("/example/team/")
+
+    table = page.locator("#datatable")
+    expect(table.locator("tbody tr").first).to_be_visible()
+
+    def align(cell):
+        return cell.evaluate("node => getComputedStyle(node).textAlign")
+
+    code = table.locator("th.dt-align-center", has_text="Code")
+    expect(code).to_have_count(1)
+    assert align(code) == "center"
+
+    cells = table.locator("tbody td.dt-align-center")
+    expect(cells.first).to_be_visible()
+    assert align(cells.first) == "center"
+
+    # Left alone, a name stays on the left.
+    assert align(table.locator("tbody tr").first.locator("td").nth(1)) in (
+        "left",
+        "start",
+    )

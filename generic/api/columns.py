@@ -54,6 +54,11 @@ FILTER_TYPES = frozenset(
 #: column forces another filter.
 DISPLAY_TYPES = FILTER_TYPES | {"link", "tags", "file", "icons"}
 
+#: Where a column's cells, and its header, put their content. ``None``
+#: leaves it to the table: text to the left, numbers and dates to the
+#: right.
+ALIGNMENTS = ("left", "center", "right")
+
 
 def prettify_field_name(field_name: str) -> str:
     """Turn ``time_spent`` into ``Time spent``."""
@@ -160,7 +165,16 @@ class ColumnOptions:
 
     width: str | None = None
     class_name: str | None = None
+    #: ``left``, ``center`` or ``right``: the cells and the header.
+    align: str | None = None
     step: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.align is not None and self.align not in ALIGNMENTS:
+            raise ValueError(
+                f"Unknown column alignment {self.align!r}. Known "
+                f"alignments: {', '.join(ALIGNMENTS)}."
+            )
 
     def replace(self, **overrides: Any) -> "ColumnOptions":
         try:
@@ -306,6 +320,7 @@ class DataTableFieldMixin:
             "minimumInputLength": options.minimum_input_length,
             "width": options.width,
             "className": options.class_name,
+            "align": options.align,
             "step": options.step,
         }
 

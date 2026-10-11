@@ -1159,6 +1159,8 @@ class TeamResource(ModelResource):
     order = 0
 
     list_display = ("name", "code", "is_active", "agent_count", "ticket_count")
+    # A short code and a yes/no read best in the middle of their column.
+    list_display_align = {"code": "center", "is_active": "center"}
     search_fields = ("name", "code")
     ordering = ("name",)
     fields = ("name", "code", "is_active")
@@ -1271,7 +1273,7 @@ class TagResource(ModelResource):
 
     # A computed column drawn as a tag: the method returns the record,
     # the style reads its colours.
-    @display(description=_("Tag"), tags=TAG_STYLE)
+    @display(description=_("Tag"), tags=TAG_STYLE, align="center")
     def preview(self, tag: Tag) -> Tag:
         return tag
 

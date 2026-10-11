@@ -69,6 +69,7 @@ def display(
     search_field: str | None = None,
     tags: Any = None,
     icons: bool = False,
+    align: str | None = None,
 ) -> Any:
     """Describe a computed column of ``list_display``.
 
@@ -94,6 +95,10 @@ def display(
         def shortcuts(self, ticket):
             return [{"icon": "download", "label": _("Download"),
                      "url": self.get_file_url(ticket.pk, "attachment")}]
+
+    ``align`` - ``"left"``, ``"center"`` or ``"right"`` - places the
+    column's content, header included; a field column is placed through
+    the resource's ``list_display_align``.
     """
 
     def decorate(func: Function) -> Function:
@@ -118,6 +123,9 @@ def display(
 
         if icons:
             func.icons = True  # type: ignore[attr-defined]
+
+        if align is not None:
+            func.align = align  # type: ignore[attr-defined]
 
         return func
 

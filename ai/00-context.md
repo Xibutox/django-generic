@@ -603,6 +603,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_display` | `("__str__",)` | columns: field names, `related__paths` (single-valued), many-to-many / reverse names, resource methods, model properties, `"__str__"` |
 | `list_display_links` | first column | columns linking to the row's page |
 | `list_display_hidden` | `()` | columns of `list_display` the table starts without; still in the column selector - keep the default list short, park the rest here |
+| `list_display_align` | `{}` | `{entry: "left" \| "center" \| "right"}`: where a column places its content, header included (a method column: `@display(align=...)`; a hand-written one: `align=` on the column). Unset: text left, numbers and dates right; an icons column left. Another word raises when the table is built |
 | `list_select_related`, `list_prefetch_related` | auto | extra joins |
 | `list_per_page` | settings | first page size |
 | `search_rank` | False | palette and autocompletes list the closest match first (PostgreSQL + `generic.search`); tables keep their order |
@@ -681,7 +682,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 @display(description=_("Label"), ordering="annotation_or_path",
          boolean=True, filter_field="orm__path", filter_type="integer",
          search_field="orm__path", tags=TagStyle(...) or True,
-         icons=True)   # icons: return [{"icon", "url", "label", "target"?}] - clickable icons (§5.9)
+         icons=True,   # icons: return [{"icon", "url", "label", "target"?}] - clickable icons (§5.9)
+         align="center")   # or "left" / "right": cells and header
 def column(self, obj): ...
 
 @action(description=_("Label"), permissions=("change",),   # view/add/change/delete or "app.codename"
@@ -773,7 +775,8 @@ column too: `@display(description=_("File"), icons=True)` returning
 `[{"icon": "download", "label": _("Download"), "url":
 self.get_file_url(obj.pk, "attachment")}]` (Material Symbols name;
 `"target": "_blank"` optional; no `url` = left out). Not filtered,
-ordered or exported. The method gets the row only: what depends on the
+ordered or exported. On the left like any column; `align="center"` on
+the `@display` centres it (a column of logos). The method gets the row only: what depends on the
 reader is annotated in `get_list_queryset(request)`.
 
 ### 5.10 Editing in the table
