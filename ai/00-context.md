@@ -1577,7 +1577,9 @@ full-size ones `--control-height`. A card after a card takes a margin
 for a page's flow; in a `stack` or a `grid-auto` the gap alone spaces
 them, and a grid of cards of one's own does the same
 (`.my-grid > .card + .card { margin-top: 0; }`), or every card but the
-first starts a step lower. `tests/browser/test_alignment.py` measures.
+first starts a step lower. A message's or a toast's icon and dismiss
+button centre on its first line of text (`--message-line`).
+`tests/browser/test_alignment.py` measures.
 
 ### JavaScript (`window.Generic`)
 

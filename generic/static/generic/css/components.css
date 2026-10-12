@@ -933,14 +933,35 @@ a.tag:focus-visible {
 
 .message__text {
   flex: 1 1 auto;
-  padding-top: 0.1rem;
+  min-width: 0;
 }
 
 .message__dismiss {
   flex: 0 0 auto;
+  color: inherit;
+}
+
+/* A message's icon and its dismiss button sit on its first line of
+   text: each takes that line's height and centres on it, a long
+   message wrapping beneath them. The button, taller than the line,
+   overhangs it evenly instead of pushing the text down. */
+.message,
+.toast {
+  --message-line: calc(var(--font-size-base) * var(--line-height));
+}
+
+.message > .icon,
+.toast > .icon {
+  display: inline-flex;
+  align-items: center;
+  height: var(--message-line);
+}
+
+.message > .icon-button,
+.toast > .icon-button {
   width: 1.5rem;
   height: 1.5rem;
-  color: inherit;
+  margin-block: calc((var(--message-line) - 1.5rem) / 2);
 }
 
 .message--success {

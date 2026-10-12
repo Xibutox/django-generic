@@ -10,6 +10,8 @@ from __future__ import annotations
 import pytest
 from playwright.sync_api import expect
 
+from example.models import TicketComment
+
 LIST = "/example/ticket/"
 
 
@@ -107,3 +109,57 @@ def test_cards_in_a_stack_take_only_its_gap(signed_in):
     )
 
     assert space == pytest.approx(gap, abs=0.5)
+
+
+def first_line_middles(page, selector):
+    """Where the icon, the first line of text and the button centre."""
+    return page.evaluate(
+        """selector => {
+            const item = document.querySelector(selector);
+            const middle = el => {
+                const box = el.getBoundingClientRect();
+                return box.top + box.height / 2;
+            };
+            const text = item.querySelector(
+                ".message__text, .toast__text"
+            );
+            const box = text.getBoundingClientRect();
+            const line = parseFloat(getComputedStyle(text).lineHeight);
+            return {
+                icon: middle(item.querySelector(":scope > .icon")),
+                text: box.top + line / 2,
+                button: middle(item.querySelector(":scope > .icon-button")),
+            };
+        }""",
+        selector,
+    )
+
+
+def test_a_message_icon_and_dismiss_sit_on_its_first_line(signed_in):
+    page = signed_in
+    comment = TicketComment.objects.first()
+    page.goto(f"/example/ticketcomment/{comment.pk}/delete/")
+    page.locator(".delete-form button[type=submit]").first.click()
+
+    message = page.locator(".message--success")
+    expect(message).to_contain_text("was deleted")
+    middles = first_line_middles(page, ".message--success")
+
+    assert middles["icon"] == pytest.approx(middles["text"], abs=0.5)
+    assert middles["button"] == pytest.approx(middles["text"], abs=0.5)
+
+
+def test_a_toast_icon_and_dismiss_sit_on_its_first_line(signed_in):
+    page = signed_in
+    open_list(page)
+    page.evaluate("""() => Generic.toast(
+            "A message long enough to wrap onto a second line of the "
+            + "toast, beneath its icon and its button.",
+            "error"
+        )""")
+
+    expect(page.locator(".toast--error")).to_be_visible()
+    middles = first_line_middles(page, ".toast--error")
+
+    assert middles["icon"] == pytest.approx(middles["text"], abs=0.5)
+    assert middles["button"] == pytest.approx(middles["text"], abs=0.5)
