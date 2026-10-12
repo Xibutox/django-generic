@@ -3378,3 +3378,37 @@ msgstr "Indicateurs clés"
 
 msgid "See all"
 msgstr "Tout voir"
+
+#: generic/wiki/views.py
+msgid "Earlier version"
+msgstr "Version antérieure"
+
+#: generic/templates/generic/wiki/page.html
+msgid ""
+"You are viewing the version the page was restored to: it is the page's "
+"current text."
+msgstr ""
+"Vous consultez la version à laquelle la page a été restaurée : c'est son "
+"texte actuel."
+
+#: generic/templates/generic/wiki/page.html
+msgid ""
+"You are viewing an earlier version of this page. The page itself is "
+"unchanged."
+msgstr ""
+"Vous consultez une version antérieure de cette page. La page elle-même "
+"n'est pas modifiée."
+
+#: generic/templates/generic/wiki/page.html
+msgid "Current version"
+msgstr "Version actuelle"
+
+#: generic/templates/generic/wiki/page.html
+#, python-format
+msgid "Version of %(date)s by %(name)s"
+msgstr "Version du %(date)s par %(name)s"
+
+#: generic/templates/generic/wiki/page.html
+#, python-format
+msgid "Version of %(date)s"
+msgstr "Version du %(date)s"

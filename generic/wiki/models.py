@@ -226,9 +226,20 @@ class WikiPage(models.Model):
         """
         return attachments_in(self.content)
 
+    def current_revision(self) -> "WikiRevision | None":
+        """The version in the history holding the page's text as it
+        stands - the one a restore brought back - if any."""
+        return self.revisions.filter(
+            title=self.title, content=self.content
+        ).first()
+
 
 class WikiRevision(models.Model):
-    """A page as it was before a change: kept to compare and restore."""
+    """A version of a page: kept to read it again and to restore it.
+
+    A text is in the history once: restoring a version brings that
+    entry back as the page's text rather than writing it again.
+    """
 
     page = models.ForeignKey(
         WikiPage,
@@ -257,9 +268,30 @@ class WikiRevision(models.Model):
     def __str__(self) -> str:
         return f"{self.title} ({self.created_at:%Y-%m-%d %H:%M})"
 
+    def get_absolute_url(self) -> str:
+        return reverse(
+            "generic_wiki:revision",
+            kwargs={
+                "wiki": self.page.wiki.slug,
+                "slug": self.page.slug,
+                "revision": self.pk,
+            },
+        )
+
     @classmethod
     def keep(cls, page: WikiPage) -> "WikiRevision":
-        """Record ``page`` as it stands, and drop the oldest versions."""
+        """Record ``page`` as it stands, and drop the oldest versions.
+
+        A text already in the history - the page was restored to it -
+        is not recorded twice: its entry is returned.
+        """
+        existing = cls.objects.filter(
+            page=page, title=page.title, content=page.content
+        ).first()
+
+        if existing is not None:
+            return existing
+
         revision = cls.objects.create(
             page=page,
             title=page.title,

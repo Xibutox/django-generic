@@ -1429,53 +1429,96 @@
             });
         },
 
-        /** Earlier versions, newest first, each one restorable. */
+        /**
+         * The versions, newest first: each one to read without touching
+         * the page, or to restore. The page's current text is marked -
+         * the version it was restored to, or a line of its own on top.
+         */
         history: function () {
           var self = this;
+          var page = this.page;
 
           Generic.api
             .get(this.pageUrl(this.page.id) + "revisions/")
             .then(function (revisions) {
               var dialog = Generic.dialogs.open({ title: t("History"), icon: "history" });
+              var list = el("ul", "wiki-history");
+              var restored = (revisions || []).some(function (revision) {
+                return revision.current;
+              });
+
+              function row(version, current) {
+                var item = el("li", "wiki-history__item");
+                var text = el("div", "wiki-history__text");
+                var title = el("span", "wiki-history__title");
+                var actions = el("div", "wiki-history__actions");
+
+                title.appendChild(el("strong", "", version.title));
+
+                if (current) {
+                  title.appendChild(el("span", "badge badge--accent", t("Current version")));
+                }
+
+                text.appendChild(title);
+                text.appendChild(
+                  el(
+                    "span",
+                    "wiki-history__meta",
+                    Generic.format(t("%(date)s, by %(name)s - %(size)s characters"), {
+                      date: new Date(version.created_at).toLocaleString(),
+                      name: version.author_name || t("someone"),
+                      size: version.size
+                    })
+                  )
+                );
+                item.appendChild(text);
+
+                if (version.url) {
+                  var view = el("a", "button button--ghost button--sm", t("View"));
+
+                  view.href = version.url;
+                  actions.appendChild(view);
+                }
+
+                if (!current && version.id && config.can && config.can.change) {
+                  var restore = el("button", "button button--sm", t("Restore"));
+
+                  restore.type = "button";
+                  restore.addEventListener("click", function () {
+                    dialog.close(false);
+                    self.restore(version);
+                  });
+                  actions.appendChild(restore);
+                }
+
+                item.appendChild(actions);
+
+                return item;
+              }
+
+              if (!restored) {
+                // The page as it stands, which is the page itself.
+                list.appendChild(
+                  row(
+                    {
+                      title: page.title,
+                      created_at: page.updated_at,
+                      author_name: page.updated_by_name,
+                      size: (page.content || "").length
+                    },
+                    true
+                  )
+                );
+              }
+
+              (revisions || []).forEach(function (revision) {
+                list.appendChild(row(revision, revision.current));
+              });
+
+              dialog.body.appendChild(list);
 
               if (!revisions || !revisions.length) {
                 dialog.body.appendChild(el("p", "", t("No earlier version yet.")));
-              } else {
-                var list = el("ul", "wiki-history");
-
-                revisions.forEach(function (revision) {
-                  var item = el("li", "wiki-history__item");
-                  var text = el("div", "wiki-history__text");
-
-                  text.appendChild(el("strong", "", revision.title));
-                  text.appendChild(
-                    el(
-                      "span",
-                      "wiki-history__meta",
-                      Generic.format(t("%(date)s, by %(name)s - %(size)s characters"), {
-                        date: new Date(revision.created_at).toLocaleString(),
-                        name: revision.author_name || t("someone"),
-                        size: revision.size
-                      })
-                    )
-                  );
-                  item.appendChild(text);
-
-                  if (config.can && config.can.change) {
-                    var restore = el("button", "button button--sm", t("Restore"));
-
-                    restore.type = "button";
-                    restore.addEventListener("click", function () {
-                      dialog.close(false);
-                      self.restore(revision);
-                    });
-                    item.appendChild(restore);
-                  }
-
-                  list.appendChild(item);
-                });
-
-                dialog.body.appendChild(list);
               }
 
               var close = el("button", "button button--ghost", t("Close"));
@@ -1497,7 +1540,7 @@
           Generic.dialogs
             .confirm({
               title: t("Restore this version?"),
-              message: t("The current text goes to the history, so this can be undone."),
+              message: t("The page takes this version back. Its current text stays in the history, so this can be undone."),
               confirmLabel: t("Restore")
             })
             .then(function (confirmed) {

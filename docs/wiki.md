@@ -204,10 +204,16 @@ when something changed.
 Under its text, the page lists its **attachments** - the images and
 files it shows, in its order, a file with its size - each a link.
 
-**History** lists the earlier versions, newest first, with their author
-and size; *Restore* brings one back. Restoring saves the current text
-as a version first, so it can be undone like any other change. The last
-50 versions of a page are kept.
+**History** lists the versions, newest first, with their author and
+size, the page's current one marked. *View* opens a version read-only,
+in the page's layout - `wiki/<wiki>/<page>/versions/<id>/` - with the
+way back to the page and, for a writer, *Restore*, which brings it
+back. Restoring saves the current text as a version first, unless it
+is one already, so it can be undone like any other change; the
+restored version is not written again: it is marked current where it
+stands in the history. A text is in the history once
+(`WikiRevision.keep` returns its entry; `page.current_revision()` is
+the one the page holds). The last 50 versions of a page are kept.
 
 **Conflicts**: the editor sends the version it started from. If
 someone saved the page in between, the save is refused with their name
@@ -266,7 +272,7 @@ Under `wiki/api/`, JSON, like every other screen:
 | `GET pages/<id>/` | One page, with its text, its `version` and its `attachments` |
 | `PATCH pages/<id>/` | Change it; send `version` to be protected from overwriting |
 | `DELETE pages/<id>/` | Delete it; its subpages move up |
-| `GET pages/<id>/revisions/` | Its earlier versions |
+| `GET pages/<id>/revisions/` | Its versions: `url` to read one, `current` on the one the page was restored to |
 | `POST pages/<id>/restore/` | Bring one back: `{"revision": <id>}` |
 
 A page carries its `wiki`; naming another one in a `PATCH`, or a

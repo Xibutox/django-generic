@@ -11,7 +11,8 @@
 ``GET    pages/<id>/``             one page, with its content
 ``PATCH  pages/<id>/``             change it; ``version`` guards it
 ``DELETE pages/<id>/``             delete it; its subpages move up
-``GET    pages/<id>/revisions/``   its earlier versions
+``GET    pages/<id>/revisions/``   its versions; ``current`` marks
+                                   the one it was restored to
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
 ================================  ====================================
 
@@ -234,7 +235,12 @@ class WikiPageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def revisions(self, request: Any, pk: Any = None) -> Response:
         page = self.get_object()
-        serializer = WikiRevisionSerializer(page.revisions.all(), many=True)
+        current = page.current_revision()
+        serializer = WikiRevisionSerializer(
+            page.revisions.select_related("page__wiki", "author"),
+            many=True,
+            context={"current": current.pk if current else None},
+        )
 
         return Response(serializer.data)
 
@@ -247,8 +253,10 @@ class WikiPageViewSet(viewsets.ModelViewSet):
         )
 
         with transaction.atomic():
-            # The current text becomes a version too: restoring can be
-            # undone like any other change.
+            # The current text becomes a version too, unless it is one
+            # already: restoring can be undone like any other change,
+            # and the restored version is not written twice - the page
+            # points back at its entry (``current_revision``).
             WikiRevision.keep(page)
             page.title = revision.title
             page.content = revision.content

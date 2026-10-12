@@ -13,6 +13,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Wiki history: every version can be read without restoring it -
+  *View* opens it in the page's layout, read-only, with the way back
+  to the page and, for a writer, *Restore*
+  (`wiki/<wiki>/<page>/versions/<id>/`). The history marks the page's
+  current version, and restoring a version no longer writes it to the
+  history a second time: the page points back at its entry.
 - A user guide for every application built on the framework: the
   everyday actions - finding one's way, the search, filtering, views,
   exports, bulk actions, a record's page, the forms, deleting, the

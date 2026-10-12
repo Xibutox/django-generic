@@ -242,6 +242,69 @@ class TestApi:
         # The text it replaced went to the history in turn.
         assert welcome.revisions.filter(content="<p>Second.</p>").exists()
 
+    def test_restoring_adds_no_entry_for_the_restored_version(
+        self, admin_client, handbook
+    ):
+        welcome = handbook["welcome"]
+        url = f"{PAGES}{welcome.pk}/"
+        patch(admin_client, url, {"content": "<p>Second.</p>"})
+        patch(admin_client, url, {"content": "<p>Third.</p>"})
+        first = welcome.revisions.get(content__contains="desk")
+
+        post(admin_client, f"{url}restore/", {"revision": first.pk})
+        welcome.refresh_from_db()
+
+        # Hello, Second, and Third - the text the restore replaced.
+        assert welcome.revisions.count() == 3
+        assert welcome.current_revision() == first
+
+        history = admin_client.get(f"{url}revisions/").json()
+
+        assert [entry["current"] for entry in history].count(True) == 1
+        assert next(e for e in history if e["current"])["id"] == first.pk
+
+        # Restoring another, or editing on: the restored text is not
+        # written to the history a second time.
+        second = welcome.revisions.get(content="<p>Second.</p>")
+        post(admin_client, f"{url}restore/", {"revision": second.pk})
+        patch(admin_client, url, {"content": "<p>Fourth.</p>"})
+        welcome.refresh_from_db()
+
+        assert welcome.revisions.count() == 3
+        assert welcome.current_revision() is None
+
+    def test_an_old_version_can_be_read_without_restoring_it(
+        self, admin_client, handbook
+    ):
+        welcome = handbook["welcome"]
+        url = f"{PAGES}{welcome.pk}/"
+        patch(admin_client, url, {"content": "<p>Second.</p>"})
+        revision = welcome.revisions.get()
+        [entry] = admin_client.get(f"{url}revisions/").json()
+
+        response = admin_client.get(entry["url"])
+        welcome.refresh_from_db()
+
+        assert entry["url"] == revision.get_absolute_url()
+        assert response.status_code == 200
+        assert "Hello <strong>desk</strong>." in response.content.decode()
+        assert "earlier version" in response.content.decode()
+        assert welcome.content == "<p>Second.</p>"
+
+    def test_a_version_of_another_page_is_not_found(
+        self, admin_client, handbook
+    ):
+        welcome = handbook["welcome"]
+        patch(admin_client, f"{PAGES}{welcome.pk}/", {"content": "<p>2</p>"})
+        revision = welcome.revisions.get()
+        triage = handbook["triage"]
+
+        response = admin_client.get(
+            f"{triage.get_absolute_url()}versions/{revision.pk}/"
+        )
+
+        assert response.status_code == 404
+
     def test_a_deleted_page_leaves_its_subpages_at_the_top(
         self,
         admin_client,
@@ -256,7 +319,8 @@ class TestApi:
     def test_the_history_is_capped(self, handbook):
         page = handbook["welcome"]
 
-        for _index in range(MAX_REVISIONS + 5):
+        for index in range(MAX_REVISIONS + 5):
+            page.content = f"<p>{index}</p>"
             WikiRevision.keep(page)
 
         assert page.revisions.count() == MAX_REVISIONS
