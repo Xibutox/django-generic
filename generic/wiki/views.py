@@ -347,6 +347,7 @@ class WikiRevisionView(WikiPageView):
     layout with that version's title and text, a word saying so, and
     the way back to the page - or, for a writer, to restore it."""
 
+    page: WikiPage
     revision: WikiRevision
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
