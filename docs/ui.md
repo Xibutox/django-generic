@@ -498,6 +498,12 @@ lower. A project's own grid of cards says the same:
 }
 ```
 
+**Messages and toasts.** A message's icon and dismiss button take the
+height of its first line of text and centre on it, so the three read
+as one line; a longer message wraps beneath them. The button, taller
+than the line, overhangs the line evenly rather than pushing the text
+down.
+
 Two tokens exist for text on a filled surface, and the difference
 matters. `--text-inverse` is text on an accent or danger fill, and
 flips with the theme. `--text-on-header` is text on the header, which

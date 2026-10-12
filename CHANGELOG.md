@@ -57,6 +57,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
 ### Fixed
+- A message at the top of a page, and a toast in the corner, reads on
+  one line: its icon and its dismiss button centre on its first line
+  of text, where the icon stood a few pixels above it and the text a
+  pixel below. A long message wraps beneath them, and a one-line
+  message is no taller than its text and padding.
 - Small misalignments across the interface, the style unchanged. The
   navigation's filter box shares the edges of the links below it, and
   the version in the sidebar's foot their icons' column. A table's
