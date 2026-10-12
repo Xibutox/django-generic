@@ -842,6 +842,44 @@
   color: var(--text-muted);
 }
 
+.wiki-history__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wiki-history__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* -- A version from the history, read-only --------------------------------- */
+
+.callout.wiki__version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.callout.wiki__version > .icon:first-child {
+  margin-top: 0;
+}
+
+.wiki__version-text {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.wiki__version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 /* -- Pinned to the dashboard ------------------------------------------------ */
 
 .wiki-pinned {

@@ -159,6 +159,7 @@ class PageSweep:
         "argument",
         "key",
         "wiki",
+        "revision",
     )
     urlconf: Any = None
     site: Any = None
@@ -306,7 +307,13 @@ class PageSweep:
             if page is not None:
                 return page.slug
 
-        # ... and its images and files by their key.
+        # ... a page's versions, its images and files by their key.
+        if url_name == "generic_wiki:revision":
+            revision = records.get("generic_wiki.wikirevision")
+
+            if revision is not None:
+                return revision.pk
+
         if url_name in ("generic_wiki:image", "generic_wiki:file"):
             upload = records.get(
                 "generic_wiki.wiki" + url_name.rpartition(":")[2]
@@ -655,10 +662,18 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
     }
 
     if apps.is_installed("generic.wiki"):
-        from generic.wiki.models import WikiFile, WikiImage, WikiPage
+        from generic.wiki.models import (
+            WikiFile,
+            WikiImage,
+            WikiPage,
+            WikiRevision,
+        )
 
         records["generic_wiki.wikipage"] = WikiPage.objects.create(
             title="Page sweep", slug="page-sweep", content="<p>Hello.</p>"
+        )
+        records["generic_wiki.wikirevision"] = WikiRevision.keep(
+            records["generic_wiki.wikipage"]
         )
         # Named, not written: a sweep puts nothing in MEDIA_ROOT.
         records["generic_wiki.wikiimage"] = WikiImage.objects.create(

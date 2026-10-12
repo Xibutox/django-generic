@@ -307,11 +307,30 @@ class WikiPageSerializer(serializers.ModelSerializer):
 class WikiRevisionSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
     size = serializers.SerializerMethodField()
+    #: Where to read it, without restoring it.
+    url = serializers.SerializerMethodField()
+    #: The page holds this text now: it was restored. The context's
+    #: ``current`` is that revision's id.
+    current = serializers.SerializerMethodField()
 
     class Meta:
         model = WikiRevision
-        fields = ("id", "title", "created_at", "author_name", "size")
+        fields = (
+            "id",
+            "title",
+            "created_at",
+            "author_name",
+            "size",
+            "url",
+            "current",
+        )
         read_only_fields = fields
+
+    def get_url(self, revision: WikiRevision) -> str:
+        return revision.get_absolute_url()
+
+    def get_current(self, revision: WikiRevision) -> bool:
+        return revision.pk == self.context.get("current")
 
     def get_author_name(self, revision: WikiRevision) -> str:
         return display_name(revision.author) if revision.author_id else ""

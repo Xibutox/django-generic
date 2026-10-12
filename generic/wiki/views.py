@@ -30,7 +30,14 @@ from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
 from generic.wiki import pdf
 from generic.wiki.api import IMAGE_TYPES, can, may_write_in, readable_pages
-from generic.wiki.models import Wiki, WikiFile, WikiImage, WikiPage
+from generic.wiki.models import (
+    Wiki,
+    WikiFile,
+    WikiImage,
+    WikiPage,
+    WikiRevision,
+    attachments_in,
+)
 from generic.wiki.sanitize import safe_html
 from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
 
@@ -333,6 +340,63 @@ class WikiPageView(WikiViewMixin):
         )
 
         return super().get(request, *args, **kwargs)
+
+
+class WikiRevisionView(WikiPageView):
+    """One version of a page from its history, read-only: the page's
+    layout with that version's title and text, a word saying so, and
+    the way back to the page - or, for a writer, to restore it."""
+
+    revision: WikiRevision
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        self.wiki = self.get_wiki(kwargs["wiki"])
+        self.page = get_object_or_404(
+            WikiPage.objects.select_related("wiki", "parent", "updated_by"),
+            wiki=self.wiki,
+            slug=kwargs["slug"],
+        )
+        self.revision = get_object_or_404(
+            self.page.revisions.select_related("author"),
+            pk=kwargs["revision"],
+        )
+
+        return TemplateView.get(self, request, *args, **kwargs)
+
+    def get_page_title(self) -> str:
+        return self.revision.title
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        crumbs = super().get_breadcrumbs()
+        crumbs[-1] = Breadcrumb(
+            label=self.page.title, url=self.page.get_absolute_url()
+        )
+        crumbs.append(Breadcrumb(label=gettext("Earlier version")))
+
+        return crumbs
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        revision = self.revision
+        current = self.page.current_revision()
+        author = revision.author
+
+        context.update(
+            revision=revision,
+            revision_author=(
+                (author.get_full_name() or author.get_username())
+                if author is not None
+                else ""
+            ),
+            revision_is_current=current is not None
+            and current.pk == revision.pk,
+            content=safe_html(revision.content),
+            attachments=attachments_in(revision.content),
+        )
+        # A version is read, not edited.
+        context["wiki_config"]["edit"] = False
+
+        return context
 
 
 class WikiPdfView(View):

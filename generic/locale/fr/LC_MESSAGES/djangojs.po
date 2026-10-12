@@ -1053,8 +1053,12 @@ msgid "The clipboard is not available here."
 msgstr "Le presse-papiers n'est pas disponible ici."
 
 #: generic/static/generic/js/wiki.js:408
-msgid "The current text goes to the history, so this can be undone."
-msgstr "Le texte actuel part dans l'historique : cette action peut être annulée."
+msgid ""
+"The page takes this version back. Its current text stays in the history, so "
+"this can be undone."
+msgstr ""
+"La page reprend cette version. Son texte actuel reste dans l'historique : "
+"cette action peut être annulée."
 
 #: generic/static/generic/js/wiki.js:131
 msgid "The editor could not be loaded."
@@ -1848,3 +1852,11 @@ msgstr "Rien à afficher."
 
 msgid "These records could not be loaded."
 msgstr "Ces enregistrements n'ont pas pu être chargés."
+
+#: generic/static/generic/js/wiki.js
+msgid "Current version"
+msgstr "Version actuelle"
+
+#: generic/static/generic/js/wiki.js
+msgid "View"
+msgstr "Voir"

@@ -1290,7 +1290,13 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   (`index`: the list, or straight into the only wiki for a reader
   without `add_wiki`), `wiki/<wiki>/` (`wiki`: its first page; an
   unknown slug that is a page's slug 301s to it - old addresses),
-  `wiki/<wiki>/<slug>/` (`page`), `wiki/<wiki>/export.pdf` (`pdf`).
+  `wiki/<wiki>/<slug>/` (`page`), `wiki/<wiki>/export.pdf` (`pdf`),
+  `wiki/<wiki>/<slug>/versions/<id>/` (`revision`: a version read-only,
+  `WikiRevisionView`, the page template with `revision`). History: a
+  text is in it once - `WikiRevision.keep` returns the entry holding
+  it, restoring writes no duplicate; `page.current_revision()` is the
+  entry the page holds (API `revisions/` flags it `current`, gives
+  each its `url`).
   API `wiki/api/wikis/` (add/change/delete_wiki; `page_count`,
   `pdf_url`), `pages/?wiki=<id>`; a page's `wiki` is set on create
   only, its parent must share it. Every read goes through

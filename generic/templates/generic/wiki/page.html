@@ -81,17 +81,46 @@
     <article class="card wiki__page">
       {% if page %}
         <div x-show="!editing">
+          {% if revision %}
+            {# A version from the history, read-only. #}
+            <div class="callout callout--info wiki__version" role="status">
+              {% icon "history" "icon--sm" %}
+              <p class="wiki__version-text">
+                {% if revision_is_current %}
+                  {% translate "You are viewing the version the page was restored to: it is the page's current text." %}
+                {% else %}
+                  {% translate "You are viewing an earlier version of this page. The page itself is unchanged." %}
+                {% endif %}
+              </p>
+              <div class="wiki__version-actions">
+                <a class="button button--ghost button--sm" href="{{ page.get_absolute_url }}">
+                  {% icon "arrow_back" "icon--sm" %} {% translate "Current version" %}
+                </a>
+                {% if can.change and not revision_is_current %}
+                  <button type="button" class="button button--primary button--sm" @click="restore({ id: {{ revision.pk }} })">
+                    {% icon "restore" "icon--sm" %} {% translate "Restore" %}
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
           <header class="wiki__header">
             <div>
-              <h1 class="wiki__title">{{ page.title }}</h1>
+              <h1 class="wiki__title">{% if revision %}{{ revision.title }}{% else %}{{ page.title }}{% endif %}</h1>
               <p class="wiki__meta">
                 {% icon "history" "icon--sm" %}
-                {% if page.updated_by %}
+                {% if revision %}
+                  {% if revision_author %}
+                    {% blocktranslate with date=revision.created_at|date:"DATETIME_FORMAT" name=revision_author %}Version of {{ date }} by {{ name }}{% endblocktranslate %}
+                  {% else %}
+                    {% blocktranslate with date=revision.created_at|date:"DATETIME_FORMAT" %}Version of {{ date }}{% endblocktranslate %}
+                  {% endif %}
+                {% elif page.updated_by %}
                   {% blocktranslate with date=page.updated_at|date:"DATETIME_FORMAT" name=page.updated_by.get_full_name|default:page.updated_by.get_username %}Changed {{ date }} by {{ name }}{% endblocktranslate %}
                 {% else %}
                   {% blocktranslate with date=page.updated_at|date:"DATETIME_FORMAT" %}Changed {{ date }}{% endblocktranslate %}
                 {% endif %}
-                {% if page.show_on_dashboard %}
+                {% if page.show_on_dashboard and not revision %}
                   <span class="badge badge--accent">{% icon "push_pin" "icon--sm" %} {% translate "On the dashboard" %}</span>
                 {% endif %}
               </p>
@@ -101,6 +130,7 @@
               <button type="button" class="button button--ghost button--sm" @click="history()">
                 {% icon "history" "icon--sm" %} {% translate "History" %}
               </button>
+              {% if not revision %}
               {% if can.add %}
                 <button type="button" class="button button--sm" @click="create(page.id)">
                   {% icon "note_add" "icon--sm" %} {% translate "Subpage" %}
@@ -115,6 +145,7 @@
                 <button type="button" class="button button--primary button--sm" @click="edit()">
                   {% icon "edit" "icon--sm" %} {% translate "Edit" %}
                 </button>
+              {% endif %}
               {% endif %}
             </div>
           </header>
@@ -153,7 +184,7 @@
           {% endif %}
         </div>
 
-        {% if can.change %}
+        {% if can.change and not revision %}
           <div class="wiki__editor" x-show="editing" x-cloak>
             <div class="wiki__editor-fields">
               <label class="field wiki__field-title">
