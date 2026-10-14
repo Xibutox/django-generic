@@ -13,6 +13,24 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
+  ("export", "download")`, exporting tables (Excel, CSV, copy, print,
+  scheduled mailings) and downloading files are permissions
+  (`generic.export_rows`, `generic.download_files`) that people ask
+  for. The export menu offers *Ask for permission…*, a record's file
+  *Ask to download*, and the account page lists each right with a
+  button to ask or remind. Every superuser and holder of
+  `generic.validate_accessrequest` is notified, and grants or refuses
+  on *People › Access requests*, which keeps every request. Asking
+  again reminds them, no more than once an hour per person and right
+  (`ACCESS_REQUEST_INTERVAL`). Off by default; on in the example,
+  where the viewer has a download request waiting. Migration
+  `generic 0021`. See docs/access-requests.md.
+- A reminder before exporting or downloading: `EXPORT_DISCLAIMER` and
+  `DOWNLOAD_DISCLAIMER` (a text, or `{"text", "title", "checkbox"}`)
+  show a privacy notice with a box to tick before every table export,
+  scheduled mailing and file download. Off by default; the example
+  shows one for each.
 - Reporting a bug: a bug icon in the top bar of every page - and
   *Report a bug* in the account menu and on the help page - opens the
   team's ticket service in a new tab. The project sets it with

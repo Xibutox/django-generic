@@ -2064,3 +2064,53 @@ msgstr "a répondu en %(ms)s ms"
 #: generic/static/generic/js/status.js
 msgid "checks took %(ms)s ms"
 msgstr "vérifications en %(ms)s ms"
+
+#: generic/static/generic/js/access.js
+msgid "Ask for permission to export"
+msgstr "Demander la permission d'exporter"
+
+#: generic/static/generic/js/access.js
+msgid "Ask for permission to download files"
+msgstr "Demander la permission de télécharger les fichiers"
+
+#: generic/static/generic/js/access.js
+msgid "An administrator will be told and will grant or refuse it. You will be notified of the answer."
+msgstr "Un administrateur sera prévenu et l'accordera ou la refusera. Vous serez notifié de la réponse."
+
+#: generic/static/generic/js/access.js
+msgid "Send the request"
+msgstr "Envoyer la demande"
+
+#: generic/static/generic/js/access.js
+msgid "Why do you need it? (optional)"
+msgstr "Pourquoi en avez-vous besoin ? (facultatif)"
+
+#: generic/static/generic/js/access.js
+msgid "You have this permission."
+msgstr "Vous avez cette permission."
+
+#: generic/static/generic/js/access.js
+#, python-format
+msgid "Asked %(when)s, waiting for an answer."
+msgstr "Demandée %(when)s, en attente de réponse."
+
+#: generic/static/generic/js/access.js
+#, python-format
+msgid "Refused (asked %(when)s)."
+msgstr "Refusée (demandée %(when)s)."
+
+#: generic/static/generic/js/access.js
+msgid "You do not have this permission."
+msgstr "Vous n'avez pas cette permission."
+
+#: generic/static/generic/js/access.js
+msgid "Exporting needs a permission you do not have yet."
+msgstr "Exporter demande une permission que vous n'avez pas encore."
+
+#: generic/static/generic/js/access.js
+msgid "Ask for permission"
+msgstr "Demander la permission"
+
+#: generic/static/generic/js/access.js
+msgid "Download"
+msgstr "Télécharger"

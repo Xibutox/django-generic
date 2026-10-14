@@ -172,6 +172,10 @@ generic/
 ├── access/                 AccessEntry: who opened which record, who
 │                           downloaded which file; record(), the Access log
 │                           page (§13j)
+├── grants/                 rights given on request (ACCESS_ON_REQUEST): exports,
+│                           downloads as permissions; AccessRequest, ask (an
+│                           hour between reminders), grant/refuse, the People ›
+│                           Access requests screen, api/generic/access-requests/ (§13l)
 ├── watch/                  Watch: a user follows a record or a model; the
 │                           messages, the endpoints and the Watching page
 ├── delivery.py             one message, some people, the channels they chose
@@ -1709,7 +1713,10 @@ None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_LOCKOUT_MINUTES` (15), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
-`STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k).
+`STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
+`ACCESS_ON_REQUEST` (`()`; `"export"`, `"download"`),
+`ACCESS_REQUEST_INTERVAL` (3600), `ACCESS_REQUEST_CHANNELS`,
+`EXPORT_DISCLAIMER`, `DOWNLOAD_DISCLAIMER` (None; §13l).
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -2205,6 +2212,56 @@ class ContractResource(ModelResource):
   lists them, behind `generic.view_accessentry`;
   `generic.access.prune()` applies `ACCESS_LOG_RETENTION_DAYS`.
 - See `docs/trash.md`.
+
+## 13l. Rights given on request (`generic.grants`)
+
+```python
+GENERIC = {"ACCESS_ON_REQUEST": ("export", "download")}
+```
+
+- Off by default: whoever reads a list exports it, whoever reads a
+  record downloads its files. Named here, `"export"` is the permission
+  `generic.export_rows` - checked by `ExportMixin.check_export_permission`
+  on every `export/` and `export-csv/` (resources, data resources,
+  `DataTableViewSet`, related tables, flat trees: 403), hidden copy and
+  print, refused scheduled mailings (`check`, and each recipient at
+  sending) - and `"download"` is `generic.download_files`, checked by
+  `sites.files.may_download(request)` before the resource's own
+  `may_download`: the download endpoint answers 403, the summary and
+  tables give no link, the wiki's `files/<id>/` answers 403. Superusers
+  hold both; groups give them like any permission.
+- The page's `Generic.config().access` is `{"url", "missing": [...]}`
+  (`site.get_access_client`); `js/access.js` gives
+  `Generic.access.missing(kind)` and `.ask(kind)` (a dialog, then
+  `POST api/generic/access-requests/ {"kind", "message", "page"}`).
+  The export menu then holds *Ask for permission…* only; a file on the
+  summary page *Ask to download*; the account page a *Permissions on
+  request* section (Alpine `accessRights`).
+- `AccessRequest` (user, kind, status pending/granted/refused, message,
+  page, asked_at, last_asked_at, times_asked, notified_at, decided_by,
+  decided_at): one open request per person and kind. `grants.ask` locks
+  the person's row, refuses within `ACCESS_REQUEST_INTERVAL` of the
+  last asking (`TooSoon`, the API's 429 with `retryAt`), reminds when
+  one waits, creates otherwise; on commit `deliver`s to
+  `grants.validators()` - active superusers and holders of
+  `generic.validate_accessrequest`, never the asker - through
+  `ACCESS_REQUEST_CHANNELS`. `grants.grant/refuse(request, by=)` (not
+  one's own, not twice) add the permission and tell the asker.
+- *People › Access requests* (`AccessRequestResource`, registered only
+  when something is given on request): read by validators and
+  `view_accessrequest`, never written in a form; preset *Waiting*;
+  bulk actions *Grant* and *Refuse* behind
+  `generic.validate_accessrequest`. The example turns both rights on
+  and seeds a waiting download request from `viewer`.
+- `EXPORT_DISCLAIMER` / `DOWNLOAD_DISCLAIMER` (None; a text or
+  `{"text", "title", "checkbox"}`, lazy strings read per request by
+  `grants.disclaimer(kind)`) travel in `Generic.config().access.disclaimers`;
+  `Generic.access.confirm(kind)` shows the reminder and resolves once
+  the box is ticked. The export menu's four items and the scheduled
+  mailing wait for it; a capturing click listener in `access.js` holds
+  every same-origin link to `.../files/<x>/` (records, wiki). A
+  reminder, not a lock: endpoints never check it.
+- See `docs/access-requests.md`.
 
 ## 13e. The API for scripts (`generic.tokens`, `generic.openapi`)
 

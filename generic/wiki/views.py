@@ -13,6 +13,7 @@ from pathlib import PurePath
 from typing import Any
 
 from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -25,7 +26,7 @@ from django.views.generic import TemplateView
 from generic.api.files import file_name
 from generic.conf import generic_settings
 from generic.sites import site
-from generic.sites.files import is_stored, protect
+from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
 from generic.wiki import pdf
@@ -486,6 +487,11 @@ class WikiFileView(View):
             return redirect_to_login(
                 request.get_full_path(), site.get_login_url()
             )
+
+        # Downloads given on request (ACCESS_ON_REQUEST) cover the
+        # wiki's files too.
+        if not may_download(request):
+            raise PermissionDenied
 
         attachment = get_object_or_404(WikiFile, pk=pk)
 

@@ -3727,6 +3727,224 @@ msgstr "Donnez-lui le STATUS_TOKEN de ce serveur comme jeton : l'autre serveur l
 msgid "This server has no STATUS_TOKEN yet, so no other server can read its status. Set one in its GENERIC settings, from the environment, and give the same value to the other server."
 msgstr "Ce serveur n'a pas encore de STATUS_TOKEN : aucun autre serveur ne peut lire son état. Définissez-en un dans ses réglages GENERIC, depuis l'environnement, et donnez la même valeur à l'autre serveur."
 
+#: generic/grants
+msgid "Export tables"
+msgstr "Exporter les tableaux"
+
+#: generic/grants
+msgid "Download files"
+msgstr "Télécharger les fichiers"
+
+#: generic/grants
+msgid "Granted"
+msgstr "Accordée"
+
+#: generic/grants
+msgid "Refused"
+msgstr "Refusée"
+
+#: generic/grants
+msgid "asked by"
+msgstr "demandé par"
+
+#: generic/grants
+msgid "right"
+msgstr "droit"
+
+#: generic/grants
+msgid "asked from"
+msgstr "demandé depuis"
+
+#: generic/grants
+msgid "asked on"
+msgstr "demandé le"
+
+#: generic/grants
+msgid "last asked on"
+msgstr "dernière demande le"
+
+#: generic/grants
+msgid "times asked"
+msgstr "nombre de demandes"
+
+#: generic/grants
+msgid "last notified on"
+msgstr "dernière notification le"
+
+#: generic/grants
+msgid "decided by"
+msgstr "décidé par"
+
+#: generic/grants
+msgid "decided on"
+msgstr "décidé le"
+
+#: generic/grants
+msgid "access request"
+msgstr "demande d'accès"
+
+#: generic/grants
+msgid "access requests"
+msgstr "demandes d'accès"
+
+#: generic/grants
+msgid "Can export tables"
+msgstr "Peut exporter les tableaux"
+
+#: generic/grants
+msgid "Can download files"
+msgstr "Peut télécharger les fichiers"
+
+#: generic/grants
+msgid "Can validate access requests"
+msgstr "Peut valider les demandes d'accès"
+
+#: generic/grants
+#, python-format
+msgid "%(name)s asks: %(right)s"
+msgstr "%(name)s demande : %(right)s"
+
+#: generic/grants
+#, python-format
+msgid "%(name)s asks again: %(right)s"
+msgstr "%(name)s demande à nouveau : %(right)s"
+
+#: generic/grants
+msgid "Grant or refuse it on the Access requests screen."
+msgstr "Accordez-la ou refusez-la sur l'écran Demandes d'accès."
+
+#: generic/grants
+#, python-format
+msgid "Granted: %(right)s"
+msgstr "Accordé : %(right)s"
+
+#: generic/grants
+msgid "You may do it now; reload the page if needed."
+msgstr "Vous pouvez le faire dès maintenant ; rechargez la page si besoin."
+
+#: generic/grants
+#, python-format
+msgid "Refused: %(right)s"
+msgstr "Refusé : %(right)s"
+
+#: generic/grants
+msgid "Your request was refused. Ask an administrator if you need to know why."
+msgstr "Votre demande a été refusée. Demandez à un administrateur si vous voulez savoir pourquoi."
+
+#: generic/grants
+msgid "You already have this permission."
+msgstr "Vous avez déjà cette permission."
+
+#: generic/grants
+#, python-format
+msgid "You asked a short while ago. From %(time)s, you can remind the administrators."
+msgstr "Vous avez demandé il y a peu. À partir de %(time)s, vous pourrez relancer les administrateurs."
+
+#: generic/grants
+msgid "Your request was sent. You will be told when an administrator has answered."
+msgstr "Votre demande a été envoyée. Vous serez prévenu quand un administrateur aura répondu."
+
+#: generic/grants
+msgid "The administrators were reminded of your request."
+msgstr "Les administrateurs ont été relancés au sujet de votre demande."
+
+#: generic/grants
+msgid "People asking to export tables or download files: grant or refuse each request."
+msgstr "Les personnes qui demandent à exporter les tableaux ou télécharger les fichiers : accordez ou refusez chaque demande."
+
+#: generic/grants
+msgid "Asked by"
+msgstr "Demandé par"
+
+#: generic/grants
+msgid "Nothing to decide: these requests were decided already, or are your own."
+msgstr "Rien à décider : ces demandes ont déjà été traitées, ou ce sont les vôtres."
+
+#: generic/grants
+#, python-format
+msgid "%(count)d request granted."
+msgid_plural "%(count)d requests granted."
+msgstr[0] "%(count)d demande accordée."
+msgstr[1] "%(count)d demandes accordées."
+
+#: generic/grants
+#, python-format
+msgid "%(count)d request refused."
+msgid_plural "%(count)d requests refused."
+msgstr[0] "%(count)d demande refusée."
+msgstr[1] "%(count)d demandes refusées."
+
+#: generic/grants
+msgid "Grant"
+msgstr "Accorder"
+
+#: generic/grants
+msgid "Give each person the right they asked for, and tell them."
+msgstr "Donner à chaque personne le droit demandé, et la prévenir."
+
+#: generic/grants
+msgid "Refuse"
+msgstr "Refuser"
+
+#: generic/grants
+msgid "Refuse the selected requests?"
+msgstr "Refuser les demandes sélectionnées ?"
+
+#: generic/grants
+msgid "Refuse each request, and tell the person who asked."
+msgstr "Refuser chaque demande, et prévenir la personne qui l'a faite."
+
+#: generic/grants
+msgid "Exporting needs a permission you do not have yet: ask for it from the Export menu."
+msgstr "Exporter demande une permission que vous n'avez pas encore : demandez-la depuis le menu Exporter."
+
+#: generic/grants
+msgid "Downloading files needs a permission you do not have yet: ask for it from the record's page."
+msgstr "Télécharger des fichiers demande une permission que vous n'avez pas encore : demandez-la depuis la page de l'enregistrement."
+
+#: generic/grants
+msgid "Sending a list by e-mail is exporting it: ask for the permission to export first."
+msgstr "Envoyer une liste par e-mail, c'est l'exporter : demandez d'abord la permission d'exporter."
+
+#: generic/grants
+msgid "Ask to download"
+msgstr "Demander à télécharger"
+
+#: generic/grants
+msgid "Permissions on request"
+msgstr "Permissions sur demande"
+
+#: generic/grants
+msgid "Some actions need a permission an administrator gives on request."
+msgstr "Certaines actions demandent une permission qu'un administrateur accorde sur demande."
+
+#: generic/grants
+msgid "Remind"
+msgstr "Relancer"
+
+#: generic/grants
+msgid "Ask"
+msgstr "Demander"
+
+#: generic/grants/models.py
+msgid "status"
+msgstr "statut"
+
+#: generic/grants/models.py
+msgid "message"
+msgstr "message"
+
+#: generic/grants/__init__.py
+msgid "Before you export"
+msgstr "Avant d'exporter"
+
+#: generic/grants/__init__.py
+msgid "Before you download"
+msgstr "Avant de télécharger"
+
+#: generic/grants/__init__.py
+msgid "I have read this reminder and will handle the data accordingly."
+msgstr "J'ai lu ce rappel et traiterai les données en conséquence."
 #: generic/help/models.py
 msgid "Enter an e-mail address after mailto:."
 msgstr "Saisissez une adresse e-mail après mailto:."

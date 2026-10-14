@@ -447,6 +447,26 @@ GENERIC = {
     "SITE_URL": env("DJANGO_SITE_URL") or None,
     "TABLE_PAGE_SIZE": 15,
     "AUTOCOMPLETE_PAGE_SIZE": 20,
+    # Exports and downloads are asked for: the viewer finds "Ask for
+    # permission" in the export menu and beside a ticket's attachment,
+    # and admin grants it on People > Access requests.
+    "ACCESS_ON_REQUEST": ("export", "download"),
+    # A privacy reminder, ticked before every export and download.
+    "EXPORT_DISCLAIMER": {
+        "text": _(
+            "This export contains customers' personal data: names, "
+            "e-mail addresses, what they reported.\n\nKeep the file on "
+            "the company's storage, share it only with people who need "
+            "it, and delete it once you are done."
+        ),
+        "checkbox": _(
+            "I will handle this personal data as the privacy policy asks."
+        ),
+    },
+    "DOWNLOAD_DISCLAIMER": _(
+        "Files sent by customers may hold personal data. Keep them on the "
+        "company's storage and delete them once you are done."
+    ),
     # Shown in the navigation's footer and on the help page. The help
     # page finds LICENSE and CHANGELOG.md by itself.
     "VERSION": "1.3.0",

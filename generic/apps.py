@@ -43,6 +43,7 @@ class GenericConfig(AppConfig):
         from generic.access.resources import register_screens as accesses
         from generic.accounts.resources import register_screens as people
         from generic.events.resources import register_screens as messages
+        from generic.grants.resources import register_screens as grants
         from generic.history.resources import register_screens as history
         from generic.mailings.resources import register_screens as mailings
         from generic.status.resources import register_screens as status
@@ -53,6 +54,7 @@ class GenericConfig(AppConfig):
         history()
         accesses()
         people()
+        grants()
         messages()
         status()
 

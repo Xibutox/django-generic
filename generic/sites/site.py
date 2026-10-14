@@ -1221,6 +1221,10 @@ class GenericSite:
                 "preferences": (
                     preferences.as_client() if preferences is not None else {}
                 ),
+                # The rights given on request this reader lacks, and
+                # where to ask: the export menu and the file links
+                # offer to ask in their place.
+                "access": self.get_access_client(request),
                 # A restart announced before this page was opened: the
                 # banner has to be there on arrival, not only for the
                 # people who were connected when it was announced.
@@ -1229,6 +1233,11 @@ class GenericSite:
                 ),
             },
         }
+
+    def get_access_client(self, request: Any) -> dict[str, Any] | None:
+        from generic import grants
+
+        return grants.client(request) if request is not None else None
 
     def may_announce_restart(self, user: Any) -> bool:
         """Whether this user is offered the restart page at all."""

@@ -14,6 +14,7 @@ from generic.events.models import (
     NotificationManager,
     NotificationQuerySet,
 )
+from generic.grants.models import AccessRequest
 from generic.help.models import HelpSettings
 from generic.history.models import HistoryEntry
 from generic.mailings.models import ScheduledMailing
@@ -25,6 +26,7 @@ from generic.watch.models import Watch
 
 __all__ = [
     "AccessEntry",
+    "AccessRequest",
     "HelpSettings",
     "HistoryEntry",
     "Message",

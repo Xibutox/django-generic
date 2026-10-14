@@ -24,6 +24,7 @@ from generic.accounts.serializers import (
     ProfileSerializer,
 )
 from generic.events.api import NotificationViewSet
+from generic.grants.api import AccessRequestView
 from generic.help.api import HelpSettingsFormSchemaView, HelpSettingsView
 from generic.maintenance.api import (
     RestartAnnouncementView,
@@ -65,6 +66,13 @@ urlpatterns = [
         "account/profile/form-schema/",
         FormSchemaView.as_view(serializer_class=ProfileSerializer),
         name="profile-schema",
+    ),
+    # Rights given on request (ACCESS_ON_REQUEST): where one stands
+    # with each, and asking for one.
+    path(
+        "access-requests/",
+        AccessRequestView.as_view(),
+        name="access-requests",
     ),
     # Planned restarts: read by every page, written by whoever holds
     # the announcement's add permission.

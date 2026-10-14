@@ -72,6 +72,11 @@ generic/
 │   ├── views.py         Account settings, the language switch
 │   ├── resources.py     The People screens: users, groups, permissions
 │   └── guard.py         Nobody grants what they do not hold themselves
+├── grants/
+│   ├── __init__.py      ACCESS_ON_REQUEST: may(), ask(), grant(), refuse(), validators()
+│   ├── models.py        AccessRequest; the export_rows, download_files, validate permissions
+│   ├── api.py           access-requests/: where one stands, asking, reminding
+│   └── resources.py     The People › Access requests screen, Grant and Refuse
 ├── i18n.py              The languages a project offers, and the menu
 ├── middleware.py        UserLanguageMiddleware: the language of a user
 │                        CurrentUserMiddleware: who the history records

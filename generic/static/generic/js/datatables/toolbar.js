@@ -20,6 +20,17 @@
     return window.Generic || null;
   }
 
+  /**
+   * Whether this reader must ask before exporting (ACCESS_ON_REQUEST):
+   * the export menu then offers to ask, and the scheduled mailing -
+   * an export by e-mail - is not offered.
+   */
+  function mustAskToExport() {
+    var Generic = generic();
+
+    return Boolean(Generic && Generic.access && Generic.access.missing("export"));
+  }
+
   /* -- Building blocks ---------------------------------------------------- */
 
   function toolButton(iconName, label) {
@@ -298,7 +309,7 @@
 
     var mailingUrl = controller.options.mailingUrl;
 
-    if (mailingUrl && Generic && Generic.isSafeUrl(mailingUrl)) {
+    if (mailingUrl && Generic && Generic.isSafeUrl(mailingUrl) && !mustAskToExport()) {
       var mailing = menuItem(
         "forward_to_inbox",
         t("Send by e-mail on a schedule") + "\u2026"
@@ -314,7 +325,12 @@
         });
 
         menu.close();
-        window.location.href = mailingUrl + "?" + query.toString();
+        // A mailing is an export by e-mail: the same reminder first.
+        (Generic.access ? Generic.access.confirm("export") : Promise.resolve(true)).then(function (accepted) {
+          if (accepted) {
+            window.location.href = mailingUrl + "?" + query.toString();
+          }
+        });
       });
       panel.appendChild(mailing);
     }
@@ -583,20 +599,53 @@
       panel.appendChild(item);
     }
 
+    // The project's reminder (EXPORT_DISCLAIMER), ticked before any of
+    // the four - the copy and the print take the rows out as well.
+    function exporting(action) {
+      return function () {
+        var Generic = generic();
+
+        if (!Generic || !Generic.access) {
+          action();
+          return;
+        }
+
+        Generic.access.confirm("export").then(function (accepted) {
+          if (accepted) {
+            action();
+          }
+        });
+      };
+    }
+
+    // Exporting is given on request and this reader has not been
+    // granted it: the menu says so and offers to ask, in place of
+    // files the server would refuse.
+    if (mustAskToExport()) {
+      panel.appendChild(
+        el("p", "dt-export-panel__note", t("Exporting needs a permission you do not have yet."))
+      );
+      add("lock_open", t("Ask for permission") + "\u2026", "", function () {
+        generic().access.ask("export");
+      });
+
+      return menu.root;
+    }
+
     if (options.excel || options.csv) {
       panel.appendChild(el("div", "dropdown__label", t("Every matching row")));
     }
 
     if (options.excel) {
-      add("table_view", t("Excel"), ".xlsx", function () {
+      add("table_view", t("Excel"), ".xlsx", exporting(function () {
         controller.download("export");
-      });
+      }));
     }
 
     if (options.csv) {
-      add("description", t("CSV"), ".csv", function () {
+      add("description", t("CSV"), ".csv", exporting(function () {
         controller.download("export-csv");
-      });
+      }));
     }
 
     if ((options.excel || options.csv) && (options.copy || options.print)) {
@@ -608,15 +657,15 @@
     }
 
     if (options.copy) {
-      add("content_copy", t("Copy to the clipboard"), "", function () {
+      add("content_copy", t("Copy to the clipboard"), "", exporting(function () {
         controller.copyPage();
-      });
+      }));
     }
 
     if (options.print) {
-      add("print", t("Print"), "", function () {
+      add("print", t("Print"), "", exporting(function () {
         controller.printPage();
-      });
+      }));
     }
 
     return menu.root;

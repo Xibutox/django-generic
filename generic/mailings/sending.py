@@ -143,6 +143,11 @@ def export(
     action = "export_csv" if file_format == "csv" else "export"
     response = call(resource, user, action, params)
 
+    # Exports given on request (ACCESS_ON_REQUEST), not granted to
+    # this recipient: refused like a list they may not see.
+    if response.status_code == 403:
+        raise PermissionError
+
     if response.status_code != 200:
         raise MailingProblem(str(getattr(response, "data", "")))
 
@@ -155,6 +160,16 @@ def check(mailing: Any, user: Any) -> None:
 
     if resource is None:
         raise MailingProblem(gettext("This list cannot be sent by e-mail."))
+
+    from generic import grants
+
+    if not grants.may(user, "export"):
+        raise MailingProblem(
+            gettext(
+                "Sending a list by e-mail is exporting it: ask for the "
+                "permission to export first."
+            )
+        )
 
     try:
         count_rows(resource, user, parameters(mailing.state))
@@ -198,7 +213,13 @@ def send_to(
 
             return
 
-        content = export(resource, user, params, mailing.format)
+        try:
+            content = export(resource, user, params, mailing.format)
+        except PermissionError:
+            outcome.refused += 1
+
+            return
+
         link = list_link(resource, mailing.state)
         lines = [
             ngettext(

@@ -271,6 +271,28 @@ DEFAULTS: dict[str, Any] = {
     # everything; a number is what ``generic.access.prune()`` deletes
     # beyond.
     "ACCESS_LOG_RETENTION_DAYS": None,
+    # --- Rights given on request ---------------------------------------
+    # What people may do only once they asked and somebody granted it:
+    # "export" (every table's Excel, CSV, copy and print, and scheduled
+    # mailings) and "download" (every record's files). Each is then a
+    # permission - generic.export_rows, generic.download_files - and
+    # the Access requests screen appears, where superusers and holders
+    # of generic.validate_accessrequest grant or refuse. Empty: everyone
+    # who reads a list exports it, everyone who reads a record downloads
+    # its files.
+    "ACCESS_ON_REQUEST": (),
+    # Seconds before somebody may ask again for a right still waiting -
+    # which reminds the people who decide - or ask anew after a refusal.
+    "ACCESS_REQUEST_INTERVAL": 3600,
+    # How the people who decide, then the person who asked, are told.
+    "ACCESS_REQUEST_CHANNELS": ("notification", "mail"),
+    # A reminder, with a box to tick, shown before every table export
+    # (Excel, CSV, copy, print) and every file download - a privacy
+    # notice, say. None shows nothing. A text, or {"text": ...,
+    # "title": ..., "checkbox": ...}; gettext_lazy strings are shown
+    # in the reader's language.
+    "EXPORT_DISCLAIMER": None,
+    "DOWNLOAD_DISCLAIMER": None,
     # --- Sign-in attempts ----------------------------------------------
     # Failed passwords accepted for one account, or from one address,
     # before the sign-in page refuses it for LOGIN_LOCKOUT_MINUTES.

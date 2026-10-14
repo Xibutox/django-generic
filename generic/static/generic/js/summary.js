@@ -407,6 +407,15 @@
           return url && Generic.isSafeUrl(url) ? url : null;
         },
 
+        /** Whether this reader must ask before `kind` (a file's link). */
+        mustAsk: function (kind) {
+          return Boolean(Generic.access && Generic.access.missing(kind));
+        },
+
+        askFor: function (kind) {
+          Generic.access.ask(kind);
+        },
+
         /** A tag's classes: tinted by one colour, or drawn exactly. */
         tagClass: function (tag) {
           return Generic.colors.clean(tag.background) ? "tag tag--solid" : "tag";

@@ -135,6 +135,23 @@ class TestDownload:
             b"<script>alert(1)</script>"
         )
 
+    def test_downloads_given_on_request_cover_it(
+        self, client, attachment, settings
+    ):
+        settings.GENERIC = {"ACCESS_ON_REQUEST": ("download",)}
+        reader = UserFactory()
+        client.force_login(reader)
+
+        assert client.get(attachment.get_absolute_url()).status_code == 403
+
+        reader.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="generic", codename="download_files"
+            )
+        )
+
+        assert client.get(attachment.get_absolute_url()).status_code == 200
+
     def test_signed_out_it_asks_to_sign_in(self, client, attachment):
         client.logout()
 

@@ -42,6 +42,12 @@
         <span x-text="field.display"></span>
       </template>
       <span class="summary-file__size muted" x-show="field.sizeDisplay" x-text="field.sizeDisplay"></span>
+      <template x-if="!safeUrl(field.url) && mustAsk('download')">
+        <button type="button" class="button button--sm button--ghost summary-file__ask" @click="askFor('download')">
+          <span class="icon material-symbols-outlined icon--sm" aria-hidden="true">lock_open</span>
+          {% translate "Ask to download" %}
+        </button>
+      </template>
     </span>
   </template>
 

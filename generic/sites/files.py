@@ -68,12 +68,22 @@ def file_url(site: Any, value: Any, request: Any = None) -> str | None:
     if resource is None:
         return None
 
-    if request is not None and not resource.may_download(
-        request, instance, field.name
+    if request is not None and not (
+        may_download(request)
+        and resource.may_download(request, instance, field.name)
     ):
         return None
 
     return resource.get_file_url(instance.pk, field.name) or None
+
+
+def may_download(request: Any) -> bool:
+    """Whether this reader may download any file at all: not when the
+    project gives downloads on request (``ACCESS_ON_REQUEST``) and they
+    have not been granted it."""
+    from generic import grants
+
+    return grants.may(request, "download")
 
 
 def file_url_resolver(

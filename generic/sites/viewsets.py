@@ -430,10 +430,24 @@ class ResourceViewSet(
         Only a file field the resource shows this reader answers; an
         empty one, or one the storage no longer holds, is a 404.
         """
-        from generic.sites.files import file_response, is_stored
+        from generic.sites.files import (
+            file_response,
+            is_stored,
+            may_download,
+        )
 
         if field not in self.resource.get_file_fields(request):
             raise NotFound(gettext("There is no such file."))
+
+        # A right the project gives on request: said as such, so the
+        # reader knows to ask rather than to look for another file.
+        if not may_download(request):
+            raise PermissionDenied(
+                gettext(
+                    "Downloading files needs a permission you do not have "
+                    "yet: ask for it from the record's page."
+                )
+            )
 
         record = self.get_object()
         value = getattr(record, field)

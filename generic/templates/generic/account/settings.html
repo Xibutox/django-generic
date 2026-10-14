@@ -282,6 +282,37 @@
         </dl>
       </section>
 
+      {% if access_rights %}
+        <section class="card" id="access-rights" x-data="accessRights">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "key" %} {% translate "Permissions on request" %}</h2>
+          </div>
+          <p class="card__description">
+            {% translate "Some actions need a permission an administrator gives on request." %}
+          </p>
+          <div class="callout callout--danger" role="alert" x-show="error" x-cloak>
+            <span x-text="error"></span>
+          </div>
+          <ul class="access-rights" x-show="rights.length" x-cloak>
+            <template x-for="right in rights" :key="right.kind">
+              <li class="access-rights__item">
+                <span class="icon material-symbols-outlined" aria-hidden="true"
+                      :class="right.held ? 'access-rights__icon--held' : 'access-rights__icon'"
+                      x-text="right.held ? 'check_circle' : (right.status === 'pending' ? 'hourglass_top' : 'lock')"></span>
+                <div class="access-rights__what">
+                  <strong x-text="right.label"></strong>
+                  <div class="muted" x-text="describe(right)"></div>
+                </div>
+                <template x-if="!right.held">
+                  <button type="button" class="button button--sm" @click="ask(right)"
+                          x-text="right.status === 'pending' ? '{{ _('Remind')|escapejs }}' : '{{ _('Ask')|escapejs }}'"></button>
+                </template>
+              </li>
+            </template>
+          </ul>
+        </section>
+      {% endif %}
+
       {% if api_tokens %}
         {% include "generic/account/api_tokens.html" %}
       {% endif %}
