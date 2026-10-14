@@ -25,6 +25,7 @@ from generic.accounts.serializers import (
 )
 from generic.events.api import NotificationViewSet
 from generic.grants.api import AccessRequestView
+from generic.help.api import HelpSettingsFormSchemaView, HelpSettingsView
 from generic.maintenance.api import (
     RestartAnnouncementView,
     RestartFormSchemaView,
@@ -80,6 +81,14 @@ urlpatterns = [
         "restart/form-schema/",
         RestartFormSchemaView.as_view(),
         name="restart-schema",
+    ),
+    # The help settings - where to report a bug: read by anyone signed
+    # in, changed by whoever holds their change permission.
+    path("help/settings/", HelpSettingsView.as_view(), name="help-settings"),
+    path(
+        "help/settings/form-schema/",
+        HelpSettingsFormSchemaView.as_view(),
+        name="help-settings-schema",
     ),
     # The server's status: read by its page and by other servers
     # (STATUS_TOKEN); each monitored server's, asked from here.

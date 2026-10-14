@@ -119,6 +119,7 @@ reload.
 | `CHANGELOG_FILES` | `None` | Paths, or `(label, path)` pairs; `None` looks for `CHANGELOG.md` at the root of the project and of the framework |
 | `HELP_LINKS` | `[]` | `[{"label", "url", "icon", "description", "external"}]` |
 | `HELP_TEXT` | `""` | A paragraph of the project's own, above the links |
+| `BUG_REPORT_URL` | `""` | Where everyone reports a bug (`https://`, `http://` or `mailto:`), in the top bar; an administrator's link set on the help page replaces it |
 
 See [UI layer](ui.md#help-licence-and-changelog).
 

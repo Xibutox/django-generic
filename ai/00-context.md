@@ -182,7 +182,8 @@ generic/
 ├── logs.py                 logging_config(), admins(), SharedRotatingFileHandler, ErrorMailHandler
 │                           (notification / mail / event); shared by both
 ├── help/                   help page and changelog, read from the project's
-│                           own LICENSE and CHANGELOG.md files
+│                           own LICENSE and CHANGELOG.md files; HelpSettings,
+│                           where to report a bug (models.py, api.py)
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
 │                           guide.py + guide/ (the user guide, migration 0007, wiki_user_guide),
@@ -1839,6 +1840,17 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   parsed as Keep a Changelog and rendered escaped, never as HTML -
   only its `backquoted` parts become `<code>` (`inline_code` filter). Both
   are in the account menu; see `docs/ui.md`.
+- **Reporting a bug**: one link for everyone (`https://`, `http://` or
+  `mailto:`) - a bug icon in the top bar, *Report a bug* in the account
+  menu and a card on the help page, all opening a new tab; nothing
+  drawn without one. `GENERIC["BUG_REPORT_URL"]` is the project's
+  default; `HelpSettings` (`generic/help/models.py`, one row,
+  migration `generic` 0020) is an administrator's replacement, edited
+  in a schema form on the help page, endpoints `generic:help-settings`
+  (GET signed in, PATCH with `generic.change_helpsettings`) and
+  `generic:help-settings-schema`. `validate_link` on save and
+  `safe_link` on the way out keep any other scheme off the page;
+  `chrome.bug_report_url` from `GenericSite.get_bug_report_url()`.
 - **The size of the interface**: every token in rem, the root font size
   the browser's; no size preference (removed in 1.0.0 - the browser's
   text size and zoom do it). A project changes its root size in its own

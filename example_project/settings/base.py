@@ -475,6 +475,9 @@ GENERIC = {
         "teams and the time spent on them. Every screen here is "
         "declared in example/resources.py."
     ),
+    # The top bar's "Report a bug". An administrator replaces it from
+    # the help page, without a deployment.
+    "BUG_REPORT_URL": "https://github.com/Xibutox/django-generic/issues/new",
     "HELP_LINKS": [
         {
             "label": "Feature guide",

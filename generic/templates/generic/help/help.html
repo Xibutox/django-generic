@@ -3,6 +3,14 @@
 
 {% block bodyclass %}page-help{% endblock %}
 
+{% block extrajs %}
+  {{ block.super }}
+  {% if settings_config %}
+    {# The settings form is rendered from its schema, like any form. #}
+    {% include "generic/includes/form_scripts.html" %}
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <div class="help-grid">
     <div class="stack">
@@ -41,6 +49,35 @@
           </ul>
         {% endif %}
       </section>
+
+      {% if bug_report_url or settings_config %}
+        {# Saved, the page is drawn again: the top bar shows the new link. #}
+        <section class="card" x-data x-on:generic:form-saved="window.location.reload()">
+          <div class="card__header">
+            <h2 class="card__title">{% icon "bug_report" %} {% translate "Report a bug" %}</h2>
+          </div>
+
+          {% if bug_report_url %}
+            <p class="card__description">
+              {% blocktranslate trimmed %}
+                Something does not work as it should? Tell the team that
+                looks after this application.
+              {% endblocktranslate %}
+            </p>
+            <p class="help-report">
+              <a class="button button--sm" href="{{ bug_report_url }}" target="_blank" rel="noopener noreferrer">
+                {% icon "bug_report" %} {% translate "Report a bug" %} {% icon "open_in_new" "icon--sm" %}
+              </a>
+            </p>
+          {% endif %}
+
+          {% if settings_config %}
+            {# Only for whoever may change it: one link for everyone. #}
+            {{ settings_config|json_script:"help-settings-form-config" }}
+            <div class="js-schema-form" data-config="help-settings-form-config"></div>
+          {% endif %}
+        </section>
+      {% endif %}
 
       {% if latest_release %}
         <section class="card">

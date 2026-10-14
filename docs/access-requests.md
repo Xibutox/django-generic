@@ -148,4 +148,4 @@ interface only says what to offer.
 | `EXPORT_DISCLAIMER` | `None` | A reminder ticked before every export: a text, or `{"text", "title", "checkbox"}` |
 | `DOWNLOAD_DISCLAIMER` | `None` | The same, before every file download |
 
-Migration `generic 0020`.
+Migration `generic 0021`.

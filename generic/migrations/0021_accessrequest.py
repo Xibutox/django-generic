@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("generic", "0019_statusserver"),
+        ("generic", "0020_helpsettings"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

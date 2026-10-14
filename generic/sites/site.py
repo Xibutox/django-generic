@@ -1180,6 +1180,11 @@ class GenericSite:
             # Empty unless the project offers more than one language.
             "languages": language_menu(),
             "can_announce_restart": self.may_announce_restart(user),
+            # Where to report a bug, for everyone signed in; empty when
+            # neither an administrator nor the project set one.
+            "bug_report_url": (
+                self.get_bug_report_url() if authenticated else ""
+            ),
             "theme_css": self.get_theme_css(),
             "theme_preference": (
                 preferences.theme if preferences is not None else ""
@@ -1239,6 +1244,12 @@ class GenericSite:
         from generic.maintenance.api import may_announce
 
         return may_announce(user)
+
+    def get_bug_report_url(self) -> str:
+        """Where the top bar sends a bug report. Override to compute it."""
+        from generic.help.models import HelpSettings
+
+        return HelpSettings.bug_report_link()
 
     def get_planned_restart(self) -> dict[str, Any] | None:
         """The restart everyone should know about, if there is one."""
