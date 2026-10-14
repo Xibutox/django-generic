@@ -447,6 +447,10 @@ GENERIC = {
     "SITE_URL": env("DJANGO_SITE_URL") or None,
     "TABLE_PAGE_SIZE": 15,
     "AUTOCOMPLETE_PAGE_SIZE": 20,
+    # Exports and downloads are asked for: the viewer finds "Ask for
+    # permission" in the export menu and beside a ticket's attachment,
+    # and admin grants it on People > Access requests.
+    "ACCESS_ON_REQUEST": ("export", "download"),
     # Shown in the navigation's footer and on the help page. The help
     # page finds LICENSE and CHANGELOG.md by itself.
     "VERSION": "1.3.0",

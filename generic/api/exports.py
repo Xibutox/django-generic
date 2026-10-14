@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.fields import SkipField
 
 from generic.conf import generic_settings
@@ -116,6 +116,19 @@ class ExportMixin:
             f"{timezone.localdate():%Y%m%d}.{extension}"
         )
 
+    def check_export_permission(self, request: Any) -> None:
+        """Refuse a reader the project makes ask before exporting
+        (``ACCESS_ON_REQUEST``) and who has not been granted it."""
+        from generic import grants
+
+        if not grants.may(request, "export"):
+            raise PermissionDenied(
+                _(
+                    "Exporting needs a permission you do not have yet: "
+                    "ask for it from the Export menu."
+                )
+            )
+
     def check_export_size(self, queryset: QuerySet) -> None:
         limit = self.export_max_rows
 
@@ -199,6 +212,7 @@ class ExportMixin:
                 "'export' extra (docs/installation.md)."
             ) from error
 
+        self.check_export_permission(request)
         columns = self.get_export_columns(request)
         queryset = self.get_export_queryset()
         self.check_export_size(queryset)
@@ -251,6 +265,7 @@ class ExportMixin:
         *args: Any,
         **kwargs: Any,
     ) -> StreamingHttpResponse:
+        self.check_export_permission(request)
         columns = self.get_export_columns(request)
         queryset = self.get_export_queryset()
         self.check_export_size(queryset)

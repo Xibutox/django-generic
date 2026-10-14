@@ -131,6 +131,24 @@ class TestTheSchedule:
 
 
 class TestSending:
+    def test_a_reader_not_granted_exports_is_refused(
+        self, support_desk, settings
+    ):
+        """Exports given on request (ACCESS_ON_REQUEST): a mailing is
+        an export, so only the recipients granted it receive one."""
+        settings.GENERIC = {"ACCESS_ON_REQUEST": ("export",)}
+        owner = person("owner", "view_ticket", "export_rows")
+        reader = person("reader", "view_ticket")
+        entry = mailing(owner)
+        entry.users.add(reader)
+
+        outcome = send(entry)
+
+        assert (outcome.sent, outcome.refused) == (1, 1)
+        assert [message.to for message in mail.outbox] == [
+            ["owner@example.test"]
+        ]
+
     def test_each_reader_gets_the_rows_they_may_see(self, support_desk):
         """The owner sees every ticket; a reader whose queryset is
         narrowed by a permission they lack gets nothing at all."""

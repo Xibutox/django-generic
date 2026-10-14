@@ -216,11 +216,18 @@ def describe_stored_file(
 
     ``value`` is ``{"name", "url", "size"}``, as the form reads it; the
     link is the resource's permission-checked endpoint, never the
-    storage's own URL - and no link where ``may_download`` refuses.
+    storage's own URL - and no link where ``may_download`` refuses, or
+    where downloads are given on request and not granted to this reader.
     """
+    from generic.sites.files import may_download
+
     url = (
         resource.get_file_url(obj.pk, field.name)
-        if request is None or resource.may_download(request, obj, field.name)
+        if request is None
+        or (
+            may_download(request)
+            and resource.may_download(request, obj, field.name)
+        )
         else None
     )
     described = describe_file(value, url)

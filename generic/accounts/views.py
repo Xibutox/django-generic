@@ -16,6 +16,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext, ngettext
 from django.views.generic import TemplateView, View
 
+from generic import grants
 from generic.accounts.models import UserPreferences
 from generic.accounts.serializers import is_external_account
 from generic.events.serializers import NotificationSerializer
@@ -288,6 +289,8 @@ class AccountView(SiteViewMixin, TemplateView):
                 "is_external_account": is_external_account(user),
                 "can_change_password": not is_external_account(user),
                 "api_tokens": self.api_tokens(user),
+                # Rights given on request: where to ask for each.
+                "access_rights": bool(grants.gated()),
             }
         )
 

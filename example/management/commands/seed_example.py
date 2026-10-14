@@ -379,6 +379,7 @@ class Command(BaseCommand):
         self.create_api_token(users)
         self.work_a_few_tickets(tickets, agents, users)
         self.attach_a_file(tickets, users)
+        self.ask_for_downloads(users)
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
         self.create_manufacturing()
@@ -502,6 +503,27 @@ class Command(BaseCommand):
                     "Every working morning, count what is late and tell "
                     "the desk."
                 ),
+            },
+        )
+
+    def ask_for_downloads(self, users: dict[str, Any]) -> None:
+        """The viewer asked, two hours ago, to download the tickets'
+        files: People > Access requests has one waiting for admin, and
+        the viewer may remind them already."""
+        from generic.grants.models import AccessRequest
+
+        asked = timezone.now() - datetime.timedelta(hours=2)
+        AccessRequest.objects.get_or_create(
+            user=users["viewer"],
+            kind=AccessRequest.Kind.DOWNLOAD,
+            status=AccessRequest.Status.PENDING,
+            defaults={
+                "message": "To read the customers' screenshots attached "
+                "to my tickets.",
+                "page": "/example/ticket/",
+                "asked_at": asked,
+                "last_asked_at": asked,
+                "notified_at": asked,
             },
         )
 

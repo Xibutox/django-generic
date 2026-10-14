@@ -13,6 +13,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
+  ("export", "download")`, exporting tables (Excel, CSV, copy, print,
+  scheduled mailings) and downloading files are permissions
+  (`generic.export_rows`, `generic.download_files`) that people ask
+  for. The export menu offers *Ask for permission…*, a record's file
+  *Ask to download*, and the account page lists each right with a
+  button to ask or remind. Every superuser and holder of
+  `generic.validate_accessrequest` is notified, and grants or refuses
+  on *People › Access requests*, which keeps every request. Asking
+  again reminds them, no more than once an hour per person and right
+  (`ACCESS_REQUEST_INTERVAL`). Off by default; on in the example,
+  where the viewer has a download request waiting. Migration
+  `generic 0020`. See docs/access-requests.md.
 - Server status: *Monitoring › Server status* shows this server's
   processors, memory, swap and disks as gauges, a trend line since the
   page opened, and whether each database, the migrations, each cache,

@@ -232,6 +232,16 @@ See [History](history.md).
 
 See [Trash and access log](trash.md).
 
+## Rights given on request
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `ACCESS_ON_REQUEST` | `()` | Rights people ask for: `"export"` (every table's exports, copy, print, scheduled mailings; `generic.export_rows`) and `"download"` (every record's files, the wiki's files; `generic.download_files`). Empty: whoever reads exports and downloads |
+| `ACCESS_REQUEST_INTERVAL` | `3600` | Seconds before asking again reminds the people who decide, or a refused right may be asked anew |
+| `ACCESS_REQUEST_CHANNELS` | `("notification", "mail")` | How the people who decide (superusers, `generic.validate_accessrequest`), then the person who asked, are told |
+
+See [Rights given on request](access-requests.md).
+
 ## Logs
 
 | Setting | Default | Meaning |
