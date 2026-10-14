@@ -45,6 +45,7 @@ class GenericConfig(AppConfig):
         from generic.events.resources import register_screens as messages
         from generic.history.resources import register_screens as history
         from generic.mailings.resources import register_screens as mailings
+        from generic.status.resources import register_screens as status
         from generic.tasks.resources import register_screens as tasks
 
         tasks()
@@ -53,6 +54,7 @@ class GenericConfig(AppConfig):
         accesses()
         people()
         messages()
+        status()
 
         # Last of all: a related model an auto() resource names gets
         # pages of its own - unless something above declared it, the

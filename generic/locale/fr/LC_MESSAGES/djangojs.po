@@ -1860,3 +1860,207 @@ msgstr "Version actuelle"
 #: generic/static/generic/js/wiki.js
 msgid "View"
 msgstr "Voir"
+
+#: generic/static/generic/js/status.js
+msgid "%(days)s d %(hours)s h"
+msgstr "%(days)s j %(hours)s h"
+
+#: generic/static/generic/js/status.js
+msgid "%(hours)s h %(minutes)s min"
+msgstr "%(hours)s h %(minutes)s min"
+
+#: generic/static/generic/js/status.js
+msgid "%(minutes)s min"
+msgstr "%(minutes)s min"
+
+#: generic/static/generic/js/status.js
+msgid "%(seconds)s s"
+msgstr "%(seconds)s s"
+
+#: generic/static/generic/js/status.js
+msgid "This server"
+msgstr "Ce serveur"
+
+#: generic/static/generic/js/status.js
+msgid "Unreachable"
+msgstr "Injoignable"
+
+#: generic/static/generic/js/status.js
+msgid "Asking the servers..."
+msgstr "Interrogation des serveurs..."
+
+#: generic/static/generic/js/status.js
+msgid "Every server is working"
+msgstr "Tous les serveurs fonctionnent"
+
+#: generic/static/generic/js/status.js
+msgid "Something needs attention"
+msgstr "Quelque chose demande votre attention"
+
+#: generic/static/generic/js/status.js
+msgid "Something is not working"
+msgstr "Quelque chose ne fonctionne pas"
+
+#: generic/static/generic/js/status.js
+msgid "%(count)s working"
+msgstr "%(count)s en service"
+
+#: generic/static/generic/js/status.js
+msgid "%(count)s to look at"
+msgstr "%(count)s à surveiller"
+
+#: generic/static/generic/js/status.js
+msgid "%(count)s failing"
+msgstr "%(count)s en panne"
+
+#: generic/static/generic/js/status.js
+msgid "checked at %(time)s"
+msgstr "vérifié à %(time)s"
+
+#: generic/static/generic/js/status.js
+msgid "Not checked"
+msgstr "Non vérifié"
+
+#: generic/static/generic/js/status.js
+msgid "Working"
+msgstr "En service"
+
+#: generic/static/generic/js/status.js
+msgid "Needs attention"
+msgstr "À surveiller"
+
+#: generic/static/generic/js/status.js
+msgid "Not working"
+msgstr "En panne"
+
+#: generic/static/generic/js/status.js
+msgid "A restart is planned at %(time)s, for about %(minutes)s min."
+msgstr "Un redémarrage est prévu le %(time)s, pour environ %(minutes)s min."
+
+#: generic/static/generic/js/status.js
+msgid "Processors"
+msgstr "Processeurs"
+
+#: generic/static/generic/js/status.js
+msgid "Not measured"
+msgstr "Non mesuré"
+
+#: generic/static/generic/js/status.js
+msgid "%(count)s cores"
+msgstr "%(count)s cœurs"
+
+#: generic/static/generic/js/status.js
+msgid "load %(load)s"
+msgstr "charge %(load)s"
+
+#: generic/static/generic/js/status.js
+msgid "Memory"
+msgstr "Mémoire"
+
+#: generic/static/generic/js/status.js
+msgid "%(used)s of %(total)s"
+msgstr "%(used)s sur %(total)s"
+
+#: generic/static/generic/js/status.js
+msgid "Swap"
+msgstr "Swap"
+
+#: generic/static/generic/js/status.js
+msgid "%(free)s free of %(total)s"
+msgstr "%(free)s libres sur %(total)s"
+
+#: generic/static/generic/js/status.js
+msgid "over the last %(span)s"
+msgstr "sur %(span)s"
+
+#: generic/static/generic/js/status.js
+msgid "%(ms)s ms"
+msgstr "%(ms)s ms"
+
+#: generic/static/generic/js/status.js
+msgid "Host"
+msgstr "Hôte"
+
+#: generic/static/generic/js/status.js
+msgid "Up for"
+msgstr "Démarré depuis"
+
+#: generic/static/generic/js/status.js
+msgid "Application up for"
+msgstr "Application démarrée depuis"
+
+#: generic/static/generic/js/status.js
+msgid "Process"
+msgstr "Processus"
+
+#: generic/static/generic/js/status.js
+msgid "PID %(pid)s"
+msgstr "PID %(pid)s"
+
+#: generic/static/generic/js/status.js
+msgid "Process memory"
+msgstr "Mémoire du processus"
+
+#: generic/static/generic/js/status.js
+msgid "Threads"
+msgstr "Threads"
+
+#: generic/static/generic/js/status.js
+msgid "Python"
+msgstr "Python"
+
+#: generic/static/generic/js/status.js
+msgid "Django"
+msgstr "Django"
+
+#: generic/static/generic/js/status.js
+msgid "django-generic"
+msgstr "django-generic"
+
+#: generic/static/generic/js/status.js
+msgid "Time zone"
+msgstr "Fuseau horaire"
+
+#: generic/static/generic/js/status.js
+msgid "Debug mode"
+msgstr "Mode débogage"
+
+#: generic/static/generic/js/status.js
+msgid "On"
+msgstr "Activé"
+
+#: generic/static/generic/js/status.js
+msgid "Off"
+msgstr "Désactivé"
+
+#: generic/static/generic/js/status.js
+msgid "Accounts"
+msgstr "Comptes"
+
+#: generic/static/generic/js/status.js
+msgid "Signed in today"
+msgstr "Connectés aujourd'hui"
+
+#: generic/static/generic/js/status.js
+msgid "Open sessions"
+msgstr "Sessions ouvertes"
+
+#: generic/static/generic/js/status.js
+msgid "Measured with"
+msgstr "Mesuré avec"
+
+#: generic/static/generic/js/status.js
+msgid "the standard library (install psutil for more)"
+msgstr "la bibliothèque standard (installez psutil pour plus)"
+
+#: generic/static/generic/js/status.js
+msgid "Checked at %(time)s"
+msgstr "Vérifié à %(time)s"
+
+#: generic/static/generic/js/status.js
+msgid "answered in %(ms)s ms"
+msgstr "a répondu en %(ms)s ms"
+
+#: generic/static/generic/js/status.js
+msgid "checks took %(ms)s ms"
+msgstr "vérifications en %(ms)s ms"

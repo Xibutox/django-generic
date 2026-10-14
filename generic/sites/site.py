@@ -492,6 +492,7 @@ class GenericSite:
         from generic.help import views as help_views
         from generic.maintenance import views as maintenance_views
         from generic.sites import views
+        from generic.status import views as status_views
         from generic.tasks import views as task_views
         from generic.watch import views as watch_views
 
@@ -555,6 +556,11 @@ class GenericSite:
                 "help/changes/",
                 help_views.ChangelogPage.as_view(site=self),
                 name="changelog",
+            ),
+            path(
+                "status/",
+                status_views.StatusPage.as_view(site=self),
+                name="status",
             ),
             path(
                 "tasks/",

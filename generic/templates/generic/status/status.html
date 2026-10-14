@@ -1,0 +1,208 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# A frame: every card fills itself from its server's status endpoint. #}
+
+{% block bodyclass %}page-status{% endblock %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'generic/css/status.css' %}">
+{% endblock %}
+
+{% block components %}
+  <script src="{% static 'generic/js/status.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  {{ status_config|json_script:"status-config" }}
+
+  <div class="status" x-data="serverStatus('status-config')">
+    <div class="status-overview" :class="'status-overview--' + overall()">
+      <span class="status-overview__icon" aria-hidden="true">
+        <span class="icon material-symbols-outlined" x-text="levelIcon(overall())"></span>
+      </span>
+      <div class="status-overview__text">
+        <strong class="status-overview__title" x-text="overviewTitle()"></strong>
+        <span class="status-overview__detail" x-text="overviewDetail()"></span>
+      </div>
+      <div class="status-overview__tools">
+        <label class="status-overview__refresh">
+          <span class="sr-only">{% translate "Refresh every" %}</span>
+          <select class="input input--sm" x-model.number="refresh" @change="schedule()">
+            <option value="0">{% translate "Not refreshed" %}</option>
+            <option value="10">{% translate "Every 10 seconds" %}</option>
+            <option value="30">{% translate "Every 30 seconds" %}</option>
+            <option value="60">{% translate "Every minute" %}</option>
+            <option value="300">{% translate "Every 5 minutes" %}</option>
+          </select>
+        </label>
+        <button type="button" class="button button--sm" @click="refreshAll()" :disabled="busy()">
+          {% icon "refresh" "icon--sm" %} {% translate "Refresh" %}
+        </button>
+      </div>
+    </div>
+
+    <div class="status-grid">
+      <template x-for="card in cards" :key="card.key">
+        <section class="card status-card" :class="'status-card--' + card.level" :aria-busy="card.loading.toString()">
+          <header class="status-card__header">
+            <span class="status-dot" :class="'status-dot--' + card.level" aria-hidden="true"></span>
+            <div class="status-card__identity">
+              <h2 class="status-card__name">
+                <span x-text="card.name"></span>
+                <span class="status-card__local" x-show="card.local">{% translate "this server" %}</span>
+              </h2>
+              <span class="status-card__subtitle" x-text="subtitle(card)"></span>
+            </div>
+            <span class="badge" :class="badgeClass(card.level)" x-text="levelLabel(card.level)"></span>
+            <a class="icon-button icon-button--sm" x-show="pageUrl(card)" :href="pageUrl(card)" target="_blank" rel="noopener"
+               title="{% translate 'Open its status page' %}" aria-label="{% translate 'Open its status page' %}">
+              {% icon "open_in_new" "icon--sm" %}
+            </a>
+            <a class="icon-button icon-button--sm" x-show="card.changeUrl" :href="card.changeUrl"
+               title="{% translate 'Edit' %}" aria-label="{% translate 'Edit' %}">
+              {% icon "edit" "icon--sm" %}
+            </a>
+          </header>
+
+          <p class="status-card__description muted" x-show="card.description" x-text="card.description"></p>
+
+          <div class="status-card__loading" x-show="card.loading && !card.status && !card.error">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>{% translate "Asking the server..." %}</span>
+          </div>
+
+          <div class="callout callout--danger status-card__error" x-show="card.error" x-cloak>
+            {% icon "cloud_off" %}
+            <span x-text="card.error"></span>
+          </div>
+
+          <template x-if="card.status">
+            <div class="status-card__body">
+              <template x-if="card.status.application && card.status.application.restart">
+                <div class="callout callout--warning status-card__restart">
+                  {% icon "restart_alt" %}
+                  <span x-text="restartText(card)"></span>
+                </div>
+              </template>
+
+              <div class="status-gauges">
+                <template x-for="gauge in gauges(card)" :key="gauge.key">
+                  <div class="status-gauge" :class="'status-gauge--' + gauge.level">
+                    <div class="status-gauge__head">
+                      <span class="status-gauge__label" :title="gauge.title || gauge.label">
+                        <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-text="gauge.icon"></span>
+                        <span x-text="gauge.label"></span>
+                      </span>
+                      <span class="status-gauge__value" x-text="gauge.value"></span>
+                    </div>
+                    <div class="status-gauge__bar" role="meter" aria-valuemin="0" aria-valuemax="100"
+                         :aria-valuenow="gauge.percent === null ? '' : gauge.percent" :aria-label="gauge.label">
+                      <span class="status-gauge__fill" :style="'width: ' + (gauge.percent || 0) + '%'"></span>
+                    </div>
+                    <span class="status-gauge__detail muted" x-text="gauge.detail" :title="gauge.detail"></span>
+                  </div>
+                </template>
+              </div>
+
+              <div class="status-trend" x-show="card.history.length > 1">
+                <svg class="status-trend__chart" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline class="status-trend__line status-trend__line--cpu" :points="trend(card, 'cpu')"></polyline>
+                  <polyline class="status-trend__line status-trend__line--memory" :points="trend(card, 'memory')"></polyline>
+                </svg>
+                <div class="status-trend__legend">
+                  <span class="status-trend__key status-trend__key--cpu">{% translate "Processors" %}</span>
+                  <span class="status-trend__key status-trend__key--memory">{% translate "Memory" %}</span>
+                  <span class="muted" x-text="trendSpan(card)"></span>
+                </div>
+              </div>
+
+              <template x-for="group in checkGroups(card)" :key="group.name">
+                <div class="status-checks">
+                  <h3 class="status-checks__title" x-text="group.name"></h3>
+                  <ul class="status-checks__list">
+                    <template x-for="check in group.checks" :key="check.name">
+                      <li class="status-check">
+                        <span class="status-dot status-dot--sm" :class="'status-dot--' + check.level" :title="levelLabel(check.level)"></span>
+                        <span class="status-check__label" x-text="check.label"></span>
+                        <span class="status-check__detail" x-text="check.detail"></span>
+                        <span class="status-check__time muted" x-text="milliseconds(check.duration_ms)"></span>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+              </template>
+
+              <details class="status-facts">
+                <summary>{% translate "Server details" %}</summary>
+                <dl class="status-facts__list">
+                  <template x-for="fact in facts(card)" :key="fact.label">
+                    <div>
+                      <dt x-text="fact.label"></dt>
+                      <dd x-text="fact.value"></dd>
+                    </div>
+                  </template>
+                </dl>
+              </details>
+            </div>
+          </template>
+
+          <footer class="status-card__footer muted">
+            <span x-text="footer(card)"></span>
+            <span class="spinner" x-show="card.loading && (card.status || card.error)" aria-hidden="true"></span>
+          </footer>
+        </section>
+      </template>
+    </div>
+
+    {% if not status_config.servers %}
+      <p class="muted status-hint">
+        {% blocktranslate trimmed %}
+          Watch other servers from here: add each one under Monitored
+          servers, with its address and, if it asks for one, its token.
+        {% endblocktranslate %}
+      </p>
+    {% endif %}
+
+    <section class="card status-plug">
+      <div class="card__header">
+        <h2 class="card__title">{% icon "cable" %} {% translate "Show this server on another status page" %}</h2>
+      </div>
+      <p class="card__description">
+        {% blocktranslate trimmed %}
+          On the other server, add a monitored server with this address.
+        {% endblocktranslate %}
+      </p>
+      <div class="status-plug__address" x-data="{ copied: false }">
+        <code x-ref="address">{{ plug.address }}</code>
+        <button type="button" class="button button--sm button--ghost"
+                @click="navigator.clipboard && navigator.clipboard.writeText($refs.address.textContent).then(function () { copied = true; })">
+          {% icon "content_copy" "icon--sm" %}
+          <span x-show="!copied">{% translate "Copy" %}</span>
+          <span x-show="copied" x-cloak>{% translate "Copied" %}</span>
+        </button>
+      </div>
+      {% if plug.has_token %}
+        <p class="muted">
+          {% blocktranslate trimmed %}
+            Give it this server's STATUS_TOKEN as its token: the other
+            server sends it with each request, and nothing else is
+            needed.
+          {% endblocktranslate %}
+        </p>
+      {% else %}
+        <div class="callout callout--info">
+          {% icon "key" %}
+          <span>
+            {% blocktranslate trimmed %}
+              This server has no STATUS_TOKEN yet, so no other server
+              can read its status. Set one in its GENERIC settings, from
+              the environment, and give the same value to the other
+              server.
+            {% endblocktranslate %}
+          </span>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

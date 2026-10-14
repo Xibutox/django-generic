@@ -162,6 +162,39 @@ DEFAULTS: dict[str, Any] = {
     # it is running, and SIGTERM otherwise - which restarts the process
     # only if systemd, Docker or a supervisor is watching it.
     "MAINTENANCE_RESTART_COMMAND": None,
+    # --- Server status -----------------------------------------------
+    # Whether the Server status page and its Monitored servers screen
+    # appear. Both obey generic.view_status (the page) and the model
+    # permissions of the servers (the screen): nobody without them sees
+    # a thing.
+    "SHOW_STATUS": True,
+    # The secret another server sends (header X-Generic-Status-Token)
+    # to read this one's status without an account: a string, or a list
+    # of them so one can be replaced without a gap. None or "" accepts
+    # signed-in readers holding generic.view_status only. Read it from
+    # the environment; never commit it.
+    "STATUS_TOKEN": None,
+    # Checks of the project's own, as import paths of functions taking
+    # nothing - the same as @generic.status.register_check.
+    "STATUS_CHECKS": [],
+    # Disks to measure, as paths or (label, path) pairs. None measures
+    # where the system, the media files and the SQLite databases live,
+    # each disk once.
+    "STATUS_DISKS": None,
+    # Usage, in percent, from which a gauge turns to a warning, then to
+    # an error - and the server's state with it.
+    "STATUS_THRESHOLDS": {
+        "cpu": (85, 95),
+        "memory": (85, 95),
+        "disk": (85, 95),
+        "swap": (50, 80),
+    },
+    # Seconds this server waits for a monitored server to answer.
+    "STATUS_REMOTE_TIMEOUT": 5,
+    # Seconds between two refreshes of the open status page, offered as
+    # its default; the reader may change it or stop it. 0 starts it
+    # stopped.
+    "STATUS_REFRESH_SECONDS": 30,
     # --- Tasks ---------------------------------------------------------
     # Whether the task pages appear: the catalogue, the runs, and the
     # schedules and Celery results when django-celery-beat and

@@ -18,6 +18,7 @@ from generic.history.models import HistoryEntry
 from generic.mailings.models import ScheduledMailing
 from generic.maintenance.models import RestartAnnouncement
 from generic.numbering.models import Sequence
+from generic.status.models import StatusServer
 from generic.tasks.models import TaskRun
 from generic.watch.models import Watch
 
@@ -33,6 +34,7 @@ __all__ = [
     "SavedView",
     "ScheduledMailing",
     "Sequence",
+    "StatusServer",
     "TaskRun",
     "UserPreferences",
     "Watch",

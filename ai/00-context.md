@@ -149,6 +149,8 @@ generic/
 ├── locale/fr/LC_MESSAGES/  django.po/.mo (pages) and djangojs.po/.mo (browser)
 ├── maintenance/            announced restarts: RestartAnnouncement, the three
 │                           warnings and the restart (scheduler.py), api, page
+├── status/                 the Server status page (§13k): system.py (psutil or /proc), checks.py
+│                           (register_check), collect.py (snapshot), remote.py, StatusServer
 ├── numbering/              Pattern, allocate, peek, next_value: numbers from a pattern
 │                           ({team}-{year}-{seq:04}), one locked Sequence row per series (§13i)
 ├── mailings/               ScheduledMailing: a list's state e-mailed on a schedule; sending.py
@@ -1511,7 +1513,8 @@ still accepted. Build filter URLs for links with `filters=` JSON.
 
 Framework API under `api/generic/`: `account/preferences/`,
 `account/profile/`, `watches/` (`status/`, `toggle/`), `saved-views/`,
-`notifications/` (`unread-count/`, `read-all/`, `<pk>/read/`).
+`notifications/` (`unread-count/`, `read-all/`, `<pk>/read/`),
+`status/`, `status/health/`, `status/servers/<pk>/` (§13k).
 
 ---
 
@@ -1702,7 +1705,9 @@ strftime string fixes the text),
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`, `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
-`LOGIN_LOCKOUT_MINUTES` (15).
+`LOGIN_LOCKOUT_MINUTES` (15), `SHOW_STATUS`, `STATUS_TOKEN`,
+`STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
+`STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k).
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -2246,6 +2251,52 @@ path("api/", include("generic.openapi.urls"))      # before site.urls
   resource, `SHOW_MAILINGS = False` for the project. The framework's
   own `generic.*` tasks do not turn `SHOW_TASKS = None` on. See
   `docs/mailings.md`.
+
+## 13k. Server status (`generic.status`)
+
+```python
+# settings.py of a server another one watches - from the environment
+GENERIC = {"STATUS_TOKEN": env("DJANGO_STATUS_TOKEN")}   # str or list
+
+from generic.status import register_check
+
+@register_check(label=_("Payment provider"))   # name=, group= ("Project")
+def payments():                                # quick: runs on every refresh
+    return "ok", _("Answered")   # None/True | False | "warning"/"error"/"off"
+                                 # | (level, detail) | {"level", "detail"} | raises
+```
+
+- Page `site:status` (*Monitoring › Server status*, `status/`, behind
+  `generic.view_status` - a permission on `StatusServer`): a card per
+  server - gauges (cpu, memory, swap, disks; `STATUS_THRESHOLDS`), a
+  trend since the page opened, the checks by group, folded details, a
+  planned restart. Alpine `serverStatus` (`js/status.js`,
+  `css/status.css`) asks each server's endpoint on its own, every
+  `STATUS_REFRESH_SECONDS` while visible (a sample, not an event: the
+  one timer in the framework, stopped while hidden).
+- Checks: each database (`SELECT 1`), migrations, each cache
+  (write/read), channel layer (round trip), Celery (broker + workers
+  answering), `MEDIA_ROOT` writable, tasks failed in 24 h, then the
+  project's (`register_check`, `STATUS_CHECKS`). Levels `off ok
+  warning error`; a server is its worst check or gauge (`off` never
+  fails). An exception is an error, logged as a warning.
+- `StatusServer` (migration `generic` 0019; *Monitored servers*,
+  `StatusServerResource`, group *Monitoring*): name, url (http(s), no
+  credentials; a bare site gets `api/generic/status/`), token (write
+  only, kept on an empty change, `history_exclude`), description,
+  is_active, position; bulk action *Test the connection* (a Report).
+- `api/generic/status/` (`generic:status`): `snapshot(request)` -
+  `format: "generic-status/1"`, `level`, `server`, `system`, `checks`,
+  `application` - for `view_status` or header `X-Generic-Status-Token`
+  matching `STATUS_TOKEN` (constant time); 401/403. `status/servers/
+  <pk>/`: asked server side (`remote.fetch`: token sent, no redirect,
+  ≤ 2 MB, `STATUS_REMOTE_TIMEOUT`, format checked, levels and links
+  sanitised). `status/health/`: databases + caches, `{"level"}`, 503 on
+  error, open to all. `no-store` on all three. psutil is the `status`
+  extra; without it `/proc` and the standard library, `null` for what
+  nothing measures. `SHOW_STATUS = False` removes the page and screen.
+  Example check: `example.services` in `example/resources.py`. See
+  `docs/status.md`.
 
 ## 13f. Logs and error reports (`generic.logs`)
 

@@ -116,6 +116,10 @@ else:
 GENERIC = {
     "SITE_TITLE": "Minimal example",
     "EVENTS_WEBSOCKET_URL": None,
+    # Lets another server show this one on its Server status page: the
+    # same value goes in its Monitored servers screen. From the
+    # environment, never written here.
+    "STATUS_TOKEN": os.environ.get("DJANGO_STATUS_TOKEN", ""),
 }
 
 # Signing in with Microsoft (Entra ID), through django-allauth - only

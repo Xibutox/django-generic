@@ -3412,3 +3412,317 @@ msgstr "Version du %(date)s par %(name)s"
 #, python-format
 msgid "Version of %(date)s"
 msgstr "Version du %(date)s"
+
+#: generic/status
+msgid "You may not read the server status."
+msgstr "Vous ne pouvez pas lire l'état du serveur."
+
+#: generic/status
+msgid "Services"
+msgstr "Services"
+
+#: generic/status
+msgid "Application"
+msgstr "Application"
+
+#: generic/status
+msgid "Up to date"
+msgstr "À jour"
+
+#: generic/status
+msgid "Writable"
+msgstr "Accessible en écriture"
+
+#: generic/status
+msgid "No run failed in the last 24 hours"
+msgstr "Aucune exécution n'a échoué ces dernières 24 heures"
+
+#: generic/status
+msgid "Databases"
+msgstr "Bases de données"
+
+#: generic/status
+msgid "No channel layer: pages are not live"
+msgstr "Pas de couche de canaux : les pages ne sont pas en direct"
+
+#: generic/status
+msgid "In memory, this process only"
+msgstr "En mémoire, ce processus seulement"
+
+#: generic/status
+msgid "A message sent was not received"
+msgstr "Un message envoyé n'a pas été reçu"
+
+#: generic/status
+msgid "Eager: tasks run in the process asking"
+msgstr "Mode immédiat : les tâches tournent dans le processus qui les demande"
+
+#: generic/status
+msgid "No broker: tasks run in the process asking"
+msgstr "Pas de broker : les tâches tournent dans le processus qui les demande"
+
+#: generic/status
+msgid "The broker answers, but no worker does: queued tasks wait."
+msgstr "Le broker répond, mais aucun worker : les tâches en file attendent."
+
+#: generic/status
+msgid "%(count)s worker answers"
+msgid_plural "%(count)s workers answer"
+msgstr[0] "%(count)s worker répond"
+msgstr[1] "%(count)s workers répondent"
+
+#: generic/status
+msgid "Database %(alias)s"
+msgstr "Base de données %(alias)s"
+
+#: generic/status
+msgid "%(count)s migration is not applied."
+msgid_plural "%(count)s migrations are not applied."
+msgstr[0] "%(count)s migration n'est pas appliquée."
+msgstr[1] "%(count)s migrations ne sont pas appliquées."
+
+#: generic/status
+msgid "No cache: nothing is kept"
+msgstr "Pas de cache : rien n'est conservé"
+
+#: generic/status
+msgid "Cache %(alias)s"
+msgstr "Cache %(alias)s"
+
+#: generic/status
+msgid "%(path)s does not exist"
+msgstr "%(path)s n'existe pas"
+
+#: generic/status
+msgid "%(path)s cannot be written"
+msgstr "%(path)s ne peut pas être écrit"
+
+#: generic/status
+msgid "%(count)s run failed in the last 24 hours"
+msgid_plural "%(count)s runs failed in the last 24 hours"
+msgstr[0] "%(count)s exécution a échoué ces dernières 24 heures"
+msgstr[1] "%(count)s exécutions ont échoué ces dernières 24 heures"
+
+#: generic/status
+msgid "Migrations"
+msgstr "Migrations"
+
+#: generic/status
+msgid "Project"
+msgstr "Projet"
+
+#: generic/status
+msgid "A value written was not read back"
+msgstr "Une valeur écrite n'a pas été relue"
+
+#: generic/status
+msgid "Channel layer"
+msgstr "Couche de canaux"
+
+#: generic/status
+msgid "Celery"
+msgstr "Celery"
+
+#: generic/status
+msgid "Media files"
+msgstr "Fichiers média"
+
+#: generic/status
+msgid "token"
+msgstr "jeton"
+
+#: generic/status
+msgid "shown"
+msgstr "affiché"
+
+#: generic/status
+msgid "monitored server"
+msgstr "serveur surveillé"
+
+#: generic/status
+msgid "monitored servers"
+msgstr "serveurs surveillés"
+
+#: generic/status
+msgid "Enter the address of a site: http:// or https://."
+msgstr "Saisissez l'adresse d'un site : http:// ou https://."
+
+#: generic/status
+msgid "Leave the credentials out of the address: the token goes in its own field."
+msgstr "Laissez les identifiants hors de l'adresse : le jeton a son propre champ."
+
+#: generic/status
+msgid "The other server's address (https://erp.example.com), or its status endpoint when generic.urls is mounted elsewhere: its Server status page shows the one to copy."
+msgstr "L'adresse de l'autre serveur (https://erp.example.com), ou son point d'accès d'état quand generic.urls est monté ailleurs : sa page État du serveur indique celle à copier."
+
+#: generic/status
+msgid "The other server's STATUS_TOKEN. Empty keeps the current one; leave it empty on a new server only if it needs none."
+msgstr "Le STATUS_TOKEN de l'autre serveur. Vide, l'actuel est conservé ; ne le laissez vide sur un nouveau serveur que s'il n'en demande pas."
+
+#: generic/status
+msgid "What runs there, for whoever reads the page."
+msgstr "Ce qui tourne là-bas, pour qui lit la page."
+
+#: generic/status
+msgid "Untick it to keep the server without asking it."
+msgstr "Décochez pour garder le serveur sans l'interroger."
+
+#: generic/status
+msgid "Servers are shown in this order, then by name."
+msgstr "Les serveurs sont affichés dans cet ordre, puis par nom."
+
+#: generic/status
+msgid "Can view the server status"
+msgstr "Peut voir l'état du serveur"
+
+#: generic/status
+msgid "The answer is too large to be a status."
+msgstr "La réponse est trop volumineuse pour être un état."
+
+#: generic/status
+msgid "The address answers, but not with a django-generic status."
+msgstr "L'adresse répond, mais pas avec un état django-generic."
+
+#: generic/status
+msgid "Not found (HTTP 404): the address is not a status endpoint, or the other server has no status page."
+msgstr "Introuvable (HTTP 404) : l'adresse n'est pas un point d'accès d'état, ou l'autre serveur n'a pas de page d'état."
+
+#: generic/status
+msgid "The server answered HTTP %(code)s."
+msgstr "Le serveur a répondu HTTP %(code)s."
+
+#: generic/status
+msgid "Unreachable: %(reason)s"
+msgstr "Injoignable : %(reason)s"
+
+#: generic/status
+msgid "No answer within %(seconds)s seconds."
+msgstr "Pas de réponse en %(seconds)s secondes."
+
+#: generic/status
+msgid "The address does not answer a status: check that it is the other server's status endpoint."
+msgstr "L'adresse ne répond pas par un état : vérifiez qu'il s'agit du point d'accès d'état de l'autre serveur."
+
+#: generic/status
+msgid "Refused (HTTP %(code)s): check the token, and the other server's STATUS_TOKEN."
+msgstr "Refusé (HTTP %(code)s) : vérifiez le jeton, et le STATUS_TOKEN de l'autre serveur."
+
+#: generic/status
+msgid "Redirected to %(location)s: put that address instead."
+msgstr "Redirigé vers %(location)s : indiquez plutôt cette adresse."
+
+#: generic/status
+msgid "Monitoring"
+msgstr "Supervision"
+
+#: generic/status
+msgid "Other servers running django-generic: the Server status page shows each of them beside this one."
+msgstr "D'autres serveurs sous django-generic : la page État du serveur affiche chacun d'eux à côté de celui-ci."
+
+#: generic/status
+msgid "Server status"
+msgstr "État du serveur"
+
+#: generic/status
+msgid "Token"
+msgstr "Jeton"
+
+#: generic/status
+msgid "Test the connection"
+msgstr "Tester la connexion"
+
+#: generic/status
+msgid "Ask the server for its status now, and say how it went."
+msgstr "Demander son état au serveur maintenant, et dire comment cela s'est passé."
+
+#: generic/status
+msgid "%(ms)s ms"
+msgstr "%(ms)s ms"
+
+#: generic/status
+msgid "Answered in %(elapsed)s, state %(level)s."
+msgstr "A répondu en %(elapsed)s, état %(level)s."
+
+#: generic/status
+msgid "Add a server"
+msgstr "Ajouter un serveur"
+
+#: generic/status
+msgid "Monitored servers"
+msgstr "Serveurs surveillés"
+
+#: generic/templates/generic/status/status.html
+msgid "Refresh every"
+msgstr "Actualiser toutes les"
+
+#: generic/templates/generic/status/status.html
+msgid "Not refreshed"
+msgstr "Pas d'actualisation"
+
+#: generic/templates/generic/status/status.html
+msgid "Every 10 seconds"
+msgstr "Toutes les 10 secondes"
+
+#: generic/templates/generic/status/status.html
+msgid "Every 30 seconds"
+msgstr "Toutes les 30 secondes"
+
+#: generic/templates/generic/status/status.html
+msgid "Every minute"
+msgstr "Toutes les minutes"
+
+#: generic/templates/generic/status/status.html
+msgid "Every 5 minutes"
+msgstr "Toutes les 5 minutes"
+
+#: generic/templates/generic/status/status.html
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: generic/templates/generic/status/status.html
+msgid "this server"
+msgstr "ce serveur"
+
+#: generic/templates/generic/status/status.html
+msgid "Open its status page"
+msgstr "Ouvrir sa page d'état"
+
+#: generic/templates/generic/status/status.html
+msgid "Asking the server..."
+msgstr "Interrogation du serveur..."
+
+#: generic/templates/generic/status/status.html
+msgid "Processors"
+msgstr "Processeurs"
+
+#: generic/templates/generic/status/status.html
+msgid "Memory"
+msgstr "Mémoire"
+
+#: generic/templates/generic/status/status.html
+msgid "Server details"
+msgstr "Détails du serveur"
+
+#: generic/templates/generic/status/status.html
+msgid "Show this server on another status page"
+msgstr "Afficher ce serveur sur une autre page d'état"
+
+#: generic/templates/generic/status/status.html
+msgid "Copied"
+msgstr "Copié"
+
+#: generic/templates/generic/status/status.html
+msgid "Watch other servers from here: add each one under Monitored servers, with its address and, if it asks for one, its token."
+msgstr "Surveillez d'autres serveurs depuis ici : ajoutez chacun dans Serveurs surveillés, avec son adresse et, s'il en demande un, son jeton."
+
+#: generic/templates/generic/status/status.html
+msgid "On the other server, add a monitored server with this address."
+msgstr "Sur l'autre serveur, ajoutez un serveur surveillé avec cette adresse."
+
+#: generic/templates/generic/status/status.html
+msgid "Give it this server's STATUS_TOKEN as its token: the other server sends it with each request, and nothing else is needed."
+msgstr "Donnez-lui le STATUS_TOKEN de ce serveur comme jeton : l'autre serveur l'envoie avec chaque requête, et rien d'autre n'est nécessaire."
+
+#: generic/templates/generic/status/status.html
+msgid "This server has no STATUS_TOKEN yet, so no other server can read its status. Set one in its GENERIC settings, from the environment, and give the same value to the other server."
+msgstr "Ce serveur n'a pas encore de STATUS_TOKEN : aucun autre serveur ne peut lire son état. Définissez-en un dans ses réglages GENERIC, depuis l'environnement, et donnez la même valeur à l'autre serveur."

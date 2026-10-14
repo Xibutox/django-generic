@@ -250,6 +250,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Tasks](docs/tasks.md) — declaring one, the four steps, the runs, Celery Beat schedules
 - [Operations and reports](docs/operations.md) — the work behind a button, in the request or the background, answered with a tree of messages that fold
 - [Planned restarts](docs/maintenance.md) — announcing one, the three warnings, restarting the server
+- [Server status](docs/status.md) — processors, memory, disks and every service of this server, and of the other servers it watches, on one page
 - [Translation](docs/i18n.md) — the French catalog, the language menu, the workflow
 - [Settings](docs/settings.md) — every knob and its default
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project

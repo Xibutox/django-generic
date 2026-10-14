@@ -77,6 +77,7 @@ from generic.sites import (
     site,
 )
 from generic.sites.realtime import announce
+from generic.status import register_check
 from generic.views.toolbar import ToolbarItem, toolbar_item_for_route
 
 #: Tickets someone still has to act on.
@@ -1622,6 +1623,25 @@ INCIDENT_SEVERITIES = {
     "major": _("Major"),
     "critical": _("Critical"),
 }
+
+
+@register_check(name="example.services", label=_("External services"))
+def external_services() -> tuple[str, str]:
+    """A check of the project's own, on the Server status page: the
+    critical services the desk relies on, as their status API says."""
+    troubled = [
+        row["name"]
+        for row in external.services()
+        if row["critical"] and row["status"] != "operational"
+    ]
+
+    if troubled:
+        return "warning", gettext("Not fully working: %(names)s") % {
+            "names": ", ".join(troubled)
+        }
+
+    return "ok", gettext("Every critical service is operational")
+
 
 INCIDENT_STATUSES = {
     "investigating": _("Investigating"),

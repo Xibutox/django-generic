@@ -81,6 +81,11 @@ results = ["django-celery-results>=2.5"]
 
 postgres = ["psycopg[binary]>=3.1"]
 
+# The Server status page's figures (generic.status): processors, memory,
+# swap and the process, measured the same way on every system. Without
+# it the page still works, from the standard library and /proc.
+status = ["psutil>=5.9"]
+
 # The API for scripts: personal tokens (generic.tokens, on
 # django-rest-knox) and its OpenAPI description and docs page
 # (generic.openapi, on drf-spectacular, its assets served locally).
@@ -108,6 +113,7 @@ dev = [
     "drf-spectacular>=0.28",
     "drf-spectacular-sidecar>=2025.1",
     "django-fsm-2>=4.0",
+    "psutil>=5.9",
     # The example project turns it on by itself when it is installed.
     "django-debug-toolbar>=6.0",
     # The minimal example's Microsoft sign-in, tested when installed.
