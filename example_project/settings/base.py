@@ -393,6 +393,11 @@ SPECTACULAR_SETTINGS = {
         "`Authorization: Token 3f9c...`."
     ),
     "VERSION": "1.3.0",
+    # What another server sends to show this one on its Server status
+    # page (X-Generic-Status-Token). Unset, only signed-in readers
+    # holding generic.view_status read it. Comma-separated: an old and
+    # a new token while the other servers are given the new one.
+    "STATUS_TOKEN": env_list("DJANGO_STATUS_TOKEN"),
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",

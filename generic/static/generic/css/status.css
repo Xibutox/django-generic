@@ -1,0 +1,457 @@
+/*
+ * The Server status page (generic.status, js/status.js). Tokens only:
+ * the colours follow the theme and the appearance parameters.
+ */
+
+.status {
+  --status-ok: var(--color-success);
+  --status-warning: var(--color-warning);
+  --status-error: var(--color-danger);
+  --status-off: var(--text-muted);
+}
+
+/* -- The line on top: every server in one word ------------------------ */
+
+.status-overview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-inline-start: 0.25rem solid var(--status-accent, var(--status-off));
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-overview--ok {
+  --status-accent: var(--status-ok);
+  --status-subtle: var(--color-success-subtle);
+}
+
+.status-overview--warning {
+  --status-accent: var(--status-warning);
+  --status-subtle: var(--color-warning-subtle);
+}
+
+.status-overview--error {
+  --status-accent: var(--status-error);
+  --status-subtle: var(--color-danger-subtle);
+}
+
+.status-overview__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--status-accent, var(--status-off));
+  background: var(--status-subtle, var(--surface-sunken));
+  border-radius: var(--border-radius);
+}
+
+.status-overview__text {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.status-overview__title {
+  font-size: var(--font-size-lg);
+}
+
+.status-overview__detail {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.status-overview__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* -- One card per server ------------------------------------------------ */
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.status-grid > .card + .card {
+  margin-top: 0;
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: 0.25rem solid var(--status-accent, var(--border-color));
+}
+
+.status-card--ok {
+  --status-accent: var(--status-ok);
+}
+
+.status-card--warning {
+  --status-accent: var(--status-warning);
+}
+
+.status-card--error {
+  --status-accent: var(--status-error);
+}
+
+.status-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-card__identity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.status-card__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.status-card__local {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-card__subtitle {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-card__description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.status-card__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.status-card__error,
+.status-card__restart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: 0;
+}
+
+.status-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.status-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  border-top: 1px solid var(--border-color);
+}
+
+/* -- A dot says it all, in the level's colour ---------------------------- */
+
+.status-dot {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--status-off);
+  border-radius: 50%;
+}
+
+.status-dot--sm {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.status-dot--ok {
+  background: var(--status-ok);
+}
+
+.status-dot--warning {
+  background: var(--status-warning);
+}
+
+.status-dot--error {
+  background: var(--status-error);
+  box-shadow: 0 0 0 0.2rem var(--color-danger-subtle);
+}
+
+/* -- Gauges: processors, memory, disks --------------------------------- */
+
+.status-gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
+  gap: var(--space-3) var(--space-4);
+}
+
+.status-gauge {
+  --gauge-color: var(--status-ok);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.status-gauge--warning {
+  --gauge-color: var(--status-warning);
+}
+
+.status-gauge--error {
+  --gauge-color: var(--status-error);
+}
+
+/* The label above its figure: three gauges side by side leave no room
+   for both on one line. */
+.status-gauge__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.status-gauge__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-gauge__value {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.status-gauge__bar {
+  height: 0.5rem;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-pill);
+}
+
+.status-gauge__fill {
+  display: block;
+  height: 100%;
+  background: var(--gauge-color);
+  border-radius: inherit;
+  transition: width var(--transition-base);
+}
+
+.status-gauge__detail {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -- The trend since the page opened ------------------------------------ */
+
+.status-trend__chart {
+  display: block;
+  width: 100%;
+  height: 3rem;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.status-trend__line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.status-trend__line--cpu {
+  stroke: var(--color-accent);
+}
+
+.status-trend__line--memory {
+  stroke: var(--color-info);
+  stroke-dasharray: 4 3;
+}
+
+.status-trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.status-trend__key::before {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.15rem;
+  margin-inline-end: var(--space-1);
+  vertical-align: middle;
+  background: var(--color-accent);
+  content: "";
+}
+
+.status-trend__key--memory::before {
+  background: var(--color-info);
+}
+
+/* -- Checks ------------------------------------------------------------------ */
+
+.status-checks__title {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-checks__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-check {
+  display: grid;
+  grid-template-columns: auto minmax(6rem, auto) 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.status-check:last-child {
+  border-bottom: 0;
+}
+
+.status-check__label {
+  font-weight: 500;
+}
+
+.status-check__detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-check__time {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- Details, folded ------------------------------------------------------- */
+
+.status-facts summary {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.status-facts__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-3) 0 0;
+}
+
+.status-facts__list dt {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.status-facts__list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-sm);
+}
+
+/* -- Plugging this server in elsewhere ------------------------------------- */
+
+.status-hint {
+  margin-top: var(--space-4);
+}
+
+.status-plug {
+  margin-top: var(--space-5);
+}
+
+.status-plug__address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.status-plug__address code {
+  padding: var(--space-1) var(--space-2);
+  overflow-wrap: anywhere;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.status-plug .callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: 0;
+}
+
+/* -- Narrow screens ------------------------------------------------------- */
+
+@media (max-width: 40rem) {
+  .status-card__header {
+    flex-wrap: wrap;
+  }
+
+  .status-check {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .status-check__detail {
+    grid-column: 2 / -1;
+    white-space: normal;
+  }
+}

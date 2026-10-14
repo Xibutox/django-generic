@@ -138,6 +138,21 @@ it. `MAINTENANCE_RESTART = False` turns the whole thing into a warning
 system: announcements still reach everyone, nothing is ever restarted.
 See [Planned restarts](maintenance.md).
 
+## Server status
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `SHOW_STATUS` | `True` | The *Server status* page and the *Monitored servers* screen |
+| `STATUS_TOKEN` | `None` | What another server sends (`X-Generic-Status-Token`) to read this one's status: a string, or a list while one replaces another. From the environment, never committed |
+| `STATUS_DATABASE_QUERIES` | `{}` | By alias, the query a database is asked (Salesforce gets SOQL by itself, others `SELECT 1`); `None` leaves that database out |
+| `STATUS_CHECKS` | `[]` | Import paths of the project's own checks, beside `@register_check` |
+| `STATUS_DISKS` | `None` | Paths, or `(label, path)` pairs, to measure; None: the system, the media files and the SQLite databases |
+| `STATUS_THRESHOLDS` | `{"cpu": (85, 95), "memory": (85, 95), "disk": (85, 95), "swap": (50, 80)}` | Percentages from which a gauge is a warning, then an error |
+| `STATUS_REMOTE_TIMEOUT` | `5` | Seconds a monitored server has to answer |
+| `STATUS_REFRESH_SECONDS` | `30` | The status page's refresh by default; `0` starts it stopped |
+
+See [Server status](status.md).
+
 ## Tasks
 
 | Setting | Default | Meaning |

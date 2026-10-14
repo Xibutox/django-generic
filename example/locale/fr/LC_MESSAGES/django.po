@@ -2100,3 +2100,15 @@ msgstr "Chaque ticket au jour de son échéance."
 
 msgid "Hours this month"
 msgstr "Heures ce mois-ci"
+
+#: example/resources.py
+msgid "External services"
+msgstr "Services externes"
+
+#: example/resources.py
+msgid "Not fully working: %(names)s"
+msgstr "Pas entièrement en service : %(names)s"
+
+#: example/resources.py
+msgid "Every critical service is operational"
+msgstr "Chaque service critique est opérationnel"

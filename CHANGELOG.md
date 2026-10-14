@@ -13,6 +13,21 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Server status: *Monitoring › Server status* shows this server's
+  processors, memory, swap and disks as gauges, a trend line since the
+  page opened, and whether each database, the migrations, each cache,
+  the channel layer, Celery, the media folder and the tasks are
+  working - and, beside it, every other server running django-generic
+  added under *Monitoring › Monitored servers* with its address and
+  token (`STATUS_TOKEN` on the other side). One maintenance server
+  watches them all; a server that does not answer says why. Projects
+  add checks of their own with `@generic.status.register_check` (the
+  example's: *External services*). Every server answers the same JSON
+  at `api/generic/status/`, and `api/generic/status/health/` is the
+  one-word answer for a load balancer. psutil, the new `status` extra,
+  measures; without it the page reads the standard library and
+  `/proc`. Migration `generic 0019`, permission
+  `generic.view_status`. See docs/status.md.
 - Wiki history: every version can be read without restoring it -
   *View* opens it in the page's layout, read-only, with the way back
   to the page and, for a writer, *Restore*

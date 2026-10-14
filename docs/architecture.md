@@ -107,6 +107,15 @@ generic/
 │   ├── scheduler.py     The three warnings, and the restart itself
 │   ├── api.py           Announce, read what is planned, call it off
 │   └── views.py         The page an operator announces from
+├── status/
+│   ├── models.py        StatusServer: another server shown beside this one
+│   ├── system.py        Processors, memory, disks, the process (psutil or /proc)
+│   ├── checks.py        Databases, migrations, caches, channels, Celery...; register_check
+│   ├── collect.py       snapshot(): the JSON document every server answers
+│   ├── remote.py        Asking another server, its token sent, nothing followed
+│   ├── api.py           status/, status/health/, status/servers/<pk>/
+│   ├── views.py         The Server status page
+│   └── resources.py     The Monitored servers screen, the navigation link
 ├── wiki/                Optional: several wikis, pages, editor, images and files, history, pinned pages, PDF (pdf.py), the user guide every wiki starts with (guide.py, guide/)
 ├── teams/               Optional: Team, team_field scoping, scope_to_teams()
 ├── testing/             PageSweep: a project's pages and endpoints, swept by pytest

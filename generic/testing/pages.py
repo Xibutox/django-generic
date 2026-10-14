@@ -637,6 +637,7 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
     from generic.events.models import Message
     from generic.history.models import HistoryEntry
     from generic.mailings.models import ScheduledMailing
+    from generic.status.models import StatusServer
     from generic.tasks.models import TaskRun
 
     resources = site.get_resources()
@@ -658,6 +659,11 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
         ),
         "generic.scheduledmailing": ScheduledMailing.objects.create(
             name="Page sweep", table=table
+        ),
+        # Never asked by the sweep: no page fetches a server's status
+        # on the server side, only the endpoint the browser calls.
+        "generic.statusserver": StatusServer.objects.create(
+            name="Page sweep", url="https://status.example.test"
         ),
     }
 

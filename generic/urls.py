@@ -28,6 +28,7 @@ from generic.maintenance.api import (
     RestartAnnouncementView,
     RestartFormSchemaView,
 )
+from generic.status.api import HealthView, RemoteStatusView, StatusView
 from generic.watch.api import WatchViewSet
 
 app_name = "generic"
@@ -71,6 +72,15 @@ urlpatterns = [
         "restart/form-schema/",
         RestartFormSchemaView.as_view(),
         name="restart-schema",
+    ),
+    # The server's status: read by its page and by other servers
+    # (STATUS_TOKEN); each monitored server's, asked from here.
+    path("status/", StatusView.as_view(), name="status"),
+    path("status/health/", HealthView.as_view(), name="status-health"),
+    path(
+        "status/servers/<int:pk>/",
+        RemoteStatusView.as_view(),
+        name="status-server",
     ),
     path("", include(router.urls)),
 ]

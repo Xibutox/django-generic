@@ -222,6 +222,17 @@ minute before, a red one ten seconds before. Untick the box and the
 server restarts itself at the hour. See
 [Planned restarts](maintenance.md).
 
+**Server status.** *Monitoring › Server status*: this server's
+processors, memory and disks, and whether its database, cache, channel
+layer, Celery and media folder answer - and the example's own check,
+*External services*, orange because Paylane is degraded. Then plug in
+a second server: start the minimal example with a token
+(`cd minimal && DJANGO_STATUS_TOKEN=s3cret python manage.py runserver
+8001`), add it under *Monitored servers* (address
+`http://127.0.0.1:8001`, token `s3cret`) and come back: its card sits
+beside this one. Stop it, and its card turns red with the reason. See
+[Server status](status.md).
+
 **In French.** Open the account menu, top right: under *Language*, pick
 *French*. The frame, the tables, the filter editor, the forms and their
 errors are translated, and so is this application — its menu groups,
