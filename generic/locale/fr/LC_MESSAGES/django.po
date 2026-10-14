@@ -3726,3 +3726,57 @@ msgstr "Donnez-lui le STATUS_TOKEN de ce serveur comme jeton : l'autre serveur l
 #: generic/templates/generic/status/status.html
 msgid "This server has no STATUS_TOKEN yet, so no other server can read its status. Set one in its GENERIC settings, from the environment, and give the same value to the other server."
 msgstr "Ce serveur n'a pas encore de STATUS_TOKEN : aucun autre serveur ne peut lire son état. Définissez-en un dans ses réglages GENERIC, depuis l'environnement, et donnez la même valeur à l'autre serveur."
+
+#: generic/help/models.py
+msgid "Enter an e-mail address after mailto:."
+msgstr "Saisissez une adresse e-mail après mailto:."
+
+#: generic/help/models.py
+msgid "Enter an address starting with https://, http:// or mailto:."
+msgstr "Saisissez une adresse commençant par https://, http:// ou mailto:."
+
+#: generic/help/models.py
+msgid "link to report a bug"
+msgstr "lien pour signaler un bug"
+
+#: generic/help/models.py
+msgid "Where everyone reports a bug: your ticket service's page for a new ticket, or mailto: an address. Shown in the top bar of every page. Empty, the project's default is shown, if it has one."
+msgstr "Là où chacun signale un bug : la page de nouveau ticket de votre service de tickets, ou mailto: une adresse. Affiché dans la barre du haut de chaque page. Vide, la valeur par défaut du projet est affichée, s'il en a une."
+
+#: generic/help/models.py
+msgid "changed by"
+msgstr "modifié par"
+
+#: generic/help/models.py
+msgid "changed at"
+msgstr "modifié le"
+
+#: generic/help/models.py
+msgid "help settings"
+msgstr "réglages de l'aide"
+
+#: generic/help/models.py
+msgid "Help settings"
+msgstr "Réglages de l'aide"
+
+#: generic/help/serializers.py
+msgid "Reporting a bug"
+msgstr "Signaler un bug"
+
+#: generic/help/serializers.py
+msgid "The same link for everyone, in the top bar of every page."
+msgstr "Le même lien pour tout le monde, dans la barre du haut de chaque page."
+
+#: generic/help/api.py
+msgid "You may not change the help settings."
+msgstr "Vous ne pouvez pas modifier les réglages de l'aide."
+
+#: generic/templates/generic/chrome/bug_report.html
+#: generic/templates/generic/chrome/user_menu.html
+#: generic/templates/generic/help/help.html
+msgid "Report a bug"
+msgstr "Signaler un bug"
+
+#: generic/templates/generic/help/help.html
+msgid "Something does not work as it should? Tell the team that looks after this application."
+msgstr "Quelque chose ne fonctionne pas comme prévu ? Prévenez l'équipe qui s'occupe de cette application."

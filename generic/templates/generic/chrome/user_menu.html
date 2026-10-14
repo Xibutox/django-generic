@@ -47,6 +47,14 @@
       </a>
     {% endif %}
 
+    {% if chrome.bug_report_url %}
+      <a class="menu-item" role="menuitem" href="{{ chrome.bug_report_url }}" target="_blank" rel="noopener noreferrer">
+        {% icon "bug_report" %}
+        <span class="menu-item__label">{% translate "Report a bug" %}</span>
+        {% icon "open_in_new" "icon--sm" %}
+      </a>
+    {% endif %}
+
     {% if chrome.urls.changelog %}
       <a class="menu-item" role="menuitem" href="{{ chrome.urls.changelog }}">
         {% icon "history" %}

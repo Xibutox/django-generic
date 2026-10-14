@@ -13,6 +13,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Reporting a bug: a bug icon in the top bar of every page - and
+  *Report a bug* in the account menu and on the help page - opens the
+  team's ticket service in a new tab. The project sets it with
+  `GENERIC["BUG_REPORT_URL"]` (the example points at this repository's
+  issues); an administrator holding `generic.change_helpsettings`
+  replaces it for everyone from the form on the help page, without a
+  deployment. `https://`, `http://` or `mailto:` only; nothing is drawn
+  while no link is set. Migration `generic 0020`. See docs/ui.md.
 - Server status: *Monitoring › Server status* shows this server's
   processors, memory, swap and disks as gauges, a trend line since the
   page opened, and whether each database, the migrations, each cache,
