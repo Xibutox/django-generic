@@ -174,6 +174,12 @@ DEFAULTS: dict[str, Any] = {
     # signed-in readers holding generic.view_status only. Read it from
     # the environment; never commit it.
     "STATUS_TOKEN": None,
+    # What each database is asked to prove it answers, by alias. Unset,
+    # "SELECT 1" (FROM DUAL on Oracle), or the backend's own query where
+    # it speaks no plain SQL (Salesforce: SOQL on Organization). None
+    # leaves that database out of the status:
+    # {"legacy": "SELECT 1 FROM sysibm.sysdummy1", "archive": None}.
+    "STATUS_DATABASE_QUERIES": {},
     # Checks of the project's own, as import paths of functions taking
     # nothing - the same as @generic.status.register_check.
     "STATUS_CHECKS": [],

@@ -54,13 +54,26 @@ The framework's own, on every server:
 
 | Check | Fine when | Otherwise |
 | --- | --- | --- |
-| **Database** *alias*, each of `DATABASES` | `SELECT 1` answers; says the engine and its version | error |
+| **Database** *alias*, each of `DATABASES` | a query answers - `SELECT 1` (`FROM DUAL` on Oracle), SOQL on `Organization` for Salesforce, or the project's (`STATUS_DATABASE_QUERIES`); says the engine and, when the backend tells, its version | error |
 | **Migrations** | none is left to apply | warning, with how many |
 | **Cache** *alias*, each of `CACHES` | a value written is read back | error; *off* for the dummy cache |
 | **Channel layer** | a message sent to a new channel comes back (in memory: says so) | error; *off* without one |
 | **Celery** | the broker answers, and how many workers do | warning when no worker answers; *off* without a broker; eager says so |
 | **Media files** | `MEDIA_ROOT` exists and can be written | error |
 | **Tasks** | no task run failed in the last 24 hours | warning, with how many |
+
+A database whose backend speaks no plain SQL is asked in its own
+language: django-salesforce gets `SELECT Id FROM Organization LIMIT 1`.
+Any other gets its query from the settings, and `None` leaves it out:
+
+```python
+GENERIC = {
+    "STATUS_DATABASE_QUERIES": {
+        "legacy": "SELECT 1 FROM sysibm.sysdummy1",   # DB2
+        "archive": None,                                # not checked
+    }
+}
+```
 
 *Off* means not in use here: it is drawn grey and never makes a server
 fail.
@@ -207,6 +220,7 @@ the container's disks and its view of the host's processors and memory.
 | --- | --- | --- |
 | `SHOW_STATUS` | `True` | The page and the *Monitored servers* screen; `False` leaves both out (the endpoints stay, behind their permission or token) |
 | `STATUS_TOKEN` | `None` | What another server sends to read this one: a string or a list |
+| `STATUS_DATABASE_QUERIES` | `{}` | By alias, what a database is asked to prove it answers; `None` leaves it out |
 | `STATUS_CHECKS` | `[]` | Import paths of the project's checks |
 | `STATUS_DISKS` | `None` | Paths or `(label, path)` pairs to measure |
 | `STATUS_THRESHOLDS` | `{"cpu": (85, 95), "memory": (85, 95), "disk": (85, 95), "swap": (50, 80)}` | Percentages from which a gauge is a warning, then an error |

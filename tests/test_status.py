@@ -276,6 +276,91 @@ class TestWhatAChecksReturns:
         assert checks.media_check()[0] == "error"
 
 
+class FakeConnection:
+    """A backend that speaks no plain SQL and says nothing of its version,
+    like django-salesforce."""
+
+    vendor = "salesforce"
+    display_name = "Salesforce"
+
+    class features:
+        bare_select_suffix = ""
+
+    def __init__(self):
+        self.executed = []
+
+    def cursor(self):
+        connection = self
+
+        class Cursor:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def execute(self, query):
+                if query.startswith("SELECT 1"):
+                    raise ValueError(f"invalid SQL: {query}")
+
+                connection.executed.append(query)
+
+            def fetchone(self):
+                return ("00D000000000001",)
+
+        return Cursor()
+
+    def get_database_version(self):
+        raise NotImplementedError
+
+
+class TestADatabaseThatSpeaksNoSql:
+    """A Salesforce database answered "invalid SQL: SELECT 1"."""
+
+    @pytest.fixture
+    def salesforce(self):
+        connection = FakeConnection()
+
+        with mock.patch(
+            "generic.status.checks.connections",
+            {"salesforce": connection},
+        ):
+            yield connection
+
+    def test_salesforce_is_asked_in_soql(self, salesforce):
+        result = checks.database_check("salesforce").run()
+
+        assert result["level"] == "ok"
+        assert result["detail"] == "Salesforce"
+        assert salesforce.executed == ["SELECT Id FROM Organization LIMIT 1"]
+
+    def test_the_project_may_give_the_query(self, salesforce, settings):
+        settings.GENERIC = {
+            "STATUS_DATABASE_QUERIES": {"salesforce": "SELECT Id FROM User"}
+        }
+
+        checks.database_check("salesforce").run()
+
+        assert salesforce.executed == ["SELECT Id FROM User"]
+
+    def test_none_leaves_a_database_out(self, settings):
+        settings.GENERIC = {"STATUS_DATABASE_QUERIES": {"default": None}}
+        names = {check["name"] for check in checks.run_checks()}
+
+        assert "database.default" not in names
+        assert "default" not in checks.database_aliases()
+
+    def test_oracle_asks_from_dual(self):
+        oracle = FakeConnection()
+        oracle.vendor = "oracle"
+        oracle.features = mock.Mock(bare_select_suffix=" FROM DUAL")
+
+        with mock.patch(
+            "generic.status.checks.connections", {"other": oracle}
+        ):
+            assert checks.probe_for("other") == "SELECT 1 FROM DUAL"
+
+
 def listed_check():
     return "listed"
 

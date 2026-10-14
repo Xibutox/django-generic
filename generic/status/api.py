@@ -22,7 +22,12 @@ from rest_framework.views import APIView
 
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
-from generic.status.checks import cache_check, database_check, worst
+from generic.status.checks import (
+    cache_check,
+    database_aliases,
+    database_check,
+    worst,
+)
 from generic.status.collect import snapshot
 from generic.status.models import StatusServer
 from generic.status.remote import TOKEN_HEADER, fetch
@@ -107,7 +112,7 @@ class HealthView(APIView):
     def get(self, request: Any) -> Response:
         from django.conf import settings
 
-        checks = [database_check(alias) for alias in settings.DATABASES]
+        checks = [database_check(alias) for alias in database_aliases()]
         checks += [cache_check(alias) for alias in settings.CACHES]
         level = worst(check.run()["level"] for check in checks)
 

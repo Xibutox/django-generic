@@ -182,19 +182,64 @@ def project_checks() -> list[Check]:
 # -- the framework's own ---------------------------------------------------
 
 
+#: The query asking a database that speaks no plain SQL whether it
+#: answers, by its backend's vendor. Salesforce (django-salesforce)
+#: speaks SOQL, which has no ``SELECT 1``: every organisation has one
+#: Organization row, readable with API access.
+PROBES = {
+    "salesforce": "SELECT Id FROM Organization LIMIT 1",
+}
+
+
+def probe_for(alias: str) -> str:
+    """What to ask ``alias``: the project's query, else its vendor's."""
+    declared = dict(generic_settings.STATUS_DATABASE_QUERIES or {})
+
+    if declared.get(alias):
+        return str(declared[alias])
+
+    connection = connections[alias]
+
+    if connection.vendor in PROBES:
+        return PROBES[connection.vendor]
+
+    # Oracle wants a table even for a constant: "SELECT 1 FROM DUAL".
+    return "SELECT 1" + connection.features.bare_select_suffix
+
+
+def database_version(connection: Any) -> str:
+    """The engine and its version, or the engine alone when the backend
+    does not say (a third-party backend often does not)."""
+    try:
+        version = ".".join(
+            str(part) for part in connection.get_database_version()
+        )
+    except Exception:
+        return str(connection.display_name)
+
+    return f"{connection.display_name} {version}"
+
+
+def database_aliases() -> list[str]:
+    """Every database, but those the project left out with ``None``."""
+    declared = dict(generic_settings.STATUS_DATABASE_QUERIES or {})
+
+    return [
+        alias
+        for alias in settings.DATABASES
+        if not (alias in declared and declared[alias] is None)
+    ]
+
+
 def database_check(alias: str) -> Check:
     def run() -> tuple[str, str]:
         connection = connections[alias]
 
         with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
+            cursor.execute(probe_for(alias))
             cursor.fetchone()
 
-        version = ".".join(
-            str(part) for part in connection.get_database_version()
-        )
-
-        return "ok", f"{connection.display_name} {version}"
+        return "ok", database_version(connection)
 
     return Check(
         name=f"database.{alias}",
@@ -346,7 +391,7 @@ def tasks_check() -> tuple[str, str]:
 
 
 def framework_checks() -> list[Check]:
-    found = [database_check(alias) for alias in settings.DATABASES]
+    found = [database_check(alias) for alias in database_aliases()]
     found.append(
         Check(
             name="migrations",

@@ -1706,6 +1706,7 @@ strftime string fixes the text),
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
 `LOGIN_LOCKOUT_MINUTES` (15), `SHOW_STATUS`, `STATUS_TOKEN`,
+`STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k).
 Read them via `from generic.conf import generic_settings`.
@@ -2274,7 +2275,9 @@ def payments():                                # quick: runs on every refresh
   `css/status.css`) asks each server's endpoint on its own, every
   `STATUS_REFRESH_SECONDS` while visible (a sample, not an event: the
   one timer in the framework, stopped while hidden).
-- Checks: each database (`SELECT 1`), migrations, each cache
+- Checks: each database (`SELECT 1`, `FROM DUAL` on Oracle, SOQL
+  for django-salesforce via `PROBES`; `STATUS_DATABASE_QUERIES`
+  `{alias: query | None}`), migrations, each cache
   (write/read), channel layer (round trip), Celery (broker + workers
   answering), `MEDIA_ROOT` writable, tasks failed in 24 h, then the
   project's (`register_check`, `STATUS_CHECKS`). Levels `off ok
