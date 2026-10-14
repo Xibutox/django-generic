@@ -282,6 +282,13 @@ DEFAULTS: dict[str, Any] = {
     "ACCESS_REQUEST_INTERVAL": 3600,
     # How the people who decide, then the person who asked, are told.
     "ACCESS_REQUEST_CHANNELS": ("notification", "mail"),
+    # A reminder, with a box to tick, shown before every table export
+    # (Excel, CSV, copy, print) and every file download - a privacy
+    # notice, say. None shows nothing. A text, or {"text": ...,
+    # "title": ..., "checkbox": ...}; gettext_lazy strings are shown
+    # in the reader's language.
+    "EXPORT_DISCLAIMER": None,
+    "DOWNLOAD_DISCLAIMER": None,
     # --- Sign-in attempts ----------------------------------------------
     # Failed passwords accepted for one account, or from one address,
     # before the sign-in page refuses it for LOGIN_LOCKOUT_MINUTES.

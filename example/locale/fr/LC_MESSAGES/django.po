@@ -2112,3 +2112,15 @@ msgstr "Pas entièrement en service : %(names)s"
 #: example/resources.py
 msgid "Every critical service is operational"
 msgstr "Chaque service critique est opérationnel"
+
+#: example_project/settings/base.py
+msgid "This export contains customers' personal data: names, e-mail addresses, what they reported.\n\nKeep the file on the company's storage, share it only with people who need it, and delete it once you are done."
+msgstr "Cet export contient des données personnelles des clients : noms, adresses e-mail, ce qu'ils ont signalé.\n\nGardez le fichier sur le stockage de l'entreprise, ne le partagez qu'avec les personnes qui en ont besoin, et supprimez-le une fois terminé."
+
+#: example_project/settings/base.py
+msgid "I will handle this personal data as the privacy policy asks."
+msgstr "Je traiterai ces données personnelles comme le demande la politique de confidentialité."
+
+#: example_project/settings/base.py
+msgid "Files sent by customers may hold personal data. Keep them on the company's storage and delete them once you are done."
+msgstr "Les fichiers envoyés par les clients peuvent contenir des données personnelles. Gardez-les sur le stockage de l'entreprise et supprimez-les une fois terminé."

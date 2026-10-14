@@ -2110,3 +2110,7 @@ msgstr "Exporter demande une permission que vous n'avez pas encore."
 #: generic/static/generic/js/access.js
 msgid "Ask for permission"
 msgstr "Demander la permission"
+
+#: generic/static/generic/js/access.js
+msgid "Download"
+msgstr "Télécharger"

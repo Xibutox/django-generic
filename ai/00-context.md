@@ -1714,7 +1714,8 @@ None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
 `ACCESS_ON_REQUEST` (`()`; `"export"`, `"download"`),
-`ACCESS_REQUEST_INTERVAL` (3600), `ACCESS_REQUEST_CHANNELS` (§13l).
+`ACCESS_REQUEST_INTERVAL` (3600), `ACCESS_REQUEST_CHANNELS`,
+`EXPORT_DISCLAIMER`, `DOWNLOAD_DISCLAIMER` (None; §13l).
 Read them via `from generic.conf import generic_settings`.
 
 ---
@@ -2240,6 +2241,14 @@ GENERIC = {"ACCESS_ON_REQUEST": ("export", "download")}
   bulk actions *Grant* and *Refuse* behind
   `generic.validate_accessrequest`. The example turns both rights on
   and seeds a waiting download request from `viewer`.
+- `EXPORT_DISCLAIMER` / `DOWNLOAD_DISCLAIMER` (None; a text or
+  `{"text", "title", "checkbox"}`, lazy strings read per request by
+  `grants.disclaimer(kind)`) travel in `Generic.config().access.disclaimers`;
+  `Generic.access.confirm(kind)` shows the reminder and resolves once
+  the box is ticked. The export menu's four items and the scheduled
+  mailing wait for it; a capturing click listener in `access.js` holds
+  every same-origin link to `.../files/<x>/` (records, wiki). A
+  reminder, not a lock: endpoints never check it.
 - See `docs/access-requests.md`.
 
 ## 13e. The API for scripts (`generic.tokens`, `generic.openapi`)

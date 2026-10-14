@@ -26,6 +26,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   (`ACCESS_REQUEST_INTERVAL`). Off by default; on in the example,
   where the viewer has a download request waiting. Migration
   `generic 0020`. See docs/access-requests.md.
+- A reminder before exporting or downloading: `EXPORT_DISCLAIMER` and
+  `DOWNLOAD_DISCLAIMER` (a text, or `{"text", "title", "checkbox"}`)
+  show a privacy notice with a box to tick before every table export,
+  scheduled mailing and file download. Off by default; the example
+  shows one for each.
 - Server status: *Monitoring › Server status* shows this server's
   processors, memory, swap and disks as gauges, a trend line since the
   page opened, and whether each database, the migrations, each cache,

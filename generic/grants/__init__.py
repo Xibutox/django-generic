@@ -385,26 +385,93 @@ def state(user: Any) -> list[dict[str, Any]]:
     return rows
 
 
+#: The settings holding each disclaimer.
+DISCLAIMER_SETTINGS = {
+    "export": "EXPORT_DISCLAIMER",
+    "download": "DOWNLOAD_DISCLAIMER",
+}
+
+
+def disclaimer(kind: str) -> dict[str, str] | None:
+    """The reminder shown before ``kind``, as the reader reads it.
+
+    ``EXPORT_DISCLAIMER`` or ``DOWNLOAD_DISCLAIMER``: ``None`` (none),
+    a text, or ``{"title", "text", "checkbox"}`` - each a plain or a
+    ``gettext_lazy`` string, read here in the request's language.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+    from django.utils.encoding import force_str
+    from django.utils.translation import gettext
+
+    from generic.conf import generic_settings
+
+    name = DISCLAIMER_SETTINGS[kind]
+    value = getattr(generic_settings, name)
+
+    if not value:
+        return None
+
+    if not isinstance(value, dict):
+        value = {"text": value}
+
+    unknown = set(value) - {"title", "text", "checkbox"}
+
+    if unknown or not value.get("text"):
+        raise ImproperlyConfigured(
+            f"GENERIC[{name!r}] is a text, or a dict with 'text' and "
+            f"optionally 'title' and 'checkbox'."
+        )
+
+    return {
+        "title": force_str(
+            value.get("title")
+            or (
+                gettext("Before you export")
+                if kind == "export"
+                else gettext("Before you download")
+            )
+        ),
+        "text": force_str(value["text"]),
+        "checkbox": force_str(
+            value.get("checkbox")
+            or gettext(
+                "I have read this reminder and will handle the data "
+                "accordingly."
+            )
+        ),
+    }
+
+
 def client(request: Any) -> dict[str, Any] | None:
     """What every page's script knows: the rights given on request it
-    lacks, and where to ask. ``None`` when nothing is given on request.
-    """
+    lacks, where to ask, and the reminders shown before an export or a
+    download. ``None`` when there is none of that."""
     kinds = gated()
     user = user_of(request)
 
-    if not kinds or not getattr(user, "is_authenticated", False):
+    if not getattr(user, "is_authenticated", False):
+        return None
+
+    disclaimers = {
+        kind: text
+        for kind in DISCLAIMER_SETTINGS
+        if (text := disclaimer(kind)) is not None
+    }
+
+    if not kinds and not disclaimers:
         return None
 
     from django.urls import NoReverseMatch, reverse
 
     try:
-        url = reverse("generic:access-requests")
+        url = reverse("generic:access-requests") if kinds else ""
     except NoReverseMatch:
         url = ""
 
     return {
         "url": url,
         "missing": [kind for kind in kinds if not may(user, kind)],
+        "disclaimers": disclaimers,
     }
 
 
@@ -416,6 +483,7 @@ __all__ = [
     "ask",
     "client",
     "decide",
+    "disclaimer",
     "gated",
     "grant",
     "may",

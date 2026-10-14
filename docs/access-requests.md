@@ -66,6 +66,43 @@ written in a form.
 
 ![People › Access requests, one granted](screenshots/access-requests.png)
 
+## A reminder before exporting or downloading
+
+Apart from who may, a project can show a reminder - a privacy notice,
+most often - with a box to tick before every export and every
+download. Off by default; a text turns it on:
+
+```python
+from django.utils.translation import gettext_lazy as _
+
+GENERIC = {
+    "EXPORT_DISCLAIMER": {
+        "title": _("Personal data"),          # optional
+        "text": _("This export contains customers' personal data..."),
+        "checkbox": _("I will handle it as the privacy policy asks."),
+    },
+    "DOWNLOAD_DISCLAIMER": _("Files may hold personal data..."),
+}
+```
+
+A plain text gets a title (*Before you export*, *Before you
+download*) and a box (*I have read this reminder...*) of its own; a
+blank line starts a new paragraph. `gettext_lazy` texts are shown in
+each reader's language. The *Export* or *Download* button stays
+disabled until the box is ticked.
+
+`EXPORT_DISCLAIMER` comes before the menu's Excel, CSV, copy and
+print, and before *Send by e-mail on a schedule*;
+`DOWNLOAD_DISCLAIMER` before every link to a file the framework
+serves - a record's (summary page, table cells, a project's own
+icons) or the wiki's. Either works with or without
+`ACCESS_ON_REQUEST`. It is a reminder, not a lock: the endpoints do
+not ask for the tick, and a script with a token downloads as before.
+`Generic.access.confirm(kind)` shows it from a page of the project's
+own.
+
+![The export reminder, ticked](screenshots/export-disclaimer.png)
+
 ## From code
 
 ```python
@@ -108,5 +145,7 @@ interface only says what to offer.
 | `ACCESS_ON_REQUEST` | `()` | Rights given on request: `"export"`, `"download"` |
 | `ACCESS_REQUEST_INTERVAL` | `3600` | Seconds before asking again reminds anyone, or a refused right may be asked anew |
 | `ACCESS_REQUEST_CHANNELS` | `("notification", "mail")` | How the people who decide, then the person who asked, are told |
+| `EXPORT_DISCLAIMER` | `None` | A reminder ticked before every export: a text, or `{"text", "title", "checkbox"}` |
+| `DOWNLOAD_DISCLAIMER` | `None` | The same, before every file download |
 
 Migration `generic 0020`.

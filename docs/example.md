@@ -544,7 +544,9 @@ rights - the seed already left a download request waiting, two hours
 old, so *Remind* works. Then sign in as `admin`: the bell has the
 request, and *People › Access requests* lists every request; select
 one and *Grant* it. Back as `viewer`, reload: the export menu has its
-files again. See [Rights given on request](access-requests.md).
+files again - behind a privacy reminder to tick first
+(`EXPORT_DISCLAIMER`); clicking a ticket's attachment shows the
+download one. See [Rights given on request](access-requests.md).
 
 **On the API.** These are worth pasting into the address bar:
 

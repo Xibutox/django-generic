@@ -219,7 +219,7 @@ class TestGated:
         response = client.get("/account/")
         access = response.context["chrome"]["client"]["access"]
 
-        assert access == {"url": ASK, "missing": ["export"]}
+        assert access == {"url": ASK, "missing": ["export"], "disclaimers": {}}
         assert response.context["access_rights"] is True
 
     def test_a_mailing_needs_the_export(self, gated):
@@ -491,3 +491,75 @@ class TestDeciding:
 
             if before is not None:
                 site.register(AccessRequest, type(before))
+
+
+class TestDisclaimers:
+    """A reminder ticked before an export or a download: the page is
+    told what to show; nothing is gated by it."""
+
+    def config(self, user=None):
+        client = Client()
+        client.force_login(user or person())
+
+        return client.get("/account/").context["chrome"]["client"]["access"]
+
+    def test_none_by_default(self, gated):
+        assert self.config()["disclaimers"] == {}
+
+    def test_a_text_alone_gets_a_title_and_a_box(self, settings):
+        settings.GENERIC = {"DOWNLOAD_DISCLAIMER": "Personal data inside."}
+
+        access = self.config()
+
+        assert access["url"] == ""
+        assert access["missing"] == []
+        assert access["disclaimers"] == {
+            "download": {
+                "title": "Before you download",
+                "text": "Personal data inside.",
+                "checkbox": (
+                    "I have read this reminder and will handle the data "
+                    "accordingly."
+                ),
+            }
+        }
+
+    def test_every_part_can_be_written(self, settings):
+        settings.GENERIC = {
+            "EXPORT_DISCLAIMER": {
+                "title": "Privacy",
+                "text": "Handle with care.",
+                "checkbox": "I agree",
+            }
+        }
+
+        assert self.config()["disclaimers"]["export"] == {
+            "title": "Privacy",
+            "text": "Handle with care.",
+            "checkbox": "I agree",
+        }
+
+    def test_it_is_read_in_the_readers_language(self, settings):
+        from django.utils import translation
+        from django.utils.translation import gettext_lazy
+
+        settings.GENERIC = {"EXPORT_DISCLAIMER": gettext_lazy("Cancel")}
+
+        with translation.override("fr"):
+            shown = grants.disclaimer("export")
+
+        assert shown["text"] == "Annuler"
+        assert shown["title"] == "Avant d'exporter"
+
+    def test_a_typo_is_a_configuration_error(self, settings):
+        settings.GENERIC = {"EXPORT_DISCLAIMER": {"txt": "Careful"}}
+
+        with pytest.raises(ImproperlyConfigured, match="EXPORT_DISCLAIMER"):
+            grants.disclaimer("export")
+
+    def test_exports_still_work_without_ticking_on_the_server(self, settings):
+        settings.GENERIC = {"EXPORT_DISCLAIMER": "Careful"}
+
+        response = signed_in(person()).get(f"{API}export-csv/")
+
+        assert response.status_code == 200

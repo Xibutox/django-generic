@@ -238,6 +238,8 @@ See [Trash and access log](trash.md).
 | --- | --- | --- |
 | `ACCESS_ON_REQUEST` | `()` | Rights people ask for: `"export"` (every table's exports, copy, print, scheduled mailings; `generic.export_rows`) and `"download"` (every record's files, the wiki's files; `generic.download_files`). Empty: whoever reads exports and downloads |
 | `ACCESS_REQUEST_INTERVAL` | `3600` | Seconds before asking again reminds the people who decide, or a refused right may be asked anew |
+| `EXPORT_DISCLAIMER` | `None` | A reminder, with a box to tick, before every export (Excel, CSV, copy, print, scheduled mailing): a text, or `{"text", "title", "checkbox"}`; `gettext_lazy` texts are read in each reader's language |
+| `DOWNLOAD_DISCLAIMER` | `None` | The same before every file download |
 | `ACCESS_REQUEST_CHANNELS` | `("notification", "mail")` | How the people who decide (superusers, `generic.validate_accessrequest`), then the person who asked, are told |
 
 See [Rights given on request](access-requests.md).

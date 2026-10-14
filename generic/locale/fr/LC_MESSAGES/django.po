@@ -3933,3 +3933,15 @@ msgstr "statut"
 #: generic/grants/models.py
 msgid "message"
 msgstr "message"
+
+#: generic/grants/__init__.py
+msgid "Before you export"
+msgstr "Avant d'exporter"
+
+#: generic/grants/__init__.py
+msgid "Before you download"
+msgstr "Avant de télécharger"
+
+#: generic/grants/__init__.py
+msgid "I have read this reminder and will handle the data accordingly."
+msgstr "J'ai lu ce rappel et traiterai les données en conséquence."
