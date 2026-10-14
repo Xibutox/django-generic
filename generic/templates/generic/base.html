@@ -163,6 +163,7 @@
               {% endif %}
 
               {% if user.is_authenticated %}
+                {% include "generic/chrome/bug_report.html" %}
                 {% include "generic/chrome/notifications.html" %}
               {% endif %}
 

@@ -149,6 +149,10 @@ DEFAULTS: dict[str, Any] = {
     "HELP_LINKS": [],
     # A paragraph of the project's own, above the links.
     "HELP_TEXT": "",
+    # Where everyone reports a bug (https://, http:// or mailto:), drawn
+    # in the top bar. An administrator's link, set on the help page,
+    # replaces it; empty on both sides, nothing is drawn.
+    "BUG_REPORT_URL": "",
     # --- Planned restarts --------------------------------------------
     # How long before the announced hour each warning goes out.
     "MAINTENANCE_REMINDER_SECONDS": 60,

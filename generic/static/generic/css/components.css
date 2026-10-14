@@ -357,6 +357,15 @@
   flex-direction: column;
 }
 
+/* The link everyone follows, kept apart from the form under it. */
+.help-report {
+  margin: 0;
+}
+
+.help-report:not(:last-child) {
+  margin-bottom: var(--space-4);
+}
+
 /* The licence, as the file writes it: fixed width, and wrapped. */
 .help-licence {
   max-height: 22rem;

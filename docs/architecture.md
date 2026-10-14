@@ -100,6 +100,8 @@ generic/
 ├── help/
 │   ├── changelog.py     Keep a Changelog, parsed into releases
 │   ├── sources.py       Where the licence and the changelogs are found
+│   ├── models.py        HelpSettings: the one row of where to report a bug
+│   ├── api.py           Reading it, and changing it with its permission
 │   └── views.py         The help page and the page of changes
 │
 ├── maintenance/

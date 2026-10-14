@@ -657,6 +657,32 @@ GENERIC = {
 Nothing is rendered as HTML: the files are shown as the text they are,
 so a changelog is never a way into the page.
 
+### Reporting a bug
+
+One link for everyone to a ticket service - or `mailto:` a mailbox -
+drawn as a bug icon in the top bar of every page, as *Report a bug* in
+the account menu and on the help page, each opening it in a new tab so
+the page being reported stays open. Nothing is drawn while no link is
+set.
+
+- The project sets the default: `GENERIC["BUG_REPORT_URL"]`.
+- An administrator replaces it without a deployment, from the form on
+  the help page (`HelpSettings`, migration `generic 0020`). The form is
+  only drawn for, and `PATCH api/generic/help/settings/` only accepted
+  from, whoever holds `generic.change_helpsettings` - superusers do.
+  Emptied, the project's default comes back.
+- Only `https://`, `http://` and `mailto:` links are kept: the form
+  refuses anything else, and a setting that is not one of them is not
+  drawn, so a `javascript:` link never reaches a page.
+- `GenericSite.get_bug_report_url()` is the hook to compute it
+  otherwise - a link per team, for instance.
+
+```python
+GENERIC = {
+    "BUG_REPORT_URL": "https://tickets.example.com/new",
+}
+```
+
 ## JavaScript
 
 Small files, no build step, no framework:

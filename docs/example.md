@@ -214,6 +214,13 @@ and the newest release. *What changed* lists every release of every
 of its own. Add a line to `CHANGELOG.md` and reload the page to see it
 appear; see [UI layer](ui.md#help-licence-and-changelog).
 
+**Reporting a bug.** The bug icon in the top bar opens this
+repository's new issue page in a new tab, from
+`GENERIC["BUG_REPORT_URL"]`. As `admin`, *Help* has the form to point
+everyone somewhere else - another ticket service, or `mailto:` an
+address; save, and every page's top bar follows. As `viewer`, the icon
+is there and the form is not.
+
 **A planned restart.** *Plan a restart* in the account menu (you are
 `admin`, so you have the permission). Set an hour two minutes away,
 leave *Manual operation* ticked, and announce it: a banner counts down

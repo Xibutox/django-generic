@@ -1,0 +1,13 @@
+{% load i18n generic_ui %}
+{% if chrome.bug_report_url %}
+  {# The ticket service is another application: a tab of its own, so #}
+  {# the page being reported stays open beside it.                   #}
+  {% translate "Report a bug" as bug_report_label %}
+  <a class="icon-button"
+     href="{{ chrome.bug_report_url }}"
+     target="_blank"
+     rel="noopener noreferrer"
+     title="{{ bug_report_label }}">
+    {% icon "bug_report" "" bug_report_label %}
+  </a>
+{% endif %}
