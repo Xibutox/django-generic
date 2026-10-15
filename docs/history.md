@@ -171,9 +171,9 @@ Project-wide:
 
 ### Retention
 
-The history, the access log ([Trash and access log](trash.md)) and the
-notifications each keep for as long as their setting says, and
-`generic.retention.apply()` deletes what is older in each - nothing
+The history, the access log ([Trash and access log](trash.md)), the
+notifications and the [security events](security-log.md) each keep for
+as long as their setting says, and `generic.retention.apply()` deletes what is older in each - nothing
 where the setting is `None`:
 
 | Setting | Default | Store |
@@ -181,6 +181,7 @@ where the setting is `None`:
 | `HISTORY_RETENTION_DAYS` | `None` | The history of the records |
 | `ACCESS_LOG_RETENTION_DAYS` | `None` | Who opened which record, downloaded which file |
 | `EVENTS_RETENTION_DAYS` | `90` | The notifications |
+| `SECURITY_LOG_RETENTION_DAYS` | `None` | The [security events](security-log.md) |
 
 It runs once a day from a schedule on the managed task
 `generic.apply_retention` ([Tasks](tasks.md)), or from cron:

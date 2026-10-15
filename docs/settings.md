@@ -192,6 +192,8 @@ See [Scheduled mailings](mailings.md).
 
 | `LOGIN_MAX_ATTEMPTS` | `5` | Failed sign-ins in a row after which an account is locked for `LOGIN_LOCKOUT_MINUTES`; an address is locked after four times as many, on any accounts. `None` turns the lock off |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long the lock lasts, counted from the last failure. Kept in the cache: give production a shared one |
+| `SECURITY_LOG` | `True` | Sign-ins, failures, lockouts, passwords, API tokens, rights, exports: to the `generic.security` logger and the *Security events* screen ([Security events](security-log.md)) |
+| `SECURITY_LOG_RETENTION_DAYS` | `None` | Keep every security event. A number is what `apply_retention` deletes beyond |
 
 See [Signing in through somebody else](sso.md) and [Locking out
 guessers](sso.md#locking-out-guessers).

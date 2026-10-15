@@ -13,8 +13,13 @@ class GenericConfig(AppConfig):
         # framework in (generic/checks.py).
         from generic import checks  # noqa: F401
 
+        # Sign-ins, sign-outs, failures, API tokens: the security log.
+        from generic.audit import signals as audit_signals
+
         # Importing the module registers its signal receivers.
         from generic.events import signals  # noqa: F401
+
+        audit_signals.connect_tokens()
 
         # Every app's tasks.py declares what it knows how to run. Celery
         # imports these too, at its own start; the site needs them here,
@@ -47,6 +52,7 @@ class GenericConfig(AppConfig):
         # navigation: what the project declared is what it opens on.
         from generic.access.resources import register_screens as accesses
         from generic.accounts.resources import register_screens as people
+        from generic.audit.resources import register_screens as security
         from generic.events.resources import register_screens as messages
         from generic.grants.resources import register_screens as grants
         from generic.history.resources import register_screens as history
@@ -58,6 +64,7 @@ class GenericConfig(AppConfig):
         mailings()
         history()
         accesses()
+        security()
         people()
         grants()
         messages()

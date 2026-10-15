@@ -301,6 +301,15 @@ DEFAULTS: dict[str, Any] = {
     # shared by every process (Redis) in production.
     "LOGIN_MAX_ATTEMPTS": 5,
     "LOGIN_LOCKOUT_MINUTES": 15,
+    # --- Security events (generic.audit) --------------------------------
+    # Sign-ins, failed ones, lockouts, sign-outs, passwords changed, API
+    # tokens made and deleted, rights granted or refused, exports: to
+    # the generic.security logger and the Security events screen. False
+    # records none of them.
+    "SECURITY_LOG": True,
+    # Days of security events to keep. None keeps everything; a number
+    # is what ``generic.retention.apply()`` deletes beyond.
+    "SECURITY_LOG_RETENTION_DAYS": None,
     # --- Logs ----------------------------------------------------------
     # Seconds during which the same error is mailed to ADMINS only once
     # (generic.logs.ErrorMailHandler); the next mail says how many were

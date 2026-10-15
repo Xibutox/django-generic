@@ -17,12 +17,9 @@ the provider has its own rules.
 from __future__ import annotations
 
 import hashlib
-import logging
 from typing import Any
 
 from django.core.cache import cache
-
-logger = logging.getLogger("generic.accounts")
 
 #: How many more failures one address may make than one account.
 ADDRESS_FACTOR = 4
@@ -95,12 +92,17 @@ def failed(request: Any, username: str) -> None:
             count = 1
 
         if count == limit:
-            logger.warning(
-                "Sign-in refused for %s minutes after %s failed "
-                "passwords (%s).",
-                seconds // 60,
-                count,
-                "address" if "address" in key else "account",
+            from generic.audit import record
+
+            record(
+                "locked_out",
+                request=request,
+                username=username,
+                detail=(
+                    f"{count} failed passwords from this "
+                    f"{'address' if 'address' in key else 'account'}, "
+                    f"locked {seconds // 60} min"
+                ),
             )
 
 

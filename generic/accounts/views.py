@@ -194,6 +194,14 @@ class PasswordChangeView(SitePageMixin, auth_views.PasswordChangeView):
 
         return super().dispatch(request, *args, **kwargs)
 
+    def form_valid(self, form: Any) -> Any:
+        from generic.audit import record
+
+        response = super().form_valid(form)
+        record("password_changed", request=self.request)
+
+        return response
+
     def get_success_url(self) -> str:
         return self.site.get_url("password_change_done") or "/"
 

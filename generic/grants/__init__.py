@@ -300,6 +300,15 @@ def decide(request: Any, *, by: Any, granted: bool) -> bool:
 
         request.refresh_from_db()
 
+        from generic.audit import record
+
+        record(
+            "access_granted" if granted else "access_refused",
+            user=request.user,
+            actor=by,
+            detail=request.kind,
+        )
+
         if granted:
             app_label, codename = PERMISSIONS[request.kind].split(".")
             request.user.user_permissions.add(

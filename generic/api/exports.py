@@ -246,7 +246,10 @@ class ExportMixin:
         date_format = generic_settings.EXPORT_DATE_FORMAT
         datetime_format = generic_settings.EXPORT_DATETIME_FORMAT
 
+        count = 0
+
         for values in self.iter_export_rows(queryset, columns):
+            count += 1
             cells = []
 
             for value in values:
@@ -276,6 +279,7 @@ class ExportMixin:
         stream = tempfile.NamedTemporaryFile(suffix=".xlsx")
         workbook.save(stream)
         stream.seek(0)
+        self.record_export(request, "xlsx", count)
 
         return FileResponse(
             stream,
@@ -304,10 +308,17 @@ class ExportMixin:
             yield "\ufeff"
             yield writer.writerow([column["title"] for column in columns])
 
+            count = 0
+
             for values in self.iter_export_rows(queryset, columns):
+                count += 1
                 yield writer.writerow(
                     [self.format_csv_value(value) for value in values]
                 )
+
+            # Once the last row has left: a download given up half way
+            # is not recorded as the whole table.
+            self.record_export(request, "csv", count)
 
         response = StreamingHttpResponse(
             rows(),
@@ -318,6 +329,21 @@ class ExportMixin:
         )
 
         return response
+
+    def record_export(self, request: Any, extension: str, count: int) -> None:
+        """A security event: who took how many rows of which table.
+
+        A file downloaded is in the access log; a table of every
+        customer leaving in one file is the larger event, and the one
+        a data-leak inquiry asks about first.
+        """
+        from generic.audit import record
+
+        record(
+            "exported",
+            request=request,
+            detail=(f"{self.export_file_name} ({extension}): {count} rows"),
+        )
 
     @staticmethod
     def format_csv_value(value: Any) -> str:

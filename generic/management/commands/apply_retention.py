@@ -24,5 +24,6 @@ class Command(BaseCommand):
         self.stdout.write(
             f"{deleted['history']} history entr(y/ies), "
             f"{deleted['access_log']} access log entr(y/ies), "
-            f"{deleted['notifications']} notification(s) deleted."
+            f"{deleted['notifications']} notification(s), "
+            f"{deleted['security_log']} security event(s) deleted."
         )

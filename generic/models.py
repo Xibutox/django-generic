@@ -7,6 +7,7 @@ The models themselves live next to the code that uses them, in
 
 from generic.access.models import AccessEntry
 from generic.accounts.models import SavedView, UserPreferences
+from generic.audit.models import SecurityEvent
 from generic.events.models import (
     Message,
     Notification,
@@ -37,6 +38,7 @@ __all__ = [
     "RestartAnnouncement",
     "SavedView",
     "ScheduledMailing",
+    "SecurityEvent",
     "Sequence",
     "StatusServer",
     "TaskRun",

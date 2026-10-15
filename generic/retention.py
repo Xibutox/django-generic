@@ -7,7 +7,8 @@ keeps in ``GENERIC``:
   everything, the default - a record's history is often the evidence
   an audit asks for);
 * the access log - ``ACCESS_LOG_RETENTION_DAYS`` (``None``: everything);
-* the notifications - ``EVENTS_RETENTION_DAYS`` (90).
+* the notifications - ``EVENTS_RETENTION_DAYS`` (90);
+* the security events - ``SECURITY_LOG_RETENTION_DAYS`` (``None``).
 
 :func:`apply` deletes what is older in each, and nothing where the
 setting is ``None``. It runs as the ``apply_retention`` command - for
@@ -60,12 +61,13 @@ def prune_notifications(days: int | None = None) -> int:
 
 def apply() -> dict[str, int]:
     """Apply every retention. Returns how many entries went, by store."""
-    from generic import access, history
+    from generic import access, audit, history
 
     deleted = {
         "history": history.prune(),
         "access_log": access.prune(),
         "notifications": prune_notifications(),
+        "security_log": audit.prune(),
     }
 
     if any(deleted.values()):
@@ -73,7 +75,7 @@ def apply() -> dict[str, int]:
         logger.info(
             "Retention applied: %(history)s history entries, "
             "%(access_log)s access log entries, %(notifications)s "
-            "notifications deleted.",
+            "notifications, %(security_log)s security events deleted.",
             deleted,
         )
 
@@ -98,10 +100,9 @@ def register_task() -> None:
         name=TASK,
         label=_("Apply the retention periods"),
         description=_(
-            "Deletes the history, access log and notifications older "
-            "than GENERIC's HISTORY_RETENTION_DAYS, "
-            "ACCESS_LOG_RETENTION_DAYS and EVENTS_RETENTION_DAYS. Run "
-            "it once a day."
+            "Deletes the history, access log, notifications and "
+            "security events older than GENERIC's *_RETENTION_DAYS. "
+            "Run it once a day."
         ),
         icon="auto_delete",
         announce=("page",),
@@ -113,7 +114,8 @@ def register_task() -> None:
         return (
             gettext(
                 "%(history)s history entries, %(access_log)s access log "
-                "entries and %(notifications)s notifications deleted."
+                "entries, %(notifications)s notifications and "
+                "%(security_log)s security events deleted."
             )
             % deleted
         )

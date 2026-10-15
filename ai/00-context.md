@@ -172,6 +172,10 @@ generic/
 ├── retention.py            apply(): history, access log, notifications pruned
 │                           per *_RETENTION_DAYS; task generic.apply_retention,
 │                           command apply_retention
+├── audit/                  SecurityEvent: signed_in, sign_in_failed, locked_out,
+│                           signed_out, password_changed, token_*, access_*,
+│                           exported - to logger generic.security and History ›
+│                           Security events; record(kind, request=, user=) (§13f)
 ├── access/                 AccessEntry: who opened which record, who
 │                           downloaded which file; record(), the Access log
 │                           page (§13j)
@@ -1715,7 +1719,8 @@ strftime string fixes the text),
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`, `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
-`LOGIN_LOCKOUT_MINUTES` (15), `SHOW_STATUS`, `STATUS_TOKEN`,
+`LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
+`SECURITY_LOG_RETENTION_DAYS` (None), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
@@ -2403,6 +2408,18 @@ def payments():                                # quick: runs on every refresh
   `logging.getLogger(__name__)` and never swallows them silently;
   `check --deploy` warns `generic.W009` when `ADMINS` is empty. See
   `docs/logging.md`.
+- Security events (`generic.audit`, nothing to declare): sign-ins
+  (`user_logged_in`, any backend), failures (`user_login_failed`: the
+  name typed, never the password), lockouts, sign-outs, password
+  changes (account page, People screens: *by* the admin), API tokens
+  made/deleted, rights granted/refused, exports (Excel/CSV/mailings:
+  table, format, rows, once streamed). Each is one line on the
+  `generic.security` logger (refusals at WARNING) and a
+  `SecurityEvent` row (*History › Security events*, read-only,
+  `generic.view_securityevent`). A project's own:
+  `generic.audit.record("exported", request=request, detail=...)`.
+  `SECURITY_LOG` (True), `SECURITY_LOG_RETENTION_DAYS` (None, applied
+  by `apply_retention`). See `docs/security-log.md`.
 
 ## 14. Known pitfalls
 

@@ -72,6 +72,11 @@ generic/
 │   ├── views.py         Account settings, the language switch
 │   ├── resources.py     The People screens: users, groups, permissions
 │   └── guard.py         Nobody grants what they do not hold themselves
+├── audit/
+│   ├── __init__.py      record(): a security event to the log and the table; prune()
+│   ├── models.py        SecurityEvent: sign-ins, failures, lockouts, exports...
+│   ├── signals.py       Django's sign-in signals and the API tokens, recorded
+│   └── resources.py     The History › Security events screen, read-only
 ├── grants/
 │   ├── __init__.py      ACCESS_ON_REQUEST: may(), ask(), grant(), refuse(), validators()
 │   ├── models.py        AccessRequest; the export_rows, download_files, validate permissions
