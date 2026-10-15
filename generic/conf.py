@@ -126,6 +126,7 @@ DEFAULTS: dict[str, Any] = {
     # Channel group every authenticated user is subscribed to.
     "EVENTS_BROADCAST_GROUP": "generic.broadcast",
     # Retention for stored notifications, in days. None keeps forever.
+    # Applied by ``generic.retention.apply()`` (``apply_retention``).
     "EVENTS_RETENTION_DAYS": 90,
     # Deliver events inside the transaction that produced them (False)
     # or once it commits (True). Committing first avoids notifying
@@ -256,8 +257,8 @@ DEFAULTS: dict[str, Any] = {
     # resource.
     "HISTORY": True,
     # Days of history to keep. None keeps everything; a number is what
-    # ``generic.history.prune()`` and the ``prune_history`` command
-    # delete beyond.
+    # ``generic.retention.apply()`` - the ``apply_retention`` command,
+    # the ``generic.apply_retention`` task - deletes beyond.
     "HISTORY_RETENTION_DAYS": None,
     # --- Trash ---------------------------------------------------------
     # Days a record deleted from a resource declaring ``trash = True``
@@ -268,8 +269,8 @@ DEFAULTS: dict[str, Any] = {
     # --- Access log ----------------------------------------------------
     # Days of access log to keep (``access_log = True`` on a resource:
     # who opened which record, who downloaded which file). None keeps
-    # everything; a number is what ``generic.access.prune()`` deletes
-    # beyond.
+    # everything; a number is what ``generic.retention.apply()`` (the
+    # ``apply_retention`` command and task) deletes beyond.
     "ACCESS_LOG_RETENTION_DAYS": None,
     # --- Rights given on request ---------------------------------------
     # What people may do only once they asked and somebody granted it:

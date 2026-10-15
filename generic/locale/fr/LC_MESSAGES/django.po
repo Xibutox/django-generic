@@ -3203,6 +3203,26 @@ msgstr ""
 "Supprime définitivement ce qui est dans une corbeille depuis plus de "
 "GENERIC['TRASH_DAYS'] jours. À lancer une fois par jour."
 
+#: generic/retention.py
+msgid "Apply the retention periods"
+msgstr "Appliquer les durées de conservation"
+
+msgid ""
+"Deletes the history, access log and notifications older than GENERIC's "
+"HISTORY_RETENTION_DAYS, ACCESS_LOG_RETENTION_DAYS and EVENTS_RETENTION_DAYS. "
+"Run it once a day."
+msgstr ""
+"Supprime l'historique, le journal des accès et les notifications plus "
+"anciens que HISTORY_RETENTION_DAYS, ACCESS_LOG_RETENTION_DAYS et "
+"EVENTS_RETENTION_DAYS de GENERIC. À lancer une fois par jour."
+
+msgid ""
+"%(history)s history entries, %(access_log)s access log entries and "
+"%(notifications)s notifications deleted."
+msgstr ""
+"%(history)s entrées d'historique, %(access_log)s entrées du journal des "
+"accès et %(notifications)s notifications supprimées."
+
 #: generic/tasks/resources.py
 msgid "%(name)s (not registered)"
 msgstr "%(name)s (non enregistrée)"

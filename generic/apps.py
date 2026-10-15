@@ -38,6 +38,11 @@ class GenericConfig(AppConfig):
 
         trash.register_task()
 
+        # The retention periods' task: always there to be scheduled.
+        from generic import retention
+
+        retention.register_task()
+
         # After them, so the framework's own screens come last in the
         # navigation: what the project declared is what it opens on.
         from generic.access.resources import register_screens as accesses

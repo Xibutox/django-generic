@@ -18,6 +18,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   record - is written to Excel as a text cell, and to the CSV behind an
   apostrophe, so it never runs in the spreadsheet of whoever exports
   the table or receives it by mailing (CWE-1236).
+- Retention that runs: `manage.py apply_retention` and the managed
+  task `generic.apply_retention` (to schedule daily) delete the history,
+  access log and notifications older than `HISTORY_RETENTION_DAYS`,
+  `ACCESS_LOG_RETENTION_DAYS` and `EVENTS_RETENTION_DAYS`
+  (`generic.retention`). `EVENTS_RETENTION_DAYS` (90) was documented
+  but applied by nothing: notifications were kept forever. The example
+  keeps its access log a year, as the CNIL recommends.
 - Document manager: an approval given for somebody else is stamped
   under the name of who gave it - "Alice (for Bob)" - on the approved
   PDF. It named the person asked, who had approved nothing.

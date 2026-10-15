@@ -169,6 +169,9 @@ generic/
 │                           the Changes page
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
+├── retention.py            apply(): history, access log, notifications pruned
+│                           per *_RETENTION_DAYS; task generic.apply_retention,
+│                           command apply_retention
 ├── access/                 AccessEntry: who opened which record, who
 │                           downloaded which file; record(), the Access log
 │                           page (§13j)
@@ -2176,8 +2179,11 @@ history_of(ticket)                 # every version, newest first
   needs the record's view permission.
 - `history = False` per resource, `history_exclude = (...)` per field,
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
-  `generic.history.prune()` deletes what is older. See
-  `docs/history.md`.
+  `generic.history.prune()` deletes what is older;
+  `generic.retention.apply()` - command `apply_retention`, managed task
+  `generic.apply_retention`, to schedule daily - prunes history, access
+  log and notifications (`EVENTS_RETENTION_DAYS`, 90) at once. See
+  `docs/history.md#retention`.
 
 ## 13j. Trash and access log
 

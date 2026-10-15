@@ -169,8 +169,32 @@ Project-wide:
 | `HISTORY` | `True` | Record anything at all. `False` also removes the *Changes* page |
 | `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `prune()` deletes beyond |
 
-Nothing prunes on its own. Call `generic.history.prune()` from a task
-or a cron job if the retention is set.
+### Retention
+
+The history, the access log ([Trash and access log](trash.md)) and the
+notifications each keep for as long as their setting says, and
+`generic.retention.apply()` deletes what is older in each - nothing
+where the setting is `None`:
+
+| Setting | Default | Store |
+| --- | --- | --- |
+| `HISTORY_RETENTION_DAYS` | `None` | The history of the records |
+| `ACCESS_LOG_RETENTION_DAYS` | `None` | Who opened which record, downloaded which file |
+| `EVENTS_RETENTION_DAYS` | `90` | The notifications |
+
+It runs once a day from a schedule on the managed task
+`generic.apply_retention` ([Tasks](tasks.md)), or from cron:
+
+```bash
+0 3 * * * cd /app && python manage.py apply_retention
+```
+
+By default the history and the access log are kept whole: they are the
+evidence an audit asks for (ISO/IEC 27001 A.8.15). Personal data, though,
+is kept no longer than needed (GDPR Art. 5(1)(e)): choose a period per
+store and write it in the project's register of processing. The CNIL
+recommends six months to a year for an access log; the example keeps a
+year. The deletion is logged (`generic.retention`, `INFO`).
 
 ## Who may read it
 

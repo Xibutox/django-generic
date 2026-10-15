@@ -102,7 +102,7 @@ See [Imports](imports.md).
 | --- | --- | --- |
 | `EVENTS_WEBSOCKET_URL` | `"/ws/events/"` | Where the pages open their socket; empty disables it. Never opened when Channels is not installed; set it to `None` if Channels is installed but the site is served over WSGI |
 | `EVENTS_BROADCAST_GROUP` | `"generic.broadcast"` | Group every socket joins |
-| `EVENTS_RETENTION_DAYS` | `90` | Notification retention; `None` keeps forever |
+| `EVENTS_RETENTION_DAYS` | `90` | Notification retention; `None` keeps forever. Applied by `apply_retention` ([Retention](history.md#retention)) |
 | `EVENTS_DISPATCH_ON_COMMIT` | `True` | Wait for the transaction to commit |
 
 Leave `EVENTS_DISPATCH_ON_COMMIT` on. With it off, a client can be told
@@ -220,7 +220,7 @@ declares none accepts anything.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `HISTORY` | `True` | Keep a version of every record of every registered model. `False` records nothing and removes the *Changes* page |
-| `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `generic.history.prune()` deletes beyond; nothing prunes on its own |
+| `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [History](history.md).
 
@@ -229,7 +229,7 @@ See [History](history.md).
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `TRASH_DAYS` | `30` | How long a record stays in a resource's trash before `empty_trash` (or the *Empty the trash* task) deletes it for good. `None` keeps everything |
-| `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `generic.access.prune()` deletes beyond |
+| `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [Trash and access log](trash.md).
 
