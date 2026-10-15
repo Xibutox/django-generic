@@ -1,0 +1,24 @@
+# Updates proposed as pull requests, each going through the CI like any
+# other change (SECURITY.md). Security updates are proposed as soon as
+# an advisory is published, whatever the schedule.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: /docmanager
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directories: ["/docker", "/minimal", "/docmanager"]
+    schedule:
+      interval: weekly

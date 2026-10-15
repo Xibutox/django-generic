@@ -256,6 +256,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Settings](docs/settings.md) — every knob and its default
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
 - [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
+- [Security events](docs/security-log.md) — sign-ins and their failures, lockouts, passwords, API tokens, rights granted and exports, in the log and on a screen
 - [Testing](docs/testing.md) — running and extending the suite
 
 ## Seeing it run
@@ -404,6 +405,12 @@ version. What changed, release by release, is in
 package, and shown on the *Help › What changed* page of every
 application built on it, after the application's own
 [CHANGELOG.md](CHANGELOG.md).
+
+## Security
+
+A vulnerability is reported privately, never in a public issue: how,
+what follows and which versions receive fixes are in
+[SECURITY.md](SECURITY.md).
 
 ## Licence
 

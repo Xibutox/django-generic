@@ -23,7 +23,6 @@ import re
 import zipfile
 from pathlib import PurePosixPath
 from typing import Any
-from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +53,13 @@ def tidy(text: str) -> str:
 
 
 def read_xml(archive: zipfile.ZipFile, name: str) -> Any:
+    from defusedxml.ElementTree import parse
+
     with archive.open(name) as handle:
-        # Office XML has no DTD; the parser resolves no entity anyway.
-        return ElementTree.parse(handle).getroot()  # noqa: S314
+        # An uploaded file is anybody's: Office XML has no DTD, and
+        # defusedxml refuses one - the entity bombs and external
+        # entities a crafted file could carry.
+        return parse(handle).getroot()
 
 
 def word_paragraphs(data: bytes) -> list[str]:

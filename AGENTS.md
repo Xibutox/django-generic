@@ -49,6 +49,7 @@ python manage.py migrate && python manage.py seed_example && python manage.py ru
 python debug.py                               # runserver under a debugger (VS Code: F5)
 pytest
 black --check . && isort --check-only . && flake8 generic tests example example_project minimal docmanager scripts debug.py
+bandit -r generic example docmanager minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
 python -m build && python scripts/smoke_install.py   # the wheel, installed and plugged into a new project
 docker compose -f docker/docker-compose.dev.yml up --build     # dev stack

@@ -18,6 +18,23 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   record - is written to Excel as a text cell, and to the CSV behind an
   apostrophe, so it never runs in the spreadsheet of whoever exports
   the table or receives it by mailing (CWE-1236).
+- Security events (`generic.audit`): every sign-in, failed sign-in,
+  lockout, sign-out, password change, API token made or deleted, right
+  granted or refused and export (Excel, CSV, mailings: the table and
+  the number of rows) is written to the `generic.security` logger -
+  refusals at `WARNING`, with the account and the address - and to the
+  read-only *History › Security events* screen
+  (`generic.view_securityevent`). Nothing to declare; `SECURITY_LOG`
+  turns it off, `SECURITY_LOG_RETENTION_DAYS` keeps it to a size.
+  Migration `generic 0022`. The lockout's own log line, which named
+  neither the account nor the address, is replaced by its event.
+  See docs/security-log.md.
+- `SECURITY.md`: how to report a vulnerability privately, what
+  follows, the versions supported, and the one dependency
+  vulnerability accepted and why. The CI checks every dependency with
+  `pip-audit`, runs `bandit` over the example applications too, and
+  Dependabot proposes updates of the packages, Actions and images.
+  The document manager reads Office XML through `defusedxml`.
 - Retention that runs: `manage.py apply_retention` and the managed
   task `generic.apply_retention` (to schedule daily) delete the history,
   access log and notifications older than `HISTORY_RETENTION_DAYS`,
