@@ -303,7 +303,8 @@ not the internet: its secret key and passwords are public.
   its row in *Versions* - while the authors work on the next; someone a
   review asks reads the draft too. An approved PDF is stamped on every
   page with its number, version, date and approvers (*Release
-  procedure*'s *Published file*).
+  procedure*'s *Published file*) - whoever decided, "Alice (for
+  Bob)" when a manager answered for the person asked.
 - **Preview.** *Preview* on a document's page (or its row's menu)
   shows the file in the page: PDF and images as they are, Word as
   text, text files as text.

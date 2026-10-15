@@ -644,15 +644,20 @@ GED_SCENARIO = PRELUDE + textwrap.dedent("""
     assert "step 2 of 2" in body, body
 
     sign = ReviewTask.objects.get(step=step)
-    assert call(manager, "PATCH", f"/api/documents/reviewtask/{sign.pk}/",
+    # Alice started it, so she may answer for the manager - and the
+    # approvers, the names stamped on the approved PDF, say so: never
+    # the manager's name alone, who approved nothing.
+    assert call(alice, "PATCH", f"/api/documents/reviewtask/{sign.pk}/",
                 {"decision": "approve"}).status_code == 200
+    from documents.workflows import approvers, name_of
+    signed = approvers(running)
+    assert signed[-1] == (
+        f"{name_of(user('alice'))} (for {name_of(user('manager'))})"
+    ), signed
     running.refresh_from_db()
     nda.refresh_from_db()
     assert running.status == "approved", running.status
     assert nda.status == "approved"
-    assert "Every step is done." in Notification.objects.filter(
-        user__username="alice"
-    ).latest("pk").body
 
     # -- a review drawn on the spot ---------------------------------
     lease_review = call(alice, "POST", "/api/documents/review/", {

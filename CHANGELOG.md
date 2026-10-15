@@ -18,6 +18,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   record - is written to Excel as a text cell, and to the CSV behind an
   apostrophe, so it never runs in the spreadsheet of whoever exports
   the table or receives it by mailing (CWE-1236).
+- Document manager: an approval given for somebody else is stamped
+  under the name of who gave it - "Alice (for Bob)" - on the approved
+  PDF. It named the person asked, who had approved nothing.
 
 ### Added
 - Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
