@@ -79,12 +79,58 @@ history saying so twice is a history nobody reads. Every save inside one
 request, or inside one `acting_as` block, folds into a single entry.
 Outside either, each save stands alone.
 
-### What leaves no history
+### Writes that bypass `save()`
 
-`QuerySet.update()`, `bulk_create()` and `bulk_update()` fire no signal,
-so they record nothing — the same caveat as the live tables and the
-watches. Save the rows, or write the entry yourself with
-`generic.history.record`.
+`QuerySet.update()`, `bulk_update()` and `bulk_create()` fire no signal,
+yet they are recorded like a save (`generic.history.bulk`): `update()`
+reads the keys of the rows it is about to change, changes them, reads
+them back and records a version of each - `F()` expressions included,
+with the person and source of the request or `acting_as` block.
+`bulk_create()` records each row the database says it wrote
+(`ignore_conflicts` says none). A row costs what a `save()` of it costs
+the history, so a million-row `update()` writes a million versions;
+where nobody needs one - a data migration, a rebuild - say so:
+
+```python
+from generic.history import unrecorded
+
+with unrecorded():
+    Ticket.objects.update(search_vector=...)
+```
+
+The live tables and the watches still hear nothing of these writes:
+`announce(resource, "bulk")` tells the open tables.
+
+### Writes outside the application (PostgreSQL)
+
+A row changed from `psql`, by another application sharing the
+database, by a script, or by raw SQL in the project's own code never
+reaches Django's ORM. On PostgreSQL every recorded table carries a
+trigger, `generic_history`, that records those writes in the same
+history: the record's fields, compared with its last version, *by* the
+database role (`session_user`), from *Database (outside the
+application)*. A raw `UPDATE` that changes nothing writes nothing,
+exactly like a save.
+
+The ORM's own writes are already recorded by the application, with the
+person behind them: each statement goes out tagged
+`/* generic:orm */`, and the trigger leaves those alone - so nothing is
+recorded twice, and anything untagged is. The triggers are installed,
+updated and removed after every `migrate`; `manage.py history_triggers`
+does it now, and `--sql` prints the SQL for a database administrator.
+The role running `migrate` needs the right to create triggers on the
+tables - it owns them, normally.
+
+| Setting | Default | Means |
+| --- | --- | --- |
+| `HISTORY_TRIGGERS` | `None` | `None`: on PostgreSQL. `False`: never - the next `migrate` removes them |
+
+Not covered by the triggers: the many-to-many tables (a version carries
+the last list it knew forward), a model inheriting another's table, a
+composite key. A role allowed to drop a trigger can go around it - that
+is the database's own audit's job (`pgaudit`) and its privileges'.
+
+### What leaves no history
 
 A many-to-many set from the far end (`tag.tickets.add(ticket)`) records
 nothing either: the record that changed is at the other end of the

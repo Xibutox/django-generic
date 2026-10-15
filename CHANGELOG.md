@@ -35,6 +35,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `pip-audit`, runs `bandit` over the example applications too, and
   Dependabot proposes updates of the packages, Actions and images.
   The document manager reads Office XML through `defusedxml`.
+- The history records every write. `QuerySet.update()`,
+  `bulk_update()` and `bulk_create()` - which fire no signal and left
+  no trace, nor did the framework's own uses of them (a right granted,
+  a folder moved to another team) - now record a version of each row,
+  as the database holds it, with the person behind it
+  (`generic.history.bulk`; `with unrecorded():` for a data migration).
+  On PostgreSQL a trigger on every recorded table records what is
+  written outside the application - `psql`, another application, raw
+  SQL - by the database role, "Database (outside the application)";
+  the ORM's own statements are tagged and left to the application, so
+  nothing is recorded twice (`generic.history.triggers`, installed
+  after `migrate`, `manage.py history_triggers`, `HISTORY_TRIGGERS`).
+  An API token's history is kept at last (`HistoryEntry.object_id`
+  holds 128 characters, migration `generic 0023`), without its hash.
 - Retention that runs: `manage.py apply_retention` and the managed
   task `generic.apply_retention` (to schedule daily) delete the history,
   access log and notifications older than `HISTORY_RETENTION_DAYS`,

@@ -56,8 +56,8 @@ class ApiTokenResource(ModelResource):
     watchable = False
     mailing = False
     # The token's bookkeeping is no one's news; revoking is, and the
-    # deletion is what the history keeps.
-    history_exclude = ("last_used_at",)
+    # deletion is what the history keeps. Its hash is nobody's to read.
+    history_exclude = ("last_used_at", "digest", "token_key")
 
     def get_queryset(self, request: Any) -> QuerySet:
         return super().get_queryset(request).select_related("user")

@@ -222,6 +222,7 @@ declares none accepts anything.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `HISTORY` | `True` | Keep a version of every record of every registered model. `False` records nothing and removes the *Changes* page |
+| `HISTORY_TRIGGERS` | `None` | PostgreSQL triggers recording the rows written outside the ORM - `psql`, another application, raw SQL - in the history. `None`: on PostgreSQL; `False`: never ([History](history.md#writes-outside-the-application-postgresql)) |
 | `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [History](history.md).

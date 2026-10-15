@@ -260,6 +260,11 @@ DEFAULTS: dict[str, Any] = {
     # ``generic.retention.apply()`` - the ``apply_retention`` command,
     # the ``generic.apply_retention`` task - deletes beyond.
     "HISTORY_RETENTION_DAYS": None,
+    # PostgreSQL triggers recording what is written outside the ORM -
+    # psql, another application, raw SQL - in the same history
+    # (generic.history.triggers). None: on PostgreSQL; False: never,
+    # and the next migrate removes them.
+    "HISTORY_TRIGGERS": None,
     # --- Trash ---------------------------------------------------------
     # Days a record deleted from a resource declaring ``trash = True``
     # stays in its trash. ``generic.trash.empty()``, the ``empty_trash``

@@ -11,7 +11,23 @@ class GenericConfig(AppConfig):
     def ready(self) -> None:
         # What `manage.py check` says about how the project plugged the
         # framework in (generic/checks.py).
+        # The history's PostgreSQL triggers: the ORM's writes tagged, so
+        # the triggers record only the others; installed - or removed -
+        # after every migrate.
+        from django.db.models.signals import post_migrate
+
         from generic import checks  # noqa: F401
+        from generic.conf import generic_settings
+        from generic.history import triggers
+
+        if generic_settings.HISTORY and (
+            generic_settings.HISTORY_TRIGGERS is not False
+        ):
+            triggers.install_tagging()
+
+        post_migrate.connect(
+            triggers.post_migrate, dispatch_uid="generic.history.triggers"
+        )
 
         # Sign-ins, sign-outs, failures, API tokens: the security log.
         from generic.audit import signals as audit_signals

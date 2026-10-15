@@ -165,8 +165,9 @@ generic/
 │                           fold, isolated sections (savepoint) (§13g)
 ├── history/                HistoryEntry: a version of every record of every
 │                           registered model; actor (who), recording (signals
-│                           -> versions), reading (versions -> changes), and
-│                           the Changes page
+│                           -> versions), bulk (update/bulk_* recorded),
+│                           triggers (PostgreSQL: writes outside the ORM),
+│                           reading (versions -> changes), the Changes page
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
 ├── retention.py            apply(): history, access log, notifications pruned
@@ -2166,8 +2167,20 @@ history_of(ticket)                 # every version, newest first
   returns them (a decimal quantized to its field's places).
 - A save that changes nothing recorded writes nothing. Every save in
   one request - or one `acting_as` block - folds into one entry: one
-  unit of work is one version. `update()` and `bulk_create()` fire no
-  signal and record nothing, like the events and the watches.
+  unit of work is one version. `update()`, `bulk_update()` and
+  `bulk_create()` fire no signal but ARE recorded
+  (`generic.history.bulk` wraps them: keys read, rows re-read, one
+  version each - a cost per row); `with unrecorded():` opts a data
+  migration out. Events and watches still hear nothing of them.
+- On PostgreSQL a trigger `generic_history` on every recorded table
+  records writes made outside the ORM (psql, another app, raw SQL)
+  in the same history - by `session_user`, source "Database (outside
+  the application)". ORM statements carry `/* generic:orm */` (an
+  execute wrapper, while a compiler's `execute_sql` runs) and are left
+  to the application. Installed/updated/removed after `migrate`;
+  `manage.py history_triggers [--sql]`; `HISTORY_TRIGGERS` (None = on
+  PostgreSQL, False = never). Not: m2m tables, multi-table
+  inheritance, composite keys. `HistoryEntry.object_id` holds 128.
 - Many-to-many fields are carried forward and re-read only when
   `m2m_changed` fires; set from the far end
   (`tag.tickets.add(ticket)`) records nothing.
@@ -2443,7 +2456,8 @@ def payments():                                # quick: runs on every refresh
 - A `list_display` path through a many-valued relation raises: use a
   method column.
 - Computed columns need an annotation to be sortable/filterable.
-- `QuerySet.update()` fires no signal: `announce(resource, "bulk")`.
+- `QuerySet.update()` fires no signal: `announce(resource, "bulk")`
+  for the live tables (the history records it by itself).
 - After changing JS/CSS, browsers cache static files: hard reload.
 - Seeding users with passwords invalidates open sessions.
 - Never `reverse()` at the top level of a `resources.py`: it is

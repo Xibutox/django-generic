@@ -33,6 +33,7 @@ from __future__ import annotations
 from typing import Any
 
 from generic.history.actor import Actor, acting_as, current_actor
+from generic.history.bulk import unrecorded
 from generic.history.models import HistoryEntry
 from generic.history.recording import is_recorded, record
 
@@ -81,4 +82,5 @@ __all__ = [
     "is_recorded",
     "prune",
     "record",
+    "unrecorded",
 ]
