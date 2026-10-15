@@ -360,6 +360,13 @@ Both actions stream the **filtered** queryset, ignoring pagination:
 rather than rejected, since a client may hold a stale column list after
 a deployment.
 
+A text that a spreadsheet would run as a formula - one starting with
+`=`, `+`, `-`, `@`, a tab or a carriage return, such as
+`=HYPERLINK(...)` typed into a record - is exported as text: in Excel
+as a text cell, exactly as typed; in the CSV behind an apostrophe
+(`'=HYPERLINK(...)`), as OWASP advises (CWE-1236). Numbers are not
+text and are left alone.
+
 `EXPORT_MAX_ROWS` (default 250 000) refuses an oversized export instead
 of timing out.
 

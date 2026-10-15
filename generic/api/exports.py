@@ -50,6 +50,27 @@ CELL_TYPES = (
     datetime.timedelta,
 )
 
+#: What a spreadsheet reads as the start of a formula. A cell holding
+#: ``=HYPERLINK("https://evil.example", "Click")`` - typed into a
+#: record by anyone who may edit it - would otherwise run in the
+#: spreadsheet of whoever exports the table (CWE-1236).
+FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def is_formula_like(value: Any) -> bool:
+    """Whether a spreadsheet would read this text as a formula."""
+    return isinstance(value, str) and value.startswith(FORMULA_STARTS)
+
+
+def defuse_csv_value(text: str) -> str:
+    """Text a spreadsheet opening the CSV shows rather than runs.
+
+    The apostrophe is OWASP's advice, and what a spreadsheet itself
+    puts in front of a text it must not read as a formula. Numbers
+    never reach here as text, so ``-5`` stays a number.
+    """
+    return f"'{text}" if is_formula_like(text) else text
+
 
 def localize_for_export(value: Any) -> Any:
     """Make a value safe to hand to a spreadsheet writer."""
@@ -237,6 +258,12 @@ class ExportMixin:
                     cell = WriteOnlyCell(sheet, value=value)
                     cell.number_format = date_format
                     cells.append(cell)
+                elif is_formula_like(value):
+                    # Written as text, as typed: openpyxl stores any
+                    # string starting with "=" as a formula otherwise.
+                    cell = WriteOnlyCell(sheet, value=value)
+                    cell.data_type = "s"
+                    cells.append(cell)
                 else:
                     cells.append(value)
 
@@ -309,7 +336,7 @@ class ExportMixin:
         if isinstance(value, decimal.Decimal):
             return str(value)
 
-        return str(value)
+        return defuse_csv_value(str(value))
 
 
 #: Kept as an alias: the previous name only covered the Excel export.

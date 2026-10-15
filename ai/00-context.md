@@ -721,7 +721,9 @@ one); after `queryset.update()` call `announce(self, "bulk")`.
 | in `tag_fields` | coloured tags, links per tag | same filter as the field |
 
 Row menu (right-click too): Open (summary), Edit, Delete. Double-click
-opens. Exports (Excel, CSV `;`) contain **every filtered row**.
+opens. Exports (Excel, CSV `;`) contain **every filtered row**; a text
+starting `= + - @` (tab, CR) is written as text, never a formula
+(Excel: a text cell; CSV: `'` in front).
 
 **Filters are generated too — never build filter UI.** The list shows
 active filters as chips in a bar. Users add them from the *Filter*

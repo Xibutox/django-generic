@@ -12,6 +12,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Security
+- Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
+  `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
+  record - is written to Excel as a text cell, and to the CSV behind an
+  apostrophe, so it never runs in the spreadsheet of whoever exports
+  the table or receives it by mailing (CWE-1236).
+
 ### Added
 - Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
   ("export", "download")`, exporting tables (Excel, CSV, copy, print,
