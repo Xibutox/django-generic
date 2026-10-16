@@ -80,7 +80,18 @@ def test_a_ticket_dragged_to_another_day_is_due_then(signed_in, due):
     later = due + datetime.timedelta(days=2)
 
     chip = day(page, due).locator(".calendar-event", has_text="SD-1001")
-    chip.drag_to(day(page, later))
+    target = day(page, later)
+    target.scroll_into_view_if_needed()
+    box = target.bounding_box()
+
+    # Moved there in steps, as a hand would: a single jump does not start
+    # an HTML drag in Chromium when the day is on the next row.
+    chip.hover()
+    page.mouse.down()
+    page.mouse.move(
+        box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=10
+    )
+    page.mouse.up()
 
     expect(day(page, later).locator(".calendar-event")).to_contain_text(
         "SD-1001"
