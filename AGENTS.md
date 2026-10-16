@@ -52,6 +52,7 @@ black --check . && isort --check-only . && flake8 generic tests example example_
 bandit -r generic example docmanager minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
 python -m build && python scripts/smoke_install.py   # the wheel, installed and plugged into a new project
+python scripts/new_project.py                 # a new project: secrets, hardened Docker stack, encrypted backups (docs/new-project.md)
 docker compose -f docker/docker-compose.dev.yml up --build     # dev stack
 ```
 

@@ -12,6 +12,21 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Added
+- `scripts/new_project.py`: a new project on the framework in one
+  command, ready to deploy - the code, the framework's wheel in
+  `vendor/`, a development and a production Docker stack, and
+  `docker/prod.env` / `docker/dev.env` with every secret random and
+  readable by its owner alone. The production stack drops every
+  container's capabilities, runs them read-only with limits and
+  rotated logs, keeps Postgres and Redis on a network with no way out,
+  and backs the database and the uploaded files up every day,
+  encrypted (GnuPG, AES-256), checked, pruned, with a weekly restore
+  test recorded in `backups/restore-tests.log`. `python ops.py backup |
+  verify | restore-test | restore` from the project, on any system;
+  its `SECURITY-CONTROLS.md` maps each choice to ISO/IEC 27001 Annex A.
+  See docs/new-project.md.
+
 ### Security
 - Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
   `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
