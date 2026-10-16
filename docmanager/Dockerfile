@@ -14,7 +14,7 @@
 
 # -- web ----------------------------------------------------------------
 
-FROM python:3.12-slim AS web
+FROM python:3.14-slim AS web
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
