@@ -270,6 +270,20 @@ myapp/
 tests/                      pytest; conftest.py fixtures; one file per area
 ```
 
+A new project is best started with `python scripts/new_project.py`
+(docs/new-project.md): it writes this layout from
+`scripts/project_template/` (`*.tpl`, `{{ name }}` filled in) - split
+settings, the wheel in `vendor/`, a first app - plus `docker/` (targets
+dev, prod, proxy, backup; `compose.dev.yml`, a hardened
+`compose.prod.yml`: `cap_drop: ALL`, read-only, limits, an `internal`
+backend network, only Caddy published), `docker/prod.env` and
+`dev.env` with random secrets (0600, ignored), `ops.py` (up, manage,
+backup, verify, restore-test, restore - encrypted GnuPG backups of the
+database and the media, checked, pruned, a weekly restore test into a
+throwaway database logged in `backups/restore-tests.log`) and
+`SECURITY-CONTROLS.md` (ISO/IEC 27001 Annex A mapping). Kept working
+by `tests/test_new_project.py` and CI's `new-project` job.
+
 The **reference implementation** is `example/` (a support desk) with
 `example_project/`. `example/resources.py` shows every feature; mimic it.
 `minimal/` is the smallest project the framework runs in - one

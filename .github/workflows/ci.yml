@@ -233,6 +233,53 @@ jobs:
             -v /tmp/certs:/etc/letsencrypt:ro \
             nginx:stable-alpine sh -c 'rm /etc/nginx/conf.d/default.conf && nginx -t'
 
+  new-project:
+    name: A new project, its stack and its backups
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Written by scripts/new_project.py, secrets and all
+        run: |
+          python scripts/new_project.py "$RUNNER_TEMP/desk" --name desk \
+            --title "Support desk" --domain localhost --no-input
+          test "$(stat -c %a "$RUNNER_TEMP/desk/docker/prod.env")" = 600
+      - name: Started, as its README says
+        working-directory: ${{ runner.temp }}/desk
+        run: python ops.py up
+      - name: The site answers through Caddy, and nothing else is published
+        working-directory: ${{ runner.temp }}/desk
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost/login/ && break
+            sleep 2
+          done
+          curl -fsS -o /dev/null http://localhost/login/
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost/)" = 302
+          ! curl -s --max-time 2 http://localhost:5432/
+          ! curl -s --max-time 2 http://localhost:6379/
+      - name: Backed up, verified, test-restored, restored
+        working-directory: ${{ runner.temp }}/desk
+        run: |
+          python ops.py manage shell -c "from core.models import Item; Item.objects.create(name='kept')"
+          python ops.py backup
+          python ops.py verify
+          python ops.py restore-test
+          grep -q passed backups/restore-tests.log
+          python ops.py manage shell -c "from core.models import Item; Item.objects.all().delete()"
+          python ops.py restore latest --yes
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost/login/ && break
+            sleep 2
+          done
+          python ops.py manage shell -c "from core.models import Item; assert Item.objects.filter(name='kept').exists()"
+      - name: The stack's logs
+        if: always()
+        working-directory: ${{ runner.temp }}/desk
+        run: python ops.py logs
+
   minimal-docker:
     name: The minimal example, in Docker
     runs-on: ubuntu-latest

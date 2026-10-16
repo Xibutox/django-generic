@@ -13,6 +13,18 @@ You set up a production-shaped Django project that uses django-generic as
 its foundation, copying the wiring of `example_project/` and `docker/`
 rather than inventing new wiring.
 
+## The fast path
+
+`python scripts/new_project.py TARGET --name <project> --title "..."
+--domain <domain> --no-input` writes everything below - with random
+secrets in `docker/prod.env` and `docker/dev.env`, a hardened
+production stack (`docker/compose.prod.yml`) and encrypted, verified
+backups run by `ops.py` (docs/new-project.md). Start there, then add
+the apps (use case 1); the steps below are what it does, and what to
+check when wiring a project by hand. Its template is
+`scripts/project_template/`; CI has no workflow for the new project -
+add one as step 7 says.
+
 ## Deliverables
 
 ```
