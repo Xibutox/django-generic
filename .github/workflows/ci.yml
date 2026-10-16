@@ -15,7 +15,7 @@ jobs:
     name: Lint, catalogs and type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -71,7 +71,7 @@ jobs:
             django: ""
             drf: ""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -116,7 +116,7 @@ jobs:
       DATABASE_URL: postgres://generic:generic@localhost:5432/generic
       REDIS_URL: redis://localhost:6379/0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -131,7 +131,7 @@ jobs:
     name: Browser tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -153,7 +153,7 @@ jobs:
     name: Package, installed as a user installs it
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -185,7 +185,7 @@ jobs:
     name: The nginx front, configured
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: The compose files, as Compose reads them
         run: |
           printf 'DJANGO_SECRET_KEY=ci\nDJANGO_ALLOWED_HOSTS=desk.example.com\nPOSTGRES_PASSWORD=ci\nSTATIC_EXPORT_DIR=/tmp/static\n' > /tmp/ci.env
@@ -237,7 +237,7 @@ jobs:
     name: A new project, its stack and its backups
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -284,7 +284,7 @@ jobs:
     name: The minimal example, in Docker
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Built and started as its README says
         run: docker compose -f minimal/compose.yaml up --build -d
       - name: The sign-in page answers, and / and the wiki send there
