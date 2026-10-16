@@ -131,7 +131,10 @@ wiki (nh3, fpdf2 for its PDF), `postgres` psycopg.
 
 [Installation](docs/installation.md) walks through both cases, a new
 project from nothing and an existing one, and covers Docker, updating,
-and working on the framework and a project together.
+and working on the framework and a project together. Or let
+`python scripts/new_project.py` write the new project, with its
+secrets, its production stack and its backups
+([A new project, ready to deploy](docs/new-project.md)).
 
 Then, in the project's settings and URLs - the full version, with what
 each line is for, is in [Installation](docs/installation.md):
@@ -255,6 +258,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Server status](docs/status.md) — processors, memory, disks and every service of this server, and of the other servers it watches, on one page
 - [Translation](docs/i18n.md) — the French catalog, the language menu, the workflow
 - [Settings](docs/settings.md) — every knob and its default
+- [A new project, ready to deploy](docs/new-project.md) — `scripts/new_project.py`: a project, its random secrets, a hardened Docker stack and encrypted backups that test their own restore, in one command
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
 - [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
 - [Security events](docs/security-log.md) — sign-ins and their failures, lockouts, passwords, API tokens, rights granted and exports, in the log and on a screen

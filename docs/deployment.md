@@ -396,6 +396,10 @@ Restore both from the same moment: a database naming files the volume
 lacks answers 404 for them; files the database no longer names are
 only taking room.
 
+A project written by `scripts/new_project.py` does this by itself:
+every day, encrypted, checked, pruned, with a weekly restore test and
+a one-command restore ([A new project](new-project.md#the-backups)).
+
 ### More than one web process
 
 Daphne is one process. Events already work across several, through
@@ -426,6 +430,11 @@ CI builds all three: the suite runs in `dev`, `check --deploy` in
 `prod`, and `prod` and `proxy` are pushed (see `.gitlab-ci.yml`).
 
 ## Starting a new project from this one
+
+`python scripts/new_project.py` does all of this in one command, and
+adds random secrets, a hardened production stack and encrypted,
+self-testing backups: see [A new project, ready to deploy](new-project.md).
+By hand:
 
 The framework itself is a dependency, not something to copy. Its wheel,
 built from this repository, goes into the new project's `vendor/`
