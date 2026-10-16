@@ -15,6 +15,7 @@ from decimal import Decimal
 import pytest
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from freezegun import freeze_time
 
 from example import external
 from generic.api import (
@@ -234,6 +235,9 @@ class TestTheEndpoint:
         assert body["recordsTotal"] == len(external.SERVICES)
         assert body["data"][0]["name"] == "BackupBay"
 
+    # Midday: the rows were checked minutes ago, which just after
+    # midnight is yesterday, and "today" would find none of them.
+    @freeze_time("2026-03-20 12:00:00")
     def test_a_filter_of_each_kind(self, admin_client):
         assert rows(
             admin_client,
