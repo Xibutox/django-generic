@@ -79,12 +79,58 @@ history saying so twice is a history nobody reads. Every save inside one
 request, or inside one `acting_as` block, folds into a single entry.
 Outside either, each save stands alone.
 
-### What leaves no history
+### Writes that bypass `save()`
 
-`QuerySet.update()`, `bulk_create()` and `bulk_update()` fire no signal,
-so they record nothing — the same caveat as the live tables and the
-watches. Save the rows, or write the entry yourself with
-`generic.history.record`.
+`QuerySet.update()`, `bulk_update()` and `bulk_create()` fire no signal,
+yet they are recorded like a save (`generic.history.bulk`): `update()`
+reads the keys of the rows it is about to change, changes them, reads
+them back and records a version of each - `F()` expressions included,
+with the person and source of the request or `acting_as` block.
+`bulk_create()` records each row the database says it wrote
+(`ignore_conflicts` says none). A row costs what a `save()` of it costs
+the history, so a million-row `update()` writes a million versions;
+where nobody needs one - a data migration, a rebuild - say so:
+
+```python
+from generic.history import unrecorded
+
+with unrecorded():
+    Ticket.objects.update(search_vector=...)
+```
+
+The live tables and the watches still hear nothing of these writes:
+`announce(resource, "bulk")` tells the open tables.
+
+### Writes outside the application (PostgreSQL)
+
+A row changed from `psql`, by another application sharing the
+database, by a script, or by raw SQL in the project's own code never
+reaches Django's ORM. On PostgreSQL every recorded table carries a
+trigger, `generic_history`, that records those writes in the same
+history: the record's fields, compared with its last version, *by* the
+database role (`session_user`), from *Database (outside the
+application)*. A raw `UPDATE` that changes nothing writes nothing,
+exactly like a save.
+
+The ORM's own writes are already recorded by the application, with the
+person behind them: each statement goes out tagged
+`/* generic:orm */`, and the trigger leaves those alone - so nothing is
+recorded twice, and anything untagged is. The triggers are installed,
+updated and removed after every `migrate`; `manage.py history_triggers`
+does it now, and `--sql` prints the SQL for a database administrator.
+The role running `migrate` needs the right to create triggers on the
+tables - it owns them, normally.
+
+| Setting | Default | Means |
+| --- | --- | --- |
+| `HISTORY_TRIGGERS` | `None` | `None`: on PostgreSQL. `False`: never - the next `migrate` removes them |
+
+Not covered by the triggers: the many-to-many tables (a version carries
+the last list it knew forward), a model inheriting another's table, a
+composite key. A role allowed to drop a trigger can go around it - that
+is the database's own audit's job (`pgaudit`) and its privileges'.
+
+### What leaves no history
 
 A many-to-many set from the far end (`tag.tickets.add(ticket)`) records
 nothing either: the record that changed is at the other end of the
@@ -169,8 +215,33 @@ Project-wide:
 | `HISTORY` | `True` | Record anything at all. `False` also removes the *Changes* page |
 | `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `prune()` deletes beyond |
 
-Nothing prunes on its own. Call `generic.history.prune()` from a task
-or a cron job if the retention is set.
+### Retention
+
+The history, the access log ([Trash and access log](trash.md)), the
+notifications and the [security events](security-log.md) each keep for
+as long as their setting says, and `generic.retention.apply()` deletes what is older in each - nothing
+where the setting is `None`:
+
+| Setting | Default | Store |
+| --- | --- | --- |
+| `HISTORY_RETENTION_DAYS` | `None` | The history of the records |
+| `ACCESS_LOG_RETENTION_DAYS` | `None` | Who opened which record, downloaded which file |
+| `EVENTS_RETENTION_DAYS` | `90` | The notifications |
+| `SECURITY_LOG_RETENTION_DAYS` | `None` | The [security events](security-log.md) |
+
+It runs once a day from a schedule on the managed task
+`generic.apply_retention` ([Tasks](tasks.md)), or from cron:
+
+```bash
+0 3 * * * cd /app && python manage.py apply_retention
+```
+
+By default the history and the access log are kept whole: they are the
+evidence an audit asks for (ISO/IEC 27001 A.8.15). Personal data, though,
+is kept no longer than needed (GDPR Art. 5(1)(e)): choose a period per
+store and write it in the project's register of processing. The CNIL
+recommends six months to a year for an access log; the example keeps a
+year. The deletion is logged (`generic.retention`, `INFO`).
 
 ## Who may read it
 

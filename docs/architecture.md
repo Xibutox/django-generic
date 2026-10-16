@@ -72,6 +72,11 @@ generic/
 │   ├── views.py         Account settings, the language switch
 │   ├── resources.py     The People screens: users, groups, permissions
 │   └── guard.py         Nobody grants what they do not hold themselves
+├── audit/
+│   ├── __init__.py      record(): a security event to the log and the table; prune()
+│   ├── models.py        SecurityEvent: sign-ins, failures, lockouts, exports...
+│   ├── signals.py       Django's sign-in signals and the API tokens, recorded
+│   └── resources.py     The History › Security events screen, read-only
 ├── grants/
 │   ├── __init__.py      ACCESS_ON_REQUEST: may(), ask(), grant(), refuse(), validators()
 │   ├── models.py        AccessRequest; the export_rows, download_files, validate permissions
@@ -85,6 +90,8 @@ generic/
 │   ├── models.py        HistoryEntry: one version of one record
 │   ├── actor.py         Who is acting, where no request can be passed
 │   ├── recording.py     Model changes -> a version, folded per request
+│   ├── bulk.py          update(), bulk_update(), bulk_create() recorded too
+│   ├── triggers.py      PostgreSQL: writes outside the ORM recorded by trigger
 │   ├── reading.py       Versions -> what changed, written out
 │   └── resources.py     The Changes page
 │

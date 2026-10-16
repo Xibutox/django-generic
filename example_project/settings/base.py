@@ -492,4 +492,9 @@ GENERIC = {
             "description": "What the desk writes down for itself.",
         },
     ],
+    # Who opened which ticket and customer, kept a year - what the CNIL
+    # recommends for an access log - then deleted by the daily
+    # apply_retention (docs/history.md#retention). The history is kept
+    # whole: it is the desk's record of what was done.
+    "ACCESS_LOG_RETENTION_DAYS": 365,
 }

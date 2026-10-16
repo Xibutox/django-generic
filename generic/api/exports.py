@@ -50,6 +50,27 @@ CELL_TYPES = (
     datetime.timedelta,
 )
 
+#: What a spreadsheet reads as the start of a formula. A cell holding
+#: ``=HYPERLINK("https://evil.example", "Click")`` - typed into a
+#: record by anyone who may edit it - would otherwise run in the
+#: spreadsheet of whoever exports the table (CWE-1236).
+FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def is_formula_like(value: Any) -> bool:
+    """Whether a spreadsheet would read this text as a formula."""
+    return isinstance(value, str) and value.startswith(FORMULA_STARTS)
+
+
+def defuse_csv_value(text: str) -> str:
+    """Text a spreadsheet opening the CSV shows rather than runs.
+
+    The apostrophe is OWASP's advice, and what a spreadsheet itself
+    puts in front of a text it must not read as a formula. Numbers
+    never reach here as text, so ``-5`` stays a number.
+    """
+    return f"'{text}" if is_formula_like(text) else text
+
 
 def localize_for_export(value: Any) -> Any:
     """Make a value safe to hand to a spreadsheet writer."""
@@ -225,7 +246,10 @@ class ExportMixin:
         date_format = generic_settings.EXPORT_DATE_FORMAT
         datetime_format = generic_settings.EXPORT_DATETIME_FORMAT
 
+        count = 0
+
         for values in self.iter_export_rows(queryset, columns):
+            count += 1
             cells = []
 
             for value in values:
@@ -236,6 +260,12 @@ class ExportMixin:
                 elif isinstance(value, datetime.date):
                     cell = WriteOnlyCell(sheet, value=value)
                     cell.number_format = date_format
+                    cells.append(cell)
+                elif is_formula_like(value):
+                    # Written as text, as typed: openpyxl stores any
+                    # string starting with "=" as a formula otherwise.
+                    cell = WriteOnlyCell(sheet, value=value)
+                    cell.data_type = "s"
                     cells.append(cell)
                 else:
                     cells.append(value)
@@ -249,6 +279,7 @@ class ExportMixin:
         stream = tempfile.NamedTemporaryFile(suffix=".xlsx")
         workbook.save(stream)
         stream.seek(0)
+        self.record_export(request, "xlsx", count)
 
         return FileResponse(
             stream,
@@ -277,10 +308,17 @@ class ExportMixin:
             yield "\ufeff"
             yield writer.writerow([column["title"] for column in columns])
 
+            count = 0
+
             for values in self.iter_export_rows(queryset, columns):
+                count += 1
                 yield writer.writerow(
                     [self.format_csv_value(value) for value in values]
                 )
+
+            # Once the last row has left: a download given up half way
+            # is not recorded as the whole table.
+            self.record_export(request, "csv", count)
 
         response = StreamingHttpResponse(
             rows(),
@@ -291,6 +329,21 @@ class ExportMixin:
         )
 
         return response
+
+    def record_export(self, request: Any, extension: str, count: int) -> None:
+        """A security event: who took how many rows of which table.
+
+        A file downloaded is in the access log; a table of every
+        customer leaving in one file is the larger event, and the one
+        a data-leak inquiry asks about first.
+        """
+        from generic.audit import record
+
+        record(
+            "exported",
+            request=request,
+            detail=(f"{self.export_file_name} ({extension}): {count} rows"),
+        )
 
     @staticmethod
     def format_csv_value(value: Any) -> str:
@@ -309,7 +362,7 @@ class ExportMixin:
         if isinstance(value, decimal.Decimal):
             return str(value)
 
-        return str(value)
+        return defuse_csv_value(str(value))
 
 
 #: Kept as an alias: the previous name only covered the Excel export.

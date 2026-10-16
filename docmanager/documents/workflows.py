@@ -321,7 +321,12 @@ def has_approval(review: Review) -> bool:
 
 
 def approvers(review: Review) -> list[str]:
-    """Who approved, at the approval steps - each once, in order."""
+    """Who approved, at the approval steps - each once, in order.
+
+    The person who decided, not the one who was asked: a manager who
+    answered for somebody is named, "Alice (for Bob)", so the stamp on
+    an approved PDF never shows a name that did not approve it.
+    """
     names: list[str] = []
 
     for task in (
@@ -331,7 +336,13 @@ def approvers(review: Review) -> list[str]:
         .select_related("assignee", "decided_by")
         .order_by("decided_at", "pk")
     ):
-        name = name_of(task.assignee)
+        decider = task.decided_by or task.assignee
+        name = name_of(decider)
+
+        if task.decided_by_id and task.decided_by_id != task.assignee_id:
+            name += " " + gettext("(for %(for)s)") % {
+                "for": name_of(task.assignee)
+            }
 
         if name not in names:
             names.append(name)

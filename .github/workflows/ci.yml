@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e ".[export,events,tasks,wiki,dev]"
+      - run: pip install -e ".[export,import,events,tasks,wiki,api,fsm,dev]" -r docmanager/requirements.txt
       - name: black
         run: black --check .
       - name: isort
@@ -37,7 +37,12 @@ jobs:
       - name: bandit
         # B101 (assert) is noise in a codebase that uses asserts as
         # internal invariants rather than as input validation.
-        run: bandit -r generic -ll --skip B101
+        run: bandit -r generic example docmanager minimal -ll --skip B101
+      - name: Known vulnerabilities in the dependencies
+        # Every installed package, against the PyPI advisory database.
+        # A vulnerability skipped here is listed, with why it does not
+        # apply, in SECURITY.md - and goes once a fix is released.
+        run: pip-audit --skip-editable --ignore-vuln CVE-2026-106454
       - name: mypy
         # Reported, not blocking: django-stubs trails the Django this
         # runs on, and most of what it says is that.

@@ -4,7 +4,7 @@
 # the suite on plain python images, the suite again against Postgres and
 # Redis as services, then the project's own image, built and tried.
 #
-#   quality      black, isort, flake8, mypy, bandit, message catalogs
+#   quality      black, isort, flake8, mypy, bandit, pip-audit, message catalogs
 #   test         the suite on 3.10 to 3.13 (SQLite), the oldest Django
 #                and DRF accepted included; the browser tests, the
 #                example driven through Chromium (tests/browser)
@@ -60,12 +60,15 @@ lint:
   script:
     - black --check .
     - isort --check-only .
-    - flake8 generic tests example example_project minimal scripts debug.py
+    - flake8 generic tests example example_project minimal docmanager scripts debug.py
     # Reported, not blocking: django-stubs has not caught up with the
     # Django this runs on, and most of what it says is that.
     - mypy generic || true
     # B101 (assert) is noise where asserts are internal invariants.
-    - bandit -r generic -ll --skip B101
+    - bandit -r generic example docmanager minimal -ll --skip B101
+    # Known vulnerabilities in the dependencies; the one skipped is
+    # explained in SECURITY.md.
+    - pip-audit --skip-editable --ignore-vuln CVE-2026-106454
 
 # The .mo files are what the running application reads; a .po edited
 # without recompiling translates nothing, and nothing says so. The

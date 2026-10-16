@@ -153,8 +153,17 @@ class UserResource(ModelResource):
             user = serializer.save()
 
             if password:
+                from generic.audit import record
+
                 user.set_password(password)
                 user.save(update_fields=["password"])
+                record(
+                    "password_changed",
+                    request=request,
+                    user=user,
+                    actor=request.user,
+                    detail="set by an administrator" if change else "",
+                )
             elif not change:
                 # Created without one: the account exists, and signing
                 # in happens somewhere else. An empty hash would be a

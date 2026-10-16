@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import datetime
 import io
 import json
@@ -182,3 +183,48 @@ class TestExcelExport:
         sheet = load_workbook(io.BytesIO(content)).active
 
         assert len(list(sheet.values)) == 2
+
+
+class TestFormulasStayText:
+    """A text a spreadsheet would run is exported as text (CWE-1236).
+
+    Anybody who may edit a record can type ``=HYPERLINK(...)`` into it;
+    whoever exports the table must not have it run in their
+    spreadsheet.
+    """
+
+    FORMULA = '=HYPERLINK("https://evil.example","Click")'
+
+    def test_the_csv_shows_it_behind_an_apostrophe(self, api_client, db):
+        BookFactory(title=self.FORMULA)
+        BookFactory(title="+33 1 23 45 67 89")
+        BookFactory(title="Plain")
+
+        response = api_client.get(CSV_URL, {"columns": "title,pages"})
+        content = b"".join(response.streaming_content).decode("utf-8")
+        rows = list(
+            csv.reader(io.StringIO(content.lstrip("\ufeff")), delimiter=";")
+        )
+        titles = {row[0] for row in rows[1:]}
+
+        assert "'" + self.FORMULA in titles
+        assert "'+33 1 23 45 67 89" in titles
+        assert "Plain" in titles
+
+    def test_a_number_is_left_alone(self, api_client, db):
+        BookFactory(title="Plain", pages=12)
+
+        rows = read_csv(api_client.get(CSV_URL, {"columns": "title,pages"}))
+
+        assert rows[1] == ["Plain", "12"]
+
+    def test_the_workbook_holds_it_as_text(self, api_client, db):
+        BookFactory(title=self.FORMULA)
+
+        response = api_client.get(XLSX_URL, {"columns": "title"})
+        content = b"".join(response.streaming_content)
+        cell = load_workbook(io.BytesIO(content)).active["A2"]
+
+        # As typed - no apostrophe - and a string, not a formula.
+        assert cell.value == self.FORMULA
+        assert cell.data_type == "s"

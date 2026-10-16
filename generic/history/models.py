@@ -52,7 +52,8 @@ class HistoryEntry(models.Model):
     )
     #: Text, like a watch's, so a model keyed on a UUID or a code keeps
     #: a history too.
-    object_id = models.CharField(_("record"), max_length=64)
+    #: 128: an API token is keyed on its 128-character digest.
+    object_id = models.CharField(_("record"), max_length=128)
     content_object = GenericForeignKey("content_type", "object_id")
 
     #: What the record was called at that point. The record itself may

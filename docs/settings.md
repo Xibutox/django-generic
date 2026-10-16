@@ -102,7 +102,7 @@ See [Imports](imports.md).
 | --- | --- | --- |
 | `EVENTS_WEBSOCKET_URL` | `"/ws/events/"` | Where the pages open their socket; empty disables it. Never opened when Channels is not installed; set it to `None` if Channels is installed but the site is served over WSGI |
 | `EVENTS_BROADCAST_GROUP` | `"generic.broadcast"` | Group every socket joins |
-| `EVENTS_RETENTION_DAYS` | `90` | Notification retention; `None` keeps forever |
+| `EVENTS_RETENTION_DAYS` | `90` | Notification retention; `None` keeps forever. Applied by `apply_retention` ([Retention](history.md#retention)) |
 | `EVENTS_DISPATCH_ON_COMMIT` | `True` | Wait for the transaction to commit |
 
 Leave `EVENTS_DISPATCH_ON_COMMIT` on. With it off, a client can be told
@@ -192,6 +192,8 @@ See [Scheduled mailings](mailings.md).
 
 | `LOGIN_MAX_ATTEMPTS` | `5` | Failed sign-ins in a row after which an account is locked for `LOGIN_LOCKOUT_MINUTES`; an address is locked after four times as many, on any accounts. `None` turns the lock off |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long the lock lasts, counted from the last failure. Kept in the cache: give production a shared one |
+| `SECURITY_LOG` | `True` | Sign-ins, failures, lockouts, passwords, API tokens, rights, exports: to the `generic.security` logger and the *Security events* screen ([Security events](security-log.md)) |
+| `SECURITY_LOG_RETENTION_DAYS` | `None` | Keep every security event. A number is what `apply_retention` deletes beyond |
 
 See [Signing in through somebody else](sso.md) and [Locking out
 guessers](sso.md#locking-out-guessers).
@@ -220,7 +222,8 @@ declares none accepts anything.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `HISTORY` | `True` | Keep a version of every record of every registered model. `False` records nothing and removes the *Changes* page |
-| `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `generic.history.prune()` deletes beyond; nothing prunes on its own |
+| `HISTORY_TRIGGERS` | `None` | PostgreSQL triggers recording the rows written outside the ORM - `psql`, another application, raw SQL - in the history. `None`: on PostgreSQL; `False`: never ([History](history.md#writes-outside-the-application-postgresql)) |
+| `HISTORY_RETENTION_DAYS` | `None` | Keep everything. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [History](history.md).
 
@@ -229,7 +232,7 @@ See [History](history.md).
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `TRASH_DAYS` | `30` | How long a record stays in a resource's trash before `empty_trash` (or the *Empty the trash* task) deletes it for good. `None` keeps everything |
-| `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `generic.access.prune()` deletes beyond |
+| `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [Trash and access log](trash.md).
 

@@ -19,8 +19,9 @@ of everybody's way:
 
 Many-to-many fields are carried forward from the previous version and
 refreshed when ``m2m_changed`` says so, which is the only moment they
-can have changed. Bulk writes - ``update()``, ``bulk_create()`` - fire
-no signal and so leave no history, exactly as they announce nothing.
+can have changed. Bulk writes - ``update()``, ``bulk_update()``,
+``bulk_create()`` - fire no signal: :mod:`generic.history.bulk`
+records them.
 """
 
 from __future__ import annotations
@@ -365,7 +366,12 @@ def _m2m_field(model: Any, through: Any) -> Any:
 
 
 def connect(resource: Any) -> None:
-    """Start recording the versions of ``resource``'s model."""
+    """Start recording the versions of ``resource``'s model - its saves
+    and deletions by their signals, its bulk writes by the wrappers of
+    :mod:`generic.history.bulk`."""
+    from generic.history import bulk
+
+    bulk.watch(resource)
 
     def saved(
         sender: Any,
@@ -439,6 +445,9 @@ def connect(resource: Any) -> None:
 
 
 def disconnect(resource: Any) -> None:
+    from generic.history import bulk
+
+    bulk.unwatch(resource)
     post_save.disconnect(
         sender=resource.model,
         dispatch_uid=_dispatch_uid(resource, "save"),

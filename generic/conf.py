@@ -126,6 +126,7 @@ DEFAULTS: dict[str, Any] = {
     # Channel group every authenticated user is subscribed to.
     "EVENTS_BROADCAST_GROUP": "generic.broadcast",
     # Retention for stored notifications, in days. None keeps forever.
+    # Applied by ``generic.retention.apply()`` (``apply_retention``).
     "EVENTS_RETENTION_DAYS": 90,
     # Deliver events inside the transaction that produced them (False)
     # or once it commits (True). Committing first avoids notifying
@@ -256,9 +257,14 @@ DEFAULTS: dict[str, Any] = {
     # resource.
     "HISTORY": True,
     # Days of history to keep. None keeps everything; a number is what
-    # ``generic.history.prune()`` and the ``prune_history`` command
-    # delete beyond.
+    # ``generic.retention.apply()`` - the ``apply_retention`` command,
+    # the ``generic.apply_retention`` task - deletes beyond.
     "HISTORY_RETENTION_DAYS": None,
+    # PostgreSQL triggers recording what is written outside the ORM -
+    # psql, another application, raw SQL - in the same history
+    # (generic.history.triggers). None: on PostgreSQL; False: never,
+    # and the next migrate removes them.
+    "HISTORY_TRIGGERS": None,
     # --- Trash ---------------------------------------------------------
     # Days a record deleted from a resource declaring ``trash = True``
     # stays in its trash. ``generic.trash.empty()``, the ``empty_trash``
@@ -268,8 +274,8 @@ DEFAULTS: dict[str, Any] = {
     # --- Access log ----------------------------------------------------
     # Days of access log to keep (``access_log = True`` on a resource:
     # who opened which record, who downloaded which file). None keeps
-    # everything; a number is what ``generic.access.prune()`` deletes
-    # beyond.
+    # everything; a number is what ``generic.retention.apply()`` (the
+    # ``apply_retention`` command and task) deletes beyond.
     "ACCESS_LOG_RETENTION_DAYS": None,
     # --- Rights given on request ---------------------------------------
     # What people may do only once they asked and somebody granted it:
@@ -300,6 +306,15 @@ DEFAULTS: dict[str, Any] = {
     # shared by every process (Redis) in production.
     "LOGIN_MAX_ATTEMPTS": 5,
     "LOGIN_LOCKOUT_MINUTES": 15,
+    # --- Security events (generic.audit) --------------------------------
+    # Sign-ins, failed ones, lockouts, sign-outs, passwords changed, API
+    # tokens made and deleted, rights granted or refused, exports: to
+    # the generic.security logger and the Security events screen. False
+    # records none of them.
+    "SECURITY_LOG": True,
+    # Days of security events to keep. None keeps everything; a number
+    # is what ``generic.retention.apply()`` deletes beyond.
+    "SECURITY_LOG_RETENTION_DAYS": None,
     # --- Logs ----------------------------------------------------------
     # Seconds during which the same error is mailed to ADMINS only once
     # (generic.logs.ErrorMailHandler); the next mail says how many were

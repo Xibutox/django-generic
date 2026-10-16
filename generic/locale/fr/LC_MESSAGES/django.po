@@ -3203,6 +3203,80 @@ msgstr ""
 "Supprime définitivement ce qui est dans une corbeille depuis plus de "
 "GENERIC['TRASH_DAYS'] jours. À lancer une fois par jour."
 
+#: generic/retention.py
+msgid "Apply the retention periods"
+msgstr "Appliquer les durées de conservation"
+
+msgid ""
+"Deletes the history, access log, notifications and security events older "
+"than GENERIC's *_RETENTION_DAYS. Run it once a day."
+msgstr ""
+"Supprime l'historique, le journal des accès, les notifications et les "
+"événements de sécurité plus anciens que les *_RETENTION_DAYS de GENERIC. "
+"À lancer une fois par jour."
+
+msgid ""
+"%(history)s history entries, %(access_log)s access log entries, "
+"%(notifications)s notifications and %(security_log)s security events "
+"deleted."
+msgstr ""
+"%(history)s entrées d'historique, %(access_log)s entrées du journal des "
+"accès, %(notifications)s notifications et %(security_log)s événements de "
+"sécurité supprimés."
+
+#: generic/audit
+msgid "Signed in"
+msgstr "Connexion"
+
+msgid "Signed out"
+msgstr "Déconnexion"
+
+msgid "Sign-in failed"
+msgstr "Échec de connexion"
+
+msgid "Sign-in locked"
+msgstr "Connexion bloquée"
+
+msgid "API token created"
+msgstr "Jeton d'API créé"
+
+msgid "API token deleted"
+msgstr "Jeton d'API supprimé"
+
+msgid "Right granted"
+msgstr "Droit accordé"
+
+msgid "Right refused"
+msgstr "Droit refusé"
+
+msgid "Rows exported"
+msgstr "Lignes exportées"
+
+msgid "event"
+msgstr "événement"
+
+msgid "account"
+msgstr "compte"
+
+msgid "account name"
+msgstr "nom du compte"
+
+msgid "browser"
+msgstr "navigateur"
+
+msgid "security event"
+msgstr "événement de sécurité"
+
+msgid "security events"
+msgstr "événements de sécurité"
+
+msgid ""
+"Who signed in, failed to or was locked out, from where; passwords changed, "
+"API tokens, rights granted, exports."
+msgstr ""
+"Qui s'est connecté, a échoué ou a été bloqué, et d'où ; mots de passe "
+"changés, jetons d'API, droits accordés, exports."
+
 #: generic/tasks/resources.py
 msgid "%(name)s (not registered)"
 msgstr "%(name)s (non enregistrée)"

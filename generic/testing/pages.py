@@ -57,6 +57,8 @@ ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
     # An access is recorded when it happens, and kept as it was.
     "site:generic_accessentry_add": (403,),
     "site:generic_accessentry_delete": (403,),
+    # So is a security event: it happened.
+    "site:generic_securityevent_add": (403,),
     "site:auth_permission_add": (403,),
     "site:auth_permission_delete": (403,),
     # A token is made by its owner on the account page, shown once.
@@ -746,6 +748,12 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
         object_id=str(message.pk),
         record_key=f"generic.message:{message.pk}",
         label="Page sweep",
+    )
+
+    from generic.audit.models import SecurityEvent
+
+    records["generic.securityevent"] = SecurityEvent.objects.create(
+        kind=SecurityEvent.Kind.SIGNED_IN, username="page-sweep"
     )
 
     return records

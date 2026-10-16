@@ -85,7 +85,11 @@ class TokenAuthentication(KnoxTokenAuthentication):
         if token.last_used_at and now - token.last_used_at < USE_RESOLUTION:
             return
 
-        # update(): no signal, no history, no live event - using a token
-        # is not a change of anything anyone watches.
-        type(token).objects.filter(pk=token.pk).update(last_used_at=now)
+        # update(): no signal, no live event - using a token is not a
+        # change of anything anyone watches; and unrecorded, since the
+        # history leaves last_used_at out anyway.
+        from generic.history import unrecorded
+
+        with unrecorded():
+            type(token).objects.filter(pk=token.pk).update(last_used_at=now)
         token.last_used_at = now

@@ -165,10 +165,18 @@ generic/
 │                           fold, isolated sections (savepoint) (§13g)
 ├── history/                HistoryEntry: a version of every record of every
 │                           registered model; actor (who), recording (signals
-│                           -> versions), reading (versions -> changes), and
-│                           the Changes page
+│                           -> versions), bulk (update/bulk_* recorded),
+│                           triggers (PostgreSQL: writes outside the ORM),
+│                           reading (versions -> changes), the Changes page
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
+├── retention.py            apply(): history, access log, notifications pruned
+│                           per *_RETENTION_DAYS; task generic.apply_retention,
+│                           command apply_retention
+├── audit/                  SecurityEvent: signed_in, sign_in_failed, locked_out,
+│                           signed_out, password_changed, token_*, access_*,
+│                           exported - to logger generic.security and History ›
+│                           Security events; record(kind, request=, user=) (§13f)
 ├── access/                 AccessEntry: who opened which record, who
 │                           downloaded which file; record(), the Access log
 │                           page (§13j)
@@ -721,7 +729,9 @@ one); after `queryset.update()` call `announce(self, "bulk")`.
 | in `tag_fields` | coloured tags, links per tag | same filter as the field |
 
 Row menu (right-click too): Open (summary), Edit, Delete. Double-click
-opens. Exports (Excel, CSV `;`) contain **every filtered row**.
+opens. Exports (Excel, CSV `;`) contain **every filtered row**; a text
+starting `= + - @` (tab, CR) is written as text, never a formula
+(Excel: a text cell; CSV: `'` in front).
 
 **Filters are generated too — never build filter UI.** The list shows
 active filters as chips in a bar. Users add them from the *Filter*
@@ -1710,7 +1720,8 @@ strftime string fixes the text),
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`, `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
-`LOGIN_LOCKOUT_MINUTES` (15), `SHOW_STATUS`, `STATUS_TOKEN`,
+`LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
+`SECURITY_LOG_RETENTION_DAYS` (None), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
@@ -2156,8 +2167,20 @@ history_of(ticket)                 # every version, newest first
   returns them (a decimal quantized to its field's places).
 - A save that changes nothing recorded writes nothing. Every save in
   one request - or one `acting_as` block - folds into one entry: one
-  unit of work is one version. `update()` and `bulk_create()` fire no
-  signal and record nothing, like the events and the watches.
+  unit of work is one version. `update()`, `bulk_update()` and
+  `bulk_create()` fire no signal but ARE recorded
+  (`generic.history.bulk` wraps them: keys read, rows re-read, one
+  version each - a cost per row); `with unrecorded():` opts a data
+  migration out. Events and watches still hear nothing of them.
+- On PostgreSQL a trigger `generic_history` on every recorded table
+  records writes made outside the ORM (psql, another app, raw SQL)
+  in the same history - by `session_user`, source "Database (outside
+  the application)". ORM statements carry `/* generic:orm */` (an
+  execute wrapper, while a compiler's `execute_sql` runs) and are left
+  to the application. Installed/updated/removed after `migrate`;
+  `manage.py history_triggers [--sql]`; `HISTORY_TRIGGERS` (None = on
+  PostgreSQL, False = never). Not: m2m tables, multi-table
+  inheritance, composite keys. `HistoryEntry.object_id` holds 128.
 - Many-to-many fields are carried forward and re-read only when
   `m2m_changed` fires; set from the far end
   (`tag.tickets.add(ticket)`) records nothing.
@@ -2174,8 +2197,11 @@ history_of(ticket)                 # every version, newest first
   needs the record's view permission.
 - `history = False` per resource, `history_exclude = (...)` per field,
   `HISTORY` and `HISTORY_RETENTION_DAYS` per project;
-  `generic.history.prune()` deletes what is older. See
-  `docs/history.md`.
+  `generic.history.prune()` deletes what is older;
+  `generic.retention.apply()` - command `apply_retention`, managed task
+  `generic.apply_retention`, to schedule daily - prunes history, access
+  log and notifications (`EVENTS_RETENTION_DAYS`, 90) at once. See
+  `docs/history.md#retention`.
 
 ## 13j. Trash and access log
 
@@ -2395,6 +2421,18 @@ def payments():                                # quick: runs on every refresh
   `logging.getLogger(__name__)` and never swallows them silently;
   `check --deploy` warns `generic.W009` when `ADMINS` is empty. See
   `docs/logging.md`.
+- Security events (`generic.audit`, nothing to declare): sign-ins
+  (`user_logged_in`, any backend), failures (`user_login_failed`: the
+  name typed, never the password), lockouts, sign-outs, password
+  changes (account page, People screens: *by* the admin), API tokens
+  made/deleted, rights granted/refused, exports (Excel/CSV/mailings:
+  table, format, rows, once streamed). Each is one line on the
+  `generic.security` logger (refusals at WARNING) and a
+  `SecurityEvent` row (*History › Security events*, read-only,
+  `generic.view_securityevent`). A project's own:
+  `generic.audit.record("exported", request=request, detail=...)`.
+  `SECURITY_LOG` (True), `SECURITY_LOG_RETENTION_DAYS` (None, applied
+  by `apply_retention`). See `docs/security-log.md`.
 
 ## 14. Known pitfalls
 
@@ -2418,7 +2456,8 @@ def payments():                                # quick: runs on every refresh
 - A `list_display` path through a many-valued relation raises: use a
   method column.
 - Computed columns need an annotation to be sortable/filterable.
-- `QuerySet.update()` fires no signal: `announce(resource, "bulk")`.
+- `QuerySet.update()` fires no signal: `announce(resource, "bulk")`
+  for the live tables (the history records it by itself).
 - After changing JS/CSS, browsers cache static files: hard reload.
 - Seeding users with passwords invalidates open sessions.
 - Never `reverse()` at the top level of a `resources.py`: it is

@@ -98,7 +98,9 @@ record(request, contract, action="viewed", detail="preview 1.0")
 ```
 
 `GENERIC["ACCESS_LOG_RETENTION_DAYS"]` (None: keep everything) is what
-`generic.access.prune()` deletes beyond.
+`generic.access.prune()` - run by the `apply_retention` command and the
+`generic.apply_retention` task - deletes beyond
+([Retention](history.md#retention)).
 
 ## Who may download a file
 

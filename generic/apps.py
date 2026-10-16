@@ -11,10 +11,31 @@ class GenericConfig(AppConfig):
     def ready(self) -> None:
         # What `manage.py check` says about how the project plugged the
         # framework in (generic/checks.py).
+        # The history's PostgreSQL triggers: the ORM's writes tagged, so
+        # the triggers record only the others; installed - or removed -
+        # after every migrate.
+        from django.db.models.signals import post_migrate
+
         from generic import checks  # noqa: F401
+        from generic.conf import generic_settings
+        from generic.history import triggers
+
+        if generic_settings.HISTORY and (
+            generic_settings.HISTORY_TRIGGERS is not False
+        ):
+            triggers.install_tagging()
+
+        post_migrate.connect(
+            triggers.post_migrate, dispatch_uid="generic.history.triggers"
+        )
+
+        # Sign-ins, sign-outs, failures, API tokens: the security log.
+        from generic.audit import signals as audit_signals
 
         # Importing the module registers its signal receivers.
         from generic.events import signals  # noqa: F401
+
+        audit_signals.connect_tokens()
 
         # Every app's tasks.py declares what it knows how to run. Celery
         # imports these too, at its own start; the site needs them here,
@@ -38,10 +59,16 @@ class GenericConfig(AppConfig):
 
         trash.register_task()
 
+        # The retention periods' task: always there to be scheduled.
+        from generic import retention
+
+        retention.register_task()
+
         # After them, so the framework's own screens come last in the
         # navigation: what the project declared is what it opens on.
         from generic.access.resources import register_screens as accesses
         from generic.accounts.resources import register_screens as people
+        from generic.audit.resources import register_screens as security
         from generic.events.resources import register_screens as messages
         from generic.grants.resources import register_screens as grants
         from generic.history.resources import register_screens as history
@@ -53,6 +80,7 @@ class GenericConfig(AppConfig):
         mailings()
         history()
         accesses()
+        security()
         people()
         grants()
         messages()

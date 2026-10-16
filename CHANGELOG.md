@@ -12,6 +12,54 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Security
+- Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
+  `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
+  record - is written to Excel as a text cell, and to the CSV behind an
+  apostrophe, so it never runs in the spreadsheet of whoever exports
+  the table or receives it by mailing (CWE-1236).
+- Security events (`generic.audit`): every sign-in, failed sign-in,
+  lockout, sign-out, password change, API token made or deleted, right
+  granted or refused and export (Excel, CSV, mailings: the table and
+  the number of rows) is written to the `generic.security` logger -
+  refusals at `WARNING`, with the account and the address - and to the
+  read-only *History › Security events* screen
+  (`generic.view_securityevent`). Nothing to declare; `SECURITY_LOG`
+  turns it off, `SECURITY_LOG_RETENTION_DAYS` keeps it to a size.
+  Migration `generic 0022`. The lockout's own log line, which named
+  neither the account nor the address, is replaced by its event.
+  See docs/security-log.md.
+- `SECURITY.md`: how to report a vulnerability privately, what
+  follows, the versions supported, and the one dependency
+  vulnerability accepted and why. The CI checks every dependency with
+  `pip-audit`, runs `bandit` over the example applications too, and
+  Dependabot proposes updates of the packages, Actions and images.
+  The document manager reads Office XML through `defusedxml`.
+- The history records every write. `QuerySet.update()`,
+  `bulk_update()` and `bulk_create()` - which fire no signal and left
+  no trace, nor did the framework's own uses of them (a right granted,
+  a folder moved to another team) - now record a version of each row,
+  as the database holds it, with the person behind it
+  (`generic.history.bulk`; `with unrecorded():` for a data migration).
+  On PostgreSQL a trigger on every recorded table records what is
+  written outside the application - `psql`, another application, raw
+  SQL - by the database role, "Database (outside the application)";
+  the ORM's own statements are tagged and left to the application, so
+  nothing is recorded twice (`generic.history.triggers`, installed
+  after `migrate`, `manage.py history_triggers`, `HISTORY_TRIGGERS`).
+  An API token's history is kept at last (`HistoryEntry.object_id`
+  holds 128 characters, migration `generic 0023`), without its hash.
+- Retention that runs: `manage.py apply_retention` and the managed
+  task `generic.apply_retention` (to schedule daily) delete the history,
+  access log and notifications older than `HISTORY_RETENTION_DAYS`,
+  `ACCESS_LOG_RETENTION_DAYS` and `EVENTS_RETENTION_DAYS`
+  (`generic.retention`). `EVENTS_RETENTION_DAYS` (90) was documented
+  but applied by nothing: notifications were kept forever. The example
+  keeps its access log a year, as the CNIL recommends.
+- Document manager: an approval given for somebody else is stamped
+  under the name of who gave it - "Alice (for Bob)" - on the approved
+  PDF. It named the person asked, who had approved nothing.
+
 ### Added
 - Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
   ("export", "download")`, exporting tables (Excel, CSV, copy, print,
