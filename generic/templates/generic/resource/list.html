@@ -24,5 +24,7 @@
   {% if charts %}
     {% include "generic/charts/grid.html" %}
   {% endif %}
+  {# The chart its reader draws, behind the table's Chart button. #}
+  {% include "generic/charts/builder.html" %}
   {{ block.super }}
 {% endblock %}

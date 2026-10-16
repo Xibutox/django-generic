@@ -283,6 +283,10 @@ class ResourceListView(ResourceViewMixin, TemplateView):
         context["charts"] = chart_entries(
             self.resource.get_list_chart_configs(self.request)
         )
+        builder = self.resource.get_chart_builder_config(self.request)
+        context["chart_builder"] = (
+            chart_entries([builder])[0] if builder else None
+        )
 
         return context
 

@@ -1,0 +1,102 @@
+{% load i18n generic_ui %}
+{# The chart its reader draws above the list (chart_builder): closed    #}
+{# until the table's Chart button opens it. `chart_builder` is          #}
+{# {config_id, config}; config.builder says what may be chosen, by key, #}
+{# and the endpoint accepts nothing else.                              #}
+{% if chart_builder %}
+  {{ chart_builder.config|json_script:chart_builder.config_id }}
+  <section class="card chart-card chart-builder"
+           x-data="genericChartBuilder('{{ chart_builder.config_id|escapejs }}')"
+           x-show="open"
+           x-cloak
+           :class="{ 'is-loading': loading }"
+           data-chart-builder-table="{{ chart_builder.config.table }}"
+           :data-open="open.toString()"
+           aria-labelledby="{{ chart_builder.config_id }}-title">
+    <header class="chart-card__header">
+      <h2 class="chart-card__title" id="{{ chart_builder.config_id }}-title">
+        {% icon "insights" "icon--sm" %}
+        <span x-text="payload && payload.title ? payload.title : config.title">{{ chart_builder.config.title }}</span>
+      </h2>
+
+      <div class="chart-card__tools">
+        {% include "generic/charts/tools.html" %}
+
+        <button type="button"
+                class="icon-button icon-button--sm"
+                @click="toggle(false)"
+                title="{% translate 'Hide the chart' %}">
+          {% translate "Hide the chart" as hide_label %}
+          {% icon "close" "icon--sm" hide_label %}
+        </button>
+      </div>
+    </header>
+
+    <div class="chart-builder__controls">
+      <div class="chart-builder__types" role="group" aria-label="{% translate 'Chart type' %}">
+        <template x-for="option in builder.types" :key="option.value">
+          <button type="button"
+                  class="icon-button icon-button--sm"
+                  :class="{ 'is-active': choice.type === option.value }"
+                  :aria-pressed="(choice.type === option.value).toString()"
+                  :title="option.label"
+                  @click="choose('type', option.value)">
+            <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-text="option.icon"></span>
+            <span class="sr-only" x-text="option.label"></span>
+          </button>
+        </template>
+      </div>
+
+      <label class="chart-builder__control">
+        <span>{% translate "Group by" %}</span>
+        <select class="input input--sm" x-model="choice.group_by" @change="apply()">
+          <template x-for="option in builder.dimensions" :key="option.value">
+            <option :value="option.value" :selected="option.value === choice.group_by" x-text="option.label"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="chart-builder__control" x-show="canSplit()">
+        <span>{% translate "Split by" %}</span>
+        <select class="input input--sm" x-model="choice.split_by" @change="apply()">
+          <template x-if="choice.type !== 'heatmap'">
+            <option value="" :selected="!choice.split_by">{% translate "Nothing" %}</option>
+          </template>
+          <template x-for="option in splitOptions()" :key="option.value">
+            <option :value="option.value" :selected="option.value === choice.split_by" x-text="option.label"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="chart-builder__control">
+        <span>{% translate "Value" %}</span>
+        <select class="input input--sm" x-model="choice.value" @change="apply()">
+          <template x-for="option in builder.values" :key="option.value">
+            <option :value="option.value" :selected="option.value === choice.value" x-text="option.label"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="chart-builder__control" x-show="usesDates()">
+        <span>{% translate "Period" %}</span>
+        <select class="input input--sm" x-model="choice.period" @change="apply()">
+          <template x-for="option in builder.periods" :key="option.value">
+            <option :value="option.value" :selected="option.value === choice.period" x-text="option.label"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="switch chart-builder__switch" x-show="canStack()">
+        <input type="checkbox" x-model="choice.stacked" @change="apply()">
+        <span>{% translate "Stacked" %}</span>
+      </label>
+
+      <label class="switch chart-builder__switch" x-show="choice.type === 'bar'">
+        <input type="checkbox" x-model="choice.horizontal" @change="apply()">
+        <span>{% translate "Horizontal" %}</span>
+      </label>
+    </div>
+
+    {% include "generic/charts/body.html" %}
+  </section>
+{% endif %}

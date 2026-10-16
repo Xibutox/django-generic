@@ -268,6 +268,12 @@ class ModelResource(PagesMixin):
     #: Charts on the summary page: "<related table>.<chart of its
     #: resource>", narrowed to the record.
     detail_charts: Sequence[str] = ()
+    #: A chart above the list that its reader draws - the form, the
+    #: field it groups by, what it measures - behind a *Chart* button,
+    #: closed until opened: True (the fields worked out from the
+    #: model), the field paths it may group by, or ChartBuilder(...).
+    #: ``AutoResource`` has it on (generic.sites.chart_builder).
+    chart_builder: Any = False
 
     # -- the dashboard and the calendar ------------------------------------
 
@@ -523,6 +529,9 @@ class ModelResource(PagesMixin):
 
     def get_actions_url(self) -> str:
         return self._reverse(self.api_url_name("actions"))
+
+    def get_chart_builder_url(self) -> str:
+        return self._reverse(self.api_url_name("chart-builder"))
 
     def get_bulk_edit_url(self) -> str:
         return self._reverse(self.api_url_name("bulk-edit"))
@@ -1473,6 +1482,46 @@ class ModelResource(PagesMixin):
                 configs.append(config)
 
         return configs
+
+    def get_chart_builder(self) -> Any:
+        """The chart its reader draws above the list, resolved and
+        checked (``generic.sites.chart_builder``), or None.
+
+        Built once per process: a field it cannot chart raises
+        ``ImproperlyConfigured`` when the resource is registered.
+        """
+        if "_chart_builder" not in self.__dict__:
+            from generic.sites.chart_builder import bind
+
+            self.__dict__["_chart_builder"] = bind(self)
+
+        return self.__dict__["_chart_builder"]
+
+    def get_chart_builder_config(self, request: Any) -> dict[str, Any] | None:
+        """What the list page needs to draw the chart builder's panel,
+        or None for who may not read the rows."""
+        builder = self.get_chart_builder()
+
+        if builder is None or not self.has_view_permission(request):
+            return None
+
+        return {
+            "name": "chart-builder",
+            "title": gettext("Chart"),
+            "url": self.get_chart_builder_url(),
+            "height": "20rem",
+            "period": "",
+            "periods": [],
+            "model": self.label_lower,
+            "topic": self.topic_name if self.realtime else "",
+            "extraParams": {},
+            "table": "#datatable",
+            "builder": {
+                **builder.describe(),
+                # Where the panel remembers what it showed, per table.
+                "storageKey": f"generic.chart-builder.{self.state_key}",
+            },
+        }
 
     # -- forms ------------------------------------------------------------
 

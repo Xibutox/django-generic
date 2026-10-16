@@ -152,3 +152,51 @@
 .summary-related__panel .chart-card__state {
   background: var(--surface-page);
 }
+
+/* The chart its reader draws above the list (chart_builder): the
+   choices in a wrapping row, the drawing under them. */
+.chart-builder {
+  margin-bottom: var(--space-5);
+}
+
+.chart-grid + .chart-builder {
+  margin-top: var(--space-4);
+}
+
+.chart-builder__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-4);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chart-builder__types {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-height-sm);
+}
+
+.chart-builder__types .is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.chart-builder__control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 9rem;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.chart-builder__switch {
+  min-height: var(--control-height-sm);
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}

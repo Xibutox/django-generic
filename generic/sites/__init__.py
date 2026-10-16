@@ -70,6 +70,7 @@ field (``generic.sites.calendars``)::
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
 from generic.sites.calendars import Calendar
+from generic.sites.chart_builder import ChartBuilder
 from generic.sites.charts import Chart, chart_payload
 from generic.sites.dashboard import Cards, Kpi
 from generic.sites.data import DataResource, RelatedRows, RowLink
@@ -97,6 +98,7 @@ __all__ = [
     "Calendar",
     "Cards",
     "Chart",
+    "ChartBuilder",
     "DataResource",
     "GenericSite",
     "Grid",

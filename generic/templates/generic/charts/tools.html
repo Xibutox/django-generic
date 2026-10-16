@@ -1,0 +1,21 @@
+{% load i18n generic_ui %}
+{# A chart card's own buttons: the figures as a table, the image. Inside #}
+{# a genericChart component.                                            #}
+<button type="button"
+        class="icon-button icon-button--sm"
+        @click="toggleView()"
+        :aria-pressed="(view === 'table').toString()"
+        :title="view === 'table' ? '{{ _('Show the chart')|escapejs }}' : '{{ _('Show the figures')|escapejs }}'">
+  <span class="icon material-symbols-outlined icon--sm" aria-hidden="true"
+        x-text="view === 'table' ? 'bar_chart' : 'table_rows'">table_rows</span>
+  <span class="sr-only">{% translate "Show the figures" %}</span>
+</button>
+
+<button type="button"
+        class="icon-button icon-button--sm"
+        @click="download()"
+        :disabled="!payload || payload.empty || view !== 'chart'"
+        title="{% translate 'Download as an image' %}">
+  {% translate "Download as an image" as download_label %}
+  {% icon "download" "icon--sm" download_label %}
+</button>

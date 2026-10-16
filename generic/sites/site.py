@@ -164,6 +164,8 @@ class GenericSite:
             resource.get_transitions()
             # So are the fields a selection may be edited in bulk.
             resource.get_bulk_edit_fields()
+            # And the fields its reader may chart above the list.
+            resource.get_chart_builder()
             # Trees are checked here too, and from now on the forms of
             # the model holding their links refuse a cycle.
             trees.guard(resource)

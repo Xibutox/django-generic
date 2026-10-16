@@ -671,6 +671,54 @@
     return menu.root;
   }
 
+  /* -- The chart its reader draws ------------------------------------------ */
+
+  /**
+   * Opens and closes the chart panel above the table, when the page has
+   * one for it (generic/charts/builder.html, chart_builder): the panel
+   * says whether it is open, the button follows.
+   */
+  function buildChart(controller) {
+    var id = controller.table.id;
+    var selector = "#" + id;
+    var panel = id
+      ? document.querySelector('[data-chart-builder-table="' + selector + '"]')
+      : null;
+
+    if (!panel) {
+      return null;
+    }
+
+    var button = toolButton("insights", t("Chart"));
+
+    function show(open) {
+      button.classList.toggle("is-active", open);
+      button.setAttribute("aria-pressed", String(open));
+      button.title = open ? t("Hide the chart") : t("Show a chart of these rows");
+    }
+
+    button.classList.add("dt-chart-toggle");
+    show(panel.getAttribute("data-open") === "true");
+
+    button.addEventListener("click", function () {
+      document.dispatchEvent(
+        new CustomEvent("generic:chart-builder-toggle", {
+          detail: { table: selector }
+        })
+      );
+    });
+
+    document.addEventListener("generic:chart-builder-state", function (event) {
+      var detail = (event && event.detail) || {};
+
+      if (detail.table === selector) {
+        show(Boolean(detail.open));
+      }
+    });
+
+    return button;
+  }
+
   /* -- The feature --------------------------------------------------------- */
 
   core.registerFeature({
@@ -690,6 +738,7 @@
       }
 
       [
+        buildChart,
         buildViews,
         controller.options.columnSelector ? buildColumns : null,
         buildExport
