@@ -1005,6 +1005,13 @@ table.dataTable thead tr.dt-column-filters > td {
   background: var(--color-accent-subtle);
 }
 
+/* The chart above the table, open. */
+.dt-chart-toggle.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+}
+
 /* -- Filters: the popover ---------------------------------------------------- */
 
 .dt-popover {

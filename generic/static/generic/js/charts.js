@@ -777,401 +777,714 @@
     }
   }
 
-  document.addEventListener("alpine:init", function () {
-    window.Alpine.data("genericChart", function (configId) {
-      // Kept out of Alpine's reactive state: ECharts must see its own
-      // objects, not proxies of them.
-      var chart = null;
-      var raw = null;
-      var observer = null;
-      var request = null;
-      var sequence = 0;
-      var lastParams = "";
-      var cleanup = [];
+  /** The chart card: `<section x-data="genericChart('config-id')">`. */
+  function chartComponent(configId) {
+    // Kept out of Alpine's reactive state: ECharts must see its own
+    // objects, not proxies of them.
+    var chart = null;
+    var raw = null;
+    var observer = null;
+    var request = null;
+    var sequence = 0;
+    var lastParams = "";
+    var cleanup = [];
 
-      var config = Object.assign(
-        {
-          url: "",
-          title: "",
-          height: "18rem",
-          period: "",
-          periods: [],
-          extraParams: {},
-          table: "",
-          topic: "",
-          model: ""
-        },
-        readJson(configId)
-      );
+    var config = Object.assign(
+      {
+        url: "",
+        title: "",
+        height: "18rem",
+        period: "",
+        periods: [],
+        extraParams: {},
+        table: "",
+        topic: "",
+        model: ""
+      },
+      readJson(configId)
+    );
 
-      return {
-        config: config,
-        payload: null,
-        loading: false,
-        error: "",
-        view: "chart",
-        period: config.period || "",
-        linked: false,
+    return {
+      config: config,
+      payload: null,
+      loading: false,
+      error: "",
+      view: "chart",
+      period: config.period || "",
+      linked: false,
 
-        init: function () {
-          var self = this;
-          var canvas = this.$refs.canvas;
-          var started = false;
+      init: function () {
+        var self = this;
+        var canvas = this.$refs.canvas;
+        var started = false;
 
-          // Nothing is fetched until the chart can be seen: a chart in a
-          // closed tab waits for the tab.
-          observer = new window.ResizeObserver(function () {
-            if (!canvas.offsetWidth) {
+        // Nothing is fetched until the chart can be seen: a chart in a
+        // closed tab waits for the tab.
+        observer = new window.ResizeObserver(function () {
+          if (!canvas.offsetWidth) {
+            return;
+          }
+
+          if (!started) {
+            started = true;
+            self.start();
+            return;
+          }
+
+          if (chart) {
+            chart.resize();
+          }
+        });
+        observer.observe(canvas);
+
+        // A page's own filters: new parameters, and the chart reloads.
+        // Dispatched from anywhere - Alpine's $dispatch bubbles up to
+        // the document - naming the chart, or all charts when unnamed:
+        //   $dispatch("generic:chart-params",
+        //             { chart: "workload", params: { group: "4" } })
+        var onParams = function (event) {
+          var detail = (event && event.detail) || {};
+          var params = detail.params;
+
+          if (detail.chart && detail.chart !== self.config.name) {
+            return;
+          }
+
+          if (!params) {
+            params = Object.assign({}, detail);
+            delete params.chart;
+          }
+
+          self.config.extraParams = Object.assign(
+            {},
+            self.config.extraParams || {},
+            params
+          );
+
+          if (started) {
+            self.load();
+          }
+        };
+
+        document.addEventListener("generic:chart-params", onParams);
+        cleanup.push(function () {
+          document.removeEventListener("generic:chart-params", onParams);
+        });
+
+        var redraw = Generic.debounce(function () {
+          self.redraw();
+        }, 80);
+
+        ["generic:themechange", "generic:appearancechange"].forEach(
+          function (name) {
+            document.addEventListener(name, redraw);
+            cleanup.push(function () {
+              document.removeEventListener(name, redraw);
+            });
+          }
+        );
+
+        if (window.matchMedia) {
+          var scheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+          if (scheme.addEventListener) {
+            scheme.addEventListener("change", redraw);
+            cleanup.push(function () {
+              scheme.removeEventListener("change", redraw);
+            });
+          }
+        }
+      },
+
+      destroy: function () {
+        if (observer) {
+          observer.disconnect();
+        }
+
+        cleanup.forEach(function (callback) {
+          callback();
+        });
+        cleanup = [];
+
+        if (chart) {
+          chart.dispose();
+          chart = null;
+        }
+      },
+
+      start: function () {
+        var self = this;
+        var table = tableElement(this.config.table);
+
+        this.follow();
+
+        if (!table) {
+          this.load();
+          return;
+        }
+
+        if (table.genericDataTable) {
+          this.link(table.genericDataTable);
+          this.load();
+          return;
+        }
+
+        // The table is about to start: its saved filters travel with
+        // the first request, so the chart waits for them.
+        var fallback = window.setTimeout(function () {
+          self.load();
+        }, 2000);
+
+        table.addEventListener(
+          "generic:datatable-ready",
+          function (event) {
+            window.clearTimeout(fallback);
+            self.link(event.detail.controller);
+
+            // The table's own first draw is what carries the
+            // restored filters; loading then avoids asking twice.
+            event.detail.api.one("xhr.dt", function () {
+              self.load();
+            });
+          },
+          { once: true }
+        );
+      },
+
+      /** Follow a table: reload when its rows change for a new reason. */
+      link: function (controller) {
+        var self = this;
+
+        if (!controller || !controller.instance) {
+          return;
+        }
+
+        this.linked = true;
+
+        var reload = Generic.debounce(function () {
+          if (JSON.stringify(self.params()) !== lastParams) {
+            self.load();
+          }
+        }, 150);
+
+        controller.instance.on("xhr.dt", reload);
+        cleanup.push(function () {
+          try {
+            controller.instance.off("xhr.dt", reload);
+          } catch (error) {
+            /* The table is gone already. */
+          }
+        });
+      },
+
+      /** Reload when a record of the model changes, anywhere. */
+      follow: function () {
+        var self = this;
+        var topic = this.config.topic;
+
+        if (!topic || !Generic.events) {
+          return;
+        }
+
+        var reload = Generic.debounce(function () {
+          self.load();
+        }, 1200);
+
+        Generic.events.subscribe(topic);
+        cleanup.push(
+          Generic.events.on("resource.changed", function (payload) {
+            if (!payload.resource || payload.resource === self.config.model) {
+              reload();
+            }
+          })
+        );
+      },
+
+      params: function () {
+        var params = Object.assign({}, this.config.extraParams || {});
+        var controller = tableController(this.config.table);
+
+        if (controller) {
+          Object.assign(params, controller.currentParams());
+        }
+
+        if (this.period) {
+          params.period = this.period;
+        }
+
+        return params;
+      },
+
+      load: function () {
+        var self = this;
+        var params = this.params();
+        var current = (sequence += 1);
+
+        lastParams = JSON.stringify(params);
+
+        if (request) {
+          request.abort();
+        }
+
+        request = window.AbortController ? new window.AbortController() : null;
+
+        this.loading = true;
+        this.error = "";
+
+        return Promise.all([
+          loadLibrary(),
+          Generic.api.get(this.config.url, params, {
+            signal: request ? request.signal : undefined
+          })
+        ])
+          .then(function (results) {
+            if (current !== sequence) {
               return;
             }
 
-            if (!started) {
-              started = true;
-              self.start();
+            raw = results[1] || {};
+            self.payload = raw;
+            self.draw(results[0]);
+          })
+          .catch(function (error) {
+            if (current !== sequence || (error && error.name === "AbortError")) {
               return;
             }
 
+            self.error =
+              (error && error.message) || t("The chart could not be loaded.");
+          })
+          .then(function () {
+            if (current === sequence) {
+              self.loading = false;
+            }
+          });
+      },
+
+      draw: function (echarts) {
+        var self = this;
+
+        if (!echarts || !raw) {
+          return;
+        }
+
+        if (!chart) {
+          chart = echarts.init(this.$refs.canvas, null, {
+            renderer: "canvas",
+            locale: localeName()
+          });
+          chart.on("click", function (params) {
+            self.select(params);
+          });
+        }
+
+        chart.setOption(buildOption(raw, readTheme()), { notMerge: true });
+      },
+
+      redraw: function () {
+        if (chart && raw) {
+          chart.setOption(buildOption(raw, readTheme()), { notMerge: true });
+        }
+      },
+
+      /** A click filters the linked table on what was clicked. */
+      select: function (params) {
+        var controller = tableController(this.config.table);
+
+        if (!controller || !raw || !raw.dimension) {
+          return;
+        }
+
+        var index = params.dataIndex;
+        var seriesIndex = params.seriesIndex;
+
+        if (raw.type === "heatmap" && Array.isArray(params.value)) {
+          index = params.value[0];
+          seriesIndex = params.value[1];
+        }
+
+        var keys = raw.keys || [];
+        var entries = [
+          conditionFor(
+            controller,
+            raw.dimension,
+            keys[index],
+            (raw.categories || [])[index],
+            (raw.ranges || [])[index]
+          )
+        ];
+
+        if (raw.split && raw.series && raw.series[seriesIndex]) {
+          var series = raw.series[seriesIndex];
+
+          entries.push(
+            conditionFor(controller, raw.split, series.key, series.name, null)
+          );
+        }
+
+        entries = entries.filter(Boolean);
+
+        if (!entries.length) {
+          return;
+        }
+
+        // Each clicked value replaces what filtered its column; one
+        // request for all of them.
+        entries.forEach(function (condition) {
+          controller.setColumnCondition(condition, false);
+        });
+
+        controller.redraw();
+      },
+
+      toggleView: function () {
+        this.view = this.view === "chart" ? "table" : "chart";
+
+        if (this.view === "chart") {
+          this.$nextTick(function () {
             if (chart) {
               chart.resize();
             }
           });
-          observer.observe(canvas);
-
-          // A page's own filters: new parameters, and the chart reloads.
-          // Dispatched from anywhere - Alpine's $dispatch bubbles up to
-          // the document - naming the chart, or all charts when unnamed:
-          //   $dispatch("generic:chart-params",
-          //             { chart: "workload", params: { group: "4" } })
-          var onParams = function (event) {
-            var detail = (event && event.detail) || {};
-            var params = detail.params;
-
-            if (detail.chart && detail.chart !== self.config.name) {
-              return;
-            }
-
-            if (!params) {
-              params = Object.assign({}, detail);
-              delete params.chart;
-            }
-
-            self.config.extraParams = Object.assign(
-              {},
-              self.config.extraParams || {},
-              params
-            );
-
-            if (started) {
-              self.load();
-            }
-          };
-
-          document.addEventListener("generic:chart-params", onParams);
-          cleanup.push(function () {
-            document.removeEventListener("generic:chart-params", onParams);
-          });
-
-          var redraw = Generic.debounce(function () {
-            self.redraw();
-          }, 80);
-
-          ["generic:themechange", "generic:appearancechange"].forEach(
-            function (name) {
-              document.addEventListener(name, redraw);
-              cleanup.push(function () {
-                document.removeEventListener(name, redraw);
-              });
-            }
-          );
-
-          if (window.matchMedia) {
-            var scheme = window.matchMedia("(prefers-color-scheme: dark)");
-
-            if (scheme.addEventListener) {
-              scheme.addEventListener("change", redraw);
-              cleanup.push(function () {
-                scheme.removeEventListener("change", redraw);
-              });
-            }
-          }
-        },
-
-        destroy: function () {
-          if (observer) {
-            observer.disconnect();
-          }
-
-          cleanup.forEach(function (callback) {
-            callback();
-          });
-          cleanup = [];
-
-          if (chart) {
-            chart.dispose();
-            chart = null;
-          }
-        },
-
-        start: function () {
-          var self = this;
-          var table = tableElement(this.config.table);
-
-          this.follow();
-
-          if (!table) {
-            this.load();
-            return;
-          }
-
-          if (table.genericDataTable) {
-            this.link(table.genericDataTable);
-            this.load();
-            return;
-          }
-
-          // The table is about to start: its saved filters travel with
-          // the first request, so the chart waits for them.
-          var fallback = window.setTimeout(function () {
-            self.load();
-          }, 2000);
-
-          table.addEventListener(
-            "generic:datatable-ready",
-            function (event) {
-              window.clearTimeout(fallback);
-              self.link(event.detail.controller);
-
-              // The table's own first draw is what carries the
-              // restored filters; loading then avoids asking twice.
-              event.detail.api.one("xhr.dt", function () {
-                self.load();
-              });
-            },
-            { once: true }
-          );
-        },
-
-        /** Follow a table: reload when its rows change for a new reason. */
-        link: function (controller) {
-          var self = this;
-
-          if (!controller || !controller.instance) {
-            return;
-          }
-
-          this.linked = true;
-
-          var reload = Generic.debounce(function () {
-            if (JSON.stringify(self.params()) !== lastParams) {
-              self.load();
-            }
-          }, 150);
-
-          controller.instance.on("xhr.dt", reload);
-          cleanup.push(function () {
-            try {
-              controller.instance.off("xhr.dt", reload);
-            } catch (error) {
-              /* The table is gone already. */
-            }
-          });
-        },
-
-        /** Reload when a record of the model changes, anywhere. */
-        follow: function () {
-          var self = this;
-          var topic = this.config.topic;
-
-          if (!topic || !Generic.events) {
-            return;
-          }
-
-          var reload = Generic.debounce(function () {
-            self.load();
-          }, 1200);
-
-          Generic.events.subscribe(topic);
-          cleanup.push(
-            Generic.events.on("resource.changed", function (payload) {
-              if (!payload.resource || payload.resource === self.config.model) {
-                reload();
-              }
-            })
-          );
-        },
-
-        params: function () {
-          var params = Object.assign({}, this.config.extraParams || {});
-          var controller = tableController(this.config.table);
-
-          if (controller) {
-            Object.assign(params, controller.currentParams());
-          }
-
-          if (this.period) {
-            params.period = this.period;
-          }
-
-          return params;
-        },
-
-        load: function () {
-          var self = this;
-          var params = this.params();
-          var current = (sequence += 1);
-
-          lastParams = JSON.stringify(params);
-
-          if (request) {
-            request.abort();
-          }
-
-          request = window.AbortController ? new window.AbortController() : null;
-
-          this.loading = true;
-          this.error = "";
-
-          return Promise.all([
-            loadLibrary(),
-            Generic.api.get(this.config.url, params, {
-              signal: request ? request.signal : undefined
-            })
-          ])
-            .then(function (results) {
-              if (current !== sequence) {
-                return;
-              }
-
-              raw = results[1] || {};
-              self.payload = raw;
-              self.draw(results[0]);
-            })
-            .catch(function (error) {
-              if (current !== sequence || (error && error.name === "AbortError")) {
-                return;
-              }
-
-              self.error =
-                (error && error.message) || t("The chart could not be loaded.");
-            })
-            .then(function () {
-              if (current === sequence) {
-                self.loading = false;
-              }
-            });
-        },
-
-        draw: function (echarts) {
-          var self = this;
-
-          if (!echarts || !raw) {
-            return;
-          }
-
-          if (!chart) {
-            chart = echarts.init(this.$refs.canvas, null, {
-              renderer: "canvas",
-              locale: localeName()
-            });
-            chart.on("click", function (params) {
-              self.select(params);
-            });
-          }
-
-          chart.setOption(buildOption(raw, readTheme()), { notMerge: true });
-        },
-
-        redraw: function () {
-          if (chart && raw) {
-            chart.setOption(buildOption(raw, readTheme()), { notMerge: true });
-          }
-        },
-
-        /** A click filters the linked table on what was clicked. */
-        select: function (params) {
-          var controller = tableController(this.config.table);
-
-          if (!controller || !raw || !raw.dimension) {
-            return;
-          }
-
-          var index = params.dataIndex;
-          var seriesIndex = params.seriesIndex;
-
-          if (raw.type === "heatmap" && Array.isArray(params.value)) {
-            index = params.value[0];
-            seriesIndex = params.value[1];
-          }
-
-          var keys = raw.keys || [];
-          var entries = [
-            conditionFor(
-              controller,
-              raw.dimension,
-              keys[index],
-              (raw.categories || [])[index],
-              (raw.ranges || [])[index]
-            )
-          ];
-
-          if (raw.split && raw.series && raw.series[seriesIndex]) {
-            var series = raw.series[seriesIndex];
-
-            entries.push(
-              conditionFor(controller, raw.split, series.key, series.name, null)
-            );
-          }
-
-          entries = entries.filter(Boolean);
-
-          if (!entries.length) {
-            return;
-          }
-
-          // Each clicked value replaces what filtered its column; one
-          // request for all of them.
-          entries.forEach(function (condition) {
-            controller.setColumnCondition(condition, false);
-          });
-
-          controller.redraw();
-        },
-
-        toggleView: function () {
-          this.view = this.view === "chart" ? "table" : "chart";
-
-          if (this.view === "chart") {
-            this.$nextTick(function () {
-              if (chart) {
-                chart.resize();
-              }
-            });
-          }
-        },
-
-        format: function (value) {
-          return formatValue(value, raw && raw.value);
-        },
-
-        download: function () {
-          if (!chart) {
-            return;
-          }
-
-          var link = document.createElement("a");
-
-          link.href = chart.getDataURL({
-            type: "png",
-            pixelRatio: 2,
-            backgroundColor: readTheme().surface
-          });
-          link.download = (this.config.name || "chart") + ".png";
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
         }
-      };
+      },
+
+      format: function (value) {
+        return formatValue(value, raw && raw.value);
+      },
+
+      download: function () {
+        if (!chart) {
+          return;
+        }
+
+        var link = document.createElement("a");
+
+        link.href = chart.getDataURL({
+          type: "png",
+          pixelRatio: 2,
+          backgroundColor: readTheme().surface
+        });
+        link.download = (this.config.name || "chart") + ".png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      },
+
+      /** Run `callback` when the component goes away. */
+      onDestroy: function (callback) {
+        cleanup.push(callback);
+      }
+    };
+  }
+
+  /* -- The chart its reader draws ---------------------------------------------- */
+
+  /*
+   * Above a list, behind the table's Chart button (chart_builder): the
+   * same card, whose choices - the form, the field it groups by, what
+   * it measures - are the request's parameters. Each one names an
+   * option the page was given, by key; the endpoint refuses any other.
+   *
+   * Closed until opened. What it shows is remembered per table in this
+   * browser, and travels with the table's saved views.
+   */
+
+  function remembered(key) {
+    if (!key) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(window.localStorage.getItem(key));
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function remember(key, value) {
+    if (!key) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      /* Not being able to remember is survivable. */
+    }
+  }
+
+  function offers(options, value) {
+    return (options || []).some(function (option) {
+      return option.value === value;
     });
+  }
+
+  function builderComponent(configId) {
+    var component = chartComponent(configId);
+    var startChart = component.init;
+    var given = component.config.builder || {};
+    var builder = {
+      dimensions: given.dimensions || [],
+      values: given.values || [],
+      types: given.types || [],
+      periods: given.periods || [],
+      single: given.single || []
+    };
+    var defaults = Object.assign(
+      {
+        type: "bar",
+        group_by: "",
+        split_by: "",
+        value: "count",
+        period: "month",
+        stacked: false,
+        horizontal: false
+      },
+      given.defaults || {}
+    );
+    var storageKey = given.storageKey || "";
+
+    // A heatmap crosses two fields: with one, there is nothing to cross.
+    if (builder.dimensions.length < 2) {
+      builder.types = builder.types.filter(function (option) {
+        return option.value !== "heatmap";
+      });
+    }
+
+    return Object.assign(component, {
+      builder: builder,
+      open: false,
+      choice: Object.assign({}, defaults),
+
+      init: function () {
+        var self = this;
+        var selector = this.config.table;
+
+        this.restore(remembered(storageKey) || {});
+        startChart.call(this);
+
+        // The table's Chart button.
+        var onToggle = function (event) {
+          var detail = (event && event.detail) || {};
+
+          if (!detail.table || detail.table === selector) {
+            self.toggle(detail.open);
+          }
+        };
+
+        document.addEventListener("generic:chart-builder-toggle", onToggle);
+        this.onDestroy(function () {
+          document.removeEventListener("generic:chart-builder-toggle", onToggle);
+        });
+
+        this.$nextTick(function () {
+          self.announce();
+        });
+
+        this.joinTable();
+      },
+
+      /** Ride along with the table's saved views and its reset. */
+      joinTable: function () {
+        var self = this;
+        var table = tableElement(this.config.table);
+        var part = {
+          capture: function () {
+            return self.capture();
+          },
+          apply: function (state) {
+            self.restore(state || { open: false });
+            self.changed();
+          },
+          reset: function () {
+            self.restore({ open: false });
+            self.changed();
+          }
+        };
+
+        function join(controller) {
+          if (controller) {
+            controller.stateParts = controller.stateParts || {};
+            controller.stateParts.chart = part;
+          }
+        }
+
+        if (!table) {
+          return;
+        }
+
+        if (table.genericDataTable) {
+          join(table.genericDataTable);
+          return;
+        }
+
+        table.addEventListener(
+          "generic:datatable-ready",
+          function (event) {
+            join(event.detail.controller);
+          },
+          { once: true }
+        );
+      },
+
+      /** Open or close the panel; `open` left out switches it. */
+      toggle: function (open) {
+        this.open = typeof open === "boolean" ? open : !this.open;
+        this.changed();
+      },
+
+      choose: function (name, value) {
+        this.choice[name] = value;
+        this.apply();
+      },
+
+      /** A choice changed: ask again for what it now says. */
+      apply: function () {
+        this.restore(this.capture());
+        this.changed();
+      },
+
+      /** After any change: the request, the memory, the button. */
+      changed: function () {
+        remember(storageKey, this.capture());
+        this.announce();
+
+        // Once started: a closed panel never drew, and opening it
+        // starts it with these choices.
+        if (this.open && (this.payload || this.loading || this.error)) {
+          this.load();
+        }
+      },
+
+      announce: function () {
+        document.dispatchEvent(
+          new CustomEvent("generic:chart-builder-state", {
+            detail: { table: this.config.table, open: this.open }
+          })
+        );
+      },
+
+      capture: function () {
+        return Object.assign({ open: this.open }, this.choice);
+      },
+
+      /**
+       * Show what `state` says, keeping only what the page offers: a
+       * view saved before a field went away still opens.
+       */
+      restore: function (state) {
+        var choice = {};
+        var dimensions = builder.dimensions;
+
+        state = state || {};
+
+        choice.type = offers(builder.types, state.type)
+          ? state.type
+          : offers(builder.types, defaults.type)
+            ? defaults.type
+            : (builder.types[0] || {}).value || "bar";
+        choice.group_by = offers(dimensions, state.group_by)
+          ? state.group_by
+          : defaults.group_by;
+        choice.split_by =
+          offers(dimensions, state.split_by) && state.split_by !== choice.group_by
+            ? state.split_by
+            : "";
+        choice.value = offers(builder.values, state.value)
+          ? state.value
+          : defaults.value;
+        choice.period = offers(builder.periods, state.period)
+          ? state.period
+          : defaults.period;
+        choice.stacked = Boolean(state.stacked);
+        choice.horizontal = Boolean(state.horizontal);
+
+        // A heatmap is a grid of two fields: it needs the second one.
+        if (choice.type === "heatmap" && !choice.split_by) {
+          choice.split_by = (
+            dimensions.filter(function (option) {
+              return option.value !== choice.group_by;
+            })[0] || {}
+          ).value || "";
+        }
+
+        this.choice = choice;
+        this.open = Boolean(state.open);
+        this.config.extraParams = this.request();
+      },
+
+      /** The choices, as the endpoint reads them. */
+      request: function () {
+        var choice = this.choice;
+        var params = {
+          type: choice.type,
+          group_by: choice.group_by,
+          value: choice.value
+        };
+
+        if (this.canSplit() && choice.split_by) {
+          params.split_by = choice.split_by;
+        }
+
+        if (this.usesDates()) {
+          params.period = choice.period;
+        }
+
+        if (this.canStack() && choice.stacked) {
+          params.stacked = "1";
+        }
+
+        if (choice.type === "bar" && choice.horizontal) {
+          params.horizontal = "1";
+        }
+
+        return params;
+      },
+
+      kindOf: function (name) {
+        var found = builder.dimensions.filter(function (option) {
+          return option.value === name;
+        })[0];
+
+        return found ? found.kind : "";
+      },
+
+      canSplit: function () {
+        return (
+          builder.dimensions.length > 1 &&
+          builder.single.indexOf(this.choice.type) === -1
+        );
+      },
+
+      canStack: function () {
+        return (
+          this.canSplit() &&
+          Boolean(this.choice.split_by) &&
+          ["bar", "line", "area"].indexOf(this.choice.type) !== -1
+        );
+      },
+
+      usesDates: function () {
+        return (
+          this.kindOf(this.choice.group_by) === "date" ||
+          (this.canSplit() && this.kindOf(this.choice.split_by) === "date")
+        );
+      },
+
+      splitOptions: function () {
+        var group = this.choice.group_by;
+
+        return builder.dimensions.filter(function (option) {
+          return option.value !== group;
+        });
+      }
+    });
+  }
+
+  document.addEventListener("alpine:init", function () {
+    window.Alpine.data("genericChart", chartComponent);
+    window.Alpine.data("genericChartBuilder", builderComponent);
   });
 
   Generic.charts = {

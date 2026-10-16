@@ -86,6 +86,13 @@ FIGURES = {
             "Le filtre en place, en pastille sous la barre " "d'outils.",
         ),
     ],
+    "Dessiner son propre graphique": [
+        (
+            "23-graphique-libre",
+            "Le graphique de la liste du matériel : le prix total par "
+            "état, détaillé par fournisseur.",
+        ),
+    ],
     "Les vues": [("05-vues", "Le menu Vues.")],
     "Choisir les colonnes": [("06-colonnes", "Le menu Colonnes.")],
     "Exporter": [("07-export", "Le menu Exporter.")],

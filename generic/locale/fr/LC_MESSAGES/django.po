@@ -4143,3 +4143,104 @@ msgid "%(count)s left as it was."
 msgid_plural "%(count)s left as they were."
 msgstr[0] "%(count)s laissé tel quel."
 msgstr[1] "%(count)s laissés tels quels."
+
+#: generic/sites/chart_builder.py
+msgid "Bars"
+msgstr "Barres"
+
+#: generic/sites/chart_builder.py
+msgid "Lines"
+msgstr "Lignes"
+
+#: generic/sites/chart_builder.py
+msgid "Areas"
+msgstr "Aires"
+
+#: generic/sites/chart_builder.py
+msgid "Pie"
+msgstr "Camembert"
+
+#: generic/sites/chart_builder.py
+msgid "Donut"
+msgstr "Anneau"
+
+#: generic/sites/chart_builder.py
+msgid "Funnel"
+msgstr "Entonnoir"
+
+#: generic/sites/chart_builder.py
+msgid "Heatmap"
+msgstr "Carte de chaleur"
+
+#: generic/sites/chart_builder.py
+#, python-format
+msgid "Number of %(name)s"
+msgstr "Nombre de %(name)s"
+
+#: generic/sites/chart_builder.py
+#, python-format
+msgid "%(field)s (total)"
+msgstr "%(field)s (total)"
+
+#: generic/sites/chart_builder.py
+#, python-format
+msgid "%(field)s (average)"
+msgstr "%(field)s (moyenne)"
+
+#: generic/sites/chart_builder.py
+msgid "This type is not offered."
+msgstr "Ce type n'est pas proposé."
+
+#: generic/sites/chart_builder.py
+msgid "This field is not offered."
+msgstr "Ce champ n'est pas proposé."
+
+#: generic/sites/chart_builder.py
+msgid "A heatmap needs a second field."
+msgstr "Une carte de chaleur a besoin d'un second champ."
+
+#: generic/sites/chart_builder.py
+msgid "This value is not offered."
+msgstr "Cette valeur n'est pas proposée."
+
+#: generic/sites/chart_builder.py
+#, python-format
+msgid "%(value)s by %(group)s"
+msgstr "%(value)s par %(group)s"
+
+#: generic/sites/chart_builder.py
+#, python-format
+msgid "%(value)s by %(group)s and %(split)s"
+msgstr "%(value)s par %(group)s et %(split)s"
+
+#: generic/sites/resources.py
+msgid "Chart"
+msgstr "Graphique"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Hide the chart"
+msgstr "Masquer le graphique"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Chart type"
+msgstr "Type de graphique"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Group by"
+msgstr "Regrouper par"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Split by"
+msgstr "Détailler par"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Nothing"
+msgstr "Rien"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Stacked"
+msgstr "Empilé"
+
+#: generic/templates/generic/charts/builder.html
+msgid "Horizontal"
+msgstr "Horizontal"

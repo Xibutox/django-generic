@@ -2182,3 +2182,15 @@ msgstr "Modifier la sélection"
 #: generic/static/generic/js/bulk_edit.js
 msgid "There is nothing you may change here."
 msgstr "Vous ne pouvez rien modifier ici."
+
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Chart"
+msgstr "Graphique"
+
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Hide the chart"
+msgstr "Masquer le graphique"
+
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Show a chart of these rows"
+msgstr "Afficher un graphique de ces lignes"

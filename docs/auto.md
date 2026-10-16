@@ -36,6 +36,7 @@ The example's *Equipment* group is exactly these two lines
 | `detail_fieldsets` | the form's rows, plus the dates the application keeps |
 | `icon` | from the words of the model's name — `Equipment` is `devices`, `MaintenanceVisit` is `build`, `Invoice` is `receipt_long`; `table_rows` otherwise |
 | `bulk_edit_fields` | what a selection may be given at once ([Bulk edit](bulk-edit.md)): the form's fields with choices, booleans, relations and dates, never a unique one |
+| `chart_builder` | the **Chart** button above the list, closed until opened ([Charts](charts.md#drawn-by-the-reader-chart_builder)): grouped by the choices, relations, booleans and dates, the number fields summed and averaged |
 | `related_tables`, `inlines` | from `related` — below |
 
 The columns keep every filter, sort and export a declared column has:
@@ -113,6 +114,7 @@ class EquipmentResource(AutoResource):
 | `related_inlines` | `None` | which of `related` are tabs on the form: `None` every reverse foreign key, `()` none |
 | `max_columns` | `7` | columns the list shows at first |
 | `tag_choices` | `True` | choices drawn as coloured tags |
+| `chart_builder` | `True` | the chart its reader draws above the list; `False` takes it away |
 
 Every `ModelResource` attribute and hook is there too — `actions`,
 `charts`, `editable_fields`, `grids`, permissions. An `AutoResource` *is*

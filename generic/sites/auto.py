@@ -430,6 +430,9 @@ class AutoResource(ModelResource):
     max_columns: int = 7
     #: Draw every field with choices as coloured tags.
     tag_choices: bool = True
+    #: The *Chart* button above the list, its fields worked out: the
+    #: reader draws what they need (generic.sites.chart_builder).
+    chart_builder: Any = True
 
     def __init__(self, model: Any, site: Any) -> None:
         super().__init__(model, site)

@@ -20,6 +20,7 @@ Every generated screen talks to it, and so can anything else:
 ``POST   .../actions/``                  run a bulk action
 ``GET    .../autocomplete/``             Select2 results
 ``GET    .../charts/<name>/``            one declared chart's data
+``GET    .../chart-builder/``            the chart its reader draws
 ``GET    .../trees/<name>/``             one level of a declared tree
 ``GET    .../kpis/<name>/``              a declared key figure
 ``GET    .../cards/<name>/``             a declared set of record cards
@@ -86,6 +87,7 @@ TABLE_ACTIONS = frozenset(
         "run_action",
         "bulk_edit",
         "chart",
+        "chart_builder",
         "facets",
         "tree",
         "calendar",
@@ -708,15 +710,57 @@ class ResourceViewSet(
                 {"period": [gettext("This period is not offered.")]}
             )
 
-        # Aggregated over the plain queryset, selected by key: the
-        # table's annotations and joins would count rows twice.
-        matching = self.filter_queryset(self.get_queryset())
-        queryset = self.resource.get_queryset(request).filter(
-            pk__in=matching.values("pk")
+        return Response(
+            definition.get_payload(
+                self.resource, request, self.chart_queryset(request), period
+            )
         )
 
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="chart-builder",
+        url_name="chart-builder",
+    )
+    def chart_builder(self, request: Any) -> Response:
+        """The chart its reader draws above the list.
+
+        ``type``, ``group_by``, ``split_by``, ``value``, ``period``,
+        ``stacked`` and ``horizontal`` name what the resource's
+        ``chart_builder`` offers, never a field path of their own; the
+        table's parameters choose the rows, as for any chart.
+        """
+        from generic.sites.chart_builder import BuilderError
+
+        builder = self.resource.get_chart_builder()
+
+        if builder is None:
+            raise NotFound(gettext("There is no such chart."))
+
+        try:
+            definition = builder.chart(request.query_params)
+        except BuilderError as error:
+            raise ValidationError(error.errors) from None
+
         return Response(
-            definition.get_payload(self.resource, request, queryset, period)
+            definition.get_payload(
+                self.resource,
+                request,
+                self.chart_queryset(request),
+                definition.period,
+            )
+        )
+
+    def chart_queryset(self, request: Any) -> Any:
+        """The rows the table would show, for a chart to aggregate.
+
+        Aggregated over the plain queryset, selected by key: the
+        table's annotations and joins would count rows twice.
+        """
+        matching = self.filter_queryset(self.get_queryset())
+
+        return self.resource.get_queryset(request).filter(
+            pk__in=matching.values("pk")
         )
 
     # -- trees -------------------------------------------------------------

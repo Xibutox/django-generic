@@ -550,6 +550,10 @@ class TicketResource(ModelResource):
     )
     # Above the list: they follow its filters, and a click filters it.
     list_charts = ("by_status", "opened")
+    # And the one each reader draws: the Chart button above the table
+    # opens it, with the fields worked out from the model. The
+    # equipment below has it without asking, being auto().
+    chart_builder = True
 
     # Key figures on the dashboard. Each is a filter tree over the
     # list's columns - the one its tile opens the list with - and a
