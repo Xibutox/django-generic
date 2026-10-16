@@ -71,6 +71,14 @@ With it off, `-1` falls back to the default page size.
 
 See [Imports](imports.md).
 
+## Bulk edit
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `BULK_EDIT_MAX_ROWS` | `1000` | Records one bulk edit may change; a larger selection is refused, to be narrowed first |
+
+See [Bulk edit](bulk-edit.md).
+
 ## Autocomplete
 
 | Setting | Default | Meaning |

@@ -230,6 +230,20 @@ class TicketResource(ModelResource):
     # Not the status: it moves through its transitions (below).
     editable_fields = ("team", "assignee", "priority", "due_on")
 
+    # What a selection of tickets may be given at once, from the list's
+    # selection bar: *Edit the selected tickets*. Tags are added to or
+    # removed from each ticket's own; the status, again, keeps to its
+    # transitions.
+    bulk_edit_fields = (
+        "team",
+        "assignee",
+        "customer",
+        "priority",
+        "tags",
+        "is_billable",
+        "due_on",
+    )
+
     # A set of tickets of the project's choosing, corrected many at
     # once: the open ones, to assign and prioritise in one sitting. It
     # is shown by a GridView (example/urls.py) at /demo/triage/, and at
@@ -805,6 +819,21 @@ class TicketResource(ModelResource):
             return not obj.is_billable
 
         return super().has_record_action(request, obj, name)
+
+    def can_edit_column(
+        self, request: Any, column: str, obj: Any = None
+    ) -> bool:
+        # A closed ticket stays with the team that closed it: a grid
+        # keeps the cell as text, and a bulk edit of the team leaves
+        # closed tickets out, naming them.
+        if (
+            column == "team"
+            and obj is not None
+            and obj.status == Ticket.Status.CLOSED
+        ):
+            return False
+
+        return super().can_edit_column(request, column, obj)
 
     @action(description=_("Mark as billable"), icon="payments")
     def mark_billable(self, request: Any, queryset: QuerySet) -> str:

@@ -181,6 +181,14 @@ class ModelResource(PagesMixin):
     #: Bulk actions: method names, or functions taking
     #: ``(resource, request, queryset)``.
     actions: Sequence[Any] = ("delete_selected",)
+    #: Fields a selection of rows may be given one value of at once:
+    #: the selection bar's *Edit the selected ...* opens a dialog asking
+    #: which of them to change and to what, reviews the change, then
+    #: writes each record through its form serializer and
+    #: ``save_bulk_edit``. A many-to-many field may also be added to or
+    #: removed from. Empty - the default - offers nothing. See
+    #: ``generic.sites.bulk_edit``.
+    bulk_edit_fields: Sequence[str] = ()
     #: State fields (django-fsm-2 ``FSMField``) whose ``@transition``
     #: methods become buttons on a record's page. The fields become read
     #: only in forms and grids. See ``generic.sites.transitions``.
@@ -338,6 +346,7 @@ class ModelResource(PagesMixin):
         self._inline_instances: list[Any] | None = None
         self._editable_columns: dict[str, Any] | None = None
         self._transitions: dict[str, Any] | None = None
+        self._bulk_edit_fields: dict[str, Any] | None = None
 
         if self.trash:
             from generic.trash import DELETED_AT, has_field
@@ -514,6 +523,9 @@ class ModelResource(PagesMixin):
 
     def get_actions_url(self) -> str:
         return self._reverse(self.api_url_name("actions"))
+
+    def get_bulk_edit_url(self) -> str:
+        return self._reverse(self.api_url_name("bulk-edit"))
 
     def get_mailing_url(self, request: Any) -> str:
         """The add form of a mailing of this list, or ``""``."""
@@ -1034,6 +1046,8 @@ class ModelResource(PagesMixin):
                 for entry in self.get_actions(request).values()
             ],
             "bulkActionsUrl": self.get_actions_url(),
+            # "Edit the selected ...", first in the selection bar's menu.
+            "bulkEdit": self.get_bulk_edit_options(request),
             # The Views menu: presets, saved views, the state left.
             **saved_view_options(request, self.get_presets(request)),
             # Where "Send by e-mail on a schedule" leads, for who may.
@@ -1168,6 +1182,8 @@ class ModelResource(PagesMixin):
             mailingUrl="",
             extraParams={TRASH_PARAM: "1"},
             bulkActionsUrl=f"{self.get_actions_url()}?{TRASH_PARAM}=1",
+            # What is in the trash is restored, not edited.
+            bulkEdit={},
         )
 
         options["bulkActions"] = [
@@ -1743,6 +1759,60 @@ class ModelResource(PagesMixin):
                 "name_plural": self.opts.verbose_name_plural,
             },
         }
+
+    # -- bulk edit ----------------------------------------------------------
+
+    def get_bulk_edit_fields(self) -> dict[str, Any]:
+        """The fields a selection may be given one value of, resolved
+        and checked (``generic.sites.bulk_edit.BulkField``), by name.
+
+        Built once per process: a typo in the declaration raises
+        ``ImproperlyConfigured`` when the resource is registered.
+        """
+        if self._bulk_edit_fields is None:
+            from generic.sites.bulk_edit import check
+
+            self._bulk_edit_fields = check(self)
+
+        return self._bulk_edit_fields
+
+    def can_bulk_edit(self, request: Any) -> bool:
+        """Whether this reader is offered the bulk edit at all. Each
+        record is asked again (``has_change_permission(request, obj)``,
+        ``can_edit_column``) when it is written."""
+        return bool(
+            self.get_bulk_edit_fields()
+        ) and self.has_change_permission(request)
+
+    def get_bulk_edit_options(self, request: Any) -> dict[str, Any]:
+        """The selection bar's entry, or nothing for who may not."""
+        if not self.can_bulk_edit(request):
+            return {}
+
+        return {
+            "url": self.get_bulk_edit_url(),
+            "label": self._describe(
+                gettext("Edit the selected %(verbose_name_plural)s")
+            ),
+        }
+
+    def save_bulk_edit(self, request: Any, serializer: Any, obj: Any) -> Any:
+        """Write one record of a bulk edit. The reprogrammable step.
+
+        ``serializer`` is the form serializer, validated, holding the
+        changed fields only. The default is the form's own write,
+        ``save_model(request, serializer, change=True)``. Override to
+        refuse on a rule of the application's (raise a
+        ``ValidationError``: the record is left as it was and named) or
+        to do more::
+
+            def save_bulk_edit(self, request, serializer, obj):
+                if obj.is_locked:
+                    raise ValidationError(gettext("This is locked."))
+
+                return super().save_bulk_edit(request, serializer, obj)
+        """
+        return self.save_model(request, serializer, change=True)
 
     # -- hooks --------------------------------------------------------------
 

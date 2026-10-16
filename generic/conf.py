@@ -90,6 +90,10 @@ DEFAULTS: dict[str, Any] = {
     "IMPORT_MAX_FILE_SIZE": 5 * 1024 * 1024,
     # Rows shown by the preview, as they will be written.
     "IMPORT_PREVIEW_ROWS": 20,
+    # --- Bulk edit (a resource's ``bulk_edit_fields``) ------------------
+    # Records one bulk edit may change; a larger selection is refused,
+    # to be narrowed by the table's filters first.
+    "BULK_EDIT_MAX_ROWS": 1000,
     # --- Autocomplete ------------------------------------------------
     "AUTOCOMPLETE_PAGE_SIZE": 25,
     "AUTOCOMPLETE_MIN_INPUT_LENGTH": 0,

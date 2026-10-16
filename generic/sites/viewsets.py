@@ -84,6 +84,7 @@ TABLE_ACTIONS = frozenset(
         "export",
         "export_csv",
         "run_action",
+        "bulk_edit",
         "chart",
         "facets",
         "tree",
@@ -137,6 +138,11 @@ class ResourcePermission(BasePermission):
             "calendar_move",
         ):
             return resource.has_change_permission(request)
+
+        # Declared, and allowed to change some record: each one is
+        # asked again as it is written.
+        if name == "bulk_edit":
+            return resource.can_bulk_edit(request)
 
         if name == "destroy":
             return resource.has_delete_permission(request)
@@ -857,26 +863,10 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if request.data.get("all"):
-            # Re-selected by primary key from the plain queryset: the
-            # table's annotations and joins are there to display rows,
-            # and an update() must not have to carry them.
-            matching = self.filter_queryset(self.get_queryset())
-            queryset = self.resource.get_queryset(request).filter(
-                pk__in=matching.values("pk")
-            )
-        else:
-            ids = request.data.get("ids")
+        queryset = self.get_selection(request)
 
-            if not isinstance(ids, list) or len(ids) > MAX_SELECTED:
-                return Response(
-                    {"detail": gettext("Invalid selection.")},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            queryset = self.resource.get_queryset(request).filter(
-                pk__in=[str(value) for value in ids]
-            )
+        if isinstance(queryset, Response):
+            return queryset
 
         count = queryset.count()
 
@@ -892,6 +882,81 @@ class ResourceViewSet(
             return result
 
         return Response(self.describe_result(result, count, entry))
+
+    def get_selection(self, request: Any) -> Any:
+        """The rows a bulk request names, or the 400 answering it.
+
+        Either ``{"ids": [...]}`` or ``{"all": true}`` with the table's
+        own filter parameters in the query string - always within
+        ``get_queryset(request)``.
+        """
+        if request.data.get("all"):
+            # Re-selected by primary key from the plain queryset: the
+            # table's annotations and joins are there to display rows,
+            # and an update() must not have to carry them.
+            matching = self.filter_queryset(self.get_queryset())
+
+            return self.resource.get_queryset(request).filter(
+                pk__in=matching.values("pk")
+            )
+
+        ids = request.data.get("ids")
+
+        if not isinstance(ids, list) or len(ids) > MAX_SELECTED:
+            return Response(
+                {"detail": gettext("Invalid selection.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return self.resource.get_queryset(request).filter(
+            pk__in=[str(value) for value in ids]
+        )
+
+    @action(
+        detail=False,
+        methods=["get", "post"],
+        url_path="bulk-edit",
+        url_name="bulk-edit",
+    )
+    def bulk_edit(self, request: Any) -> Response:
+        """Give the selected rows one value per chosen field.
+
+        ``GET``: the fields the dialog offers, described as the form
+        describes them, with what may be done to each. ``POST``: the
+        selection (as ``actions/`` takes it) and ``{"changes": {name:
+        {"mode", "value"}}, "commit": bool}`` - without ``commit``, a
+        dry run answering what would happen (``generic.sites.
+        bulk_edit``).
+        """
+        from generic.sites import bulk_edit
+        from generic.trash import in_trash
+
+        if in_trash(request):
+            raise Http404
+
+        if request.method == "GET":
+            return Response(bulk_edit.describe(self.resource, request))
+
+        queryset = self.get_selection(request)
+
+        if isinstance(queryset, Response):
+            return queryset
+
+        if not queryset.exists():
+            return Response(
+                {"detail": gettext("Nothing was selected.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            bulk_edit.run(
+                self.resource,
+                request,
+                queryset,
+                request.data.get("changes"),
+                commit=request.data.get("commit") is True,
+            )
+        )
 
     @staticmethod
     def describe_result(result: Any, count: int, entry: Any) -> dict:

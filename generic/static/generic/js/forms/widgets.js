@@ -539,7 +539,10 @@
         url: field.autocompleteUrl,
         placeholder: field.placeholder,
         allowClear: !multiple && (!field.required || field.allowNull),
-        disabled: select.disabled
+        disabled: select.disabled,
+        // Inside a modal <dialog>, a list hung on the body would sit
+        // under the dialog's top layer, out of reach.
+        dropdownParent: context.dropdownParent
       });
       enhanced = true;
     }

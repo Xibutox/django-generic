@@ -95,6 +95,13 @@ FIGURES = {
             "Deux lignes sélectionnées et la barre des " "actions.",
         ),
     ],
+    "Modifier plusieurs enregistrements": [
+        (
+            "16-modification-en-lot",
+            "La modification en lot vérifiée : ce qui va changer, et "
+            "l'enregistrement laissé tel quel.",
+        ),
+    ],
     "Le menu d'une ligne": [
         ("09-menu-ligne", "Le menu d'une ligne, ouvert d'un clic droit."),
     ],

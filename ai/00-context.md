@@ -131,6 +131,8 @@ generic/
 │   ├── transitions.py      a model's django-fsm-2 transitions: read, offered, taken
 │   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
 │   │                       validated by the form serializer, written all or nothing
+│   ├── bulk_edit.py        bulk_edit_fields: a selection given one value per field,
+│   │                       reviewed (dry run), each record through its form (§5.21)
 │   ├── inlines.py          TabularInline, StackedInline
 │   ├── decorators.py       @action, @display
 │   └── realtime.py         post_save/post_delete -> "resource.changed"; announce()
@@ -245,6 +247,7 @@ generic/
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
     ├── js/select2.js       Generic.select2 helpers
+    ├── js/bulk_edit.js     Generic.bulkEdit.open: the selection bar's bulk edit dialog (§5.21)
     ├── js/wiki.js          Alpine wikiPage
     ├── js/datatables/      core (operators), columns (renderers), query (filter
     │                       tree + typed syntax), toolbar, filterbar (chips,
@@ -643,6 +646,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `list_editable` | `False` | whether the resource's own list page offers those cells |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
+| `bulk_edit_fields` | `()` (`auto`: worked out) | fields a selection may be given one value of: *Edit the selected …* first in the selection bar, a dialog, a review, the write (§5.21) |
 | `show_export`, `show_full_result_count` | True, True | export menu; count all rows each draw |
 | `transitions`, `transition_actions` | `()`, True | FSM state fields whose `@transition`s become buttons, bulk actions (`transition:<name>`) and `<pk>/transitions/<name>/` (§5.16); the field turns read only |
 | `imports` | None | `Import(fields=, key=, mode=, lookups=, defaults=, permission=, max_rows=, description=)`: an *Import* button and page (§5.15); None offers nothing and 404s the endpoint |
@@ -699,6 +703,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `has_record_action(request, obj, name)` | whether the record's page offers the bulk action `name` for this record now (default True). Override so a record's page shows only what applies to its state - few buttons, none answering "already done"; the list keeps them all |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
+| `save_bulk_edit(request, serializer, obj)`, `can_bulk_edit(request)` | write one record of a bulk edit (default `save_model(..., change=True)`; raise a `ValidationError` to leave it as it was, named); who is offered it (§5.21) |
 | `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
 | `create_editable(request, values, fixed)` | create the record of a row added in a grid; `values` by column, `fixed` by field (§5.10) |
 | `get_detail_fieldsets(request)`, `get_detail_stats(request)` | per-request summary sections and figures |
@@ -1025,7 +1030,9 @@ non-editable dates kept, `max_columns`=7), `search_fields` (text fields
 + `fk__<label>`), `tag_fields` (every choice field, `PALETTE` colours;
 `tag_choices=False` to skip), `fieldsets` (name alone, short fields two
 a row, long text/M2M full width), `detail_fieldsets` (+ kept dates),
-`icon` (`ICONS` by word of the class name). **`related` is the only
+`icon` (`ICONS` by word of the class name), `bulk_edit_fields` (the
+form's choices, booleans, relations and dates, never unique; §5.21).
+**`related` is the only
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a
 form tab (required fields + up to 6; `related_inlines` selects, `()`
@@ -1491,6 +1498,53 @@ time, `end` shifts by as many days. *Add* on a day opens the add form
 with the date filled. `docs/calendars.md`; example: *Support › Due
 dates*.
 
+### 5.21 Bulk edit (`bulk_edit_fields`)
+
+```python
+class TicketResource(ModelResource):
+    bulk_edit_fields = ("team", "assignee", "priority", "tags", "due_on")
+
+    def can_edit_column(self, request, column, obj=None):   # shared with grids
+        return not (column == "team" and obj is not None and obj.status == "closed")
+
+    def save_bulk_edit(self, request, serializer, obj):      # the write, per record
+        return super().save_bulk_edit(request, serializer, obj)
+```
+
+- Offered (option `bulkEdit` `{url, label}` of `get_table_options`,
+  `get_bulk_edit_options`) to `can_bulk_edit(request)`: fields declared
+  + `has_change_permission(request)`; `{}` in the trash, tree and
+  calendar filter tables. `selection.js` puts *Edit the selected …*
+  first in the selection bar (value `__bulk_edit__`), `bulk_edit.js`
+  (`Generic.bulkEdit.open`) draws the dialog: a line per field (field,
+  mode, the form's widget via `Generic.forms.widgets.create(field,
+  {dropdownParent})`), *Review the change* (POST without `commit`),
+  then *Apply to N* (`commit: true`), answer through
+  `Generic.operations.handle`. Any edit after the review asks again.
+- Modes (`generic/sites/bulk_edit.py`, `BulkField.modes`): `set`;
+  `clear` when `null=True` or blank text (M2M: `blank=True`); M2M
+  `add` / `remove` (each record keeps its other values) / `set`.
+- `bulk_edit.run`: selection as `actions/` (`get_selection`: ids or
+  `all` + table params, within `get_queryset`; `bulk_edit` is a table
+  action); ≤ `BULK_EDIT_MAX_ROWS` else 400; one transaction,
+  `acting_as(source="Bulk edit: <fields>")` (80 chars), `realtime.batch`;
+  per record: `has_change_permission(request, obj)` and
+  `can_edit_column(request, field, obj)` (else `refused`), the form
+  serializer partial on the chosen fields (else `invalid`), unchanged
+  skipped (`Importer.is_unchanged`), `save_bulk_edit` in a savepoint
+  (`ValidationError`/`IntegrityError` -> `invalid`); without `commit`
+  everything is rolled back. Answer `counts` (selected, changed,
+  unchanged, refused, invalid), `problems` (≤ 50: id, label, url,
+  status, messages), `moreProblems`, `committed`, `message`, `level`;
+  written: an operation's report naming what was left.
+- Checked at registration (`get_bulk_edit_fields`, `check`): a field of
+  the model on its form, not read only, not unique, not a file or key,
+  not a reverse relation, not a `transitions` state field -
+  `ImproperlyConfigured`. Refused: 403 without the change permission or
+  the declaration, 400 bad change / mode / nothing selected, 404 trash.
+  Example: `TicketResource` (a closed ticket keeps its team), and the
+  Equipment group through `auto()`. See `docs/bulk-edit.md`.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1516,6 +1570,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/deletion-preview/` | cascade preview |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}` |
+| `GET/POST .../bulk-edit/` | where `bulk_edit_fields` is declared: the dialog's fields; `{ids or all, "changes": {name: {"mode", "value"}}, "commit"}` (§5.21) |
 | `GET .../import/schema/`, `.../import/template/`, `POST .../import/` | where `imports` is declared (§5.15) |
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
@@ -1723,7 +1778,7 @@ strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
-`IMPORT_PREVIEW_ROWS`, `AUTOCOMPLETE_PAGE_SIZE`,
+`IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`, `FILE_MAX_SIZE`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,

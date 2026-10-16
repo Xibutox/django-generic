@@ -54,7 +54,11 @@ from generic.api.tags import TagStyle
 from generic.sites.inlines import TabularInline
 from generic.sites.related import RelatedTable
 from generic.sites.resources import ModelResource
-from generic.sites.serializers import default_form_fields, label_field_for
+from generic.sites.serializers import (
+    default_form_fields,
+    flatten_fieldsets,
+    label_field_for,
+)
 
 #: Colours given to a field's choices, in the order they are declared:
 #: enough to tell eight apart, then round again.
@@ -468,6 +472,22 @@ class AutoResource(ModelResource):
                         {"fields": infer_detail_rows(model, rows, exclude)},
                     ),
                 )
+
+        if "bulk_edit_fields" not in declared:
+            from generic.sites.bulk_edit import infer
+
+            # The form this resource will have: worked out above, or
+            # declared.
+            form = (
+                flatten_fieldsets(worked_out["fieldsets"])
+                if "fieldsets" in worked_out
+                else self.get_fields()
+            )
+            worked_out["bulk_edit_fields"] = infer(
+                model,
+                form,
+                (*exclude, *self.readonly_fields, *self.transitions),
+            )
 
         fields = [related_field(model, name, owner) for name in self.related]
 

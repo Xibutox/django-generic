@@ -4072,3 +4072,74 @@ msgstr "Signaler un bug"
 #: generic/templates/generic/help/help.html
 msgid "Something does not work as it should? Tell the team that looks after this application."
 msgstr "Quelque chose ne fonctionne pas comme prévu ? Prévenez l'équipe qui s'occupe de cette application."
+
+#: generic/sites/resources.py
+#, python-format
+msgid "Edit the selected %(verbose_name_plural)s"
+msgstr "Modifier les %(verbose_name_plural)s sélectionnés"
+
+#: generic/sites/bulk_edit.py
+msgid "Set to"
+msgstr "Remplacer par"
+
+#: generic/sites/bulk_edit.py
+msgid "Choose at least one field to change."
+msgstr "Choisissez au moins un champ à modifier."
+
+#: generic/sites/bulk_edit.py
+msgid "This field cannot be changed in bulk."
+msgstr "Ce champ ne peut pas être modifié en lot."
+
+#: generic/sites/bulk_edit.py
+msgid "This field cannot be changed that way."
+msgstr "Ce champ ne peut pas être modifié de cette façon."
+
+#: generic/sites/bulk_edit.py
+msgid "Expected a list of values."
+msgstr "Une liste de valeurs est attendue."
+
+#: generic/sites/bulk_edit.py
+msgid "Choose at least one value."
+msgstr "Choisissez au moins une valeur."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "Not to be changed on this record: %(fields)s."
+msgstr "Non modifiable sur cet enregistrement : %(fields)s."
+
+#: generic/sites/bulk_edit.py
+msgid "The database refused this change."
+msgstr "La base de données a refusé cette modification."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "%(count)s records are selected; a bulk edit changes %(limit)s at most. Narrow the selection with the table's filters first."
+msgstr "%(count)s enregistrements sont sélectionnés ; une modification en lot en change %(limit)s au plus. Réduisez d'abord la sélection avec les filtres du tableau."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "%(count)s %(name)s will change."
+msgid_plural "%(count)s %(name)s will change."
+msgstr[0] "%(count)s %(name)s va être modifié."
+msgstr[1] "%(count)s %(name)s vont être modifiés."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "%(count)s %(name)s changed."
+msgid_plural "%(count)s %(name)s changed."
+msgstr[0] "%(count)s %(name)s modifié."
+msgstr[1] "%(count)s %(name)s modifiés."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "%(count)s already had these values."
+msgid_plural "%(count)s already had these values."
+msgstr[0] "%(count)s avait déjà ces valeurs."
+msgstr[1] "%(count)s avaient déjà ces valeurs."
+
+#: generic/sites/bulk_edit.py
+#, python-format
+msgid "%(count)s left as it was."
+msgid_plural "%(count)s left as they were."
+msgstr[0] "%(count)s laissé tel quel."
+msgstr[1] "%(count)s laissés tels quels."

@@ -76,6 +76,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   PDF. It named the person asked, who had approved nothing.
 
 ### Added
+- Bulk edit: `bulk_edit_fields = ("team", "assignee", "tags", ...)` on
+  a resource puts *Edit the selected …* first in its tables' selection
+  bar. A dialog asks which fields to change and to what - in the form's
+  own controls; a many-to-many may be added to or removed from, an
+  optional field cleared - then reviews the change (the whole edit run
+  and rolled back: how many records would change, which would be left
+  as they are and why) before writing it. Each record goes through its
+  form serializer and `save_bulk_edit` (`save_model` by default),
+  asked `has_change_permission(request, obj)` and `can_edit_column`;
+  one history version each (*Bulk edit: <fields>*), one live event.
+  `BULK_EDIT_MAX_ROWS` (1000). `auto()` works the fields out. In the
+  example: tickets, where a closed ticket keeps its team. See
+  docs/bulk-edit.md.
 - Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
   ("export", "download")`, exporting tables (Excel, CSV, copy, print,
   scheduled mailings) and downloading files are permissions

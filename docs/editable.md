@@ -361,7 +361,9 @@ class TimeEntryResource(ModelResource):
 
 Asked twice: once to decide whether the table offers the column at all,
 and again on the way in with the record in hand. The model's change
-permission is checked separately and always.
+permission is checked separately and always. A [bulk edit](bulk-edit.md)
+asks it too, with the field's name, for each selected record: the one
+rule keeps a field frozen in grids and in bulk alike.
 
 ## The write itself
 
