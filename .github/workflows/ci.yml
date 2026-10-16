@@ -144,7 +144,7 @@ jobs:
         run: pytest tests/browser -m browser --no-cov -p no:cacheprovider --screenshot only-on-failure --output test-results/browser
       - name: Screenshots of what failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-test-results
           path: test-results/
@@ -176,7 +176,7 @@ jobs:
           /tmp/full/bin/pip install "$(ls dist/*.whl)[export,import,events,tasks,wiki]" "Django==5.2.*" "djangorestframework==3.16.*" pytest pytest-django
           # --sweep: the project's own PageSweep, from the wheel.
           cd /tmp && /tmp/full/bin/python "$GITHUB_WORKSPACE/scripts/smoke_install.py" --sweep
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
