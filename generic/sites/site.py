@@ -162,6 +162,8 @@ class GenericSite:
             resource.check_pages()
             check_import(resource)
             resource.get_transitions()
+            # So are the fields a selection may be edited in bulk.
+            resource.get_bulk_edit_fields()
             # Trees are checked here too, and from now on the forms of
             # the model holding their links refuse a cycle.
             trees.guard(resource)

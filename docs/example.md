@@ -555,6 +555,18 @@ files again - behind a privacy reminder to tick first
 (`EXPORT_DISCLAIMER`); clicking a ticket's attachment shows the
 download one. See [Rights given on request](access-requests.md).
 
+**Many tickets changed at once.** In *Tickets*, tick a few rows (a
+closed one among them), choose *Edit the selected tickets…* in the
+selection bar and *Apply*. Add *Priority › Set to › Urgent*, *Tags ›
+Add › billing* and *Team › Set to › Spare*, then *Review the change*:
+the dialog says how many tickets will change, and names the closed one
+- a closed ticket stays with its team (`TicketResource.can_edit_column`).
+*Apply to N*: the others are written, each with one version in its
+*History* tab - *History › Changes* gives its source, *Bulk edit:
+priority, tags, team* - and each keeps its own tags beside *billing*. *Select all N matching rows* edits every
+ticket the filters match. As `viewer` the entry is not offered. See
+[Bulk edit](bulk-edit.md).
+
 **On the API.** These are worth pasting into the address bar:
 
 ```

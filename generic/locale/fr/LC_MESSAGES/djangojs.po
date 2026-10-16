@@ -2114,3 +2114,71 @@ msgstr "Demander la permission"
 #: generic/static/generic/js/access.js
 msgid "Download"
 msgstr "Télécharger"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Field"
+msgstr "Champ"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "What to do"
+msgstr "Que faire"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Remove this line"
+msgstr "Retirer cette ligne"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Choose a field"
+msgstr "Choisir un champ"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Add a field"
+msgstr "Ajouter un champ"
+
+#: generic/static/generic/js/bulk_edit.js
+#, javascript-format
+msgid "%(count)s %(name)s selected. Choose the fields to change and their new value: everything else is kept. Nothing is written before you have reviewed the change."
+msgstr "%(count)s %(name)s sélectionnés. Choisissez les champs à modifier et leur nouvelle valeur : tout le reste est conservé. Rien n'est enregistré avant que vous ayez vérifié la modification."
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Review the change"
+msgstr "Vérifier la modification"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Choose at least one field to change."
+msgstr "Choisissez au moins un champ à modifier."
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Nothing would change."
+msgstr "Rien ne changerait."
+
+#: generic/static/generic/js/bulk_edit.js
+#, javascript-format
+msgid "%(count)s already has these values."
+msgid_plural "%(count)s already have these values."
+msgstr[0] "%(count)s a déjà ces valeurs."
+msgstr[1] "%(count)s ont déjà ces valeurs."
+
+#: generic/static/generic/js/bulk_edit.js
+#, javascript-format
+msgid "%(count)s will be left as it is:"
+msgid_plural "%(count)s will be left as they are:"
+msgstr[0] "%(count)s sera laissé tel quel :"
+msgstr[1] "%(count)s seront laissés tels quels :"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "And others."
+msgstr "Et d'autres."
+
+#: generic/static/generic/js/bulk_edit.js
+#, javascript-format
+msgid "Apply to %(count)s"
+msgstr "Appliquer à %(count)s"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "Edit the selection"
+msgstr "Modifier la sélection"
+
+#: generic/static/generic/js/bulk_edit.js
+msgid "There is nothing you may change here."
+msgstr "Vous ne pouvez rien modifier ici."

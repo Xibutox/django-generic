@@ -987,6 +987,7 @@ class BoundTree:
             print=False,
             rowActions=[],
             bulkActions=[],
+            bulkEdit={},
             presets={},
             mailingUrl="",
             savedViewsUrl="",

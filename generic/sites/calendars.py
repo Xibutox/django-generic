@@ -448,6 +448,7 @@ class BoundCalendar:
             print=False,
             rowActions=[],
             bulkActions=[],
+            bulkEdit={},
             presets={},
             mailingUrl="",
             savedViewsUrl="",

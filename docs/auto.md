@@ -35,6 +35,7 @@ The example's *Equipment* group is exactly these two lines
 | `fieldsets` | the naming field alone, then the short fields **two a row**, long text and many-to-many fields the whole width underneath |
 | `detail_fieldsets` | the form's rows, plus the dates the application keeps |
 | `icon` | from the words of the model's name — `Equipment` is `devices`, `MaintenanceVisit` is `build`, `Invoice` is `receipt_long`; `table_rows` otherwise |
+| `bulk_edit_fields` | what a selection may be given at once ([Bulk edit](bulk-edit.md)): the form's fields with choices, booleans, relations and dates, never a unique one |
 | `related_tables`, `inlines` | from `related` — below |
 
 The columns keep every filter, sort and export a declared column has:

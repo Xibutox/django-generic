@@ -240,6 +240,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Imports](docs/imports.md) — `Import(...)`: a spreadsheet read back into records, matched, previewed, all or nothing
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows, files uploaded and downloaded behind the record's permission
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
+- [Bulk edit](docs/bulk-edit.md) — `bulk_edit_fields`: the selected rows given one value per field, reviewed before written, each record through its form
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS
 - [Events, notifications and messages](docs/events.md) — who hears what, messages from an administrator, publishing, topics, the client protocol
 - [Watching](docs/watch.md) — being told when a record, or a model, changes

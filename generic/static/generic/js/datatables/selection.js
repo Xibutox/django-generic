@@ -28,8 +28,65 @@
     return selection.all ? total(controller) : selection.ids.size;
   }
 
+  //: The selection bar's own entry: the bulk edit, not an action.
+  var BULK_EDIT = "__bulk_edit__";
+
+  /** The selection, as the endpoints take it, and where to send it. */
+  function request(controller, url) {
+    var selection = controller.selection;
+    var body = {};
+
+    if (selection.all) {
+      body.all = true;
+      url = window.Generic.api.buildUrl(url, controller.currentParams());
+    } else {
+      body.ids = Array.from(selection.ids.keys());
+    }
+
+    return { url: url, body: body };
+  }
+
+  function done(controller, result) {
+    var level = (result && result.level) || "success";
+
+    // A report, or work still going on elsewhere: drawn as an
+    // operation (operations.js); anything else is a toast.
+    window.Generic.operations.handle(result);
+
+    if (level !== "error") {
+      controller.clearSelection();
+    }
+
+    controller.reload(false);
+  }
+
+  function edit(controller) {
+    var Generic = window.Generic;
+    var bulk = controller.options.bulkEdit || {};
+    var target = request(controller, bulk.url);
+
+    Generic.bulkEdit
+      .open({
+        url: target.url,
+        body: target.body,
+        count: selectedCount(controller),
+        title: bulk.label
+      })
+      .then(function (result) {
+        if (result) {
+          done(controller, result);
+        }
+      });
+  }
+
   function run(controller, name) {
     var Generic = window.Generic;
+
+    if (name === BULK_EDIT && window.Generic.bulkEdit) {
+      edit(controller);
+      return;
+    }
+
     var actions = controller.options.bulkActions || [];
     var action = actions.find(function (entry) {
       return entry.name === name;
@@ -40,7 +97,6 @@
       return;
     }
 
-    var selection = controller.selection;
     var count = selectedCount(controller);
 
     var question = action.confirm
@@ -61,33 +117,16 @@
         return;
       }
 
-      var url = controller.options.bulkActionsUrl;
-      var body = { action: name };
-
-      if (selection.all) {
-        body.all = true;
-        url = Generic.api.buildUrl(url, controller.currentParams());
-      } else {
-        body.ids = Array.from(selection.ids.keys());
-      }
+      var target = request(controller, controller.options.bulkActionsUrl);
+      var body = Object.assign({ action: name }, target.body);
 
       var apply = controller.slots.selection.apply;
       apply.disabled = true;
 
       Generic.api
-        .post(url, body)
+        .post(target.url, body)
         .then(function (result) {
-          var level = (result && result.level) || "success";
-
-          // A report, or work still going on elsewhere: drawn as an
-          // operation (operations.js); anything else is a toast.
-          Generic.operations.handle(result);
-
-          if (level !== "error") {
-            controller.clearSelection();
-          }
-
-          controller.reload(false);
+          done(controller, result);
         })
         .catch(function (error) {
           Generic.toast(error.message, "error");
@@ -106,8 +145,8 @@
 
       return Boolean(
         options.rowKey &&
-          options.bulkActionsUrl &&
-          (options.bulkActions || []).length
+          ((options.bulkActionsUrl && (options.bulkActions || []).length) ||
+            (options.bulkEdit && options.bulkEdit.url))
       );
     },
 
@@ -180,7 +219,15 @@
       select.setAttribute("aria-label", t("Action"));
       select.appendChild(new Option(t("Choose an action") + "\u2026", ""));
 
-      controller.options.bulkActions.forEach(function (action) {
+      var bulk = controller.options.bulkEdit;
+
+      // Changing the selection's values comes first: it is what a
+      // selection is most often made for.
+      if (bulk && bulk.url) {
+        select.appendChild(new Option(bulk.label + "\u2026", BULK_EDIT));
+      }
+
+      (controller.options.bulkActions || []).forEach(function (action) {
         select.appendChild(new Option(action.label, action.name));
       });
 
