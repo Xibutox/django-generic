@@ -14,7 +14,7 @@
 
 # -- web ----------------------------------------------------------------
 
-FROM python:3.12-slim AS web
+FROM python:3.13-slim AS web
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -35,8 +35,10 @@ RUN apt-get update \
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
+# The versions CI tested (scripts/lock.py).
+COPY requirements/constraints.txt ./
 COPY docmanager/requirements.txt ./
-RUN pip install ".[export,wiki,postgres]" -r requirements.txt \
+RUN pip install -c constraints.txt ".[export,wiki,postgres,argon2]" -r requirements.txt \
     "gunicorn>=22" "redis>=5.0" \
     && rm -rf /src
 

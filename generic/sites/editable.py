@@ -182,10 +182,15 @@ def may_edit(
     table showing a customer's name asks whether the reader may change
     *customers*.
     """
-    if not resource.can_edit_column(request, column.name, obj):
+    if not resource.may_write_column(request, column.name, obj):
         return False
 
     owner = resource_for(resource, column)
+
+    # A column writing another model's field obeys that model's rules.
+    if owner is not None and owner is not resource:
+        if column.field_name in owner.get_locked_fields(request):
+            return False
 
     if owner is not None:
         return bool(owner.has_change_permission(request, obj))
@@ -498,7 +503,7 @@ def add_options(resource: Any, request: Any, context: Any) -> dict[str, Any]:
     labels: dict[str, dict[str, str]] = {}
 
     for name in context.creatable:
-        if not resource.can_edit_column(request, name, None):
+        if not resource.may_write_column(request, name, None):
             continue
 
         column = resolve(resource, name)
@@ -552,7 +557,7 @@ def create(
     for field, value in fixed.items():
         data.setdefault(field, plain(value))
 
-    serializer = resource.get_form_serializer_class()(
+    serializer = resource.get_form_serializer_for(request)(
         data=data,
         context={"request": request},
     )

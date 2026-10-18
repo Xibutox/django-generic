@@ -353,16 +353,19 @@ class ResourceViewSet(
         if self.action in TABLE_ACTIONS:
             return self.resource.get_rows_serializer_class(self.request)
 
-        return self.resource.get_form_serializer_class()
+        return self.resource.get_form_serializer_for(self.request)
 
     def get_table_search_fields(self) -> list[str]:
         """The resource's own search fields, when it declares any."""
-        fields = self.resource.get_search_fields(self.request)
+        resource = self.resource
+        fields = resource.get_search_fields(self.request)
 
         if fields:
-            return list(fields)
+            return list(resource.visible_paths(self.request, fields))
 
-        return self.resource.get_table_serializer_class().get_search_fields()
+        return resource.get_rows_serializer_class(
+            self.request
+        ).get_search_fields()
 
     def get_inline_form_definitions(self) -> Any:
         return self.resource.get_inline_definitions(self.request)
@@ -573,7 +576,7 @@ class ResourceViewSet(
         if row is None:  # pragma: no cover - the row left its own table
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        serializer = resource.get_table_serializer_class()(
+        serializer = resource.get_rows_serializer_class(request)(
             row,
             context=self.get_serializer_context(),
         )
@@ -612,7 +615,7 @@ class ResourceViewSet(
         writable = {
             name
             for name in context.creatable
-            if resource.can_edit_column(request, name, None)
+            if resource.may_write_column(request, name, None)
         }
         refused = [name for name in values if name not in writable]
 
@@ -640,7 +643,7 @@ class ResourceViewSet(
             ) from error
         row = resource.get_list_queryset(request).filter(pk=record.pk).first()
         data = (
-            resource.get_table_serializer_class()(
+            resource.get_rows_serializer_class(request)(
                 row,
                 context=self.get_serializer_context(),
             ).data
@@ -732,7 +735,7 @@ class ResourceViewSet(
         """
         from generic.sites.chart_builder import BuilderError
 
-        builder = self.resource.get_chart_builder()
+        builder = self.resource.get_chart_builder_for(request)
 
         if builder is None:
             raise NotFound(gettext("There is no such chart."))
@@ -1253,7 +1256,13 @@ class ResourceViewSet(
 
         queryset = resource.rank_search_results(
             request,
-            apply_search(queryset, resource.get_search_fields(request), term),
+            apply_search(
+                queryset,
+                resource.visible_paths(
+                    request, resource.get_search_fields(request)
+                ),
+                term,
+            ),
             term,
         )
 

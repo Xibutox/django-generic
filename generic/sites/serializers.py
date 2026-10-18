@@ -818,6 +818,85 @@ def with_row_key(
     return type(serializer_class.__name__, (serializer_class,), attributes)
 
 
+def guarded_by(name: str, field: Any, names: frozenset[str]) -> bool:
+    """Whether the serializer field ``name`` reads one of ``names``.
+
+    By its name - ``cost``, a path through it (``cost__currency``), the
+    hidden key of a relation (``_fk_customer``) - or by its source
+    (``source="cost"``, ``customer_id``). A method column reading the
+    field another way is declared under its own name.
+    """
+    candidates = {name, name.removeprefix("_fk_")}
+    source = getattr(field, "source", None)
+
+    if source and source != "*":
+        root = source.split(".")[0]
+        candidates |= {root, root.removesuffix("_id")}
+
+    return any(candidate.split("__")[0] in names for candidate in candidates)
+
+
+#: (serializer class, hidden, locked) -> the restricted class.
+_RESTRICTED: dict[tuple[Any, frozenset, frozenset], Any] = {}
+
+
+def restricted(
+    serializer_class: Any,
+    hidden: frozenset[str] = frozenset(),
+    locked: frozenset[str] = frozenset(),
+) -> Any:
+    """``serializer_class`` without the ``hidden`` fields, the ``locked``
+    ones read only (``ModelResource.field_permissions``).
+
+    Everything a table or a form knows is read from the serializer's
+    fields - the columns, what may be filtered, ordered, searched and
+    exported, the form's schema, what is saved - so taking a field out
+    there takes it out of all of them at once. ``serializer_class``
+    itself when there is nothing to take out; built once per set.
+    """
+    hidden = frozenset(hidden)
+    locked = frozenset(locked) - hidden
+
+    if not hidden and not locked:
+        return serializer_class
+
+    key = (serializer_class, hidden, locked)
+    cached = _RESTRICTED.get(key)
+
+    if cached is not None:
+        return cached
+
+    def get_fields(self: Any) -> Any:
+        # The restricted class is a leaf: its parent's is its super's.
+        fields = serializer_class.get_fields(self)
+
+        for name, field in list(fields.items()):
+            if name == ROW_KEY:
+                continue
+
+            if guarded_by(name, field, hidden):
+                del fields[name]
+            elif guarded_by(name, field, locked):
+                field.read_only = True
+                field.required = False
+
+        return fields
+
+    restricted_class = type(
+        serializer_class.__name__,
+        (serializer_class,),
+        {
+            "get_fields": get_fields,
+            "__module__": serializer_class.__module__,
+            "generic_hidden_fields": hidden,
+            "generic_locked_fields": locked,
+        },
+    )
+    _RESTRICTED[key] = restricted_class
+
+    return restricted_class
+
+
 # ---------------------------------------------------------------------
 # Form
 # ---------------------------------------------------------------------

@@ -326,9 +326,14 @@ class BoundCalendar:
     # -- moving a record -------------------------------------------------
 
     def can_move(self, request: Any) -> bool:
+        definition = self.definition
+        locked = self.resource.get_locked_fields(request)
+
         return bool(
-            self.definition.editable
+            definition.editable
             and self.resource.has_change_permission(request)
+            and definition.date not in locked
+            and (not definition.end or definition.end not in locked)
         )
 
     def move(self, request: Any, obj: Any, data: Any) -> None:

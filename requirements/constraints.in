@@ -1,0 +1,16 @@
+# Everything the images and CI install, resolved once into
+# constraints.txt (python scripts/lock.py). Constraints, not
+# requirements: each install still names what it wants, and gets the
+# version written there.
+-e .[export,import,api,fsm,events,tasks,postgres,wiki,results,status,dev,browser]
+-r ../docmanager/requirements.txt
+# Installed with --no-deps (its metadata caps Django below 6.1): the
+# override in overrides.txt lifts that cap for the resolution too.
+django-celery-beat>=2.6
+cron-descriptor>=1.4
+python-crontab>=3.0
+django-timezone-field>=7.0
+tzdata
+# The minimal example's Microsoft sign-in, the document manager's server.
+django-allauth[socialaccount]>=65.0
+gunicorn>=22

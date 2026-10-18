@@ -1387,6 +1387,10 @@ class ArticleResource(ModelResource):
         )
     }
     fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
+    # What an article costs is for whoever maintains the articles: the
+    # others read them without it - no column, filter, export or form
+    # field, nowhere on the summary or in the trees (docs/sites.md).
+    field_permissions = {"unit_cost": "example.change_article"}
     detail_stats = ("component_count", "used_in_count")
     # The tree to read first, then the grid to edit it, then where used.
     tab_order = ("tree-bom", "bom_lines")

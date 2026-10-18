@@ -28,6 +28,12 @@ except ImportError as error:  # pragma: no cover - an environment's
         "pip install pytest pytest-django."
     ) from error
 
-from generic.testing.pages import PageSweep, discover, is_api, walk
+from generic.testing.pages import (
+    PageSweep,
+    capture_queries,
+    discover,
+    is_api,
+    walk,
+)
 
-__all__ = ["PageSweep", "discover", "is_api", "walk"]
+__all__ = ["PageSweep", "capture_queries", "discover", "is_api", "walk"]

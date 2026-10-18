@@ -264,7 +264,7 @@ def describe(resource: Any, request: Any) -> dict[str, Any]:
     fields = resource.get_bulk_edit_fields()
     schema = {
         entry["name"]: entry
-        for entry in resource.get_form_serializer_class().get_form_fields(
+        for entry in resource.get_form_serializer_for(request).get_form_fields(
             request=request
         )
     }
@@ -402,7 +402,7 @@ def apply_one(
     frozen = [
         force_str(change.field.field.verbose_name)
         for change in changes
-        if not resource.can_edit_column(request, change.field.name, obj)
+        if not resource.may_write_column(request, change.field.name, obj)
     ]
 
     if frozen:
@@ -487,7 +487,7 @@ def run(
         "invalid": 0,
     }
     problems: list[dict[str, Any]] = []
-    serializer_class = resource.get_form_serializer_class()
+    serializer_class = resource.get_form_serializer_for(request)
     database = router.db_for_write(resource.model)
     names = ", ".join(change.field.name for change in changes)
     rows = queryset.order_by("pk")
