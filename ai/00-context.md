@@ -495,6 +495,10 @@ LANGUAGES = [("en", _("English")), ("fr", _("French"))]
 MIDDLEWARE = [..., "django.middleware.locale.LocaleMiddleware",         # after the session
               ..., "generic.middleware.UserLanguageMiddleware",         # after the auth
               "generic.middleware.CurrentUserMiddleware", ...]          # who the history records
+# Optional guards (docs/security.md): "generic.middleware.CSPMiddleware"
+# right after SecurityMiddleware, "generic.middleware.SessionIdleMiddleware"
+# after MessageMiddleware; GENERIC["CONTENT_SECURITY_POLICY"] = "recommended",
+# GENERIC["SESSION_IDLE_MINUTES"] = 60.
 ```
 
 ```python
@@ -1812,7 +1816,9 @@ strftime string fixes the text),
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
-`SECURITY_LOG_RETENTION_DAYS` (None), `SHOW_STATUS`, `STATUS_TOKEN`,
+`SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
+`CONTENT_SECURITY_POLICY` (None; "recommended" or directives),
+`CONTENT_SECURITY_POLICY_REPORT_ONLY` (False), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
@@ -1849,6 +1855,8 @@ Read them via `from generic.conf import generic_settings`.
   permissions and a stranger → anything below 500), plus every
   generated endpoint per resource — rows, form schema, summary,
   history, each column's `facets/`, both exports, every chart, the
+  rows' query count (25 rows must cost no more queries than one: an
+  N+1 fails, with its SQL; `capture_queries` counts a block's), the
   import's schema and template, a record's transitions — and the
   OpenAPI description. A new page needs no new test; a page whose
   address needs a value adds a record to the `records` fixture (by model
@@ -1882,8 +1890,14 @@ Read them via `from generic.conf import generic_settings`.
   tests' own thread dropped, `DJANGO_ALLOW_ASYNC_UNSAFE`. A behaviour
   of the JavaScript gets a scenario there, waiting with `expect`,
   never `time.sleep`.
-- CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
-  3.12 and 3.13. Where the two Djangos differ, switch on
+- CI runs Django 5.2 on Python 3.10 and 3.11, Django 6.0 on 3.12, the
+  latest Django on 3.13 and 3.14; every other job, and the Docker
+  images, install the versions pinned in `requirements/constraints.txt`
+  (`python scripts/lock.py` rewrites it, after a change to
+  `requirements/constraints.in` - a new dependency goes in both
+  `pyproject.toml` and there, or CI's `lock.py --check` fails). mypy
+  fails on an error not in `scripts/mypy-baseline.txt`
+  (`python scripts/mypy_baseline.py`). Where the two Djangos differ, switch on
   `django.VERSION`, never on the Python version, and never name in
   `filterwarnings` a warning class one of them lacks: pytest refuses to
   start. A `DeprecationWarning` from `generic.*` fails the suite;
@@ -2524,6 +2538,18 @@ def payments():                                # quick: runs on every refresh
   `generic.audit.record("exported", request=request, detail=...)`.
   `SECURITY_LOG` (True), `SECURITY_LOG_RETENTION_DAYS` (None, applied
   by `apply_retention`). See `docs/security-log.md`.
+- **Sessions and pages** (`docs/security.md`): `SessionIdleMiddleware`
+  signs out after `SESSION_IDLE_MINUTES` without a reader's action;
+  requests the pages make by themselves send `X-Generic-Idle` (seconds
+  since the last click or key, `Generic.activity` in core.js; the
+  table's DataTables ajax too) and so keep nobody signed in; the answer
+  carries `X-Generic-Signed-Out: idle` and the page reloads.
+  `CSPMiddleware` sends `CONTENT_SECURITY_POLICY` (`RECOMMENDED_CSP`:
+  `'self'`, `'unsafe-eval'` for Alpine, a nonce for inline scripts).
+  **An inline `<script>` in a template carries
+  `nonce="{% csp_nonce %}"`** (`generic_ui`), never an `on...=`
+  attribute; the browser tests run under the policy and fail on what it
+  blocks.
 
 ## 14. Known pitfalls
 

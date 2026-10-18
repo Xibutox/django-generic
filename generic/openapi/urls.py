@@ -12,17 +12,22 @@ from typing import Any
 
 from django.templatetags.static import static
 from django.urls import path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerSplitView,
+)
 from rest_framework.permissions import IsAuthenticated
 
 from generic.conf import generic_settings
 
 
-class DocsView(SpectacularSwaggerView):
+class DocsView(SpectacularSwaggerSplitView):
     """Swagger UI, from the files drf-spectacular-sidecar ships.
 
     Never from a CDN, whatever ``SPECTACULAR_SETTINGS`` says: the
-    framework serves every file itself.
+    framework serves every file itself. The split view serves the page's
+    own script from its address (``?script``) rather than inline, so it
+    runs under a Content-Security-Policy (``CSPMiddleware``).
     """
 
     permission_classes = [IsAuthenticated]

@@ -202,6 +202,9 @@ See [Scheduled mailings](mailings.md).
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long the lock lasts, counted from the last failure. Kept in the cache: give production a shared one |
 | `SECURITY_LOG` | `True` | Sign-ins, failures, lockouts, passwords, API tokens, rights, exports: to the `generic.security` logger and the *Security events* screen ([Security events](security-log.md)) |
 | `SECURITY_LOG_RETENTION_DAYS` | `None` | Keep every security event. A number is what `apply_retention` deletes beyond |
+| `SESSION_IDLE_MINUTES` | `None` | Minutes without a click or a key after which `SessionIdleMiddleware` signs a session out. `None` keeps it for `SESSION_COOKIE_AGE` ([Sessions, pages and passwords](security.md#idle-sign-out)) |
+| `CONTENT_SECURITY_POLICY` | `None` | What `CSPMiddleware` sends: `"recommended"` (`generic.middleware.RECOMMENDED_CSP`), a dict of directives where `"'nonce'"` is the request's nonce, or `None` for nothing ([Content-Security-Policy](security.md#content-security-policy)) |
+| `CONTENT_SECURITY_POLICY_REPORT_ONLY` | `False` | Send it as `Content-Security-Policy-Report-Only`: reported in the browser's console, nothing blocked |
 
 See [Signing in through somebody else](sso.md) and [Locking out
 guessers](sso.md#locking-out-guessers).

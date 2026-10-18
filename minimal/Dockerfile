@@ -8,7 +8,7 @@
 #
 #   docker compose -f minimal/compose.yaml up --build
 
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -31,7 +31,9 @@ RUN apt-get update \
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
-RUN pip install ".[wiki]" "django-allauth[socialaccount]>=65.0" \
+# The versions CI tested (scripts/lock.py).
+COPY requirements/constraints.txt ./
+RUN pip install -c constraints.txt ".[wiki]" "django-allauth[socialaccount]>=65.0" \
     && rm -rf /src
 
 # The database, the wiki's images and the products' documents live in

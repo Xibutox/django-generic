@@ -1,5 +1,5 @@
 {% extends "generic/auth/base.html" %}
-{% load i18n generic_ui %}
+{% load i18n generic_tags generic_ui %}
 
 {# Where a provider is declared, it leads: most people sign in through #}
 {# it, and the password form waits underneath for whoever cannot.      #}
@@ -14,6 +14,19 @@
     </div>
 
     <h1>{% translate "Sign in" %}</h1>
+
+    {% if messages %}
+      {# Why the reader is here again: signed out after a silence. #}
+      <ul class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+          {% message_icon message.tags as level %}
+          <li class="message message--{{ level }}" data-message-level="{{ level }}">
+            {% icon level %}
+            <span class="message__text">{{ message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
 
     <p class="auth-card__lead">
       {% if sso_providers %}

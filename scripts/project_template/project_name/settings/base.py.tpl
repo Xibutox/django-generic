@@ -230,6 +230,7 @@ except ImportError:
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "generic.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -238,6 +239,7 @@ MIDDLEWARE = [
     "generic.middleware.UserLanguageMiddleware",
     "generic.middleware.CurrentUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "generic.middleware.SessionIdleMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -330,6 +332,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Requests a minute, per person and per signed-out address, counted
+    # in Redis (ISO/IEC 27002 8.6).
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": env("DJANGO_API_RATE_USER", "600/min"),
+        "anon": env("DJANGO_API_RATE_ANON", "60/min"),
+    },
 }
 
 # -- Logs (ISO/IEC 27002 8.15) -----------------------------------------
@@ -356,6 +368,10 @@ GENERIC = {
     "VERSION": "0.1.0",
     "LOGIN_MAX_ATTEMPTS": 5,
     "LOGIN_LOCKOUT_MINUTES": 15,
+    # Signed out after an hour without a click or a key (ISO/IEC 27002
+    # 8.5), and nothing from elsewhere runs in a page (8.26).
+    "SESSION_IDLE_MINUTES": env_int("DJANGO_SESSION_IDLE_MINUTES", 60),
+    "CONTENT_SECURITY_POLICY": "recommended",
     "ACCESS_LOG_RETENTION_DAYS": 365,
     "SECURITY_LOG_RETENTION_DAYS": 365,
 }

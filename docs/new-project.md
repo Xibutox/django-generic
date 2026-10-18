@@ -138,7 +138,7 @@ Every day at `BACKUP_TIME`, the `backup` service:
    it, and appends the result to `backups/restore-tests.log` - the
    restore test record ISO/IEC 27002 8.13 asks for.
 
-The backup image is the database's own (`postgres:16`): `pg_dump` of
+The backup image is the database's own (`postgres:17`): `pg_dump` of
 the server's version, and GnuPG already in it.
 
 | Command | Does |
