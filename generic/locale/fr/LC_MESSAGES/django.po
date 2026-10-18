@@ -4406,3 +4406,83 @@ msgstr "Ce champ est obligatoire."
 #: generic/sites/duplicates.py
 msgid "This title is too long."
 msgstr "Ce titre est trop long."
+
+#: generic/wiki/archive.py
+msgid "The archive's wiki.json is invalid."
+msgstr "Le wiki.json de l’archive n’est pas valide."
+
+#: generic/wiki/archive.py
+msgid "The archive holds too many files."
+msgstr "L’archive contient trop de fichiers."
+
+#: generic/wiki/archive.py
+msgid "The archive is too large once unpacked."
+msgstr "L’archive est trop volumineuse une fois décompressée."
+
+#: generic/wiki/archive.py
+msgid "This is not a wiki archive: it has no wiki.json."
+msgstr "Ce n’est pas une archive de wiki : elle n’a pas de wiki.json."
+
+#: generic/wiki/archive.py
+msgid "The archive's wiki.json is too large."
+msgstr "Le wiki.json de l’archive est trop volumineux."
+
+#: generic/wiki/archive.py
+msgid "The archive's wiki.json cannot be read."
+msgstr "Le wiki.json de l’archive est illisible."
+
+#: generic/wiki/archive.py
+msgid "This is not a wiki archive."
+msgstr "Ce n’est pas une archive de wiki."
+
+#: generic/wiki/archive.py
+msgid "This archive was written by a later version of the wiki: update this site to import it."
+msgstr "Cette archive a été écrite par une version plus récente du wiki : mettez ce site à jour pour l’importer."
+
+#: generic/wiki/archive.py
+msgid "The archive's wiki.json is incomplete."
+msgstr "Le wiki.json de l’archive est incomplet."
+
+#: generic/wiki/archive.py
+msgid "Untitled"
+msgstr "Sans titre"
+
+#: generic/wiki/archive.py
+msgid "Imported wiki"
+msgstr "Wiki importé"
+
+#: generic/wiki/archive.py
+msgid "This is not a wiki archive: it is not a zip file."
+msgstr "Ce n’est pas une archive de wiki : ce n’est pas un fichier zip."
+
+#: generic/wiki/archive.py
+msgid "You may not add pages to a wiki."
+msgstr "Vous ne pouvez pas ajouter de pages à un wiki."
+
+#: generic/wiki/archive.py
+msgid "Choose a wiki archive to import."
+msgstr "Choisissez une archive de wiki à importer."
+
+#: generic/wiki/archive.py
+msgid "The archive is too large: at most %(limit)s."
+msgstr "L’archive est trop volumineuse : %(limit)s au plus."
+
+#: generic/wiki/archive.py
+msgid "Make a new wiki from an archive exported here or on another site"
+msgstr "Créer un wiki à partir d’une archive exportée ici ou sur un autre site"
+
+#: generic/wiki/archive.py
+msgid "Import a wiki"
+msgstr "Importer un wiki"
+
+#: generic/wiki/archive.py
+msgid "Download the wiki as an archive another site can import"
+msgstr "Télécharger le wiki en archive qu’un autre site peut importer"
+
+#: generic/wiki/archive.py
+msgid "Export"
+msgstr "Exporter"
+
+#: generic/wiki/archive.py
+msgid "Export the wiki as an archive another site can import"
+msgstr "Exporter le wiki en archive qu’un autre site peut importer"

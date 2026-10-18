@@ -9,6 +9,7 @@ API, as JSON, like every other screen of the application.
 from __future__ import annotations
 
 import mimetypes
+import tempfile
 from pathlib import PurePath
 from typing import Any
 
@@ -29,7 +30,7 @@ from generic.sites import site
 from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki import pdf
+from generic.wiki import archive, pdf
 from generic.wiki.api import IMAGE_TYPES, can, may_write_in, readable_pages
 from generic.wiki.models import (
     Wiki,
@@ -135,9 +136,13 @@ def descendants_of(pages: list[WikiPage], root: WikiPage) -> set[Any]:
 
 def wiki_rights(user: Any) -> dict[str, bool]:
     """What ``user`` may do to the wikis themselves."""
-    return {
+    rights = {
         name: can(user, name, "wiki") for name in ("add", "change", "delete")
     }
+    # An archive makes a wiki and writes its pages.
+    rights["import"] = rights["add"] and can(user, "add")
+
+    return rights
 
 
 class WikiListView(SiteViewMixin, TemplateView):
@@ -182,8 +187,11 @@ class WikiListView(SiteViewMixin, TemplateView):
             wikis=self.wiki_list,
             can=rights,
             pdf_available=pdf.available(),
+            archive_available=may_download(request),
             wikis_config={
                 "api": reverse("generic_wiki:wiki-list"),
+                "importUrl": reverse("generic_wiki:wiki-import"),
+                "importMaxSize": generic_settings.WIKI_ARCHIVE_MAX_SIZE,
                 "wikis": WikiSerializer(
                     self.wiki_list, many=True, context={"request": request}
                 ).data,
@@ -254,6 +262,9 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             wiki=wiki,
             other_wikis=list(others.order_by("position", "name")),
             pdf_url=wiki.get_pdf_url() if pdf.available() else "",
+            archive_url=(
+                wiki.get_archive_url() if may_download(request) else ""
+            ),
             page=page,
             menu=build_menu(pages, page),
             content=safe_html(page.content) if page else "",
@@ -437,6 +448,43 @@ class WikiPdfView(View):
         response = HttpResponse(content, content_type="application/pdf")
         response["Content-Disposition"] = content_disposition_header(
             True, f"{found.slug}.pdf"
+        )
+        protect(response)
+        response["Cache-Control"] = "private, no-cache"
+
+        return response
+
+
+class WikiArchiveView(View):
+    """A whole wiki as an archive - its pages, images and files - that
+    any site running the wiki imports (``generic.wiki.archive``).
+
+    For whoever may read the wiki and download files: the archive holds
+    the wiki's files.
+    """
+
+    def get(self, request: Any, wiki: str) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        found = get_object_or_404(
+            Wiki.objects.readable_by(request.user), slug=wiki
+        )
+
+        if not may_download(request):
+            raise PermissionDenied
+
+        # On disk past a few megabytes: a wiki's files can be many.
+        output = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+        archive.write_archive(found, output)
+        output.seek(0)
+        response = FileResponse(
+            output,
+            as_attachment=True,
+            filename=archive.archive_name(found),
+            content_type="application/zip",
         )
         protect(response)
         response["Cache-Control"] = "private, no-cache"

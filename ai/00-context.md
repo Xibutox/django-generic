@@ -205,6 +205,7 @@ generic/
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
 ├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
 │                           guide.py + guide/ (the user guide, migration 0007, wiki_user_guide),
+│                           archive.py (export.zip / import of a whole wiki),
 │                           nh3 cleaning (text colours: TEXT_COLORS; sizes: TEXT_SIZES; images beside text: IMAGE_FLOATS, laid out in the PDF by pdf.write_beside, lines of images by PageHTML.rows; tables from Quill's table module), WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
 ├── teams/                  optional app generic.teams: Team (members, leaders, colour),
 │                           the see_every_team permission, scoping.py (scope_to_teams,
@@ -1411,6 +1412,29 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   fetched, files listed. Fonts: `WIKI_PDF_FONTS` or DejaVu/Liberation/Arial
   found on disk, else Latin-1 core fonts. `pdf.available()` false
   without fpdf2: no button, `export.pdf` 404. See `docs/wiki.md#pdf`.
+- Wiki archive (`generic/wiki/archive.py`): `wiki/<wiki>/export.zip`
+  (`archive`, `WikiArchiveView`; readers who `may_download` - the
+  archive holds files; `Wiki.get_archive_url()`, `archive_url` in the
+  wiki JSON and the page context, *Export* on the card) is a zip:
+  `wiki.json` (`FORMAT` "django-generic.wiki", `VERSION` 1, `wiki`
+  {name, slug, description}, `pages` [{id (archive number), parent,
+  title, slug, position, show_on_dashboard, created_at, updated_at,
+  content}], `images`/`files` [{path, name, size}]) + `images/<n>.<ext>`
+  + `files/<n>-<name>`; upload addresses in the text become archive
+  paths and back; links to the wiki's own pages `pages/<id>/` and back.
+  `POST wiki/api/wikis/import/` (`WikiViewSet.import_archive`,
+  multipart `file`, `name`; add_wiki + add_wikipage; `check=` undoes a
+  wiki outside `WIKI_EDIT_ACCESS`, 403) -> `import_archive(source,
+  user=, name=, check=)` -> `ImportResult` (wiki, pages, images, files,
+  skipped) or `ArchiveError` (400 `detail`): always a new wiki; pages
+  saved (cleaned), slugs unique, parent loops to the top; images
+  sniffed, files <= `FILE_MAX_SIZE`, else skipped; members read only by
+  manifest path under `images/`/`files/`; `WIKI_ARCHIVE_MAX_SIZE` (100
+  MB) caps upload and unpacked total; stored files deleted on failure.
+  No revisions, no team settings. *Import a wiki* on `wiki/`
+  (`can.import`, `wikiList.importArchive`); `manage.py wiki_export
+  <wiki> [-o]`, `wiki_import <zip> [--name]`. See
+  `docs/wiki.md#export-and-import`.
 - The user guide: `generic/wiki/guide/{en,fr}.html` (the everyday
   actions of every screen, for readers; only tags the cleaning keeps),
   `generic/wiki/guide.py` (`GUIDES` language -> (title, slug),
@@ -1949,7 +1973,8 @@ strftime string fixes the text),
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
 `MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
-`WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`, `TRASH_DAYS` (30;
+`WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`,
+`WIKI_ARCHIVE_MAX_SIZE` (100 MB), `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),

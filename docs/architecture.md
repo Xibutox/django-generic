@@ -133,7 +133,7 @@ generic/
 │   ├── api.py           status/, status/health/, status/servers/<pk>/
 │   ├── views.py         The Server status page
 │   └── resources.py     The Monitored servers screen, the navigation link
-├── wiki/                Optional: several wikis, pages, editor, images and files, history, pinned pages, PDF (pdf.py), the user guide every wiki starts with (guide.py, guide/)
+├── wiki/                Optional: several wikis, pages, editor, images and files, history, pinned pages, PDF (pdf.py), zip export and import (archive.py), the user guide every wiki starts with (guide.py, guide/)
 ├── teams/               Optional: Team, team_field scoping, scope_to_teams()
 ├── testing/             PageSweep: a project's pages and endpoints, swept by pytest
 ├── tokens/              Optional: personal API tokens on knox (ApiToken)

@@ -340,6 +340,13 @@ document, in portrait or landscape: a cover, a table of contents, every page in 
 order, the images drawn, the files named. The old address
 `/wiki/triage/` still leads to the page, now `/wiki/main/triage/`.
 
+**Moving a wiki.** *Export* on the *Infrastructure runbooks* card
+downloads `infrastructure.zip`: `wiki.json` and the images and files its
+pages show. *Import a wiki*, above the list, takes it back as a new
+wiki, *Infrastructure runbooks* at `/wiki/infrastructure-runbooks/`, its pages,
+tree and images whole - the same archive imports on any other site
+running the wiki ([Export and import](wiki.md#export-and-import)).
+
 **As `viewer`.** The pencil and plus beside *Team* are gone, and the
 team list has no *Add*: the schema only offers what the permissions
 allow, and the endpoint refuses the rest anyway. On a ticket's summary,

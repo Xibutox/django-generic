@@ -114,6 +114,10 @@ class Wiki(models.Model):
     def get_pdf_url(self) -> str:
         return reverse("generic_wiki:pdf", kwargs={"wiki": self.slug})
 
+    def get_archive_url(self) -> str:
+        """The wiki as an archive to import elsewhere."""
+        return reverse("generic_wiki:archive", kwargs={"wiki": self.slug})
+
 
 class WikiPage(models.Model):
     #: Left empty, the first wiki: what code written before there were

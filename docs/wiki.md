@@ -2,8 +2,9 @@
 
 `generic.wiki` is a small wiki inside the application - or several:
 each wiki has its own pages in its own menu
-([Several wikis](#several-wikis)), and downloads as one PDF
-([PDF](#pdf)). Pages in a menu,
+([Several wikis](#several-wikis)), downloads as one PDF
+([PDF](#pdf)), and moves to another site as one zip
+([Export and import](#export-and-import)). Pages in a menu,
 written with a rich-text editor by the people allowed to, read by
 everyone signed in, with a history of every version. A page can be
 pinned to the dashboard, which makes the wiki the natural home for
@@ -91,6 +92,7 @@ belongs to one wiki, and its address is unique within it.
 | `wiki/<wiki>/` | The wiki's first page, or an invitation to write it |
 | `wiki/<wiki>/<page>/` | A page, with its wiki's menu |
 | `wiki/<wiki>/export.pdf` | The whole wiki as a PDF, portrait; `?orientation=landscape` turns the paper ([PDF](#pdf)) |
+| `wiki/<wiki>/export.zip` | The whole wiki as an archive another site imports ([Export and import](#export-and-import)) |
 
 - A reader who sees **one** wiki and may not add one goes from `wiki/`
   straight into it: a site with one wiki reads as before.
@@ -181,6 +183,7 @@ writes in it; a wiki with none is written by whoever reads it.
 | `generic_wiki.add_wiki` | Create a wiki |
 | `generic_wiki.change_wiki` | Rename a wiki, change its description |
 | `generic_wiki.delete_wiki` | Delete a wiki, with its pages |
+| `add_wiki` and `add_wikipage` | Import a wiki from an archive |
 
 Superusers hold all of them. For editors who are not superusers, give a
 group the three page permissions; the wiki permissions are for whoever
@@ -463,6 +466,104 @@ With none found, the PDF's own fonts are used: Latin-1 only - French,
 Spanish, German are whole; typographic quotes and dashes become plain
 ones, and other characters `?`. The Docker image installs DejaVu
 (`fonts-dejavu-core`).
+
+## Export and import
+
+*Export* on a wiki's card, or the archive button beside its name in the
+menu, downloads the whole wiki as one zip, `<wiki>.zip`, that any site
+running the wiki - another project on the framework, the same one after
+a reinstall, a test server - makes a new wiki from with *Import a wiki*
+on the list of wikis. The PDF is to read; the archive is to move a
+wiki.
+
+```
+handbook.zip
+├── wiki.json                 the wiki and its pages
+├── images/1.png              each image the pages show, once
+└── files/2-Plan_2026.pdf     each file they link to, once
+```
+
+`wiki.json` is plain JSON, made to be read by other programs too:
+
+```json
+{
+  "format": "django-generic.wiki",
+  "version": 1,
+  "generator": "django-generic 1.4.0",
+  "exported_at": "2026-10-18T15:30:00+00:00",
+  "wiki": {"name": "Handbook", "slug": "handbook", "description": "..."},
+  "pages": [
+    {"id": 1, "parent": null, "title": "Welcome", "slug": "welcome",
+     "position": 1, "show_on_dashboard": true,
+     "created_at": "...", "updated_at": "...",
+     "content": "<p><img src=\"images/1.png\"></p>..."}
+  ],
+  "images": [{"path": "images/1.png", "name": "Team photo.png"}],
+  "files": [{"path": "files/2-Plan_2026.pdf", "name": "Plan 2026.pdf",
+             "size": 48213}]
+}
+```
+
+- A page's `id` is its number in the archive, and `parent` the `id` of
+  the page above it - nothing of the site it came from.
+- In the pages' text an upload's address (`/wiki/images/7/`) is written
+  as its place in the archive (`images/1.png`); the import writes back
+  the address each upload gets on the new site. A link to an upload no
+  longer stored is left as it was.
+- A link from one page to another of the same wiki
+  (`/wiki/handbook/welcome/#rules`) is written `pages/<id>/#rules`, and
+  leads to the new page after the import; a link to another wiki, or
+  anywhere else, stays as written.
+- The history of the pages stays behind: the archive is the wiki as it
+  stands, and the import starts each page's history afresh. So do the
+  team settings a project keeps beside a wiki (the document manager's
+  `TeamWiki`): the new wiki is everyone's until given to a team.
+
+**Importing** makes a **new** wiki, never merges into one: nothing that
+exists changes. It takes the archive's name - or the name sent with it
+- and its address, or, when that is taken, one made from the name
+(`handbook-2`); the pages keep
+their titles, addresses, tree, order and pins, and are written by the
+importer. What an archive holds is checked as if typed in the editor:
+
+| Checked | How |
+| --- | --- |
+| The archive | a zip with a `wiki.json` of this `format` and a `version` this site reads - one written by a later version is refused, not half read; at most `WIKI_ARCHIVE_MAX_SIZE` (100 MB) sent, and as much once unpacked, counted before anything is read |
+| The pages | cleaned like any page (`WikiPage.save`); addresses made unique in the wiki; a `parent` the archive does not hold, or a loop of parents, puts the page at the top |
+| The images | told by their bytes, PNG, JPEG, GIF or WebP, like an upload from the editor; anything else - an SVG named `.png` - is left out |
+| The files | at most `FILE_MAX_SIZE` each, like an upload; a larger one is left out |
+| Every member | read only by the path the manifest gives under `images/` or `files/`, never unpacked to disk |
+
+What is left out is named in the answer (`skipped`) and in the message
+after the import. Any other fault refuses the whole archive with a
+sentence saying why, and leaves nothing behind - neither rows nor
+stored files.
+
+**Who.** Exporting is for whoever reads the wiki and may download files
+- the archive holds them: under `ACCESS_ON_REQUEST` with `"download"`,
+only those granted it ([Rights given on request](access-requests.md)), and
+without that the button is gone and `export.zip` answers `403`.
+Importing needs `generic_wiki.add_wiki` and `add_wikipage`, and a new
+wiki the user may write in (`WIKI_EDIT_ACCESS`): one they could not is
+undone with `403`.
+
+| Address | Does |
+| --- | --- |
+| `GET wiki/<wiki>/export.zip` | the archive, an `attachment`, `Cache-Control: private, no-cache` |
+| `POST wiki/api/wikis/import/` | multipart `file`, optional `name`; `201` with the new wiki (as `GET wikis/<id>/`) and `pages`, `images`, `files`, `skipped`; `400` `{"detail"}` for an archive refused |
+
+From a script, a backup or another site's shell:
+
+```bash
+python manage.py wiki_export handbook --output /backups/handbook.zip
+python manage.py wiki_import /backups/handbook.zip --name "Handbook (2026)"
+```
+
+From code: `generic.wiki.archive.write_archive(wiki, output)` writes
+one to a binary file and returns the manifest;
+`import_archive(source, user=None, name="")` returns an `ImportResult`
+(`wiki`, `pages`, `images`, `files`, `skipped`) or raises
+`ArchiveError`.
 
 ## Styles, sizes and images beside the text
 
