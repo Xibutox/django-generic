@@ -13,6 +13,17 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Field permissions: `field_permissions` on a resource names who may
+  see a field and who may change it (`{"unit_cost":
+  "example.change_article"}`, or `(view, change)`). A field a reader
+  may not see is gone for them from the list's columns, filters,
+  ordering, search and facets, the exports and mailings, the form, the
+  record's JSON, imports, the summary's sections and figures, the
+  history tab, charts and the chart builder, trees and calendars. A
+  field they may see but not change is read only in the form and
+  refused in table cells, grids, bulk edits, imports and calendar
+  moves. The example's articles show their cost to who may change
+  them. See docs/field-permissions.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks

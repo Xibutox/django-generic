@@ -35,6 +35,7 @@ from generic.sites.serializers import (
     build_table_serializer,
     default_form_fields,
     flatten_fieldsets,
+    restricted,
     with_row_key,
     without_fields,
 )
@@ -215,6 +216,15 @@ class ModelResource(PagesMixin):
     exclude: Sequence[str] = ()
     fieldsets: Any = None
     readonly_fields: Sequence[str] = ()
+    #: Fields only some readers see or change, by permission:
+    #: ``{"cost": "example.view_ticket_cost"}`` shows ``cost`` only to
+    #: whoever holds that permission - everywhere: the list, its
+    #: filters, search and exports, the form, the summary page, the
+    #: history - and ``{"cost": ("example.view_ticket_cost",
+    #: "example.change_ticket_cost")}`` also lets only the second's
+    #: holders change it; ``(None, "...")`` shows it to all. The
+    #: permissions are the model's own (``Meta.permissions``).
+    field_permissions: dict[str, Any] = {}
     #: Presentation per field: width, placeholder, label...
     form_overrides: dict[str, dict[str, Any]] = {}
     #: Serializer options per field, as DRF's ``extra_kwargs``:
@@ -777,7 +787,7 @@ class ModelResource(PagesMixin):
     ) -> list[Any]:
         queryset = apply_search(
             self.get_autocomplete_queryset(request),
-            self.get_search_fields(request),
+            self.visible_paths(request, self.get_search_fields(request)),
             term,
         )
 
@@ -940,9 +950,11 @@ class ModelResource(PagesMixin):
         from generic.trash import in_trash
 
         if self.trash and in_trash(request):
-            return self.get_trash_serializer_class()
+            serializer = self.get_trash_serializer_class()
+        else:
+            serializer = self.get_table_serializer_class()
 
-        return self.get_table_serializer_class()
+        return restricted(serializer, self.get_hidden_fields(request))
 
     def get_table_serializer_class(self) -> Any:
         if self._table_serializer_class is None:
@@ -1111,7 +1123,10 @@ class ModelResource(PagesMixin):
         ``list_editable``, which is what the resource's own list page
         passes. ``serializer`` draws other columns than the list's.
         """
-        serializer = serializer or self.get_table_serializer_class()
+        serializer = restricted(
+            serializer or self.get_table_serializer_class(),
+            self.get_hidden_fields(request),
+        )
         declared = getattr(serializer, "_declared_fields", {})
         tag_links = getattr(serializer, "generic_tag_links", {})
         columns = [
@@ -1497,10 +1512,20 @@ class ModelResource(PagesMixin):
 
         return self.__dict__["_chart_builder"]
 
+    def get_chart_builder_for(self, request: Any) -> Any:
+        """The chart builder as this reader may use it: nothing grouped
+        or summed through a field they may not see."""
+        builder = self.get_chart_builder()
+
+        if builder is None:
+            return None
+
+        return builder.without(self.get_hidden_fields(request))
+
     def get_chart_builder_config(self, request: Any) -> dict[str, Any] | None:
         """What the list page needs to draw the chart builder's panel,
         or None for who may not read the rows."""
-        builder = self.get_chart_builder()
+        builder = self.get_chart_builder_for(request)
 
         if builder is None or not self.has_view_permission(request):
             return None
@@ -1549,6 +1574,66 @@ class ModelResource(PagesMixin):
 
         return default_form_fields(self.model, exclude=self.exclude)
 
+    def get_field_permissions(self) -> dict[str, tuple[Any, Any]]:
+        """``field_permissions`` as ``{name: (view, change)}``."""
+        normalized = {}
+
+        for name, rule in self.field_permissions.items():
+            if isinstance(rule, str) or rule is None:
+                rule = (rule, None)
+            elif isinstance(rule, dict):
+                rule = (rule.get("view"), rule.get("change"))
+
+            view, change = tuple(rule) + (None,) * (2 - len(tuple(rule)))
+            normalized[name] = (view, change)
+
+        return normalized
+
+    def get_hidden_fields(self, request: Any) -> frozenset[str]:
+        """The fields this reader may not see (``field_permissions``).
+
+        Without a request - a task, a command - every guarded field is
+        hidden: nothing is shown to nobody in particular.
+        """
+        user = getattr(request, "user", None)
+
+        return frozenset(
+            name
+            for name, (view, _change) in self.get_field_permissions().items()
+            if view and not (user is not None and user.has_perm(view))
+        )
+
+    def get_locked_fields(self, request: Any) -> frozenset[str]:
+        """The fields this reader may see but not change - and the
+        hidden ones, which they cannot change either."""
+        user = getattr(request, "user", None)
+        locked = {
+            name
+            for name, (_view, change) in self.get_field_permissions().items()
+            if change and not (user is not None and user.has_perm(change))
+        }
+
+        return frozenset(locked) | self.get_hidden_fields(request)
+
+    def visible_paths(
+        self, request: Any, paths: Sequence[str]
+    ) -> tuple[str, ...]:
+        """``paths`` (ORM paths: search fields) without the hidden fields'.
+
+        A search through a field the reader may not see would tell them
+        its value, one guess at a time.
+        """
+        hidden = self.get_hidden_fields(request)
+
+        if not hidden:
+            return tuple(paths)
+
+        return tuple(
+            path
+            for path in paths
+            if path.lstrip("^=@$").split("__")[0] not in hidden
+        )
+
     def get_readonly_fields(self, request: Any = None) -> tuple[str, ...]:
         from generic.sites.transitions import state_fields
 
@@ -1560,6 +1645,17 @@ class ModelResource(PagesMixin):
             name
             for name in state_fields(self)
             if name not in declared and name in fields
+        )
+
+    def get_form_serializer_for(self, request: Any) -> Any:
+        """The form's serializer for this reader: without the fields they
+        may not see, and the ones they may not change read only
+        (``field_permissions``). What every endpoint writes and reads a
+        record through; override ``get_form_serializer_class``."""
+        return restricted(
+            self.get_form_serializer_class(),
+            self.get_hidden_fields(request),
+            self.get_locked_fields(request),
         )
 
     def get_form_serializer_class(self) -> Any:
@@ -1903,6 +1999,19 @@ class ModelResource(PagesMixin):
         separately.
         """
         return True
+
+    def may_write_column(
+        self,
+        request: Any,
+        column: str,
+        obj: Any = None,
+    ) -> bool:
+        """``can_edit_column``, and not a field this reader may not
+        change (``field_permissions``). What every write asks."""
+        if column.split("__")[0] in self.get_locked_fields(request):
+            return False
+
+        return self.can_edit_column(request, column, obj)
 
     def save_editable(
         self,

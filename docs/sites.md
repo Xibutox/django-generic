@@ -672,6 +672,9 @@ draw the form, and send JSON back:
   colour picker beside it, which may stay empty,
 - `readonly_fields` may name resource methods or model attributes:
   shown, never sent,
+- `field_permissions` hides a field from some readers, or shows it
+  read only, here and everywhere else ([Field
+  permissions](field-permissions.md)),
 - a relation is a **Select2**: searched through the related resource's
   autocomplete when it has `search_fields`, otherwise from embedded
   choices (capped by `FORM_CHOICES_LIMIT`, with a warning when cut),
