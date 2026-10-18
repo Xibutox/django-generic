@@ -9,19 +9,6 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
-## [Unreleased]
-
-### Added
-- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
-  card, the archive button beside its name in the menu: `wiki.json`
-  (the wiki, its pages, their tree and text) and the images and files
-  the pages show. *Import a wiki* on the list of wikis makes a new wiki
-  from one, on this site or any other running the wiki: pages cleaned,
-  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
-  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
-  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
-  `wiki_import`. See docs/wiki.md, *Export and import*.
-
 ## [1.4.0] - 2026-10-18
 
 ### Added
