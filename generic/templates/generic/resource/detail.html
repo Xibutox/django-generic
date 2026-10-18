@@ -39,50 +39,56 @@
   <div class="summary" x-data="recordSummary('record-summary')">
     <div id="datatable-error" class="callout callout--danger" role="alert" hidden></div>
 
-    {# What this reader may do to the record's state, now: its        #}
-    {# transitions (generic.sites.transitions).                        #}
-    <template x-if="data.transitions && data.transitions.length">
-      <div class="summary__actions summary__transitions" role="group" aria-label="{% translate 'State' %}">
-        <template x-for="transition in data.transitions" :key="transition.name">
-          <button type="button"
-                  class="button button--sm"
-                  :class="transition.variant === 'danger' ? 'button--danger' : 'button--primary'"
-                  :disabled="busy"
-                  @click="take(transition)">
-            <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="transition.icon" x-text="transition.icon"></span>
-            <span x-text="transition.label"></span>
-          </button>
-        </template>
-      </div>
-    </template>
+    {# One line under the title: the state buttons, the actions and   #}
+    {# the last change share it, wrapping only when they must, so the #}
+    {# figures and fields start as high as they can.                  #}
+    <div class="summary__bar"
+         x-show="(data.transitions && data.transitions.length) || data.actions.length || (data.history && data.history.last)">
+      {# What this reader may do to the record's state, now: its        #}
+      {# transitions (generic.sites.transitions).                        #}
+      <template x-if="data.transitions && data.transitions.length">
+        <div class="summary__actions summary__transitions" role="group" aria-label="{% translate 'State' %}">
+          <template x-for="transition in data.transitions" :key="transition.name">
+            <button type="button"
+                    class="button button--sm"
+                    :class="transition.variant === 'danger' ? 'button--danger' : 'button--primary'"
+                    :disabled="busy"
+                    @click="take(transition)">
+              <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="transition.icon" x-text="transition.icon"></span>
+              <span x-text="transition.label"></span>
+            </button>
+          </template>
+        </div>
+      </template>
 
-    <template x-if="data.actions.length">
-      <div class="summary__actions" role="group" aria-label="{% translate 'Actions' %}">
-        <template x-for="action in data.actions" :key="action.name">
-          <button type="button"
-                  class="button button--sm"
-                  :class="{ 'button--danger-ghost': action.variant === 'danger' }"
-                  :title="action.help || null"
-                  :disabled="busy"
-                  @click="run(action)">
-            <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="action.icon" x-text="action.icon"></span>
-            <span x-text="action.label"></span>
-          </button>
-        </template>
-      </div>
-    </template>
+      <template x-if="data.actions.length">
+        <div class="summary__actions" role="group" aria-label="{% translate 'Actions' %}">
+          <template x-for="action in data.actions" :key="action.name">
+            <button type="button"
+                    class="button button--sm"
+                    :class="{ 'button--danger-ghost': action.variant === 'danger' }"
+                    :title="action.help || null"
+                    :disabled="busy"
+                    @click="run(action)">
+              <span class="icon material-symbols-outlined icon--sm" aria-hidden="true" x-show="action.icon" x-text="action.icon"></span>
+              <span x-text="action.label"></span>
+            </button>
+          </template>
+        </div>
+      </template>
 
-    {# Who touched this last, from the history the record keeps. The   #}
-    {# tab below has the rest of the story.                            #}
-    <template x-if="data.history && data.history.last">
-      <p class="summary__last">
-        {% icon "history" "icon--sm" %}
-        <span x-text="lastChange()"></span>
-        <button type="button" class="button button--link" @click="openHistory()">
-          {% translate "See the history" %}
-        </button>
-      </p>
-    </template>
+      {# Who touched this last, from the history the record keeps. The   #}
+      {# tab below has the rest of the story.                            #}
+      <template x-if="data.history && data.history.last">
+        <p class="summary__last">
+          {% icon "history" "icon--sm" %}
+          <span x-text="lastChange()"></span>
+          <button type="button" class="button button--link" @click="openHistory()">
+            {% translate "See the history" %}
+          </button>
+        </p>
+      </template>
+    </div>
 
     <template x-if="data.stats.length">
       <div class="summary__stats">

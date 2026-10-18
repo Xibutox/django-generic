@@ -6,6 +6,12 @@
   gap: var(--space-4);
 }
 
+/* The column's gap already parts the header from the first row: its
+   own margin as well left twice the space under it. */
+.appearance > .card__header {
+  margin-bottom: 0;
+}
+
 .appearance__row {
   display: flex;
   flex-wrap: wrap;

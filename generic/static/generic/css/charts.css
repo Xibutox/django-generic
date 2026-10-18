@@ -10,8 +10,11 @@
   gap: var(--space-4);
 }
 
+/* "~" for a list's table: the chart builder and its configuration
+   stand between, and with "+" alone the table touched the charts. */
 .chart-grid + .module,
-.chart-grid + .card {
+.chart-grid + .card,
+.chart-grid ~ .module {
   margin-top: var(--space-5);
 }
 
@@ -159,7 +162,8 @@
   margin-bottom: var(--space-5);
 }
 
-.chart-grid + .chart-builder {
+/* "~": the builder's configuration, a <script>, stands between. */
+.chart-grid ~ .chart-builder {
   margin-top: var(--space-4);
 }
 
@@ -245,4 +249,41 @@
 .pivot-table__pick:focus-visible {
   color: var(--color-accent);
   text-decoration: underline;
+}
+
+/* A short window: a chart takes at most a little over a quarter of it, so the
+   table it sits above still shows its first rows. The height a chart
+   declares is the most it takes, as everywhere else. */
+@media (max-height: 820px) {
+  .chart-card__body {
+    max-height: max(10rem, 28vh);
+  }
+
+  .chart-card {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+  }
+}
+
+/* The tools a folded card puts away, laid out as the tools around
+   them. */
+.chart-card__extra {
+  display: contents;
+}
+
+/* Open is the card's usual state, not a menu left open: the button
+   stays plain until pointed at. */
+.chart-card__fold[aria-expanded="true"]:not(:hover) {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+/* Folded to its title: a slim card, as high as its title, beside an
+   open one in the grid rather than stretched to its height. */
+.chart-card.is-folded {
+  align-self: start;
+  padding-bottom: var(--space-3);
+}
+
+.chart-card.is-folded .chart-card__header {
+  margin-bottom: 0;
 }

@@ -1615,6 +1615,17 @@ dialog.dialog::backdrop {
   border-bottom: none;
 }
 
+/* A short window: label and value rows, an empty card, closer. */
+@media (max-height: 820px) {
+  .detail-list__row {
+    padding: var(--space-2) 0;
+  }
+
+  .empty-state {
+    padding: var(--space-4) var(--space-4);
+  }
+}
+
 .detail-list dt {
   color: var(--text-secondary);
   font-weight: 500;

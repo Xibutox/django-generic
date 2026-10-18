@@ -2061,6 +2061,24 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   the browser's; no size preference (removed in 1.0.0 - the browser's
   text size and zoom do it). A project changes its root size in its own
   stylesheet.
+- **Scaled laptops**: `base.css` sets `html { font-size: 90% }` for
+  1025-1800px wide at 1.2-1.75dppx (Windows 125%/150%); not 1x, not
+  retina. Everything in rem follows; px values do not.
+- **Short windows** (`@media (max-height: 820px)`: 1080p at 125% is
+  ~1536x730): `tokens.css` sets `--header-height: 3rem` and
+  `--space-5..7` a quarter smaller; `base.css` (nav links),
+  `datatables.css` (row padding), `tables.css` (`object-table`),
+  `components.css` (`detail-list`, `empty-state`), `summary.css` (figures) and
+  `charts.css` (`.chart-card__body` `max-height: max(10rem, 28vh)`)
+  tighten in the same query. 1025-1400px wide: `--sidebar-width: 15rem`.
+  Density follows the window's height there, not a setting; a new
+  component with generous vertical padding gets a rule in that query.
+- **A chart card folds** (`chart.html`, `charts.js` `toggleFolded`):
+  `folded` remembered in `localStorage`
+  (`generic.chart.folded:<path>:<chart name>`); the drawing starts or
+  resizes through the card's ResizeObserver once unfolded.
+- **The summary's top line** (`resource/detail.html` `.summary__bar`):
+  transitions, actions and the last change on one wrapping row.
 - **The frame**: the application's name sits in the top bar
   (`topbar_brand` block), with the navigation's button and its **pin**
   beside it — the pin is in the bar, not in the navigation, which is

@@ -10,6 +10,43 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Changed
+- Laptops at 125% or 150% display scaling draw the interface a tenth
+  smaller: a desktop-width window (1025px to 1800px) at 1.2 to 1.75
+  device pixels per pixel takes a 90% root font size, every rem with
+  it - about what Windows draws at 110%. Phones, retina and 1x screens
+  are unchanged. See docs/ui.md, *Size*.
+- Laptops at 125% or 150% display scaling: under 820px of window height
+  - 1920x1080 at 125% leaves about 730 - the page keeps its type and
+  controls and gives up the air between them: a slimmer top bar, page
+  margins and card gaps a quarter smaller, closer navigation links,
+  slimmer table rows, summary figures and label and value lists - the
+  account page among them - and charts at most 28% of
+  the window tall, so a list shows its rows under its charts. Between
+  1025px and 1400px of width the pinned navigation is 15rem. At 100%
+  on a 1080p screen nothing moves. See docs/ui.md, *Size*.
+- A record's summary puts its state buttons, its actions and its last
+  change on one line, where each took a line of its own.
+- A summary section shows its fields in two columns from a narrower
+  card (10rem a column, was 12rem).
+- A table's search box gives up width before its tools wrap onto a
+  second line.
+
+### Added
+- A chart card folds to its title with a chevron beside its tools,
+  remembered per page and chart in the browser; folded, it fetches
+  nothing until opened. See docs/charts.md.
+
+### Fixed
+- The table under a list's charts touched them: the chart builder
+  between them broke the rule spacing the two.
+- The account page's Appearance card had twice the space under its
+  title that the other cards have.
+- The Appearance card's sample buttons showed a *Save* that saved
+  nothing, next to the card's own *Save*: the sample is an *Add*.
+
 ## [1.4.0] - 2026-10-18
 
 ### Added

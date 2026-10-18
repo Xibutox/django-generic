@@ -248,8 +248,11 @@ table.dataTable th.dt-row-actions {
   gap: var(--space-2);
 }
 
+/* Its basis is what it may shrink to before the tools wrap under it:
+   a toolbar on two lines costs a row of the table, and a 1366px screen
+   at 125% has no row to spare. It still grows to its full width. */
 .dt-toolbar__search {
-  flex: 1 1 16rem;
+  flex: 1 1 12rem;
   max-width: 28rem;
 }
 
@@ -1506,5 +1509,13 @@ table.dataTable thead tr.dt-column-filters > td {
   .bulk-edit__remove {
     grid-column: 2;
     grid-row: 1;
+  }
+}
+
+/* A short window: a row is its line of text and little more. */
+@media (max-height: 820px) {
+  table.dataTable tbody td {
+    padding-top: 0.3125rem !important;
+    padding-bottom: 0.3125rem !important;
   }
 }

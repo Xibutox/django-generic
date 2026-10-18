@@ -183,7 +183,12 @@ The tag draws nothing for a user without the permission. It accepts
 
 A chart is a card with the title, a period switch when the dimension is
 a date, a button showing the figures as a table — for reading exact
-values, and for screen readers — and one downloading the image.
+values, and for screen readers — one downloading the image, and a
+chevron that folds the card to its title. A folded chart is remembered
+per page and chart in the browser, and fetches nothing until it is
+opened again: above a list on a laptop at 125% scaling, the reader
+keeps the table's rows. On a window under 820px high a chart is at most
+28% of it tall (`docs/ui.md`, *Size*).
 
 ## Drawn by the reader: `chart_builder`
 
