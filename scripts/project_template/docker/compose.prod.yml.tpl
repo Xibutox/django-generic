@@ -122,7 +122,7 @@ x-backup: &backup
 services:
   db:
     <<: *hardened
-    image: ${POSTGRES_IMAGE:-postgres:16}
+    image: ${POSTGRES_IMAGE:-postgres:17}
     # The image's entry point prepares the data folder as root, then
     # runs Postgres as its own user: these are what that takes.
     cap_add:

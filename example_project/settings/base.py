@@ -261,6 +261,8 @@ except ImportError:
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # The Content-Security-Policy (GENERIC["CONTENT_SECURITY_POLICY"]).
+    "generic.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # Between the session and Common, as Django requires: it settles on
     # a language from the cookie or the browser.
@@ -274,6 +276,9 @@ MIDDLEWARE = [
     # Also after it: what every record's history records as the who.
     "generic.middleware.CurrentUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    # After the messages: a session nobody used for
+    # SESSION_IDLE_MINUTES is signed out, and the sign-in page says why.
+    "generic.middleware.SessionIdleMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -363,6 +368,25 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Argon2 first, as OWASP recommends, when argon2-cffi is installed (the
+# "argon2" extra); the others still read the hashes made before and
+# upgrade them at the next sign-in.
+try:
+    import argon2  # noqa: F401
+except ImportError:  # pragma: no cover - the extra is not installed
+    pass
+else:
+    PASSWORD_HASHERS = [
+        "django.contrib.auth.hashers.Argon2PasswordHasher",
+        "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+        "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+        "django.contrib.auth.hashers.ScryptPasswordHasher",
+    ]
+
+# A session lasts a working day, not Django's two weeks; one left
+# alone for an hour is signed out (GENERIC["SESSION_IDLE_MINUTES"]).
+SESSION_COOKIE_AGE = env_int("DJANGO_SESSION_AGE", 8 * 60 * 60)
+
 # -- REST framework ----------------------------------------------------
 #
 # The framework's viewsets declare their own renderers, pagination and
@@ -381,6 +405,19 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Requests a minute, per person and per address of the signed out:
+    # a script looping on the API slows down instead of taking the
+    # server with it. A page asks for its rows, values and charts, a
+    # few dozen requests; the limits are far above that. Counted in the
+    # cache: Redis in production, so every process counts together.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": env("DJANGO_API_RATE_USER", "600/min"),
+        "anon": env("DJANGO_API_RATE_ANON", "60/min"),
+    },
 }
 
 # The OpenAPI description (generic.openapi, docs/api.md). Its pages are
@@ -447,6 +484,12 @@ GENERIC = {
     "SITE_URL": env("DJANGO_SITE_URL") or None,
     "TABLE_PAGE_SIZE": 15,
     "AUTOCOMPLETE_PAGE_SIZE": 20,
+    # Signed out after an hour without a click or a key pressed.
+    "SESSION_IDLE_MINUTES": env_int("DJANGO_SESSION_IDLE_MINUTES", 60),
+    # Nothing from elsewhere runs in a page: generic.middleware's
+    # RECOMMENDED_CSP. DJANGO_CSP_REPORT_ONLY=1 reports without blocking.
+    "CONTENT_SECURITY_POLICY": "recommended",
+    "CONTENT_SECURITY_POLICY_REPORT_ONLY": env_bool("DJANGO_CSP_REPORT_ONLY"),
     # Exports and downloads are asked for: the viewer finds "Ask for
     # permission" in the export menu and beside a ticket's attachment,
     # and admin grants it on People > Access requests.

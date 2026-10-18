@@ -51,7 +51,11 @@ from generic.api.columns import (
 from generic.api.rows import RowsDataTableViewSet
 from generic.api.serializers import DataTableSerializer
 from generic.sites.pages import ResourcePage, ResourcePageView
-from generic.sites.serializers import ROW_KEY, resolve_display_callable
+from generic.sites.serializers import (
+    ROW_KEY,
+    resolve_display_callable,
+    restricted,
+)
 from generic.sites.trees import DOWN, WALK_CHUNK, BoundTree, entry_label
 
 #: The most rows a flat table lists: a shared assembly is listed in
@@ -170,7 +174,24 @@ class FlatTree:
     # -- the columns ---------------------------------------------------
 
     def get_serializer_class(self, request: Any, grouped: bool) -> Any:
+        """The rows' serializer, without the columns of fields this
+        reader may not see (``field_permissions``), the record's or the
+        link's."""
         links = self.links_readable(request)
+        hidden = set(self.resource.get_hidden_fields(request))
+        link_resource = self.bound.get_link_resource() if links else None
+
+        if link_resource is not None:
+            hidden |= {
+                link_key(name)
+                for name in link_resource.get_hidden_fields(request)
+            }
+
+        return restricted(
+            self.build_serializer_class(grouped, links), frozenset(hidden)
+        )
+
+    def build_serializer_class(self, grouped: bool, links: bool) -> Any:
         cached = self._serializers.get((grouped, links))
 
         if cached is not None:

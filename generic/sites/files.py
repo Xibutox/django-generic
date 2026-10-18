@@ -119,7 +119,7 @@ def exposed_file_fields(resource: Any, request: Any = None) -> frozenset:
         *flatten_fieldsets(resource.get_detail_fieldsets(request)),
     ]
 
-    serializer = resource.get_form_serializer_class()(
+    serializer = resource.get_form_serializer_for(request)(
         context={"request": request}
     )
 
@@ -129,8 +129,12 @@ def exposed_file_fields(resource: Any, request: Any = None) -> frozenset:
         if not field.write_only
     ]
 
+    hidden = resource.get_hidden_fields(request)
+
     return frozenset(
-        name for name in names if is_file_field(resource.model, name)
+        name
+        for name in names
+        if is_file_field(resource.model, name) and name not in hidden
     )
 
 

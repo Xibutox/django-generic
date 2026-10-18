@@ -1,0 +1,191 @@
+/*
+ * A board of records (generic.sites.boards, js/board.js). Tokens only;
+ * a column's colour comes from its tag style, a card's from its colour
+ * field, both cleaned, as --column-color and --card-color.
+ */
+
+.board-card {
+  padding: var(--space-4);
+}
+
+/* The resource's table above the board: its search box, its filters and
+   their chips, not its rows (js/board.js follows them). As specific as
+   DataTables' own rules. */
+.board-filters div.dt-container div.dt-layout-table,
+.board-filters div.dt-container div.dt-processing,
+.board-filters div.dt-container div.dt-info,
+.board-filters div.dt-container div.dt-paging,
+.board-filters div.dt-container div.dt-length {
+  display: none;
+}
+
+.board-filters .dt-container {
+  margin: 0 0 var(--space-3);
+}
+
+.board__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.board__status {
+  font-size: var(--font-size-sm);
+}
+
+/* -- The columns -------------------------------------------------------- */
+
+.board__columns {
+  display: grid;
+  grid-auto-columns: minmax(15rem, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.board-column {
+  --column: var(--column-color, var(--border-strong));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-color);
+  border-top: 3px solid var(--column);
+  border-radius: var(--border-radius-lg);
+}
+
+.board-column.is-over {
+  background: var(--color-accent-subtle);
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
+}
+
+.board-column__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.board-column__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.board-column__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-column__count {
+  padding: 0 var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-raised);
+  border-radius: var(--border-radius-pill);
+}
+
+.board-column__cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 4rem;
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.board-column__empty,
+.board-column__more {
+  margin: 0;
+  padding: var(--space-2);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+/* -- A card ------------------------------------------------------------- */
+
+.board-card-item {
+  --card: var(--card-color, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-inline-start: 3px solid var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm, none);
+}
+
+.board-card-item[draggable="true"] {
+  cursor: grab;
+}
+
+.board.is-dragging .board-card-item,
+.generic-board.is-dragging .board-card-item {
+  cursor: grabbing;
+}
+
+.board-card-item__label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.board-card-item__cells {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+}
+
+.board-card-item__cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.board-card-item__name {
+  color: var(--text-secondary);
+}
+
+.board-card-item__name::after {
+  content: ":";
+}
+
+/* Shown on hover and focus: on every card at once it reads as noise. */
+.board-card-item__move {
+  align-self: flex-start;
+  max-width: 100%;
+  opacity: 0;
+}
+
+.board-card-item:hover .board-card-item__move,
+.board-card-item:focus-within .board-card-item__move,
+.board-card-item__move:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .board-card-item__move {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .board__columns {
+    grid-auto-columns: minmax(80%, 1fr);
+  }
+}

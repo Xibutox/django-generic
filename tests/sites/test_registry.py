@@ -93,12 +93,14 @@ class TestNavigation:
         )
         # The comments resource is registered but kept out of the menu;
         # the customer map is a page of the customers' own, right after
-        # them, as the tickets' calendar is right after the tickets; the
+        # them, as the tickets' calendar and board are right after the
+        # tickets; the
         # Triage grid is a page added to the group, and the external
         # services rows that are no model's.
         assert [item["label"] for item in support["items"]] == [
             "Tickets",
             "Due dates",
+            "Priorities",
             "Customers",
             "Customer map",
             "Time entries",

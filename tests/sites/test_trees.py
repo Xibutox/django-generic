@@ -450,10 +450,11 @@ class TestRefusals:
     ):
         answer = get(reader_client, BOM, node=bom["WH-1"].pk)
 
+        # Nor the unit cost: it is for who may change the articles
+        # (ArticleResource.field_permissions).
         assert [column["key"] for column in answer["columns"]] == [
             "node.kind",
             "node.unit",
-            "node.unit_cost",
         ]
         assert labels(answer) == ["HB-1 Hub", "SP-1 Spoke"]
         assert answer["items"][0]["linkUrl"] == ""

@@ -177,3 +177,19 @@ def js_catalog_url() -> str:
         return reverse("javascript-catalog")
     except NoReverseMatch:
         return ""
+
+
+@register.simple_tag(takes_context=True)
+def csp_nonce(context: Any) -> str:
+    """The request's Content-Security-Policy nonce, for an inline script.
+
+    ``<script nonce="{% csp_nonce %}">``: under
+    ``generic.middleware.CSPMiddleware`` the policy names this nonce,
+    so the page's own script runs and an injected one does not. Without
+    a policy it is a harmless attribute.
+    """
+    from generic.middleware import csp_nonce as nonce_of
+
+    request = context.get("request")
+
+    return nonce_of(request) if request is not None else ""

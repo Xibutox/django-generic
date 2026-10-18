@@ -160,7 +160,7 @@
   {{ block.super }}
   {{ state_labels|json_script:"events-state-labels" }}
   {{ meanings|json_script:"events-meanings" }}
-  <script>
+  <script nonce="{% csp_nonce %}">
     // The page listens on the framework's own socket - the one the bell
     // and the tables use - rather than opening a second one. Run on
     // DOMContentLoaded: the framework's scripts are deferred.

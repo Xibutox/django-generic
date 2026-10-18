@@ -27,6 +27,9 @@ Every generated screen talks to it, and so can anything else:
 ``GET    .../calendars/<name>/``         a declared calendar's records,
                                         ``?start=&end=``
 ``PATCH  .../<pk>/calendars/<name>/``    a record moved to another day
+``GET    .../boards/<name>/``            a declared board's columns and
+                                        cards
+``PATCH  .../<pk>/boards/<name>/``       a card moved to another column
 ==========================  ======================================
 
 The table endpoints - and the charts - also take ``_related``, which
@@ -91,6 +94,8 @@ TABLE_ACTIONS = frozenset(
         "facets",
         "tree",
         "calendar",
+        "board",
+        "compare",
     }
 )
 
@@ -138,6 +143,7 @@ class ResourcePermission(BasePermission):
             "cells",
             "take_transition",
             "calendar_move",
+            "board_move",
         ):
             return resource.has_change_permission(request)
 
@@ -166,7 +172,13 @@ class ResourcePermission(BasePermission):
         resource = view.resource
         name = view.action
 
-        if name in ("update", "partial_update", "cells", "calendar_move"):
+        if name in (
+            "update",
+            "partial_update",
+            "cells",
+            "calendar_move",
+            "board_move",
+        ):
             return resource.has_change_permission(request, obj)
 
         if name == "destroy":
@@ -353,16 +365,19 @@ class ResourceViewSet(
         if self.action in TABLE_ACTIONS:
             return self.resource.get_rows_serializer_class(self.request)
 
-        return self.resource.get_form_serializer_class()
+        return self.resource.get_form_serializer_for(self.request)
 
     def get_table_search_fields(self) -> list[str]:
         """The resource's own search fields, when it declares any."""
-        fields = self.resource.get_search_fields(self.request)
+        resource = self.resource
+        fields = resource.get_search_fields(self.request)
 
         if fields:
-            return list(fields)
+            return list(resource.visible_paths(self.request, fields))
 
-        return self.resource.get_table_serializer_class().get_search_fields()
+        return resource.get_rows_serializer_class(
+            self.request
+        ).get_search_fields()
 
     def get_inline_form_definitions(self) -> Any:
         return self.resource.get_inline_definitions(self.request)
@@ -573,7 +588,7 @@ class ResourceViewSet(
         if row is None:  # pragma: no cover - the row left its own table
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        serializer = resource.get_table_serializer_class()(
+        serializer = resource.get_rows_serializer_class(request)(
             row,
             context=self.get_serializer_context(),
         )
@@ -612,7 +627,7 @@ class ResourceViewSet(
         writable = {
             name
             for name in context.creatable
-            if resource.can_edit_column(request, name, None)
+            if resource.may_write_column(request, name, None)
         }
         refused = [name for name in values if name not in writable]
 
@@ -640,7 +655,7 @@ class ResourceViewSet(
             ) from error
         row = resource.get_list_queryset(request).filter(pk=record.pk).first()
         data = (
-            resource.get_table_serializer_class()(
+            resource.get_rows_serializer_class(request)(
                 row,
                 context=self.get_serializer_context(),
             ).data
@@ -732,7 +747,7 @@ class ResourceViewSet(
         """
         from generic.sites.chart_builder import BuilderError
 
-        builder = self.resource.get_chart_builder()
+        builder = self.resource.get_chart_builder_for(request)
 
         if builder is None:
             raise NotFound(gettext("There is no such chart."))
@@ -882,6 +897,80 @@ class ResourceViewSet(
         record.refresh_from_db()
 
         return Response(bound.describe(request, record, True))
+
+    # -- boards ------------------------------------------------------------
+
+    def get_bound_board(self, name: str) -> Any:
+        """The board ``name``, for a reader who may open its page."""
+        bound = self.resource.get_board(name)
+        declared = self.resource.get_page(name) if bound else None
+
+        if (
+            bound is None
+            or declared is None
+            or not self.resource.has_page_permission(self.request, declared)
+        ):
+            raise NotFound(gettext("There is no such board."))
+
+        return bound
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"boards/(?P<board>[a-z0-9-]+)",
+        url_name="board",
+    )
+    def board(self, request: Any, board: str = "") -> Response:
+        """A declared board's columns, each with its count and first
+        cards, under the table's own ``filters`` and ``search``
+        (generic.sites.boards)."""
+        bound = self.get_bound_board(board)
+        queryset = self.filter_queryset(self.get_queryset())
+
+        return Response(bound.answer(request, queryset))
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path=r"boards/(?P<board>[a-z0-9-]+)",
+        url_name="board-move",
+    )
+    def board_move(
+        self, request: Any, pk: Any = None, board: str = ""
+    ) -> Response:
+        """Move one card to another column: ``{"column": <its key>}``,
+        written by the resource's cell writer."""
+        bound = self.get_bound_board(board)
+        record = self.get_object()
+        bound.move(request, record, request.data)
+        record.refresh_from_db()
+
+        return Response(bound.describe(request, record, True))
+
+    # -- comparing records ------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="compare",
+        url_name="compare",
+    )
+    def compare(self, request: Any) -> Response:
+        """The records ``ids`` names (``3,8,12``) side by side, field by
+        field (generic.sites.compare)."""
+        from generic.sites import compare
+
+        if not self.resource.can_compare(request):
+            raise NotFound(gettext("These records are not compared."))
+
+        return Response(
+            compare.answer(
+                self.resource,
+                request,
+                self.get_queryset(),
+                request.query_params.getlist("ids"),
+            )
+        )
 
     # -- bulk actions ------------------------------------------------------
 
@@ -1253,7 +1342,13 @@ class ResourceViewSet(
 
         queryset = resource.rank_search_results(
             request,
-            apply_search(queryset, resource.get_search_fields(request), term),
+            apply_search(
+                queryset,
+                resource.visible_paths(
+                    request, resource.get_search_fields(request)
+                ),
+                term,
+            ),
             term,
         )
 

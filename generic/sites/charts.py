@@ -46,7 +46,7 @@ from typing import Any, Callable, Mapping, Sequence
 from django.contrib.admin.utils import get_fields_from_path
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, F
 from django.db.models.functions import Trunc
 from django.utils import formats
 from django.utils.encoding import force_str
@@ -401,8 +401,31 @@ class Chart:
     def get_periods(self) -> tuple[str, ...]:
         return tuple(self.periods or (self.period,))
 
+    def get_fields_read(self) -> set[str]:
+        """The model fields this chart groups or sums by, by their first
+        name: what ``field_permissions`` hides it for."""
+        names = {self.group_by, self.split_by}
+        pending = [self.value]
+
+        while pending:
+            value = pending.pop()
+
+            if isinstance(value, str):
+                names.add(value)
+            elif isinstance(value, F):
+                names.add(str(getattr(value, "name", "")))
+            elif hasattr(value, "get_source_expressions"):
+                pending += value.get_source_expressions()
+
+        return {name.split("__")[0] for name in names if name}
+
     def is_visible(self, request: Any, resource: Any) -> bool:
         if not resource.has_view_permission(request):
+            return False
+
+        hidden = getattr(resource, "get_hidden_fields", None)
+
+        if hidden is not None and self.get_fields_read() & hidden(request):
             return False
 
         if self.permission is None:

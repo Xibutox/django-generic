@@ -324,7 +324,9 @@ def test_the_container_keeps_its_database_in_the_volume():
     assert "data:/data" in web["volumes"]
     assert "DJANGO_DB_PATH=/data/db.sqlite3" in dockerfile
     # The wiki's extra, and its images in the volume beside the database.
-    assert 'pip install ".[wiki]"' in dockerfile
+    assert 'pip install -c constraints.txt ".[wiki]"' in dockerfile
+    # The versions CI tested, not the newest of the day.
+    assert "COPY requirements/constraints.txt ./" in dockerfile
     assert "DJANGO_MEDIA_ROOT=/data/media" in dockerfile
     # Microsoft sign-in: allauth installed, the registration passed
     # through from the environment and never written down.

@@ -112,12 +112,40 @@ What `tests/browser/conftest.py` sets up, and why:
 | `console` | fails the test on a page error; `console.allow(403, "/example/ticket/add/")` |
 | the database | SQLite in a file, not in memory: the live server's threads each get a connection rather than sharing the tests' one, which can hang |
 | the CSRF middleware | added, as the example project has it - `tests/settings.py` does not, and the pages post through the API |
+| the Content-Security-Policy | `CSPMiddleware` with `"recommended"`, as the examples send it: a script, a style or a connection the policy refuses is a console error, so a page it would break fails its test ([Content-Security-Policy](security.md#content-security-policy)) |
 | `EVENTS_WEBSOCKET_URL` | `None`: the live server speaks WSGI, so the pages open no socket (the live events are the channels tests') |
 | events from the tests | dropped: Playwright's loop runs in the tests' thread, where handing an event to the channel layer is refused; the server's own are sent |
 | `DJANGO_ALLOW_ASYNC_UNSAFE` | set for the session, for the same loop: the fixtures and assertions use the ORM beside it |
 
 A new scenario opens the page with `page.goto("/example/...")` and
 waits with Playwright's `expect`, never `time.sleep`.
+
+### Accessibility
+
+`tests/browser/test_accessibility.py` opens every kind of page the
+example has - the dashboard, a list, a form, a summary, a delete page,
+the calendar, a grid, an import, a tree, the wiki, the account page,
+the sign-in page - in the light scheme and the dark one, and has
+[axe-core](https://github.com/dequelabs/axe-core) check it against
+WCAG 2.1 levels A and AA: a field with no name a screen reader can
+read, text too pale on its background (4.5:1), an ARIA role where it
+does not belong. A tag is also checked in every colour a record could
+hold, white and black included.
+
+axe-core is vendored for the tests only (`tests/browser/vendor/`,
+MPL-2.0, how to update it in its README) and evaluated through
+Playwright, which the page's Content-Security-Policy does not apply
+to. A failure names the rule, the elements and what to fix:
+
+```text
+color-contrast (serious): Elements must meet minimum color contrast ratio thresholds
+    tr:nth-child(2) > td:nth-child(9) > .tag-list > .tag: Fix any of the
+    following: Element has insufficient color contrast of 4.42 ...
+```
+
+A new kind of page gets a line in `PAGES`: its address and what shows
+it is drawn. `assert_accessible(page)` checks any page a scenario has
+reached, `assert_accessible(page, rules=["color-contrast"])` one rule.
 
 ## Versions tested
 
@@ -261,6 +289,7 @@ page or per resource:
 | `test_page_never_breaks_for_a_stranger` | signed out: below 500 |
 | `test_page_never_breaks_without_permissions` | signed in, allowed nothing: below 500 |
 | `test_resource_endpoints` | rows, form schema, a record's summary and history |
+| `test_rows_cost_the_same_however_many` | the rows endpoint costs as many queries for 25 rows as for one: a column reading a relation row by row (an N+1) fails it, with the queries |
 | `test_every_column_lists_its_values` | each column's `facets/`: 200 or 400, never 500 |
 | `test_resource_exports` | both exports stream |
 | `test_every_chart_draws` | each declared chart |
@@ -276,6 +305,7 @@ What a subclass may set:
 | `expected` | `{url name: (status, ...)}`, where a superuser does not get 200 |
 | `languages` | `("en", "fr")` opens every page in each; empty, once |
 | `value_for(url_name, argument, records)` | the value of an address argument the default cannot work out; call `super()` for the rest |
+| `query_rows` | how many rows the query count compares with one (25) |
 | `urlconf`, `site`, `excluded_namespaces` | another URLconf or site; the namespaces left to their own tests (`admin`, `djdt`) |
 
 The framework's own screens - people, groups, permissions, changes,
@@ -286,6 +316,30 @@ writes - nothing lands in a project's `MEDIA_ROOT` - so its page is
 expected to answer 200 or 404. `scripts/smoke_install.py --sweep` runs such a
 subclass against the installed wheel in CI, so the helper is tested as
 a project uses it.
+
+### Queries that grow with the rows
+
+`test_rows_cost_the_same_however_many` reads each resource's rows twice
+- one row, then up to `query_rows` - and fails when the second costs
+more queries than the first. That is the N+1: a method column, a
+deferred field or a relation read on each row, which costs nothing on a
+test database of three records and a query per row in production. The
+failure lists the queries; the fix is `select_related` or
+`prefetch_related` in `get_queryset`, or an annotation. A resource with
+a single record gets a copy of it (a unique text field gets a suffix);
+one that cannot be copied, and has fewer than two rows, is skipped -
+give `records` a second record to have it measured.
+
+Elsewhere, `generic.testing.capture_queries` counts the queries of a
+block:
+
+```python
+from generic.testing import capture_queries
+
+with capture_queries() as queries:
+    client.get(url)
+assert len(queries) <= 6, queries.captured
+```
 
 ## Fixtures
 
@@ -395,21 +449,35 @@ flake8 generic tests example example_project minimal docmanager scripts debug.py
 bandit -r generic example docmanager minimal -ll --skip B101
 pip-audit --skip-editable --ignore-vuln CVE-2026-106454   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
-mypy generic               # reported, not blocking: see below
+python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt
+python scripts/lock.py --check     # requirements/constraints.txt matches constraints.in
 ```
 
-CI runs the linters once, the suite on Python 3.10 to 3.13 - the oldest
-Django and DRF accepted included - against SQLite, once more against
-Postgres and Redis, the browser tests, and the package job above. Coverage must stay at or
-above 80%; it sits at 93%. mypy reports without failing the build:
-django-stubs trails the Django versions the framework runs on, and most
-of what it says is that.
+`pre-commit install` (`pip install pre-commit`, part of the `dev`
+extra) runs black, isort, flake8 and the catalogs check before each
+commit, with the versions already installed (`.pre-commit-config.yaml`).
+
+CI runs the linters once, the suite on Python 3.10 to 3.14 - the oldest
+Django and DRF accepted included, and the previous Django - against
+SQLite, once more against Postgres 16 and 17 and Redis, the browser tests, and the package job above. Coverage must stay at or
+above 80%; it sits at 93%. mypy fails the build on a new error
+only: the ones carried today - django-stubs trails the Django versions
+the framework runs on, and most of what it says is that - are listed in
+`scripts/mypy-baseline.txt`, by file and message, not by line. Fixing
+one is welcome; `python scripts/mypy_baseline.py --update` then shrinks
+the list.
+
+Every job but the version matrix installs the versions pinned in
+`requirements/constraints.txt` - the ones the Docker images ship -
+with `-c requirements/constraints.txt`; the matrix takes the newest
+releases instead, to hear about a break early. `python scripts/lock.py`
+rewrites the file (docs/deployment.md, *The images*).
 
 Two pipelines describe the same thing, for whichever host a project
 uses: `.github/workflows/ci.yml` and `.gitlab-ci.yml`. The GitLab one
 runs everything in containers on a Docker executor — the linters and the
-catalogs check, the suite over the four Python versions, the browser
-tests, the suite again against `postgres:16` and `redis:7` as services,
+catalogs check, the suite over the Python versions, the browser
+tests, the suite again against `postgres:16` and `postgres:17` with `redis:7` as services,
 the wheel built and tried by `scripts/smoke_install.py`, then
 `docker/Dockerfile` built, run (`pytest`, `manage.py check`) and pushed
 to the project's registry on the default branch and on tags. The

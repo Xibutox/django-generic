@@ -34,7 +34,7 @@ x-app: &app
 
 services:
   db:
-    image: ${POSTGRES_IMAGE:-postgres:16}
+    image: ${POSTGRES_IMAGE:-postgres:17}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?run python ops.py env}
       POSTGRES_USER: ${POSTGRES_USER:?run python ops.py env}
