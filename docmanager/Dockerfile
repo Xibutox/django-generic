@@ -36,7 +36,7 @@ WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/ ./generic/
 COPY docmanager/requirements.txt ./
-RUN pip install ".[export,wiki,postgres]" -r requirements.txt \
+RUN pip install ".[export,wiki,postgres,argon2]" -r requirements.txt \
     "gunicorn>=22" "redis>=5.0" \
     && rm -rf /src
 

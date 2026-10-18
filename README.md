@@ -262,6 +262,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [A new project, ready to deploy](docs/new-project.md) — `scripts/new_project.py`: a project, its random secrets, a hardened Docker stack and encrypted backups that test their own restore, in one command
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
 - [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
+- [Sessions, pages and passwords](docs/security.md) — signed out after a silence, a Content-Security-Policy, API rate limits, Argon2, password rules
 - [Security events](docs/security-log.md) — sign-ins and their failures, lockouts, passwords, API tokens, rights granted and exports, in the log and on a screen
 - [Testing](docs/testing.md) — running and extending the suite
 

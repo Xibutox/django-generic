@@ -310,6 +310,19 @@ DEFAULTS: dict[str, Any] = {
     # shared by every process (Redis) in production.
     "LOGIN_MAX_ATTEMPTS": 5,
     "LOGIN_LOCKOUT_MINUTES": 15,
+    # --- Sessions (generic.middleware.SessionIdleMiddleware) -----------
+    # Minutes without a click or a key pressed after which a session is
+    # signed out - an unattended screen stops showing records. None
+    # keeps a session for SESSION_COOKIE_AGE whatever happens.
+    "SESSION_IDLE_MINUTES": None,
+    # --- Content-Security-Policy (generic.middleware.CSPMiddleware) ---
+    # The policy sent with every page: None sends none, "recommended" the
+    # framework's own (generic.middleware.RECOMMENDED_CSP), or a dict of
+    # directives, {"script-src": ["'self'", "'nonce'"], ...}, where
+    # "'nonce'" stands for the request's nonce. REPORT_ONLY sends it as
+    # Content-Security-Policy-Report-Only: reported, nothing blocked.
+    "CONTENT_SECURITY_POLICY": None,
+    "CONTENT_SECURITY_POLICY_REPORT_ONLY": False,
     # --- Security events (generic.audit) --------------------------------
     # Sign-ins, failed ones, lockouts, sign-outs, passwords changed, API
     # tokens made and deleted, rights granted or refused, exports: to

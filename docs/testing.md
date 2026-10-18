@@ -112,6 +112,7 @@ What `tests/browser/conftest.py` sets up, and why:
 | `console` | fails the test on a page error; `console.allow(403, "/example/ticket/add/")` |
 | the database | SQLite in a file, not in memory: the live server's threads each get a connection rather than sharing the tests' one, which can hang |
 | the CSRF middleware | added, as the example project has it - `tests/settings.py` does not, and the pages post through the API |
+| the Content-Security-Policy | `CSPMiddleware` with `"recommended"`, as the examples send it: a script, a style or a connection the policy refuses is a console error, so a page it would break fails its test ([Content-Security-Policy](security.md#content-security-policy)) |
 | `EVENTS_WEBSOCKET_URL` | `None`: the live server speaks WSGI, so the pages open no socket (the live events are the channels tests') |
 | events from the tests | dropped: Playwright's loop runs in the tests' thread, where handing an event to the channel layer is refused; the server's own are sent |
 | `DJANGO_ALLOW_ASYNC_UNSAFE` | set for the session, for the same loop: the fixtures and assertions use the ORM beside it |

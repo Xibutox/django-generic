@@ -495,6 +495,10 @@ LANGUAGES = [("en", _("English")), ("fr", _("French"))]
 MIDDLEWARE = [..., "django.middleware.locale.LocaleMiddleware",         # after the session
               ..., "generic.middleware.UserLanguageMiddleware",         # after the auth
               "generic.middleware.CurrentUserMiddleware", ...]          # who the history records
+# Optional guards (docs/security.md): "generic.middleware.CSPMiddleware"
+# right after SecurityMiddleware, "generic.middleware.SessionIdleMiddleware"
+# after MessageMiddleware; GENERIC["CONTENT_SECURITY_POLICY"] = "recommended",
+# GENERIC["SESSION_IDLE_MINUTES"] = 60.
 ```
 
 ```python
@@ -1811,7 +1815,9 @@ strftime string fixes the text),
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
-`SECURITY_LOG_RETENTION_DAYS` (None), `SHOW_STATUS`, `STATUS_TOKEN`,
+`SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
+`CONTENT_SECURITY_POLICY` (None; "recommended" or directives),
+`CONTENT_SECURITY_POLICY_REPORT_ONLY` (False), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
@@ -2523,6 +2529,18 @@ def payments():                                # quick: runs on every refresh
   `generic.audit.record("exported", request=request, detail=...)`.
   `SECURITY_LOG` (True), `SECURITY_LOG_RETENTION_DAYS` (None, applied
   by `apply_retention`). See `docs/security-log.md`.
+- **Sessions and pages** (`docs/security.md`): `SessionIdleMiddleware`
+  signs out after `SESSION_IDLE_MINUTES` without a reader's action;
+  requests the pages make by themselves send `X-Generic-Idle` (seconds
+  since the last click or key, `Generic.activity` in core.js; the
+  table's DataTables ajax too) and so keep nobody signed in; the answer
+  carries `X-Generic-Signed-Out: idle` and the page reloads.
+  `CSPMiddleware` sends `CONTENT_SECURITY_POLICY` (`RECOMMENDED_CSP`:
+  `'self'`, `'unsafe-eval'` for Alpine, a nonce for inline scripts).
+  **An inline `<script>` in a template carries
+  `nonce="{% csp_nonce %}"`** (`generic_ui`), never an `on...=`
+  attribute; the browser tests run under the policy and fail on what it
+  blocks.
 
 ## 14. Known pitfalls
 

@@ -48,7 +48,7 @@
 {# first paint, so a group the reader closed never flashes open. The   #}
 {# saving half lives in ui.js; the state is this browser's only, like  #}
 {# the theme and the pin.                                              #}
-<script>
+<script nonce="{% csp_nonce %}">
   (function () {
     var groups = document.querySelectorAll(
       "#sidebar details[data-nav-group-key]"

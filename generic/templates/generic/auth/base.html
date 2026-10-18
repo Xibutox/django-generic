@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>{% block title %}{{ page_title }}{% endblock %}{% if chrome.title %} &middot; {{ chrome.title }}{% endif %}</title>
   {% block favicon %}{% include "generic/includes/favicon.html" %}{% endblock %}
-  <script>
+  <script nonce="{% csp_nonce %}">
     (function () {
       try {
         var theme = localStorage.getItem("generic.theme");

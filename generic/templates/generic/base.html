@@ -19,7 +19,7 @@
   {# theme or an unshifted sidebar before the scripts have run. A    #}
   {# choice made in this browser wins; otherwise the preference the  #}
   {# user saved on their account applies.                            #}
-  <script>
+  <script nonce="{% csp_nonce %}">
     (function () {
       var root = document.documentElement;
       var theme = null;
