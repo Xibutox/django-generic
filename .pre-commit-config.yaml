@@ -1,0 +1,36 @@
+# The checks CI runs first, run by git before each commit:
+#
+#   pip install pre-commit && pre-commit install
+#
+# Every hook is "system": it runs the black, isort and flake8 already
+# installed by `pip install -e ".[dev]"` - the versions pinned in
+# requirements/constraints.txt - so the hooks and CI never disagree on a
+# version, and nothing is downloaded. `pre-commit run --all-files` checks
+# the whole repository.
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: black
+        language: system
+        types: [python]
+      - id: isort
+        name: isort
+        entry: isort
+        language: system
+        types: [python]
+      - id: flake8
+        name: flake8
+        entry: flake8
+        language: system
+        types: [python]
+        files: ^(generic|tests|example|example_project|minimal|docmanager|scripts)/|^debug\.py$
+        exclude: /migrations/
+      - id: message-catalogs
+        name: message catalogs compiled
+        # A .po edited without recompiling translates nothing.
+        entry: python scripts/compile_messages.py --check
+        language: system
+        files: \.(po|mo)$
+        pass_filenames: false

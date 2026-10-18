@@ -51,6 +51,9 @@ pytest
 black --check . && isort --check-only . && flake8 generic tests example example_project minimal docmanager scripts debug.py
 bandit -r generic example docmanager minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
+python scripts/mypy_baseline.py              # mypy, failing on an error not in scripts/mypy-baseline.txt
+python scripts/lock.py                       # requirements/constraints.txt, the versions images and CI install (needs uv)
+pre-commit install                           # black, isort, flake8 and the catalogs check before each commit
 python -m build && python scripts/smoke_install.py   # the wheel, installed and plugged into a new project
 python scripts/new_project.py                 # a new project: secrets, hardened Docker stack, encrypted backups (docs/new-project.md)
 docker compose -f docker/docker-compose.dev.yml up --build     # dev stack

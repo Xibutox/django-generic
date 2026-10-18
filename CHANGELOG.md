@@ -202,6 +202,27 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
+### Changed
+- Every version pinned: `requirements/constraints.txt`, written by
+  `python scripts/lock.py` from `requirements/constraints.in`, is what
+  the Docker images (`PIP_CONSTRAINT`), the minimal example's and the
+  document manager's images, and every CI job but the version matrix
+  install. Two builds of the same commit now hold the same packages, the
+  ones pip-audit checked; Dependabot proposes their updates weekly, and
+  CI fails when the file no longer matches what `constraints.in` lists.
+- The images run Python 3.13 (3.12 before). CI also tests Python 3.14,
+  Django 6.0 beside the newest (6.1), and PostgreSQL 17 beside 16.
+  `POSTGRES_IMAGE` and `REDIS_IMAGE` choose the database and Redis
+  images of the compose files - 16 stays the default, so an existing
+  volume keeps starting; docs/deployment.md says how to move one to 17.
+  A project written by `scripts/new_project.py` starts on 17.
+- mypy fails CI on a new error: the ones carried today are listed in
+  `scripts/mypy-baseline.txt` (`python scripts/mypy_baseline.py`).
+- `pre-commit install` runs black, isort, flake8 and the catalogs check
+  before each commit (`.pre-commit-config.yaml`, with the versions
+  already installed).
+- CI installs with uv, several times faster than pip.
+
 ### Fixed
 - A message at the top of a page, and a toast in the corner, reads on
   one line: its icon and its dismiss button centre on its first line

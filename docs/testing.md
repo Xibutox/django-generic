@@ -421,21 +421,35 @@ flake8 generic tests example example_project minimal docmanager scripts debug.py
 bandit -r generic example docmanager minimal -ll --skip B101
 pip-audit --skip-editable --ignore-vuln CVE-2026-106454   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
-mypy generic               # reported, not blocking: see below
+python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt
+python scripts/lock.py --check     # requirements/constraints.txt matches constraints.in
 ```
 
-CI runs the linters once, the suite on Python 3.10 to 3.13 - the oldest
-Django and DRF accepted included - against SQLite, once more against
-Postgres and Redis, the browser tests, and the package job above. Coverage must stay at or
-above 80%; it sits at 93%. mypy reports without failing the build:
-django-stubs trails the Django versions the framework runs on, and most
-of what it says is that.
+`pre-commit install` (`pip install pre-commit`, part of the `dev`
+extra) runs black, isort, flake8 and the catalogs check before each
+commit, with the versions already installed (`.pre-commit-config.yaml`).
+
+CI runs the linters once, the suite on Python 3.10 to 3.14 - the oldest
+Django and DRF accepted included, and the previous Django - against
+SQLite, once more against Postgres 16 and 17 and Redis, the browser tests, and the package job above. Coverage must stay at or
+above 80%; it sits at 93%. mypy fails the build on a new error
+only: the ones carried today - django-stubs trails the Django versions
+the framework runs on, and most of what it says is that - are listed in
+`scripts/mypy-baseline.txt`, by file and message, not by line. Fixing
+one is welcome; `python scripts/mypy_baseline.py --update` then shrinks
+the list.
+
+Every job but the version matrix installs the versions pinned in
+`requirements/constraints.txt` - the ones the Docker images ship -
+with `-c requirements/constraints.txt`; the matrix takes the newest
+releases instead, to hear about a break early. `python scripts/lock.py`
+rewrites the file (docs/deployment.md, *The images*).
 
 Two pipelines describe the same thing, for whichever host a project
 uses: `.github/workflows/ci.yml` and `.gitlab-ci.yml`. The GitLab one
 runs everything in containers on a Docker executor — the linters and the
-catalogs check, the suite over the four Python versions, the browser
-tests, the suite again against `postgres:16` and `redis:7` as services,
+catalogs check, the suite over the Python versions, the browser
+tests, the suite again against `postgres:16` and `postgres:17` with `redis:7` as services,
 the wheel built and tried by `scripts/smoke_install.py`, then
 `docker/Dockerfile` built, run (`pytest`, `manage.py check`) and pushed
 to the project's registry on the default branch and on tags. The
