@@ -472,15 +472,30 @@
     for (var index = 0; index < 7; index += 1) {
       var weekday = addDays(shown.start, index);
 
-      head.appendChild(el("div", "calendar-grid__weekday", format(weekday, { weekday: week ? "long" : "short" })));
+      var name = el("div", "calendar-grid__weekday", format(weekday, { weekday: week ? "long" : "short" }));
+
+      name.setAttribute("role", "columnheader");
+      head.appendChild(name);
     }
 
+    head.setAttribute("role", "row");
     grid.appendChild(head);
 
     var body = el("div", "calendar-grid__days");
+    var row = null;
 
-    for (var day = shown.start; day < shown.end; day = addDays(day, 1)) {
-      body.appendChild(this.dayCell(day, days[iso(day)] || [], week));
+    body.setAttribute("role", "rowgroup");
+
+    // A grid's cells sit in rows: one per week, laid out by the days'
+    // own grid (the row takes no box: display: contents).
+    for (var day = shown.start, count = 0; day < shown.end; day = addDays(day, 1), count += 1) {
+      if (count % 7 === 0) {
+        row = el("div", "calendar-grid__week");
+        row.setAttribute("role", "row");
+        body.appendChild(row);
+      }
+
+      row.appendChild(this.dayCell(day, days[iso(day)] || [], week));
     }
 
     grid.appendChild(body);

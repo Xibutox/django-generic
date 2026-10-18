@@ -97,7 +97,7 @@
   );
 
   --color-warning: light-dark(
-    oklch(calc(0.56 - 0.04 * var(--_c)) 0.14 60),
+    oklch(calc(0.53 - 0.04 * var(--_c)) 0.14 60),
     oklch(calc(0.81 + 0.03 * var(--_c)) 0.14 80)
   );
   --color-warning-subtle: light-dark(
