@@ -13,6 +13,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Accessibility checks: the browser tests run axe-core (vendored for
+  the tests only) on every kind of page of the example, light and dark,
+  against WCAG 2.1 AA, and on a tag in any colour. See docs/testing.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks
@@ -194,6 +197,17 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
 ### Fixed
+- Tags keep a readable text whatever colour a record gives them: its
+  lightness is held where it reads on the tag's background in either
+  scheme (4.5:1); an orange tag read at 4.4:1, a white one at 2:1.
+- The warning colour (badges, the appearance preview) reads at 4.5:1 on
+  its background.
+- A Select2 choosing several values is named after its label for screen
+  readers.
+- The table's *Search or filter* box is a combobox: the suggestions it
+  offers are announced.
+- The calendar's days sit in rows, one per week, as a grid's cells
+  must.
 - A message at the top of a page, and a toast in the corner, reads on
   one line: its icon and its dismiss button centre on its first line
   of text, where the icon stood a few pixels above it and the text a

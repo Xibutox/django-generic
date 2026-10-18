@@ -130,7 +130,7 @@ def test_found_at_any_depth_then_back(signed_in, terminals):
     expect(row(page, "BK-1 City bicycle")).to_be_visible()
 
     # The articles' own search box, above the tree.
-    find = page.locator(".tree-filters").get_by_role("searchbox")
+    find = page.locator(".tree-filters").get_by_role("combobox")
     find.fill("TB-119")
     find.press("Enter")
 
@@ -179,7 +179,7 @@ def test_the_articles_filters_search_the_tree(signed_in, bom):
     page.goto("/example/article/bom/")
     expect(row(page, "BK-1 City bicycle")).to_be_visible()
 
-    search = page.locator(".tree-filters").get_by_role("searchbox")
+    search = page.locator(".tree-filters").get_by_role("combobox")
     search.fill("kind:assembly")
     search.press("Enter")
 
@@ -201,7 +201,7 @@ def test_a_tab_has_the_filters_too(signed_in, bom):
     tab = page.locator("#related-tree-bom")
     expect(tab.locator(".tree-row", has_text="HB-1 Hub")).to_be_visible()
 
-    search = tab.locator(".tree-filters").get_by_role("searchbox")
+    search = tab.locator(".tree-filters").get_by_role("combobox")
     search.fill("screw")
     search.press("Enter")
 

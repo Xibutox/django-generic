@@ -119,6 +119,33 @@ What `tests/browser/conftest.py` sets up, and why:
 A new scenario opens the page with `page.goto("/example/...")` and
 waits with Playwright's `expect`, never `time.sleep`.
 
+### Accessibility
+
+`tests/browser/test_accessibility.py` opens every kind of page the
+example has - the dashboard, a list, a form, a summary, a delete page,
+the calendar, a grid, an import, a tree, the wiki, the account page,
+the sign-in page - in the light scheme and the dark one, and has
+[axe-core](https://github.com/dequelabs/axe-core) check it against
+WCAG 2.1 levels A and AA: a field with no name a screen reader can
+read, text too pale on its background (4.5:1), an ARIA role where it
+does not belong. A tag is also checked in every colour a record could
+hold, white and black included.
+
+axe-core is vendored for the tests only (`tests/browser/vendor/`,
+MPL-2.0, how to update it in its README) and evaluated through
+Playwright, which the page's Content-Security-Policy does not apply
+to. A failure names the rule, the elements and what to fix:
+
+```text
+color-contrast (serious): Elements must meet minimum color contrast ratio thresholds
+    tr:nth-child(2) > td:nth-child(9) > .tag-list > .tag: Fix any of the
+    following: Element has insufficient color contrast of 4.42 ...
+```
+
+A new kind of page gets a line in `PAGES`: its address and what shows
+it is drawn. `assert_accessible(page)` checks any page a scenario has
+reached, `assert_accessible(page, rules=["color-contrast"])` one rule.
+
 ## Versions tested
 
 | | Oldest | Newest |

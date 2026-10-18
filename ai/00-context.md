@@ -1880,7 +1880,12 @@ Read them via `from generic.conf import generic_settings`.
   connection), the CSRF middleware added, no WebSocket, events from the
   tests' own thread dropped, `DJANGO_ALLOW_ASYNC_UNSAFE`. A behaviour
   of the JavaScript gets a scenario there, waiting with `expect`,
-  never `time.sleep`.
+  never `time.sleep`. `test_accessibility.py` runs axe-core
+  (`tests/browser/vendor/axe.min.js`, tests only, MPL-2.0) on every page
+  type in `PAGES`, light and dark (`emulate_media`, before the page
+  loads), against WCAG 2.1 AA, and tags in any colour; a new page type
+  gets a line there. Tag text is `--tag-ink` (the tag's hue, lightness
+  clamped per scheme): never mix a tag colour into text by hand.
 - CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
   3.12 and 3.13. Where the two Djangos differ, switch on
   `django.VERSION`, never on the Python version, and never name in
