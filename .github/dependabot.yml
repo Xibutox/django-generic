@@ -10,6 +10,14 @@ updates:
     groups:
       python:
         patterns: ["*"]
+  # The versions the images and CI install (scripts/lock.py).
+  - package-ecosystem: pip
+    directory: /requirements
+    schedule:
+      interval: weekly
+    groups:
+      pinned:
+        patterns: ["*"]
   - package-ecosystem: pip
     directory: /docmanager
     schedule:

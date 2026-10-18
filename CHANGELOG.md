@@ -41,6 +41,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   its `SECURITY-CONTROLS.md` maps each choice to ISO/IEC 27001 Annex A.
   See docs/new-project.md.
 
+- `PageSweep` counts queries: `test_rows_cost_the_same_however_many`
+  reads each resource's rows once with one row and once with up to
+  `query_rows` (25), and fails, listing the SQL, when the second costs
+  more - a column reading a relation row by row (an N+1) is caught on a
+  test database of a few records instead of in production. A resource
+  with one record gets a copy of it to compare. Every project's sweep
+  gains the test; `generic.testing.capture_queries` counts the queries
+  of any block. The framework's 32 resources all pass.
+
 ### Security
 - Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
   and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
@@ -219,6 +228,27 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
+
+### Changed
+- Every version pinned: `requirements/constraints.txt`, written by
+  `python scripts/lock.py` from `requirements/constraints.in`, is what
+  the Docker images (`PIP_CONSTRAINT`), the minimal example's and the
+  document manager's images, and every CI job but the version matrix
+  install. Two builds of the same commit now hold the same packages, the
+  ones pip-audit checked; Dependabot proposes their updates weekly, and
+  CI fails when the file no longer matches what `constraints.in` lists.
+- The images run Python 3.13 (3.12 before). CI also tests Python 3.14,
+  Django 6.0 beside the newest (6.1), and PostgreSQL 17 beside 16.
+  `POSTGRES_IMAGE` and `REDIS_IMAGE` choose the database and Redis
+  images of the compose files - 16 stays the default, so an existing
+  volume keeps starting; docs/deployment.md says how to move one to 17.
+  A project written by `scripts/new_project.py` starts on 17.
+- mypy fails CI on a new error: the ones carried today are listed in
+  `scripts/mypy-baseline.txt` (`python scripts/mypy_baseline.py`).
+- `pre-commit install` runs black, isort, flake8 and the catalogs check
+  before each commit (`.pre-commit-config.yaml`, with the versions
+  already installed).
+- CI installs with uv, several times faster than pip.
 
 ### Fixed
 - A message at the top of a page, and a toast in the corner, reads on

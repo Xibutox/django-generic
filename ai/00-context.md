@@ -1854,6 +1854,8 @@ Read them via `from generic.conf import generic_settings`.
   permissions and a stranger → anything below 500), plus every
   generated endpoint per resource — rows, form schema, summary,
   history, each column's `facets/`, both exports, every chart, the
+  rows' query count (25 rows must cost no more queries than one: an
+  N+1 fails, with its SQL; `capture_queries` counts a block's), the
   import's schema and template, a record's transitions — and the
   OpenAPI description. A new page needs no new test; a page whose
   address needs a value adds a record to the `records` fixture (by model
@@ -1887,8 +1889,14 @@ Read them via `from generic.conf import generic_settings`.
   tests' own thread dropped, `DJANGO_ALLOW_ASYNC_UNSAFE`. A behaviour
   of the JavaScript gets a scenario there, waiting with `expect`,
   never `time.sleep`.
-- CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
-  3.12 and 3.13. Where the two Djangos differ, switch on
+- CI runs Django 5.2 on Python 3.10 and 3.11, Django 6.0 on 3.12, the
+  latest Django on 3.13 and 3.14; every other job, and the Docker
+  images, install the versions pinned in `requirements/constraints.txt`
+  (`python scripts/lock.py` rewrites it, after a change to
+  `requirements/constraints.in` - a new dependency goes in both
+  `pyproject.toml` and there, or CI's `lock.py --check` fails). mypy
+  fails on an error not in `scripts/mypy-baseline.txt`
+  (`python scripts/mypy_baseline.py`). Where the two Djangos differ, switch on
   `django.VERSION`, never on the Python version, and never name in
   `filterwarnings` a warning class one of them lacks: pytest refuses to
   start. A `DeprecationWarning` from `generic.*` fails the suite;

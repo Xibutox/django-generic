@@ -262,6 +262,7 @@ page or per resource:
 | `test_page_never_breaks_for_a_stranger` | signed out: below 500 |
 | `test_page_never_breaks_without_permissions` | signed in, allowed nothing: below 500 |
 | `test_resource_endpoints` | rows, form schema, a record's summary and history |
+| `test_rows_cost_the_same_however_many` | the rows endpoint costs as many queries for 25 rows as for one: a column reading a relation row by row (an N+1) fails it, with the queries |
 | `test_every_column_lists_its_values` | each column's `facets/`: 200 or 400, never 500 |
 | `test_resource_exports` | both exports stream |
 | `test_every_chart_draws` | each declared chart |
@@ -277,6 +278,7 @@ What a subclass may set:
 | `expected` | `{url name: (status, ...)}`, where a superuser does not get 200 |
 | `languages` | `("en", "fr")` opens every page in each; empty, once |
 | `value_for(url_name, argument, records)` | the value of an address argument the default cannot work out; call `super()` for the rest |
+| `query_rows` | how many rows the query count compares with one (25) |
 | `urlconf`, `site`, `excluded_namespaces` | another URLconf or site; the namespaces left to their own tests (`admin`, `djdt`) |
 
 The framework's own screens - people, groups, permissions, changes,
@@ -287,6 +289,30 @@ writes - nothing lands in a project's `MEDIA_ROOT` - so its page is
 expected to answer 200 or 404. `scripts/smoke_install.py --sweep` runs such a
 subclass against the installed wheel in CI, so the helper is tested as
 a project uses it.
+
+### Queries that grow with the rows
+
+`test_rows_cost_the_same_however_many` reads each resource's rows twice
+- one row, then up to `query_rows` - and fails when the second costs
+more queries than the first. That is the N+1: a method column, a
+deferred field or a relation read on each row, which costs nothing on a
+test database of three records and a query per row in production. The
+failure lists the queries; the fix is `select_related` or
+`prefetch_related` in `get_queryset`, or an annotation. A resource with
+a single record gets a copy of it (a unique text field gets a suffix);
+one that cannot be copied, and has fewer than two rows, is skipped -
+give `records` a second record to have it measured.
+
+Elsewhere, `generic.testing.capture_queries` counts the queries of a
+block:
+
+```python
+from generic.testing import capture_queries
+
+with capture_queries() as queries:
+    client.get(url)
+assert len(queries) <= 6, queries.captured
+```
 
 ## Fixtures
 
@@ -396,21 +422,35 @@ flake8 generic tests example example_project minimal docmanager scripts debug.py
 bandit -r generic example docmanager minimal -ll --skip B101
 pip-audit --skip-editable --ignore-vuln CVE-2026-106454   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
-mypy generic               # reported, not blocking: see below
+python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt
+python scripts/lock.py --check     # requirements/constraints.txt matches constraints.in
 ```
 
-CI runs the linters once, the suite on Python 3.10 to 3.13 - the oldest
-Django and DRF accepted included - against SQLite, once more against
-Postgres and Redis, the browser tests, and the package job above. Coverage must stay at or
-above 80%; it sits at 93%. mypy reports without failing the build:
-django-stubs trails the Django versions the framework runs on, and most
-of what it says is that.
+`pre-commit install` (`pip install pre-commit`, part of the `dev`
+extra) runs black, isort, flake8 and the catalogs check before each
+commit, with the versions already installed (`.pre-commit-config.yaml`).
+
+CI runs the linters once, the suite on Python 3.10 to 3.14 - the oldest
+Django and DRF accepted included, and the previous Django - against
+SQLite, once more against Postgres 16 and 17 and Redis, the browser tests, and the package job above. Coverage must stay at or
+above 80%; it sits at 93%. mypy fails the build on a new error
+only: the ones carried today - django-stubs trails the Django versions
+the framework runs on, and most of what it says is that - are listed in
+`scripts/mypy-baseline.txt`, by file and message, not by line. Fixing
+one is welcome; `python scripts/mypy_baseline.py --update` then shrinks
+the list.
+
+Every job but the version matrix installs the versions pinned in
+`requirements/constraints.txt` - the ones the Docker images ship -
+with `-c requirements/constraints.txt`; the matrix takes the newest
+releases instead, to hear about a break early. `python scripts/lock.py`
+rewrites the file (docs/deployment.md, *The images*).
 
 Two pipelines describe the same thing, for whichever host a project
 uses: `.github/workflows/ci.yml` and `.gitlab-ci.yml`. The GitLab one
 runs everything in containers on a Docker executor — the linters and the
-catalogs check, the suite over the four Python versions, the browser
-tests, the suite again against `postgres:16` and `redis:7` as services,
+catalogs check, the suite over the Python versions, the browser
+tests, the suite again against `postgres:16` and `postgres:17` with `redis:7` as services,
 the wheel built and tried by `scripts/smoke_install.py`, then
 `docker/Dockerfile` built, run (`pytest`, `manage.py check`) and pushed
 to the project's registry on the default branch and on tags. The
