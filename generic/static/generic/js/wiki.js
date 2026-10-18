@@ -12,8 +12,8 @@
  * image moves up and down the page with the toolbar's arrows or
  * Alt+Up / Alt+Down, so the page is ordered the way its writer wants.
  *
- * The list of wikis (`wikiList`) creates, renames and deletes them,
- * through the same API.
+ * The list of wikis (`wikiList`) creates, renames, deletes and imports
+ * them, through the same API.
  */
 (function (window, document) {
   "use strict";
@@ -1586,6 +1586,71 @@
 
       return {
         config: config,
+        importing: false,
+
+        /** The file chooser for an archive to import. */
+        chooseArchive: function () {
+          if (this.$refs.archive && !this.importing) {
+            this.$refs.archive.value = "";
+            this.$refs.archive.click();
+          }
+        },
+
+        /**
+         * A new wiki from the archive chosen: its pages, images and
+         * files, as another site - or this one - exported them.
+         */
+        importArchive: function (event) {
+          var self = this;
+          var file = event.target.files && event.target.files[0];
+          var limit = config.importMaxSize;
+
+          if (!file) {
+            return;
+          }
+
+          if (limit && file.size > limit) {
+            Generic.toast(
+              Generic.format(t("The archive is too large: at most %(limit)s."), {
+                limit: Generic.formatSize(limit)
+              }),
+              "error"
+            );
+            return;
+          }
+
+          var body = new FormData();
+
+          body.append("file", file, file.name);
+          self.importing = true;
+          Generic.toast(t("Importing the wiki..."), "info");
+
+          Generic.api
+            .post(config.importUrl, body)
+            .then(function (data) {
+              var message = Generic.format(
+                t("The wiki was imported: %(pages)s pages, %(images)s images, %(files)s files."),
+                { pages: data.pages, images: data.images, files: data.files }
+              );
+
+              if (data.skipped && data.skipped.length) {
+                message +=
+                  " " +
+                  Generic.format(t("Left out: %(names)s."), {
+                    names: data.skipped.join(", ")
+                  });
+              }
+
+              Generic.flash(message, data.skipped && data.skipped.length ? "warning" : "success");
+              window.location.assign(data.url);
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The wiki could not be imported."), "error");
+            })
+            .then(function () {
+              self.importing = false;
+            });
+        },
 
         create: function () {
           ask(t("New wiki"), null, t("Create")).then(function (values) {

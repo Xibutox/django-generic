@@ -85,6 +85,12 @@
   margin-bottom: var(--space-2);
 }
 
+.wiki__menu-downloads {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .wiki__menu-name {
   display: inline-flex;
   align-items: center;

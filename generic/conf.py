@@ -123,6 +123,9 @@ DEFAULTS: dict[str, Any] = {
     # ...}. None looks for DejaVu, Liberation or Arial where the system
     # keeps them, and falls back on the PDF's own fonts (Latin-1 only).
     "WIKI_PDF_FONTS": None,
+    # The largest wiki archive (``export.zip``) an import takes, in
+    # bytes: the upload, and everything it holds once unpacked.
+    "WIKI_ARCHIVE_MAX_SIZE": 100 * 1024 * 1024,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

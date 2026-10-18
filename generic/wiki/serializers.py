@@ -79,6 +79,8 @@ class WikiSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     #: Where the whole wiki is downloaded as a PDF; empty when it cannot.
     pdf_url = serializers.SerializerMethodField()
+    #: Where the wiki is downloaded as an archive to import elsewhere.
+    archive_url = serializers.SerializerMethodField()
     page_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -91,6 +93,7 @@ class WikiSerializer(serializers.ModelSerializer):
             "position",
             "url",
             "pdf_url",
+            "archive_url",
             "page_count",
         )
         extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
@@ -102,6 +105,9 @@ class WikiSerializer(serializers.ModelSerializer):
         from generic.wiki.pdf import available
 
         return wiki.get_pdf_url() if wiki.pk and available() else ""
+
+    def get_archive_url(self, wiki: Wiki) -> str:
+        return wiki.get_archive_url() if wiki.pk else ""
 
     def get_page_count(self, wiki: Wiki) -> int:
         count = getattr(wiki, "page_count", None)

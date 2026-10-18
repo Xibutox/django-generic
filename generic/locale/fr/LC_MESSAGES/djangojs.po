@@ -2262,3 +2262,23 @@ msgstr "Cochez entre 2 et %(count)s lignes pour les comparer."
 #: generic/static/generic/js/charts.js
 msgid "Total"
 msgstr "Total"
+
+#: generic/static/generic/js/wiki.js
+msgid "The archive is too large: at most %(limit)s."
+msgstr "L’archive est trop volumineuse : %(limit)s au plus."
+
+#: generic/static/generic/js/wiki.js
+msgid "Importing the wiki..."
+msgstr "Import du wiki…"
+
+#: generic/static/generic/js/wiki.js
+msgid "The wiki was imported: %(pages)s pages, %(images)s images, %(files)s files."
+msgstr "Le wiki a été importé : %(pages)s pages, %(images)s images, %(files)s fichiers."
+
+#: generic/static/generic/js/wiki.js
+msgid "Left out: %(names)s."
+msgstr "Laissés de côté : %(names)s."
+
+#: generic/static/generic/js/wiki.js
+msgid "The wiki could not be imported."
+msgstr "Le wiki n’a pas pu être importé."

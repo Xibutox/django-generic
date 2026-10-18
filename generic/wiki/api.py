@@ -5,6 +5,8 @@
 ``POST   wikis/``                  a new wiki
 ``PATCH  wikis/<id>/``             rename it, describe it, move it
 ``DELETE wikis/<id>/``             delete it, with its pages
+``POST   wikis/import/``           a new wiki from an archive
+                                   (multipart ``file``, ``name``)
 ``GET    pages/``                  the menu: every page, no content;
                                    ``?wiki=<id>`` for one wiki's
 ``POST   pages/``                  a new page, in ``wiki``
@@ -176,6 +178,69 @@ class WikiViewSet(viewsets.ModelViewSet):
             .annotate(page_count=Count("pages"))
             .order_by("position", "name")
         )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="import",
+        url_name="import",
+        parser_classes=(MultiPartParser,),
+    )
+    def import_archive(self, request: Any) -> Response:
+        """A new wiki from an archive another site - or this one -
+        exported (``generic.wiki.archive``): for whoever may add a wiki
+        and its pages."""
+        from generic.wiki.archive import ArchiveError, import_archive
+
+        user = request.user
+
+        if not can(user, "add"):
+            raise PermissionDenied(gettext("You may not add pages to a wiki."))
+
+        upload = request.FILES.get("file")
+
+        if upload is None:
+            return WikiImageUploadView.refuse(
+                gettext("Choose a wiki archive to import.")
+            )
+
+        limit = generic_settings.WIKI_ARCHIVE_MAX_SIZE
+
+        if limit and upload.size > limit:
+            return WikiImageUploadView.refuse(
+                gettext("The archive is too large: at most %(limit)s.")
+                % {"limit": filesizeformat(limit)}
+            )
+
+        name = request.data.get("name")
+
+        def writable(wiki: Wiki) -> None:
+            # Made where the project's rules would not let them write:
+            # as if never imported.
+            if not may_write_in(user, wiki.pk):
+                raise PermissionDenied(
+                    gettext("You may not write in this wiki.")
+                )
+
+        try:
+            result = import_archive(
+                upload,
+                user=user,
+                name=name if isinstance(name, str) else "",
+                check=writable,
+            )
+        except ArchiveError as error:
+            return WikiImageUploadView.refuse(str(error))
+
+        data = WikiSerializer(result.wiki, context={"request": request}).data
+        data.update(
+            pages=result.pages,
+            images=result.images,
+            files=result.files,
+            skipped=result.skipped,
+        )
+
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class WikiPageViewSet(viewsets.ModelViewSet):
