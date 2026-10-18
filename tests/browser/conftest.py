@@ -121,6 +121,9 @@ def csrf_protection():
         ),
         "django.middleware.csrf.CsrfViewMiddleware",
     )
+    # And the Content-Security-Policy the examples send: a script or a
+    # style it blocks is a console error, which fails the test (below).
+    middleware.insert(0, "generic.middleware.CSPMiddleware")
 
     with override_settings(MIDDLEWARE=middleware):
         yield
@@ -148,7 +151,11 @@ def no_websocket(settings):
     The pages would try ``/ws/events/`` and fill the console with
     failed attempts. The live events are the channels tests' subject.
     """
-    settings.GENERIC = {**settings.GENERIC, "EVENTS_WEBSOCKET_URL": None}
+    settings.GENERIC = {
+        **settings.GENERIC,
+        "EVENTS_WEBSOCKET_URL": None,
+        "CONTENT_SECURITY_POLICY": "recommended",
+    }
 
 
 @pytest.fixture(autouse=True)

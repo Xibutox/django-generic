@@ -63,7 +63,7 @@ FROM base AS dev
 
 ARG BEAT_PACKAGES
 
-RUN pip install ".[export,import,api,fsm,events,tasks,postgres,wiki,results,dev]" \
+RUN pip install ".[export,import,api,fsm,events,tasks,postgres,wiki,results,argon2,dev]" \
     && pip install --no-deps "django-celery-beat>=2.6" \
     && pip install ${BEAT_PACKAGES}
 
@@ -90,7 +90,7 @@ FROM base AS app
 
 ARG BEAT_PACKAGES
 
-RUN pip install ".[export,import,api,fsm,events,tasks,postgres,wiki,results]" \
+RUN pip install ".[export,import,api,fsm,events,tasks,postgres,wiki,results,argon2]" \
     && pip install --no-deps "django-celery-beat>=2.6" \
     && pip install ${BEAT_PACKAGES}
 

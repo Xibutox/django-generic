@@ -38,7 +38,7 @@ COPY generic/ ./generic/
 # The versions CI tested (scripts/lock.py).
 COPY requirements/constraints.txt ./
 COPY docmanager/requirements.txt ./
-RUN pip install -c constraints.txt ".[export,wiki,postgres]" -r requirements.txt \
+RUN pip install -c constraints.txt ".[export,wiki,postgres,argon2]" -r requirements.txt \
     "gunicorn>=22" "redis>=5.0" \
     && rm -rf /src
 

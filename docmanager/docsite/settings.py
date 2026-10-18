@@ -44,6 +44,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # The Content-Security-Policy: nothing from elsewhere runs.
+    "generic.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # After the session, before the common middleware: the language of
     # the page, from the cookie or the browser.
@@ -55,6 +57,8 @@ MIDDLEWARE = [
     "generic.middleware.UserLanguageMiddleware",
     "generic.middleware.CurrentUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    # A session left alone for SESSION_IDLE_MINUTES is signed out.
+    "generic.middleware.SessionIdleMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -151,8 +155,50 @@ if django.VERSION >= (6, 1):
 else:
     EMAIL_BACKEND = CONSOLE_MAIL
 
+# What a password set on the People screens is checked against: Django's
+# own four, twelve characters at least (ISO/IEC 27002 5.17). Without
+# them any password is accepted.
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "NumericPasswordValidator"
+    },
+]
+
+# Argon2 first when argon2-cffi is installed (the image installs it);
+# the others still read older hashes and upgrade them at sign-in.
+try:
+    import argon2  # noqa: F401
+except ImportError:  # pragma: no cover - not installed
+    pass
+else:
+    PASSWORD_HASHERS = [
+        "django.contrib.auth.hashers.Argon2PasswordHasher",
+        "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+        "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+        "django.contrib.auth.hashers.ScryptPasswordHasher",
+    ]
+
+# A working day at most, an hour left alone.
+SESSION_COOKIE_AGE = 8 * 60 * 60
+
 GENERIC = {
     "SITE_TITLE": "Documents",
+    "SESSION_IDLE_MINUTES": 60,
+    "CONTENT_SECURITY_POLICY": "recommended",
     "SITE_ICON": "folder_open",
     "THEME": {"--ui-hue": "250"},
     "EVENTS_WEBSOCKET_URL": None,

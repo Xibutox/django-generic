@@ -51,6 +51,33 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   of any block. The framework's 32 resources all pass.
 
 ### Security
+- Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
+  and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
+  for that long. What a page fetches by itself carries `X-Generic-Idle`
+  (seconds since the reader last clicked, typed or scrolled), so a live
+  table refreshing all night keeps nobody signed in; the refused page
+  reloads onto the sign-in page, which says why. The example, the
+  document manager and new projects: an hour, in a session of a working
+  day at most (`SESSION_COOKIE_AGE`, the example's was Django's two
+  weeks).
+- A Content-Security-Policy: `generic.middleware.CSPMiddleware` and
+  `GENERIC["CONTENT_SECURITY_POLICY"]` (`"recommended"`, or directives of
+  your own; `CONTENT_SECURITY_POLICY_REPORT_ONLY` to try it). Nothing
+  from elsewhere runs in a page; the framework's three inline scripts
+  carry the request's nonce (`{% csp_nonce %}`), and the API docs page
+  loads its script from its own address. The browser tests run under
+  it, so a page it would break fails CI. On in the example, the document
+  manager and new projects.
+- API rate limits in the example and new projects: DRF's throttles, 600
+  requests a minute per person and 60 per signed-out address
+  (`DJANGO_API_RATE_USER`, `DJANGO_API_RATE_ANON`).
+- Argon2: the `argon2` extra (`argon2-cffi`); the example and the
+  document manager hash with it when it is installed, as their images
+  do, and rehash older passwords at the next sign-in.
+- Password rules in the minimal example and the document manager, which
+  accepted any password: Django's four validators, twelve characters at
+  least. See docs/security.md.
+
 - Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
   `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
   record - is written to Excel as a text cell, and to the CSV behind an
