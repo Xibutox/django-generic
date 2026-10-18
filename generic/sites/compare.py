@@ -171,6 +171,11 @@ def answer(resource: Any, request: Any, queryset: Any, value: Any) -> dict:
             values = [
                 describe_entry(resource, request, obj, name) for obj in records
             ]
+
+            # A field the reader may not see (field_permissions): no row.
+            if values and all(entry.get("hidden") for entry in values):
+                continue
+
             label = values[0]["label"] if values else name
             prints = {fingerprint(entry) for entry in values}
 

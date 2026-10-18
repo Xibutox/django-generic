@@ -705,10 +705,9 @@ class Chart:
         count = len(payload["categories"])
         truncated = len(series) > PIVOT_COLUMNS or count > PIVOT_ROWS
         count = min(count, PIVOT_ROWS)
-        cut = {
-            name: payload[name][:count]
-            for name in ("categories", "keys", "ranges", "colors")
-            if name in payload
+        names: tuple[str, ...] = ("categories", "keys", "ranges", "colors")
+        cut: dict[str, Any] = {
+            name: payload[name][:count] for name in names if name in payload
         }
         series = [
             dict(entry, data=entry["data"][:count])

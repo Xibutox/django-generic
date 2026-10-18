@@ -54,7 +54,11 @@ the framework draws or answers:
   does not offer it, and refuses it when asked;
 - the [trees](trees.md) and their flat tables, the
   [calendars'](calendars.md) labels and cells, the dashboard's cards:
-  the value is described as empty;
+  the value is described as empty, and so on a [board's](boards.md)
+  cards and a [label](labels.md);
+- a [board](boards.md) whose columns are that field is not opened: its
+  page asks for the field's permission too;
+- a [comparison](compare.md) has no row for it;
 - [files](files.md): a hidden file field is not downloaded.
 
 Without a request - a task, a management command - every guarded field
@@ -71,7 +75,7 @@ never written:
   is refused (`may_write_column`);
 - [bulk edit](bulk-edit.md), [grids](editable.md#any-set-of-records-declared-grids) and imports refuse it;
 - a [calendar](calendars.md) whose date (or end) is locked is not
-  dragged.
+  dragged, nor a [board's](boards.md) card whose column is.
 
 A locked field that the model requires needs a default: the form
 cannot ask for it, so a new record is created without it.
