@@ -107,3 +107,60 @@ def test_it_is_remembered_and_saved_with_the_views(signed_in):
 
     page.evaluate(f"{TABLE}.resetLayout()")
     expect(panel(page)).to_be_hidden()
+
+
+def pivot(page):
+    return panel(page).locator(".pivot-table")
+
+
+def open_pivot(page):
+    button(page).click()
+    panel(page).get_by_role("button", name="Table").click()
+    control(page, "Split by").locator("select").select_option("team")
+    expect(pivot(page).locator("thead")).to_contain_text("Front office")
+
+
+def test_a_table_crosses_two_fields_with_totals(signed_in, desk):
+    from example.models import Ticket
+
+    page = signed_in
+    open_pivot(page)
+
+    expect(panel(page).locator("canvas").first).to_be_hidden()
+    expect(pivot(page).locator("thead th").last).to_have_text("Total")
+    # Every ticket of the list, in the bottom right corner.
+    expect(pivot(page).locator(".pivot-table__all")).to_have_text(
+        str(Ticket.objects.count())
+    )
+
+
+def test_a_figure_clicked_filters_the_table(signed_in, desk):
+    from example.models import Ticket
+
+    page = signed_in
+    open_pivot(page)
+    urgent = Ticket.objects.filter(priority="urgent")
+    expected = urgent.filter(team__name="Front office").count()
+
+    row = pivot(page).locator("tbody tr", has_text="Urgent")
+    column = [
+        (text or "").strip()
+        for text in pivot(page).locator("thead th").all_text_contents()
+    ].index("Front office")
+    row.locator("td, th").nth(column).locator("button").click()
+
+    expect(page.locator(".dt-chip")).to_have_count(2)
+    expect(page.locator("#datatable tbody tr")).to_have_count(expected)
+
+
+def test_the_table_downloads_as_csv(signed_in, desk):
+    page = signed_in
+    open_pivot(page)
+
+    with page.expect_download() as caught:
+        panel(page).get_by_title("Download as CSV").click()
+
+    text = open(caught.value.path(), encoding="utf-8-sig").read()
+
+    assert text.splitlines()[0].endswith(",Total")
+    assert text.splitlines()[-1].startswith("Total,")

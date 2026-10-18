@@ -242,6 +242,98 @@ class TestTheChart:
         assert sum(body["series"][0]["data"]) == Ticket.objects.count()
 
 
+class TestThePivotTable:
+    """``pivot``: the figures crossed, with totals that are aggregates
+    of their own."""
+
+    def get(self, client, url=TICKETS, **params):
+        response = client.get(url, {"type": "pivot", **params})
+
+        assert response.status_code == 200, response.content
+
+        return response.json()
+
+    def test_it_is_offered_last(self):
+        assert offered(described(Equipment)["types"])[-1] == "pivot"
+
+    def test_a_row_per_value_a_column_per_other_value_and_totals(
+        self, admin_client, support_desk
+    ):
+        body = self.get(admin_client, group_by="team", split_by="priority")
+
+        assert body["type"] == "pivot"
+        assert body["categories"] == ["Front office", "Infrastructure"]
+        assert {entry["name"]: entry["data"] for entry in body["series"]} == {
+            "Low": [1, 0],
+            "Normal": [0, 1],
+            "High": [1, 0],
+        }
+        assert body["totals"] == {
+            "rows": [2, 1],
+            "columns": [1, 1, 1],
+            "all": 3,
+        }
+        assert body["truncated"] is False
+
+    def test_one_field_is_a_column_and_its_total(
+        self, admin_client, support_desk
+    ):
+        body = self.get(admin_client, group_by="team")
+
+        assert body["series"][0]["data"] == [2, 1]
+        assert body["totals"]["all"] == 3
+
+    def test_the_total_of_an_average_is_the_average_of_every_row(
+        self, admin_client, workshop
+    ):
+        # A laptop at 1,200 and a headset at 0.
+        body = self.get(
+            admin_client, EQUIPMENT, group_by="kind", value="avg:price"
+        )
+        rows = dict(zip(body["categories"], body["totals"]["rows"]))
+
+        assert rows == {"Laptop": 1200.0, "Headset": 0}
+        # The average of both rows - not 1,200 + 0, the averages added.
+        assert body["totals"]["all"] == 600.0
+
+    def test_no_other_row_gathers_the_rest(self, admin_client, support_desk):
+        from example.models import Team
+
+        for index in range(25):
+            team = Team.objects.create(name=f"Team {index}", code=f"T{index}")
+            Ticket.objects.create(
+                reference=f"PV-{index}", title="Pivot", team=team
+            )
+
+        body = self.get(admin_client, group_by="team")
+
+        assert "Other" not in body["categories"]
+        assert len(body["categories"]) == 27
+        assert body["totals"]["all"] == Ticket.objects.count()
+
+    def test_past_its_size_it_says_it_is_cut_and_still_counts_all(
+        self, admin_client, support_desk, monkeypatch
+    ):
+        from generic.sites import charts
+
+        monkeypatch.setattr(charts, "PIVOT_ROWS", 1)
+        body = self.get(admin_client, group_by="team", split_by="priority")
+
+        assert body["categories"] == ["Front office"]
+        assert all(len(entry["data"]) == 1 for entry in body["series"])
+        assert body["truncated"] is True
+        assert body["totals"]["all"] == 3
+
+    def test_it_follows_the_tables_filters(self, admin_client, support_desk):
+        body = self.get(
+            admin_client,
+            group_by="team",
+            search="invoice",
+        )
+
+        assert body["totals"]["all"] == 2
+
+
 class TestRefusals:
     @pytest.mark.parametrize(
         "params, field",

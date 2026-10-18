@@ -3,6 +3,7 @@
 {# a genericChart component.                                            #}
 <button type="button"
         class="icon-button icon-button--sm"
+        x-show="!isPivot()"
         @click="toggleView()"
         :aria-pressed="(view === 'table').toString()"
         :title="view === 'table' ? '{{ _('Show the chart')|escapejs }}' : '{{ _('Show the figures')|escapejs }}'">
@@ -14,8 +15,8 @@
 <button type="button"
         class="icon-button icon-button--sm"
         @click="download()"
-        :disabled="!payload || payload.empty || view !== 'chart'"
-        title="{% translate 'Download as an image' %}">
-  {% translate "Download as an image" as download_label %}
-  {% icon "download" "icon--sm" download_label %}
+        :disabled="!payload || payload.empty || (view !== 'chart' && !isPivot())"
+        :title="isPivot() ? '{{ _('Download as CSV')|escapejs }}' : '{{ _('Download as an image')|escapejs }}'">
+  <span class="icon material-symbols-outlined icon--sm" aria-hidden="true">download</span>
+  <span class="sr-only" x-text="isPivot() ? '{{ _('Download as CSV')|escapejs }}' : '{{ _('Download as an image')|escapejs }}'">{% translate "Download as an image" %}</span>
 </button>

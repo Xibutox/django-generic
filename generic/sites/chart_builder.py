@@ -33,6 +33,7 @@ What it has to get right:
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 from typing import Any, Sequence
 
@@ -46,7 +47,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from generic.sites.auto import is_private
-from generic.sites.charts import PERIOD_LABELS, PERIODS, Chart
+from generic.sites.charts import PERIOD_LABELS, PERIODS, PIVOT, Chart
 
 #: What the panel offers to draw, with the icon of each.
 TYPES = {
@@ -57,8 +58,10 @@ TYPES = {
     "donut": (_("Donut"), "donut_large"),
     "funnel": (_("Funnel"), "filter_alt"),
     "heatmap": (_("Heatmap"), "grid_on"),
+    # Not a drawing: the figures crossed, with their totals.
+    "pivot": (_("Table"), "pivot_table_chart"),
 }
-DEFAULT_TYPES = ("bar", "line", "area", "pie", "donut", "heatmap")
+DEFAULT_TYPES = ("bar", "line", "area", "pie", "donut", "heatmap", "pivot")
 
 #: Forms with one series only: a second field means nothing to them.
 SINGLE_SERIES = frozenset({"pie", "donut", "funnel"})
@@ -255,6 +258,27 @@ class BoundChartBuilder:
         self.measures = self.resolve_measures()
         self.types = tuple(declaration.types)
 
+    def without(self, hidden: Any) -> BoundChartBuilder | None:
+        """This builder for a reader who may not see ``hidden``
+        (``field_permissions``): what is grouped or summed through one of
+        them is not offered. None when nothing is left to group by."""
+        if not hidden:
+            return self
+
+        bound = copy.copy(self)
+        bound.dimensions = {
+            path: entry
+            for path, entry in self.dimensions.items()
+            if path.split("__")[0] not in hidden
+        }
+        bound.measures = {
+            key: entry
+            for key, entry in self.measures.items()
+            if not entry.path or entry.path.split("__")[0] not in hidden
+        }
+
+        return bound if bound.dimensions else None
+
     # -- what is offered ----------------------------------------------------
 
     def resolve_dimensions(self) -> dict[str, Dimension]:
@@ -411,6 +435,8 @@ class BoundChartBuilder:
 
         measure = self.measures[value]
         dates = self.dimensions[group_by].kind == "date"
+        # A table keeps every row: an "Other" row would add up averages.
+        limit = None if dates or kind == PIVOT else LIMITS.get(kind, LIMIT)
 
         return Chart(
             "builder",
@@ -425,7 +451,7 @@ class BoundChartBuilder:
             periods=PERIODS,
             stacked=bool(split_by) and is_on(params.get("stacked")),
             horizontal=kind == "bar" and is_on(params.get("horizontal")),
-            limit=None if dates else LIMITS.get(kind, LIMIT),
+            limit=limit,
         )
 
     def title(self, measure: Measure, group_by: str, split_by: str) -> str:

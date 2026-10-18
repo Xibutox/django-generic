@@ -13,6 +13,51 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Field permissions: `field_permissions` on a resource names who may
+  see a field and who may change it (`{"unit_cost":
+  "example.change_article"}`, or `(view, change)`). A field a reader
+  may not see is gone for them from the list's columns, filters,
+  ordering, search and facets, the exports and mailings, the form, the
+  record's JSON, imports, the summary's sections and figures, the
+  history tab, charts and the chart builder, trees and calendars. A
+  field they may see but not change is read only in the form and
+  refused in table cells, grids, bulk edits, imports and calendar
+  moves. The example's articles show their cost to who may change
+  them. See docs/field-permissions.md.
+- Accessibility checks: the browser tests run axe-core (vendored for
+  the tests only) on every kind of page of the example, light and dark,
+  against WCAG 2.1 AA, and on a tag in any colour. See docs/testing.md.
+- Boards: records as cards, a column per value of a field - a choice,
+  a yes or no, or a foreign key - with *Not set* for records without
+  one. `boards = (Board("name", field=..., ...),)` on a resource gives
+  a page `<model>/<name>/` with the list's search and filters above
+  it, each column's count and first 100 cards, cards coloured by a tag
+  field and showing the values named in `fields`. With
+  `editable=True`, a card dragged to another column - or sent there
+  from its *Move to* menu, by keyboard - takes that value, written
+  through `save_editable` (the field must be in `editable_fields`; a
+  state field stays read only). `GET api/<app>/<model>/boards/<name>/`
+  and `PATCH api/<app>/<model>/<pk>/boards/<name>/` `{"column"}`. In the
+  example: *Support › Priorities*, tickets by priority. See
+  docs/boards.md.
+- Records side by side: `compare_fields` on a resource (`True` for
+  the summary page's sections, or a tuple of fields) puts *Compare the
+  selected ...* in the list's selection bar, for two to six rows
+  ticked. The page `<model>/compare/?ids=3,8,12` shows a column per
+  record and a row per field, each value drawn as the summary page
+  draws it, the rows that differ marked, a switch showing only them,
+  and records taken out one by one. Records come through the list's
+  queryset and each one's view permission.
+  `GET api/<app>/<model>/compare/?ids=`. In the example: tickets and
+  articles. See docs/compare.md.
+- Pivot tables: the chart builder's new *Table* form crosses the
+  chosen fields in a table of figures - a row per value of the first,
+  a column per value of the second - with a total column, a total row
+  and the grand total, each its own aggregate (the total of an average
+  is the average of every row). Figures are tinted by size, a click on
+  one filters the table, and the table downloads as CSV. Every row is
+  kept, with no *Other*, up to 200 rows and 50 columns. A declared
+  `Chart(type="pivot", ...)` draws the same table. See docs/charts.md.
 - Labels with QR codes: `labels = True` or `Labels(fields=...,
   size=..., content=...)` on a resource adds the bulk action *Print
   labels* (the rows ticked or every matching row, up to 500) and a
@@ -50,7 +95,43 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   its `SECURITY-CONTROLS.md` maps each choice to ISO/IEC 27001 Annex A.
   See docs/new-project.md.
 
+- `PageSweep` counts queries: `test_rows_cost_the_same_however_many`
+  reads each resource's rows once with one row and once with up to
+  `query_rows` (25), and fails, listing the SQL, when the second costs
+  more - a column reading a relation row by row (an N+1) is caught on a
+  test database of a few records instead of in production. A resource
+  with one record gets a copy of it to compare. Every project's sweep
+  gains the test; `generic.testing.capture_queries` counts the queries
+  of any block. The framework's 32 resources all pass.
+
 ### Security
+- Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
+  and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
+  for that long. What a page fetches by itself carries `X-Generic-Idle`
+  (seconds since the reader last clicked, typed or scrolled), so a live
+  table refreshing all night keeps nobody signed in; the refused page
+  reloads onto the sign-in page, which says why. The example, the
+  document manager and new projects: an hour, in a session of a working
+  day at most (`SESSION_COOKIE_AGE`, the example's was Django's two
+  weeks).
+- A Content-Security-Policy: `generic.middleware.CSPMiddleware` and
+  `GENERIC["CONTENT_SECURITY_POLICY"]` (`"recommended"`, or directives of
+  your own; `CONTENT_SECURITY_POLICY_REPORT_ONLY` to try it). Nothing
+  from elsewhere runs in a page; the framework's three inline scripts
+  carry the request's nonce (`{% csp_nonce %}`), and the API docs page
+  loads its script from its own address. The browser tests run under
+  it, so a page it would break fails CI. On in the example, the document
+  manager and new projects.
+- API rate limits in the example and new projects: DRF's throttles, 600
+  requests a minute per person and 60 per signed-out address
+  (`DJANGO_API_RATE_USER`, `DJANGO_API_RATE_ANON`).
+- Argon2: the `argon2` extra (`argon2-cffi`); the example and the
+  document manager hash with it when it is installed, as their images
+  do, and rehash older passwords at the next sign-in.
+- Password rules in the minimal example and the document manager, which
+  accepted any password: Django's four validators, twelve characters at
+  least. See docs/security.md.
+
 - Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
   `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
   record - is written to Excel as a text cell, and to the CSV behind an
@@ -202,7 +283,39 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   *Landscape* (`export.pdf?orientation=landscape`;
   `generic.wiki.pdf.render(wiki, orientation="landscape")`).
 
+### Changed
+- Every version pinned: `requirements/constraints.txt`, written by
+  `python scripts/lock.py` from `requirements/constraints.in`, is what
+  the Docker images (`PIP_CONSTRAINT`), the minimal example's and the
+  document manager's images, and every CI job but the version matrix
+  install. Two builds of the same commit now hold the same packages, the
+  ones pip-audit checked; Dependabot proposes their updates weekly, and
+  CI fails when the file no longer matches what `constraints.in` lists.
+- The images run Python 3.13 (3.12 before). CI also tests Python 3.14,
+  Django 6.0 beside the newest (6.1), and PostgreSQL 17 beside 16.
+  `POSTGRES_IMAGE` and `REDIS_IMAGE` choose the database and Redis
+  images of the compose files - 16 stays the default, so an existing
+  volume keeps starting; docs/deployment.md says how to move one to 17.
+  A project written by `scripts/new_project.py` starts on 17.
+- mypy fails CI on a new error: the ones carried today are listed in
+  `scripts/mypy-baseline.txt` (`python scripts/mypy_baseline.py`).
+- `pre-commit install` runs black, isort, flake8 and the catalogs check
+  before each commit (`.pre-commit-config.yaml`, with the versions
+  already installed).
+- CI installs with uv, several times faster than pip.
+
 ### Fixed
+- Tags keep a readable text whatever colour a record gives them: its
+  lightness is held where it reads on the tag's background in either
+  scheme (4.5:1); an orange tag read at 4.4:1, a white one at 2:1.
+- The warning colour (badges, the appearance preview) reads at 4.5:1 on
+  its background.
+- A Select2 choosing several values is named after its label for screen
+  readers.
+- The table's *Search or filter* box is a combobox: the suggestions it
+  offers are announced.
+- The calendar's days sit in rows, one per week, as a grid's cells
+  must.
 - A message at the top of a page, and a toast in the corner, reads on
   one line: its icon and its dismiss button centre on its first line
   of text, where the icon stood a few pixels above it and the text a

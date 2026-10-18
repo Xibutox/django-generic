@@ -112,7 +112,8 @@ generic/
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
 │   │                       _grid, cells, rows, trees/<name>/, kpis/<name>/,
-│   │                       cards/<name>/, calendars/<name>/)
+│   │                       cards/<name>/, calendars/<name>/, boards/<name>/,
+│   │                       compare/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
@@ -121,6 +122,9 @@ generic/
 │   │                       (self FK or link model), a level at a time; no cycles
 │   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
 │   │                       days, a page each, moved by dragging (§5.20)
+│   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
+│   │                       per value of a field, moved by dragging (§5.22)
+│   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
 │   ├── labels.py           Labels, LabelSheetView: stickers with a QR code, printed (§5.24)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
@@ -249,6 +253,8 @@ generic/
     │                       element (tree, cards, calendar); loaded by base.html
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
+    ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
+    ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/bulk_edit.js     Generic.bulkEdit.open: the selection bar's bulk edit dialog (§5.21)
     ├── js/wiki.js          Alpine wikiPage
@@ -496,6 +502,10 @@ LANGUAGES = [("en", _("English")), ("fr", _("French"))]
 MIDDLEWARE = [..., "django.middleware.locale.LocaleMiddleware",         # after the session
               ..., "generic.middleware.UserLanguageMiddleware",         # after the auth
               "generic.middleware.CurrentUserMiddleware", ...]          # who the history records
+# Optional guards (docs/security.md): "generic.middleware.CSPMiddleware"
+# right after SecurityMiddleware, "generic.middleware.SessionIdleMiddleware"
+# after MessageMiddleware; GENERIC["CONTENT_SECURITY_POLICY"] = "recommended",
+# GENERIC["SESSION_IDLE_MINUTES"] = 60.
 ```
 
 ```python
@@ -646,6 +656,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
 | `editable_fields` | `()` | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
+| `field_permissions` | `{}` | `{field: "app.perm" \| (view, change) \| {"view", "change"}}`: who sees, who changes one field (`None`: the record's own permission). Hidden fields leave `get_rows_serializer_class(request)` / `get_form_serializer_for(request)` (`serializers.restricted`), search (`visible_paths`), summary, history, charts (`Chart.get_fields_read`), the chart builder (`get_chart_builder_for`), trees, calendars, cards (`describe_entry` answers empty); locked ones are read only and refused by `may_write_column` (every write). No request: all guarded hidden. Per reader, not per record. `docs/field-permissions.md` |
 | `list_editable` | `False` | whether the resource's own list page offers those cells |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
@@ -672,6 +683,8 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
+| `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
+| `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
 | `labels` | `None` | `True` or `Labels(fields=, size=, content=, title=, permission=)`: bulk action *Print labels* and a record's *Label* page, QR codes (§5.24) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
@@ -935,7 +948,7 @@ parent and returns to the tab. Tables start lazily when their tab opens.
 Chart(
     "name",                          # URL: api/<app>/<model>/charts/<name>/
     title=_("..."), description="", icon="bar_chart",
-    type="bar",                      # bar line area pie donut funnel heatmap
+    type="bar",                      # bar line area pie donut funnel heatmap pivot
     group_by="field__path",          # relation, choice, boolean, date (bucketed), value
     split_by="other_path",           # series / heatmap rows (optional)
     value=Sum("hours"),              # default Count("pk", distinct=True)
@@ -953,6 +966,13 @@ Chart(
   `_related`, and aggregates over `get_queryset(request)` selected by pk.
 - Above a list (`list_charts`) charts follow the table; clicking a bar or
   slice filters the table.
+- `type="pivot"` (also the builder's *Table* form) draws no chart: a
+  table of figures, rows = `group_by`, columns = `split_by`, plus
+  `totals: {rows, columns, all}` each its own aggregate (an average's
+  total is the average of all rows), every row kept (no `limit`/*Other*)
+  up to `PIVOT_ROWS` 200 x `PIVOT_COLUMNS` 50, `truncated` past it; a
+  figure clicked filters the table; downloads as CSV (`charts.js`
+  `pivotCsv`).
 - On a summary page: `RelatedTable(charts=...)` in the tab, and
   `detail_charts`.
 - Anywhere: `{% load generic_ui %}{% generic_chart "app.model" "name" height="20rem" %}`
@@ -1568,6 +1588,52 @@ class TicketResource(ModelResource):
   Example: `TicketResource` (a closed ticket keeps its team), and the
   Equipment group through `auto()`. See `docs/bulk-edit.md`.
 
+### 5.22 Boards (`Board`)
+
+```python
+boards = (
+    Board("priorities", field="priority",     # choices, BooleanField or ForeignKey
+          title=_("Priorities"), icon="view_kanban", description=_("..."),
+          columns=None,                       # values / related pks shown, in order
+          show_empty=True,                    # "Not set" column when the field is null-able
+          label=None,                         # card text; default the record's label
+          color="status",                     # a tag field: first tag's colour
+          fields=("team", "assignee"),        # summary-typed values on the card
+          editable=True,                      # drag = save_editable; field in editable_fields
+          navigation=True, permission=None),
+)
+```
+
+A page `<model>/<name>/` (button on the list; `navigation` adds a
+sidebar entry) with the resource's table above it, rows hidden, whose
+`filters`/`search` the board follows (`board` is a table action). A
+column per choice (Yes/No; a relation's records the reader may see, at
+most 30 - `MAX_COLUMNS`), coloured by the field's tag style; at most 100
+cards a column (`MAX_CARDS`), with the count and `truncated`. Cards from
+`get_list_queryset`. Moving (drag, or the card's *Move to* select for a
+keyboard) goes through `save_editable`; a `transitions` state field
+cannot be `editable`. *Add* on a column opens the add form with
+`?<field>=<key>`. Names are unique across a resource's boards and
+calendars. `docs/boards.md`; example: *Support › Priorities*.
+
+### 5.23 Comparing records (`compare_fields`)
+
+```python
+compare_fields = True                          # the summary page's sections and fields
+compare_fields = ("kind", "unit_cost", "family")  # or these, one section
+```
+
+The selection bar's menu gains *Compare the selected <plural>* (option
+`__compare__`; `options.compare = {url, label, max}`), for 2 to
+`MAX_COMPARED` (6) rows ticked, never "every matching row". It opens
+the page `<model>/compare/?ids=3,8,12` (a `ResourcePage` named
+`compare`, `button=False`; a page of the project's own named `compare`
+replaces it). Values are `describe_entry` entries, `same` when they
+show the same thing; *Only the differences* hides the rest; records are
+taken out one by one, the address following. Records through
+`get_list_queryset` and `has_view_permission(request, obj)`, the others
+counted in `missing`. `docs/compare.md`; example: tickets, articles.
+
 ### 5.24 Labels (`Labels`)
 
 ```python
@@ -1622,6 +1688,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
 | `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
+| `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
+| `GET .../compare/?ids=3,8,12` | 2-6 records side by side `{records, sections: [{title, rows: [{name, label, same, values}]}], missing}` (§5.23) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,
@@ -1833,7 +1901,9 @@ strftime string fixes the text),
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
-`SECURITY_LOG_RETENTION_DAYS` (None), `SHOW_STATUS`, `STATUS_TOKEN`,
+`SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
+`CONTENT_SECURITY_POLICY` (None; "recommended" or directives),
+`CONTENT_SECURITY_POLICY_REPORT_ONLY` (False), `SHOW_STATUS`, `STATUS_TOKEN`,
 `STATUS_DATABASE_QUERIES`,
 `STATUS_CHECKS`, `STATUS_DISKS`, `STATUS_THRESHOLDS`,
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
@@ -1870,6 +1940,8 @@ Read them via `from generic.conf import generic_settings`.
   permissions and a stranger → anything below 500), plus every
   generated endpoint per resource — rows, form schema, summary,
   history, each column's `facets/`, both exports, every chart, the
+  rows' query count (25 rows must cost no more queries than one: an
+  N+1 fails, with its SQL; `capture_queries` counts a block's), the
   import's schema and template, a record's transitions — and the
   OpenAPI description. A new page needs no new test; a page whose
   address needs a value adds a record to the `records` fixture (by model
@@ -1902,9 +1974,20 @@ Read them via `from generic.conf import generic_settings`.
   connection), the CSRF middleware added, no WebSocket, events from the
   tests' own thread dropped, `DJANGO_ALLOW_ASYNC_UNSAFE`. A behaviour
   of the JavaScript gets a scenario there, waiting with `expect`,
-  never `time.sleep`.
-- CI runs Django 5.2 on Python 3.10 and 3.11, the latest Django on
-  3.12 and 3.13. Where the two Djangos differ, switch on
+  never `time.sleep`. `test_accessibility.py` runs axe-core
+  (`tests/browser/vendor/axe.min.js`, tests only, MPL-2.0) on every page
+  type in `PAGES`, light and dark (`emulate_media`, before the page
+  loads), against WCAG 2.1 AA, and tags in any colour; a new page type
+  gets a line there. Tag text is `--tag-ink` (the tag's hue, lightness
+  clamped per scheme): never mix a tag colour into text by hand.
+- CI runs Django 5.2 on Python 3.10 and 3.11, Django 6.0 on 3.12, the
+  latest Django on 3.13 and 3.14; every other job, and the Docker
+  images, install the versions pinned in `requirements/constraints.txt`
+  (`python scripts/lock.py` rewrites it, after a change to
+  `requirements/constraints.in` - a new dependency goes in both
+  `pyproject.toml` and there, or CI's `lock.py --check` fails). mypy
+  fails on an error not in `scripts/mypy-baseline.txt`
+  (`python scripts/mypy_baseline.py`). Where the two Djangos differ, switch on
   `django.VERSION`, never on the Python version, and never name in
   `filterwarnings` a warning class one of them lacks: pytest refuses to
   start. A `DeprecationWarning` from `generic.*` fails the suite;
@@ -2545,10 +2628,27 @@ def payments():                                # quick: runs on every refresh
   `generic.audit.record("exported", request=request, detail=...)`.
   `SECURITY_LOG` (True), `SECURITY_LOG_RETENTION_DAYS` (None, applied
   by `apply_retention`). See `docs/security-log.md`.
+- **Sessions and pages** (`docs/security.md`): `SessionIdleMiddleware`
+  signs out after `SESSION_IDLE_MINUTES` without a reader's action;
+  requests the pages make by themselves send `X-Generic-Idle` (seconds
+  since the last click or key, `Generic.activity` in core.js; the
+  table's DataTables ajax too) and so keep nobody signed in; the answer
+  carries `X-Generic-Signed-Out: idle` and the page reloads.
+  `CSPMiddleware` sends `CONTENT_SECURITY_POLICY` (`RECOMMENDED_CSP`:
+  `'self'`, `'unsafe-eval'` for Alpine, a nonce for inline scripts).
+  **An inline `<script>` in a template carries
+  `nonce="{% csp_nonce %}"`** (`generic_ui`), never an `on...=`
+  attribute; the browser tests run under the policy and fail on what it
+  blocks.
 
 ## 14. Known pitfalls
 
 - `site.urls` must be the **last** URL pattern.
+- **A reader's serializer**: framework code answering a request uses
+  `get_rows_serializer_class(request)` and `get_form_serializer_for(request)`,
+  never the bare `get_table_serializer_class()` / `get_form_serializer_class()`,
+  which keep every field whatever `field_permissions` says; a write
+  asks `may_write_column`, not `can_edit_column`.
 - **A release moves five labels together**: `generic/__init__.py`
   `__version__` (the package's only version source), a dated
   `## [x.y.z]` section in `generic/CHANGELOG.md` (on top - it takes no

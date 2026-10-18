@@ -17,8 +17,8 @@
 # rebuild, test, then deploy. `docker compose build --pull` takes the
 # latest patch of each - the security fixes - on every release.
 
-ARG PYTHON_IMAGE=python:3.12-slim
-ARG POSTGRES_IMAGE=postgres:16
+ARG PYTHON_IMAGE=python:3.13-slim
+ARG POSTGRES_IMAGE=postgres:17
 ARG CADDY_IMAGE=caddy:2.10-alpine
 
 ARG BEAT_PACKAGES="django-celery-beat>=2.6"

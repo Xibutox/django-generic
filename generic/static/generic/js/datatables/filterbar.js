@@ -1706,8 +1706,12 @@
         "opened:30d, due:2026-01-01..2026-03-31, -tags:billing, " +
         "assignee:empty."
     );
+    // A text box offering a list is a combobox: aria-expanded below is
+    // only allowed on one.
+    input.setAttribute("role", "combobox");
     input.setAttribute("aria-autocomplete", "list");
     input.setAttribute("aria-controls", box.id);
+    input.setAttribute("aria-expanded", "false");
 
     controller.freeSearchText = function (value) {
       return query.parse(value, controller.columns).free.trim();

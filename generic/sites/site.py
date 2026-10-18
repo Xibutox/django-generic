@@ -174,6 +174,9 @@ class GenericSite:
             resource.get_kpis()
             resource.get_cards()
             resource.get_calendars()
+            resource.get_boards()
+            # And the fields its records are compared on.
+            resource.get_compare_sections()
             # And what its labels show.
             resource.get_labels()
             self._registry[model] = resource

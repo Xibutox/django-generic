@@ -2,9 +2,65 @@
 {# A chart card's drawing, its figures as a table, its states. Inside a #}
 {# genericChart component.                                              #}
 <div class="chart-card__body" :style="{ height: config.height }">
-  <div class="chart-card__canvas" x-ref="canvas" x-show="view === 'chart'"></div>
+  <div class="chart-card__canvas" x-ref="canvas" x-show="view === 'chart' && !isPivot()"></div>
 
-  <div class="chart-card__table" x-show="view === 'table'">
+  {# A pivot table (type "pivot"): a row per value of the first field, #}
+  {# a column per value of the second, their totals; a figure clicked  #}
+  {# filters the table it follows.                                     #}
+  <div class="chart-card__table chart-card__pivot" x-show="isPivot() && !payload.empty">
+    <template x-if="isPivot() && !payload.empty">
+      <table class="object-table chart-table pivot-table">
+        <thead>
+          <tr>
+            <th scope="col" class="pivot-table__corner"></th>
+            <template x-for="(series, column) in payload.series" :key="column">
+              <th scope="col" x-text="series.name"></th>
+            </template>
+            <th scope="col" class="pivot-table__total" x-show="pivotSplit()">{% translate "Total" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(category, row) in payload.categories" :key="row">
+            <tr>
+              <th scope="row">
+                <template x-if="linked">
+                  <button type="button" class="pivot-table__pick" @click="selectCell(row, null)" x-text="category"></button>
+                </template>
+                <template x-if="!linked"><span x-text="category"></span></template>
+              </th>
+              <template x-for="(series, column) in payload.series" :key="column">
+                <td class="pivot-table__cell" :style="pivotShade(series.data[row])">
+                  <template x-if="linked">
+                    <button type="button" class="pivot-table__pick" @click="selectCell(row, pivotSplit() ? column : null)" x-text="format(series.data[row])"></button>
+                  </template>
+                  <template x-if="!linked"><span x-text="format(series.data[row])"></span></template>
+                </td>
+              </template>
+              <td class="pivot-table__total" x-show="pivotSplit()" x-text="format(payload.totals.rows[row])"></td>
+            </tr>
+          </template>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">{% translate "Total" %}</th>
+            <template x-for="(series, column) in payload.series" :key="column">
+              <td class="pivot-table__total">
+                <template x-if="linked && pivotSplit()">
+                  <button type="button" class="pivot-table__pick" @click="selectCell(null, column)" x-text="format(payload.totals.columns[column])"></button>
+                </template>
+                <template x-if="!(linked && pivotSplit())">
+                  <span x-text="format(pivotSplit() ? payload.totals.columns[column] : payload.totals.all)"></span>
+                </template>
+              </td>
+            </template>
+            <td class="pivot-table__total pivot-table__all" x-show="pivotSplit()" x-text="format(payload.totals.all)"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </template>
+  </div>
+
+  <div class="chart-card__table" x-show="view === 'table' && !isPivot()">
     <template x-if="payload && !payload.empty">
       <table class="object-table chart-table">
         <thead>
@@ -43,7 +99,15 @@
   </div>
 </div>
 
-<p class="chart-card__hint" x-show="linked && payload && !payload.empty && view === 'chart'">
+<p class="chart-card__hint" x-show="linked && payload && !payload.empty && view === 'chart' && !isPivot()">
   {% icon "touch_app" "icon--sm" %}
   {% translate "Click a bar or a slice to filter the table." %}
+</p>
+<p class="chart-card__hint" x-show="isPivot() && !payload.empty && (linked || payload.truncated)">
+  <template x-if="linked">
+    <span>{% icon "touch_app" "icon--sm" %} {% translate "Click a figure to filter the table." %}</span>
+  </template>
+  <template x-if="payload && payload.truncated">
+    <span>{% translate "The largest rows and columns only; the totals count every row." %}</span>
+  </template>
 </p>

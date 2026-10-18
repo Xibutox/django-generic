@@ -10,6 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# uv installs what pip would, several times faster. Every job but the
+# test matrix installs the versions of requirements/constraints.txt -
+# the ones the images ship; the matrix takes the newest releases, and
+# the oldest the package accepts, to hear about a break early.
+env:
+  UV_SYSTEM_PYTHON: "1"
+
 jobs:
   quality:
     name: Lint, catalogs and type check
@@ -19,8 +26,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: pip install -e ".[export,import,events,tasks,wiki,api,fsm,dev]" -r docmanager/requirements.txt
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv pip install -c requirements/constraints.txt -e ".[export,import,events,tasks,postgres,wiki,api,fsm,status,results,dev]" -r docmanager/requirements.txt
       - name: black
         run: black --check .
       - name: isort
@@ -30,6 +39,11 @@ jobs:
       - name: message catalogs
         # A .po edited without recompiling translates nothing.
         run: python scripts/compile_messages.py --check
+      - name: Pinned versions match what the project lists
+        # requirements/constraints.in changed without running
+        # scripts/lock.py: the images would install versions no one
+        # resolved.
+        run: python scripts/lock.py --check
       - name: OpenAPI description
         # Every endpoint of the example described, and no guess left:
         # a resource the schema cannot describe fails here.
@@ -39,18 +53,18 @@ jobs:
         # internal invariants rather than as input validation.
         run: bandit -r generic example docmanager minimal -ll --skip B101
       - name: Known vulnerabilities in the dependencies
-        # Every installed package, against the PyPI advisory database.
-        # A vulnerability skipped here is listed, with why it does not
-        # apply, in SECURITY.md - and goes once a fix is released.
+        # The pinned versions - the ones that ship - against the PyPI
+        # advisory database. A vulnerability skipped here is listed,
+        # with why it does not apply, in SECURITY.md - and goes once a
+        # fix is released.
         run: pip-audit --skip-editable --ignore-vuln CVE-2026-106454
-      - name: mypy
-        # Reported, not blocking: django-stubs trails the Django this
-        # runs on, and most of what it says is that.
-        continue-on-error: true
-        run: mypy generic
+      - name: mypy, no new error
+        # The errors carried today (mostly django-stubs trailing
+        # Django) are in scripts/mypy-baseline.txt; a new one fails.
+        run: python scripts/mypy_baseline.py
 
   test:
-    name: Tests (Python ${{ matrix.python-version }}, Django ${{ matrix.django }})
+    name: Tests (Python ${{ matrix.python-version }}, Django ${{ matrix.django || 'newest' }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -63,11 +77,15 @@ jobs:
           - python-version: "3.11"
             django: "5.2.*"
             drf: ""
-          # ...and the newest.
+          # ...the previous Django, still supported...
           - python-version: "3.12"
+            django: "6.0.*"
+            drf: ""
+          # ...and the newest.
+          - python-version: "3.13"
             django: ""
             drf: ""
-          - python-version: "3.13"
+          - python-version: "3.14"
             django: ""
             drf: ""
     steps:
@@ -75,12 +93,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
       - name: Install
         run: |
-          pip install -e ".[export,events,tasks,wiki,dev]"
-          if [ -n "${{ matrix.django }}" ]; then pip install "Django==${{ matrix.django }}"; fi
-          if [ -n "${{ matrix.drf }}" ]; then pip install "djangorestframework==${{ matrix.drf }}"; fi
+          uv pip install -e ".[export,events,tasks,wiki,dev]"
+          if [ -n "${{ matrix.django }}" ]; then uv pip install "Django==${{ matrix.django }}"; fi
+          if [ -n "${{ matrix.drf }}" ]; then uv pip install "djangorestframework==${{ matrix.drf }}"; fi
           python -c "import django, rest_framework; print('Django', django.get_version(), 'DRF', rest_framework.VERSION)"
       - run: pytest --cov=generic --cov-report=xml --cov-fail-under=80 --junitxml=junit.xml
       - name: Failures as annotations
@@ -89,11 +109,17 @@ jobs:
         run: python scripts/ci_annotations.py junit.xml
 
   integration:
-    name: Tests against Postgres and Redis
+    name: Tests against Postgres ${{ matrix.postgres }} and Redis
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 16: what the compose files start by default; 17: what a new
+        # installation can take (POSTGRES_IMAGE, docs/deployment.md).
+        postgres: ["16", "17"]
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_DB: generic
           POSTGRES_USER: generic
@@ -119,9 +145,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e ".[export,events,tasks,postgres,wiki,dev]"
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,dev]"
       - run: pytest -q --no-cov --junitxml=junit.xml
       - name: Failures as annotations
         if: failure()
@@ -134,9 +162,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv pip install -c requirements/constraints.txt -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
       - name: Chromium, and what it needs from the system
         run: python -m playwright install --with-deps chromium
       - name: The example, driven through Chromium

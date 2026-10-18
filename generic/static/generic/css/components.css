@@ -659,6 +659,14 @@ kbd,
 
 .tag {
   --tag-color: var(--text-muted);
+  /* The text: the tag's own hue, its lightness held where it reads on
+     the tinted background in either scheme (WCAG AA, 4.5:1), whatever
+     colour the record holds - white or black included. Browsers without
+     relative colours keep the mix above. */
+  --tag-ink: light-dark(
+    oklch(from var(--tag-color) min(l, 0.47) min(c, 0.2) h),
+    oklch(from var(--tag-color) max(l, 0.82) min(c, 0.14) h)
+  );
 
   display: inline-flex;
   align-items: center;
@@ -671,6 +679,7 @@ kbd,
   text-overflow: ellipsis;
   white-space: nowrap;
   color: color-mix(in oklab, var(--tag-color) 72%, var(--text-primary));
+  color: var(--tag-ink);
   background: color-mix(in oklab, var(--tag-color) 14%, var(--surface-raised));
   border: 1px solid color-mix(in oklab, var(--tag-color) 34%, transparent);
   border-radius: var(--border-radius-pill);
@@ -685,6 +694,7 @@ kbd,
 a.tag,
 table.dataTable tbody td a.tag {
   color: color-mix(in oklab, var(--tag-color) 72%, var(--text-primary));
+  color: var(--tag-ink);
   font-weight: 600;
   text-decoration: none;
 }

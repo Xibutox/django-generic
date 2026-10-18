@@ -65,10 +65,16 @@ field (``generic.sites.calendars``)::
     kpis = (Kpi("open", title=_("Open"), filters={...}, danger=50),)
     cards = (Cards("urgent", filters={...}, fields=("due_on",)),)
     calendars = (Calendar("due", date="due_on", color="priority"),)
+
+and on a board, a column per value of a field
+(``generic.sites.boards``)::
+
+    boards = (Board("by-status", field="status", editable=True),)
 """
 
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
+from generic.sites.boards import Board
 from generic.sites.calendars import Calendar
 from generic.sites.chart_builder import ChartBuilder
 from generic.sites.charts import Chart, chart_payload
@@ -96,6 +102,7 @@ from generic.sites.trees import Tree
 __all__ = [
     "AlreadyRegistered",
     "AutoResource",
+    "Board",
     "Calendar",
     "Labels",
     "Cards",

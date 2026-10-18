@@ -200,3 +200,49 @@
   gap: var(--space-2);
   font-size: var(--font-size-sm);
 }
+
+/* -- A pivot table (type "pivot") ---------------------------------------- */
+
+.pivot-table th[scope="row"] {
+  text-align: start;
+}
+
+/* Each figure tinted by its share of the largest: the eye finds the
+   large ones before reading them. */
+.pivot-table__cell {
+  background: color-mix(
+    in oklch,
+    var(--color-accent) calc(var(--pivot-shade, 0) * 28%),
+    transparent
+  );
+}
+
+.pivot-table__total {
+  font-weight: 600;
+  background: var(--surface-sunken);
+}
+
+.pivot-table tfoot th,
+.pivot-table tfoot td {
+  border-top: 2px solid var(--border-strong);
+}
+
+.pivot-table__all {
+  color: var(--text-primary);
+}
+
+.pivot-table__pick {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pivot-table__pick:hover,
+.pivot-table__pick:focus-visible {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
