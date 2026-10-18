@@ -209,12 +209,12 @@ class BoundDuplicate:
             serializer_class, context, obj, skip=self.exclude
         )
 
-        extra = self.declaration.values
+        overrides = self.declaration.values
 
-        if callable(extra):
-            extra = extra(request, obj)
+        if callable(overrides):
+            overrides = overrides(request, obj)
 
-        for name, value in dict(extra or {}).items():
+        for name, value in dict(overrides or {}).items():
             values[name] = value
             display.pop(name, None)
 
