@@ -112,7 +112,8 @@ generic/
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
 │   │                       _grid, cells, rows, trees/<name>/, kpis/<name>/,
-│   │                       cards/<name>/, calendars/<name>/, boards/<name>/)
+│   │                       cards/<name>/, calendars/<name>/, boards/<name>/,
+│   │                       compare/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
@@ -123,6 +124,7 @@ generic/
 │   │                       days, a page each, moved by dragging (§5.20)
 │   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
 │   │                       per value of a field, moved by dragging (§5.22)
+│   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
@@ -251,6 +253,7 @@ generic/
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
     ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
+    ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/bulk_edit.js     Generic.bulkEdit.open: the selection bar's bulk edit dialog (§5.21)
     ├── js/wiki.js          Alpine wikiPage
@@ -680,6 +683,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
+| `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -1602,6 +1606,23 @@ keyboard) goes through `save_editable`; a `transitions` state field
 cannot be `editable`. *Add* on a column opens the add form with
 `?<field>=<key>`. Names are unique across a resource's boards and
 calendars. `docs/boards.md`; example: *Support › Priorities*.
+### 5.23 Comparing records (`compare_fields`)
+
+```python
+compare_fields = True                          # the summary page's sections and fields
+compare_fields = ("kind", "unit_cost", "family")  # or these, one section
+```
+
+The selection bar's menu gains *Compare the selected <plural>* (option
+`__compare__`; `options.compare = {url, label, max}`), for 2 to
+`MAX_COMPARED` (6) rows ticked, never "every matching row". It opens
+the page `<model>/compare/?ids=3,8,12` (a `ResourcePage` named
+`compare`, `button=False`; a page of the project's own named `compare`
+replaces it). Values are `describe_entry` entries, `same` when they
+show the same thing; *Only the differences* hides the rest; records are
+taken out one by one, the address following. Records through
+`get_list_queryset` and `has_view_permission(request, obj)`, the others
+counted in `missing`. `docs/compare.md`; example: tickets, articles.
 
 ## 6. URLs and endpoints (generated)
 
@@ -1638,6 +1659,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
 | `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
 | `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
+| `GET .../compare/?ids=3,8,12` | 2-6 records side by side `{records, sections: [{title, rows: [{name, label, same, values}]}], missing}` (§5.23) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,

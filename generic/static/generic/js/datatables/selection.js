@@ -31,6 +31,9 @@
   //: The selection bar's own entry: the bulk edit, not an action.
   var BULK_EDIT = "__bulk_edit__";
 
+  //: And the comparison of the rows ticked (generic.sites.compare).
+  var COMPARE = "__compare__";
+
   /** The selection, as the endpoints take it, and where to send it. */
   function request(controller, url) {
     var selection = controller.selection;
@@ -79,11 +82,41 @@
       });
   }
 
+  /** The comparison page of the rows ticked: two to "max" of them,
+   * named, never "every matching row". */
+  function compare(controller) {
+    var Generic = window.Generic;
+    var options = controller.options.compare || {};
+    var selection = controller.selection;
+    var ids = Array.from(selection.ids.keys());
+    var most = options.max || 6;
+
+    if (selection.all || ids.length < 2 || ids.length > most) {
+      Generic.toast(
+        core.format(t("Tick between 2 and %(count)s rows to compare them."), { count: most }),
+        "info"
+      );
+      return;
+    }
+
+    if (!Generic.isSafeUrl(options.url)) {
+      return;
+    }
+
+    // Commas left as they are: ?ids=3,8,12 reads as what it names.
+    window.location.assign(new URL(options.url, window.location.href).pathname + "?ids=" + ids.map(encodeURIComponent).join(","));
+  }
+
   function run(controller, name) {
     var Generic = window.Generic;
 
     if (name === BULK_EDIT && window.Generic.bulkEdit) {
       edit(controller);
+      return;
+    }
+
+    if (name === COMPARE) {
+      compare(controller);
       return;
     }
 
@@ -146,7 +179,8 @@
       return Boolean(
         options.rowKey &&
           ((options.bulkActionsUrl && (options.bulkActions || []).length) ||
-            (options.bulkEdit && options.bulkEdit.url))
+            (options.bulkEdit && options.bulkEdit.url) ||
+            (options.compare && options.compare.url))
       );
     },
 
@@ -225,6 +259,12 @@
       // selection is most often made for.
       if (bulk && bulk.url) {
         select.appendChild(new Option(bulk.label + "\u2026", BULK_EDIT));
+      }
+
+      var comparing = controller.options.compare;
+
+      if (comparing && comparing.url) {
+        select.appendChild(new Option(comparing.label, COMPARE));
       }
 
       (controller.options.bulkActions || []).forEach(function (action) {

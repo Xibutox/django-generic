@@ -4270,3 +4270,23 @@ msgstr "Indiquez la colonne où le déplacer."
 #: generic/sites/boards.py
 msgid "This board has no such column."
 msgstr "Ce tableau n'a pas cette colonne."
+
+#: generic/sites/compare.py
+msgid "Compare"
+msgstr "Comparer"
+
+#: generic/sites/compare.py
+msgid "Compare the selected %(verbose_name_plural)s"
+msgstr "Comparer les %(verbose_name_plural)s sélectionnés"
+
+#: generic/sites/compare.py
+msgid "Name at least two records to compare."
+msgstr "Indiquez au moins deux enregistrements à comparer."
+
+#: generic/sites/compare.py
+msgid "At most %(count)s records are compared at once."
+msgstr "Au plus %(count)s enregistrements se comparent à la fois."
+
+#: generic/sites/compare.py
+msgid "These records are not compared."
+msgstr "Ces enregistrements ne se comparent pas."

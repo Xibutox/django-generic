@@ -95,6 +95,7 @@ TABLE_ACTIONS = frozenset(
         "tree",
         "calendar",
         "board",
+        "compare",
     }
 )
 
@@ -945,6 +946,31 @@ class ResourceViewSet(
         record.refresh_from_db()
 
         return Response(bound.describe(request, record, True))
+
+    # -- comparing records ------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="compare",
+        url_name="compare",
+    )
+    def compare(self, request: Any) -> Response:
+        """The records ``ids`` names (``3,8,12``) side by side, field by
+        field (generic.sites.compare)."""
+        from generic.sites import compare
+
+        if not self.resource.can_compare(request):
+            raise NotFound(gettext("These records are not compared."))
+
+        return Response(
+            compare.answer(
+                self.resource,
+                request,
+                self.get_queryset(),
+                request.query_params.getlist("ids"),
+            )
+        )
 
     # -- bulk actions ------------------------------------------------------
 

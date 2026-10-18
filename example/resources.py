@@ -245,6 +245,9 @@ class TicketResource(ModelResource):
         "due_on",
     )
 
+    # Two to six tickets side by side, as their summary pages show them.
+    compare_fields = True
+
     # A set of tickets of the project's choosing, corrected many at
     # once: the open ones, to assign and prioritise in one sitting. It
     # is shown by a GridView (example/urls.py) at /demo/triage/, and at
@@ -1395,6 +1398,14 @@ class ArticleResource(ModelResource):
     )
     search_fields = ("reference", "name")
     ordering = ("reference",)
+    # Articles side by side: the values a buyer weighs.
+    compare_fields = (
+        "kind",
+        "unit",
+        "unit_cost",
+        "family",
+        "component_count",
+    )
     tag_fields = {
         "kind": TagStyle(
             colors={

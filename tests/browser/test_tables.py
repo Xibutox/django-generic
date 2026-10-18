@@ -218,8 +218,12 @@ def test_a_reader_is_offered_no_add_button(page, desk, viewer, sign_in):
 
     expect(references(page)).to_have_text(numbers(*range(1001, 1011)))
     expect(page.get_by_role("link", name="Add Ticket")).to_have_count(0)
-    # Nor bulk actions to change anything: nothing to tick.
-    expect(page.locator(".dt-row-check")).to_have_count(0)
+    # Nor bulk actions to change anything: ticked rows may only be
+    # compared.
+    page.locator(".dt-row-check").first.check()
+    options = page.locator(".dt-selection-bar__action option")
+    expect(options).to_have_count(2)
+    expect(options.nth(1)).to_have_text("Compare the selected tickets")
 
 
 def test_the_request_carries_only_what_the_endpoint_reads(ticket_list):

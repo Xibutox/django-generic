@@ -1,0 +1,109 @@
+/*
+ * Records side by side (generic.sites.compare, js/compare.js). Tokens
+ * only: a row whose values differ takes the accent's subtle colour.
+ */
+
+.compare-card {
+  padding: var(--space-4);
+}
+
+.compare__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.compare__status {
+  font-size: var(--font-size-sm);
+}
+
+.compare__message {
+  margin: 0 0 var(--space-3);
+}
+
+.compare__scroll {
+  overflow-x: auto;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.compare-table th,
+.compare-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.compare-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-raised);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.compare-table__corner {
+  width: 12rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.compare-table__record {
+  min-width: 12rem;
+  font-weight: 600;
+}
+
+.compare-table__record a {
+  overflow-wrap: anywhere;
+}
+
+.compare-table__remove {
+  margin-inline-start: var(--space-1);
+  vertical-align: middle;
+}
+
+.compare-table__title th {
+  padding-top: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+.compare-row__label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.compare-row.is-different {
+  background: var(--color-accent-subtle);
+}
+
+.compare-row.is-different .compare-row__label {
+  color: var(--text-primary);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.compare-row__value {
+  overflow-wrap: anywhere;
+}
+
+/* "Only the differences": the rows alike, and the titles of sections
+   left with none, are hidden. */
+.generic-compare.is-differences-only .compare-row.is-same {
+  display: none;
+}
+
+.generic-compare.is-differences-only
+  .compare-table__section:not(:has(.is-different)) {
+  display: none;
+}

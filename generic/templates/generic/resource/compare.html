@@ -1,0 +1,23 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static %}
+
+{# Records side by side (generic.sites.compare): a column per record, a #}
+{# row per field, the rows whose values differ marked.                 #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/compare.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'generic/js/compare.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  {{ compare_config|json_script:"compare-config" }}
+
+  <section class="card compare-card">
+    <div class="generic-compare" data-config="compare-config" data-autostart></div>
+  </section>
+{% endblock %}
