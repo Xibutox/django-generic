@@ -4359,6 +4359,54 @@ msgctxt "sticker"
 msgid "Label"
 msgstr "Étiquette"
 
+#: generic/sites/duplicates.py
+msgid "Duplicate"
+msgstr "Dupliquer"
+
+#: generic/sites/duplicates.py
+msgid "Duplicate %(name)s"
+msgstr "Dupliquer %(name)s"
+
+#: generic/sites/duplicates.py
+msgid "These records are not duplicated."
+msgstr "Ces enregistrements ne se dupliquent pas."
+
+#: generic/sites/duplicates.py
+msgid "Name the record copied."
+msgstr "Indiquez l’enregistrement copié."
+
+#: generic/sites/duplicates.py
+msgid "You may not duplicate this record."
+msgstr "Vous ne pouvez pas dupliquer cet enregistrement."
+
+#: generic/sites/duplicates.py
+msgid "A list of relations is expected."
+msgstr "Une liste de relations est attendue."
+
+#: generic/sites/duplicates.py
+msgid "%(names)s cannot be copied."
+msgstr "%(names)s ne peut pas être copié."
+
+#: generic/sites/duplicates.py
+msgid "You may not add %(name)s."
+msgstr "Vous ne pouvez pas ajouter de %(name)s."
+
+#: generic/sites/duplicates.py
+msgid "At most %(count)s %(name)s are copied with a record."
+msgstr "Au plus %(count)s %(name)s sont copiés avec un enregistrement."
+
+#: generic/sites/duplicates.py
+msgid "You may not add pages."
+msgstr "Vous ne pouvez pas ajouter de pages."
+
+#: generic/sites/duplicates.py
+msgid "This field is required."
+msgstr "Ce champ est obligatoire."
+
+#: generic/sites/duplicates.py
+msgid "This title is too long."
+msgstr "Ce titre est trop long."
+
 #: generic/wiki/archive.py
 msgid "The archive's wiki.json is invalid."
 msgstr "Le wiki.json de l’archive n’est pas valide."

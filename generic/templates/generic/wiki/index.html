@@ -44,8 +44,14 @@
                 {% icon "auto_stories" %}
                 <a href="{{ wiki.get_absolute_url }}">{{ wiki.name }}</a>
               </h2>
-              {% if can.change or can.delete %}
+              {% if can.add or can.change or can.delete %}
                 <div class="wiki-list__tools">
+                  {% if can.add %}
+                    <button type="button" class="icon-button icon-button--sm" title="{% translate 'Duplicate' %}" @click="duplicate({{ wiki.pk }})">
+                      {% translate "Duplicate" as duplicate_label %}
+                      {% icon "content_copy" "icon--sm" duplicate_label %}
+                    </button>
+                  {% endif %}
                   {% if can.change %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Edit' %}" @click="edit({{ wiki.pk }})">
                       {% translate "Edit" as edit_label %}

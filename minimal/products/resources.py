@@ -56,6 +56,10 @@ class ProductResource(ModelResource):
     group = "Products"
     order = 0
     description = "Every product, the steps it goes through, its files."
+    # *Duplicate*: a new product's form filled with this one's values and
+    # its milestones (the inline), each still editable; the reference,
+    # unique, is left to type.
+    duplicate = True
 
     list_display = (
         "reference",

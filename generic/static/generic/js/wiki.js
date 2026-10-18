@@ -1395,6 +1395,60 @@
             });
         },
 
+        /**
+         * A copy of the page beside it - its title asked first, its
+         * subpages if wanted - opened in the editor.
+         */
+        duplicate: function () {
+          var self = this;
+          var page = this.page;
+          var fields = [
+            {
+              name: "title",
+              label: t("Title"),
+              value: Generic.format(t("%(title)s (copy)"), { title: page.title }),
+              required: true,
+              maxLength: 200
+            }
+          ];
+
+          if (config.subpages) {
+            fields.push({
+              name: "subpages",
+              type: "checkbox",
+              label: Generic.format(t("Copy its subpages too (%(count)s)"), { count: config.subpages }),
+              value: true
+            });
+          }
+
+          Generic.dialogs
+            .fields({
+              title: t("Duplicate this page"),
+              icon: "content_copy",
+              message: t("The copy is written beside the page. Its history is not copied; its images and files are shared."),
+              confirmLabel: t("Duplicate"),
+              fields: fields
+            })
+            .then(function (values) {
+              if (!values) {
+                return;
+              }
+
+              Generic.api
+                .post(self.pageUrl(page.id) + "duplicate/", {
+                  title: values.title,
+                  subpages: Boolean(values.subpages)
+                })
+                .then(function (data) {
+                  Generic.flash(t("The page was duplicated."), "success");
+                  window.location.assign(data.url + "?edit=1");
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The page could not be duplicated."), "error");
+                });
+            });
+        },
+
         remove: function () {
           var self = this;
           var page = this.page;
@@ -1691,6 +1745,62 @@
                 Generic.toast(errorText(error) || t("The wiki could not be saved."), "error");
               });
           });
+        },
+
+        /** A copy of the wiki: its name and description asked first,
+         * its pages if wanted. */
+        duplicate: function (id) {
+          var wiki = find(id);
+
+          if (!wiki) {
+            return;
+          }
+
+          var fields = [
+            {
+              name: "name",
+              label: t("Name"),
+              value: Generic.format(t("%(name)s (copy)"), { name: wiki.name }),
+              required: true,
+              maxLength: 200
+            },
+            { name: "description", label: t("Description"), value: wiki.description, multiline: true }
+          ];
+
+          if (wiki.page_count && config.can.addPage) {
+            fields.push({
+              name: "pages",
+              type: "checkbox",
+              label: Generic.format(t("Copy its pages (%(count)s)"), { count: wiki.page_count }),
+              value: true
+            });
+          }
+
+          Generic.dialogs
+            .fields({
+              title: t("Duplicate this wiki"),
+              icon: "content_copy",
+              message: t("The pages are copied as they stand, under the same parents. Their history is not copied; their images and files are shared."),
+              confirmLabel: t("Duplicate"),
+              fields: fields
+            })
+            .then(function (values) {
+              if (!values) {
+                return;
+              }
+
+              values.pages = Boolean(values.pages);
+
+              Generic.api
+                .post(config.api + id + "/duplicate/", values)
+                .then(function (data) {
+                  Generic.flash(t("The wiki was duplicated."), "success");
+                  window.location.assign(data.url);
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The wiki could not be duplicated."), "error");
+                });
+            });
         },
 
         remove: function (id) {

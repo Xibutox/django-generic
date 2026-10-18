@@ -12,6 +12,25 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased]
 
+### Added
+- Duplicating a record: `duplicate = True`, or `Duplicate(exclude=...,
+  related=..., values=..., permission=...)`, on a resource puts
+  *Duplicate* on each record's page and row menu. It opens the add form
+  filled with the record's values, editable before anything is
+  written, and a *Copy with it* section: a box per many-to-many field
+  and inline (ticked, the form holds the record's values or rows;
+  unticked, empty) and per declared relation (its records copied, each
+  through its own form, once the copy is saved, in the same
+  transaction). Field permissions apply: a field the reader may not
+  see or change is not copied. Unique fields and files never are. On
+  by default for `auto()` resources; the example duplicates tickets
+  and articles, with their bill of materials. See docs/duplicate.md.
+- Duplicating a wiki page, with its subpages if wanted, or a whole
+  wiki with its pages: the copy's title or name is asked first, the
+  text is copied, the history is not, images and files are shared.
+  `wiki_duplicated` tells the project, so a team's wiki copied keeps
+  its readers (docmanager does). See docs/wiki.md, *Duplicating*.
+
 ### Changed
 - Laptops at 125% or 150% display scaling draw the interface a tenth
   smaller: a desktop-width window (1025px to 1800px) at 1.2 to 1.75

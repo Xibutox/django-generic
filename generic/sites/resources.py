@@ -195,6 +195,13 @@ class ModelResource(PagesMixin):
     #: marked. ``True``: the summary page's sections and fields. Empty -
     #: the default - offers nothing. See ``generic.sites.compare``.
     compare_fields: Sequence[str] | bool = ()
+    #: A record copied into a new one: ``True`` or ``Duplicate(exclude=,
+    #: related=, values=, permission=)``. A record's page and its row
+    #: menu offer *Duplicate*, the add form opened with its values and
+    #: a box per many-to-many field, inline and declared relation to
+    #: copy with it. False - the default - offers nothing. See
+    #: ``generic.sites.duplicates``.
+    duplicate: Any = False
     #: Labels to print, each with a QR code leading to its record:
     #: ``True`` (the list's first columns) or ``Labels(fields=...,
     #: size=...)``. The selection bar gains *Print labels*, a record's
@@ -558,6 +565,12 @@ class ModelResource(PagesMixin):
 
     def get_bulk_edit_url(self) -> str:
         return self._reverse(self.api_url_name("bulk-edit"))
+
+    def get_duplicate_url(self, pk: Any) -> str:
+        return self._reverse(self.url_name("duplicate"), pk=pk)
+
+    def get_duplicate_url_template(self, token: str = "{id}") -> str:
+        return self._template(self.url_name("duplicate"), token)
 
     def get_compare_url(self) -> str:
         return self._reverse(self.api_url_name("compare"))
@@ -1066,6 +1079,16 @@ class ModelResource(PagesMixin):
 
         # The record's pages of the project's own, where asked for.
         actions.extend(self.get_page_row_actions(request, row))
+
+        if self.can_duplicate(request):
+            actions.append(
+                {
+                    "name": "duplicate",
+                    "label": gettext("Duplicate"),
+                    "icon": "content_copy",
+                    "url": self.get_duplicate_url_template(row),
+                }
+            )
 
         if self.has_delete_permission(request):
             token = "{" + ROW_KEY + "}"
@@ -2092,6 +2115,57 @@ class ModelResource(PagesMixin):
             ),
             "max": MAX_COMPARED,
         }
+
+    # -- duplicating records ------------------------------------------------
+
+    def get_duplicate(self) -> Any:
+        """``duplicate`` resolved and checked once per process
+        (``generic.sites.duplicates.BoundDuplicate``), or None."""
+        if "_duplicate" not in self.__dict__:
+            from generic.sites.duplicates import resolve
+
+            self.__dict__["_duplicate"] = resolve(self)
+
+        return self.__dict__["_duplicate"]
+
+    def can_duplicate(self, request: Any, obj: Any = None) -> bool:
+        """Whether this reader is offered *Duplicate* (for ``obj``):
+        declared, the add permission, the view permission of the record
+        and the declaration's own ``permission``."""
+        bound = self.get_duplicate()
+
+        return (
+            bound is not None
+            and self.has_add_permission(request)
+            and self.has_view_permission(request, obj)
+            and bound.allows(request, obj)
+        )
+
+    def get_duplicate_initial(self, request: Any, obj: Any) -> dict:
+        """What the duplicate form of ``obj`` opens with: ``values``,
+        their ``display`` labels, ``inlines`` rows and the ``copies``
+        offered. Override to change a value of the copy::
+
+            def get_duplicate_initial(self, request, obj):
+                initial = super().get_duplicate_initial(request, obj)
+                initial["values"]["title"] = f"{obj.title} (2)"
+                return initial
+        """
+        return self.get_duplicate().initial(request, obj)
+
+    def save_duplicate(
+        self,
+        request: Any,
+        source: Any,
+        target: Any,
+        related: Sequence[str],
+    ) -> None:
+        """Copy what was ticked of ``source``'s declared relations to
+        ``target``, the new record just saved, in its transaction. The
+        reprogrammable step: raise a ``ValidationError`` to refuse the
+        copy, which rolls the new record back too."""
+        if related:
+            self.get_duplicate().copy_related(request, source, target, related)
 
     def save_bulk_edit(self, request: Any, serializer: Any, obj: Any) -> Any:
         """Write one record of a bulk edit. The reprogrammable step.

@@ -237,6 +237,24 @@
 
     (options.fields || []).forEach(function (spec, index) {
       var id = "dialog-field-" + index;
+
+      // A yes-or-no question: a box ticked or not, its label beside it.
+      if (spec.type === "checkbox") {
+        var row = el("div", "field-checkbox");
+        var box = document.createElement("input");
+        var text = el("label", "", spec.label || spec.name);
+
+        box.type = "checkbox";
+        box.id = id;
+        box.name = spec.name;
+        box.checked = Boolean(spec.value);
+        text.htmlFor = id;
+        row.append(box, text);
+        form.appendChild(row);
+        inputs.push(box);
+        return;
+      }
+
       var field = el("div", "sf-field");
       var label = el("label", "sf-label", spec.label || spec.name);
       var input = el(spec.multiline ? "textarea" : "input", "input");
@@ -276,7 +294,7 @@
       }
 
       var missing = inputs.find(function (input) {
-        return input.required && !input.value.trim();
+        return input.required && input.type !== "checkbox" && !input.value.trim();
       });
 
       if (missing) {
@@ -287,7 +305,7 @@
       var values = {};
 
       inputs.forEach(function (input) {
-        values[input.name] = input.value.trim();
+        values[input.name] = input.type === "checkbox" ? input.checked : input.value.trim();
       });
       dialog.close(values);
     }

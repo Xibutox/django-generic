@@ -585,6 +585,17 @@ priority, tags, team* - and each keeps its own tags beside *billing*. *Select al
 ticket the filters match. As `viewer` the entry is not offered. See
 [Bulk edit](bulk-edit.md).
 
+**A record copied.** Open *Manufacturing › Articles › City bicycle*
+and choose *Duplicate*: the add form opens with its values, the
+reference empty (it is unique), and *Copy with it* offers *BOM lines*,
+unticked. Type a reference, rename it, tick the box and save: the new
+bicycle has the same bill of materials, each line written through its
+own form. A ticket's *Duplicate* (its page, or its row menu) brings its
+tags and comments along, ticked - untick *Tags* and the field empties.
+In the wiki, a page's *Duplicate* asks for a title and whether its
+subpages come; on *Wikis*, a wiki's copy icon copies it whole. See
+[Duplicating records](duplicate.md).
+
 **On the API.** These are worth pasting into the address bar:
 
 ```

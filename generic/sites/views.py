@@ -433,6 +433,19 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
                 )
             )
 
+        # Without a summary page, the form is where a record is copied.
+        if not summary and self.resource.can_duplicate(
+            self.request, self.object
+        ):
+            items.append(
+                ToolbarItem(
+                    url=self.resource.get_duplicate_url(self.object.pk),
+                    label=gettext("Duplicate"),
+                    icon="content_copy",
+                    variant="ghost",
+                )
+            )
+
         return items
 
     def get_return_url(self) -> str:
@@ -557,6 +570,79 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
         return context
 
 
+class ResourceDuplicateView(ResourceFormView):
+    """The add form, opened with a record's values to copy
+    (``generic.sites.duplicates``).
+
+    Nothing is written until it is saved: the form posts to the
+    resource's own endpoint like any new record, naming its source and
+    the relations ticked to copy with it.
+    """
+
+    source: Any = None
+
+    def dispatch(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if request.user.is_authenticated:
+            self.source = get_object_or_404(
+                self.resource.get_queryset(request),
+                pk=kwargs["pk"],
+            )
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def has_permission(self) -> bool:
+        return self.resource.can_duplicate(self.request, self.source)
+
+    def get_page_title(self) -> str:
+        return gettext("Duplicate %(name)s") % {
+            "name": self.resource.get_object_label(self.source)
+        }
+
+    def get_source_url(self) -> str:
+        resource = self.resource
+
+        if resource.object_page == "detail":
+            return resource.get_detail_url(self.source.pk)
+
+        return resource.get_change_url(self.source.pk)
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [
+            self.list_breadcrumb(),
+            Breadcrumb(
+                label=self.resource.get_object_label(self.source),
+                url=self.get_source_url(),
+            ),
+            Breadcrumb(label=gettext("Duplicate")),
+        ]
+
+    def get_toolbar_items(self) -> list[ToolbarItem]:
+        return []
+
+    def get_form_config(self) -> dict[str, Any]:
+        config = super().get_form_config()
+        initial = self.resource.get_duplicate_initial(
+            self.request, self.source
+        )
+
+        config.update(
+            initial=initial.get("values", {}),
+            initialDisplay=initial.get("display", {}),
+            initialInlines=initial.get("inlines", {}),
+            # Cancel goes back to the record copied; a saved copy opens
+            # on its own page.
+            cancelUrl=self.get_source_url(),
+            addUrl="",
+            duplicate={
+                "source": force_str(self.source.pk),
+                "sourceLabel": self.resource.get_object_label(self.source),
+                "copies": initial.get("copies", []),
+            },
+        )
+
+        return config
+
+
 class ResourceDetailView(ResourceViewMixin, TemplateView):
     """A record's summary: its values, its figures, its related tables.
 
@@ -619,6 +705,16 @@ class ResourceDetailView(ResourceViewMixin, TemplateView):
                     icon="open_in_new",
                     variant="ghost",
                     target="_blank",
+                )
+            )
+
+        if resource.can_duplicate(request, obj):
+            items.append(
+                ToolbarItem(
+                    url=resource.get_duplicate_url(obj.pk),
+                    label=gettext("Duplicate"),
+                    icon="content_copy",
+                    variant="ghost",
                 )
             )
 

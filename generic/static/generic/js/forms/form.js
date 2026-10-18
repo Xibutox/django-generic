@@ -206,6 +206,12 @@
     this.message.setAttribute("role", "alert");
     form.appendChild(this.message);
 
+    var copies = this.renderCopies();
+
+    if (copies) {
+      form.appendChild(copies);
+    }
+
     var sections = (schema.sections || []).slice().sort(byPosition);
     var inlineDefinitions = (schema.inlines || []).slice().sort(byPosition);
     var bySection = {};
@@ -303,6 +309,100 @@
     }
 
     this.bind();
+  };
+
+  /**
+   * A copy of a record (`config.duplicate`): a box per many-to-many
+   * field and inline the form already holds - unticked, it is emptied -
+   * and per relation copied on the server once the copy is saved.
+   */
+  SchemaForm.prototype.renderCopies = function () {
+    var self = this;
+    var duplicate = this.config.duplicate;
+    var copies = (duplicate && duplicate.copies) || [];
+
+    this.copies = [];
+
+    if (this.mode !== "create" || !copies.length) {
+      return null;
+    }
+
+    var fieldset = el("fieldset", "fieldset form-copies");
+    fieldset.appendChild(el("legend", "fieldset__title", t("Copy with it")));
+    fieldset.appendChild(
+      el(
+        "p",
+        "fieldset__description",
+        Generic.format(
+          t("What \u201c%(name)s\u201d holds that the copy should hold too. Nothing is written until you save."),
+          { name: duplicate.sourceLabel || "" }
+        )
+      )
+    );
+
+    var list = el("div", "form-copies__list");
+
+    copies.forEach(function (copy, index) {
+      var row = el("div", "field-checkbox form-copies__item");
+      var input = document.createElement("input");
+      var label = el("label", "", copy.label);
+      var id = self.id + "-copy-" + index;
+
+      input.type = "checkbox";
+      input.id = id;
+      input.checked = Boolean(copy.checked) && !copy.disabled;
+      input.disabled = Boolean(copy.disabled);
+      label.htmlFor = id;
+      label.appendChild(el("span", "badge form-copies__count", String(copy.count)));
+      row.append(input, label);
+
+      if (copy.disabled) {
+        row.appendChild(el("span", "muted", t("Too many to copy with the record.")));
+      }
+
+      input.addEventListener("change", function () {
+        self.applyCopy(copy, input.checked);
+      });
+      self.copies.push({ copy: copy, input: input });
+      list.appendChild(row);
+    });
+
+    fieldset.appendChild(list);
+
+    return fieldset;
+  };
+
+  /** A box of the copy ticked or not: the field or rows it stands for. */
+  SchemaForm.prototype.applyCopy = function (copy, checked) {
+    var config = this.config;
+
+    if (copy.kind === "field") {
+      var entry = this.fields.get(copy.name);
+
+      if (entry) {
+        var initial = (config.initial || {})[copy.name];
+        entry.widget.set(checked ? initial : [], (config.initialDisplay || {})[copy.name]);
+      }
+    } else if (copy.kind === "inline") {
+      var inline = this.inlines.get(copy.name);
+
+      if (inline) {
+        inline.populate(checked ? (config.initialInlines || {})[copy.name] || [] : [], true);
+      }
+    }
+
+    this.updateDirty();
+  };
+
+  /** The relations ticked to copy on the server. */
+  SchemaForm.prototype.copiedRelations = function () {
+    return (this.copies || [])
+      .filter(function (entry) {
+        return entry.copy.kind === "related" && entry.input.checked;
+      })
+      .map(function (entry) {
+        return entry.copy.name;
+      });
   };
 
   SchemaForm.prototype.renderSection = function (section, fields) {
@@ -491,7 +591,7 @@
     var standalone = !this.embedded && !config.popup;
 
     // Cancel goes back where the user came from, or to the list.
-    var back = config.returnUrl || config.listUrl;
+    var back = config.cancelUrl || config.returnUrl || config.listUrl;
 
     if (standalone && back) {
       end.appendChild(link(t("Cancel"), back, { variant: "ghost" }));
@@ -595,7 +695,7 @@
   SchemaForm.prototype.populate = function () {
     var self = this;
     var data = this.objectData || {};
-    var labels = data._display || {};
+    var labels = data._display || this.config.initialDisplay || {};
     var initial = this.config.initial || {};
 
     this.fields.forEach(function (entry, name) {
@@ -612,10 +712,12 @@
       entry.widget.set(value === undefined ? null : value, labels[name]);
     });
 
-    var rows = data._inlines || {};
+    // A copy of a record opens with the record's rows, as new ones.
+    var copied = !data._inlines && this.mode === "create" && this.config.initialInlines;
+    var rows = data._inlines || copied || {};
 
     this.inlines.forEach(function (inline, name) {
-      inline.populate(rows[name] || []);
+      inline.populate(rows[name] || [], Boolean(copied));
     });
   };
 
@@ -838,6 +940,13 @@
 
     if (Object.keys(rows).length) {
       payload._inlines = rows;
+    }
+
+    if (create && this.config.duplicate) {
+      payload._duplicate = {
+        source: this.config.duplicate.source,
+        related: this.copiedRelations()
+      };
     }
 
     if (!create && !Object.keys(payload).length) {

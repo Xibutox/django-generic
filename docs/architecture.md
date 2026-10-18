@@ -63,6 +63,7 @@ generic/
 │   ├── chart_builder.py chart_builder: the chart its reader draws above a list
 │   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
 │   ├── bulk_edit.py     bulk_edit_fields: a selection given one value, reviewed, written
+│   ├── duplicates.py    duplicate: a record copied into a new form, relations ticked
 │   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint
 │   ├── summary.py       A record, typed and formatted for its summary
 │   ├── files.py         A record's files: download URL, exposure, the answer

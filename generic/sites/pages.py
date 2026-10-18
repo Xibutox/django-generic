@@ -283,6 +283,18 @@ class PagesMixin:
                     f"{', '.join(sorted(RESERVED_NAMES))}."
                 )
 
+            # A record's duplicate form lives at <pk>/duplicate/.
+            if (
+                declared.name == "duplicate"
+                and declared.detail
+                and (getattr(self, "duplicate", False))
+            ):
+                raise ImproperlyConfigured(
+                    f"{where} takes the address of the record's "
+                    f"duplicate form: name it otherwise, or turn "
+                    f"duplicate off."
+                )
+
             if declared.name in seen:
                 raise ImproperlyConfigured(f"{where} is declared twice.")
 

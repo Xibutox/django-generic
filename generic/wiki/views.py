@@ -195,7 +195,8 @@ class WikiListView(SiteViewMixin, TemplateView):
                 "wikis": WikiSerializer(
                     self.wiki_list, many=True, context={"request": request}
                 ).data,
-                "can": rights,
+                # A copy of a wiki takes its pages for who may add some.
+                "can": {**rights, "addPage": can(request.user, "add")},
             },
         )
 
@@ -293,6 +294,8 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                     for entry in pages
                     if entry.pk not in excluded
                 ],
+                # What a copy of the page may take along.
+                "subpages": len(excluded) - 1 if page is not None else 0,
                 # A new page opens straight in the editor.
                 "edit": request.GET.get("edit") == "1" and rights["change"],
             },

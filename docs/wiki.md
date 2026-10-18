@@ -277,6 +277,8 @@ Under `wiki/api/`, JSON, like every other screen:
 | `DELETE pages/<id>/` | Delete it; its subpages move up |
 | `GET pages/<id>/revisions/` | Its versions: `url` to read one, `current` on the one the page was restored to |
 | `POST pages/<id>/restore/` | Bring one back: `{"revision": <id>}` |
+| `POST pages/<id>/duplicate/` | A copy beside it: `{"title", "subpages"}` ([Duplicating](#duplicating)) |
+| `POST wikis/<id>/duplicate/` | A copy of the wiki: `{"name", "description", "pages"}` |
 
 A page carries its `wiki`; naming another one in a `PATCH`, or a
 `parent` from another wiki, answers `400`, and so does an address
@@ -286,6 +288,53 @@ never written: `[{"kind":
 once each, leaving out an upload no longer in the database. A save
 against an old version answers `409 Conflict`. The address
 `api` is reserved; a page titled "API" gets `api-page`.
+
+## Duplicating
+
+A page's **Duplicate** (beside *Subpage*, for who may add pages in the
+wiki) asks for the copy's title - *<title> (copy)* to start with - and,
+when the page has subpages, whether they come along. The copy is
+written beside the page, under the same parent, and opens in the
+editor. On the list of wikis, a wiki's copy icon (for who may add a
+wiki) asks for the copy's name and description and whether its pages
+come along - every one, under the same parent as before, at the same
+address within the new wiki.
+
+What is copied is the text as it stands: the history is not - a copy
+starts its own - and a copy is never pinned to the dashboard. Images
+and files are shared, not copied: an upload belongs to whichever page
+links to it.
+
+Permissions: `add_wikipage` in a wiki the user writes in
+(`WIKI_EDIT_ACCESS`) for a page; `add_wiki` for a wiki, and
+`add_wikipage` too to copy its pages. Endpoints `POST
+pages/<id>/duplicate/` and `POST wikis/<id>/duplicate/` (201 with the
+copy; 400 without a title, 403 without the permission).
+
+**Who reads the copy.** A new wiki is nobody's yet: whatever
+`WIKI_ACCESS` says of a wiki with nothing attached decides. A project
+that ties wikis to teams listens to
+`generic.wiki.duplicates.wiki_duplicated` (`sender=Wiki`, `source`,
+`copy`, `user`, sent in the copy's transaction) and gives the copy the
+source's readers before anyone can open it:
+
+```python
+from generic.wiki.duplicates import wiki_duplicated
+
+
+def keep_readers(sender, source, copy, **kwargs):
+    link = TeamWiki.objects.filter(wiki=source).first()
+
+    if link is not None:
+        TeamWiki.objects.create(wiki=copy, team=link.team)
+
+
+wiki_duplicated.connect(keep_readers)   # in AppConfig.ready()
+```
+
+`docmanager/` does this (`documents/wikis.py`): a team's handbook
+copied stays the team's. Records of the project's own models are
+duplicated by their resources: see [Duplicating records](duplicate.md).
 
 ## Images
 

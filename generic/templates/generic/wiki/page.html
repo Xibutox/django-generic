@@ -146,6 +146,11 @@
                   {% icon "note_add" "icon--sm" %} {% translate "Subpage" %}
                 </button>
               {% endif %}
+              {% if can.add %}
+                <button type="button" class="button button--ghost button--sm" @click="duplicate()">
+                  {% icon "content_copy" "icon--sm" %} {% translate "Duplicate" %}
+                </button>
+              {% endif %}
               {% if can.delete %}
                 <button type="button" class="button button--danger-ghost button--sm" @click="remove()">
                   {% icon "delete" "icon--sm" %} {% translate "Delete" %}

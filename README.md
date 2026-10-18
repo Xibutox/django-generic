@@ -230,6 +230,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Calendars](docs/calendars.md) — `Calendar(...)`: records on their days, by month, week or list, the list's filters above them, dragged to another day
 - [Boards](docs/boards.md) — `Board(...)`: records as cards, a column per value of a field, the list's filters above them, dragged to another column
 - [Comparing records](docs/compare.md) — `compare_fields`: two to six records ticked in the list, side by side, the values that differ marked
+- [Duplicating records](docs/duplicate.md) — `duplicate = True` or `Duplicate(...)`: a record's values in a new add form, edited before it is written, its many-to-many values, inline rows and declared relations ticked to come along; wiki pages and wikis too
 - [Labels](docs/labels.md) — `labels = Labels(...)`: stickers with a QR code leading to each record, printed from a selection or a record's page
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders

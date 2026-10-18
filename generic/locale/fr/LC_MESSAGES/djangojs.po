@@ -2263,6 +2263,70 @@ msgstr "Cochez entre 2 et %(count)s lignes pour les comparer."
 msgid "Total"
 msgstr "Total"
 
+#: generic/static/generic/js/forms/form.js
+msgid "Copy with it"
+msgstr "Copier avec"
+
+#: generic/static/generic/js/forms/form.js
+msgid "What “%(name)s” holds that the copy should hold too. Nothing is written until you save."
+msgstr "Ce que « %(name)s » contient et que la copie doit contenir aussi. Rien n’est écrit avant l’enregistrement."
+
+#: generic/static/generic/js/forms/form.js
+msgid "Too many to copy with the record."
+msgstr "Trop nombreux pour être copiés avec l’enregistrement."
+
+#: generic/static/generic/js/wiki.js
+msgid "%(title)s (copy)"
+msgstr "%(title)s (copie)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Copy its subpages too (%(count)s)"
+msgstr "Copier aussi ses sous-pages (%(count)s)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Duplicate this page"
+msgstr "Dupliquer cette page"
+
+#: generic/static/generic/js/wiki.js
+msgid "The copy is written beside the page. Its history is not copied; its images and files are shared."
+msgstr "La copie est écrite à côté de la page. Son historique n’est pas copié ; ses images et fichiers sont partagés."
+
+#: generic/static/generic/js/wiki.js
+msgid "Duplicate"
+msgstr "Dupliquer"
+
+#: generic/static/generic/js/wiki.js
+msgid "The page was duplicated."
+msgstr "La page a été dupliquée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The page could not be duplicated."
+msgstr "La page n’a pas pu être dupliquée."
+
+#: generic/static/generic/js/wiki.js
+msgid "%(name)s (copy)"
+msgstr "%(name)s (copie)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Copy its pages (%(count)s)"
+msgstr "Copier ses pages (%(count)s)"
+
+#: generic/static/generic/js/wiki.js
+msgid "Duplicate this wiki"
+msgstr "Dupliquer ce wiki"
+
+#: generic/static/generic/js/wiki.js
+msgid "The pages are copied as they stand, under the same parents. Their history is not copied; their images and files are shared."
+msgstr "Les pages sont copiées telles quelles, sous les mêmes parents. Leur historique n’est pas copié ; leurs images et fichiers sont partagés."
+
+#: generic/static/generic/js/wiki.js
+msgid "The wiki was duplicated."
+msgstr "Le wiki a été dupliqué."
+
+#: generic/static/generic/js/wiki.js
+msgid "The wiki could not be duplicated."
+msgstr "Le wiki n’a pas pu être dupliqué."
+
 #: generic/static/generic/js/wiki.js
 msgid "The archive is too large: at most %(limit)s."
 msgstr "L’archive est trop volumineuse : %(limit)s au plus."

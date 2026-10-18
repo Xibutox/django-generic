@@ -384,8 +384,24 @@ class ResourceViewSet(
 
     # -- writes ----------------------------------------------------------
 
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        from generic.sites.duplicates import read_request
+
+        # A copy of a record names its source: checked before anything
+        # is written, its relations copied once the record is saved.
+        self.duplicating = read_request(self.resource, request)
+
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer: Any) -> None:
         self.resource.save_model(self.request, serializer, change=False)
+        duplicating = getattr(self, "duplicating", None)
+
+        if duplicating is not None:
+            source, related = duplicating
+            self.resource.save_duplicate(
+                self.request, source, serializer.instance, related
+            )
 
     def perform_update(self, serializer: Any) -> None:
         self.resource.save_model(self.request, serializer, change=True)

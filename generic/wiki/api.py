@@ -5,6 +5,8 @@
 ``POST   wikis/``                  a new wiki
 ``PATCH  wikis/<id>/``             rename it, describe it, move it
 ``DELETE wikis/<id>/``             delete it, with its pages
+``POST   wikis/<id>/duplicate/``   a copy: ``{"name", "description",
+                                   "pages"}``
 ``POST   wikis/import/``           a new wiki from an archive
                                    (multipart ``file``, ``name``)
 ``GET    pages/``                  the menu: every page, no content;
@@ -16,6 +18,8 @@
 ``GET    pages/<id>/revisions/``   its versions; ``current`` marks
                                    the one it was restored to
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
+``POST   pages/<id>/duplicate/``   a copy beside it: ``{"title",
+                                   "subpages"}``
 ================================  ====================================
 
 Reading is for any signed-in user, in the wikis
@@ -123,6 +127,18 @@ def can(user: Any, action_name: str, model: str = "wikipage") -> bool:
     )
 
 
+#: A page's title, at most: the model's field.
+TITLE_MAX_LENGTH = 200
+
+
+def as_bool(value: Any) -> bool:
+    """A JSON boolean, or the words a form would send for one."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+
+    return bool(value)
+
+
 def readable_pages(user: Any) -> Any:
     """The pages ``user`` may read: those of the wikis they see."""
     return WikiPage.objects.filter(wiki__in=Wiki.objects.readable_by(user))
@@ -177,6 +193,36 @@ class WikiViewSet(viewsets.ModelViewSet):
             Wiki.objects.readable_by(self.request.user)
             .annotate(page_count=Count("pages"))
             .order_by("position", "name")
+        )
+
+    @action(detail=True, methods=["post"])
+    def duplicate(self, request: Any, pk: Any = None) -> Response:
+        """A copy of the wiki: ``{"name", "description", "pages"}``. The
+        wiki permission ``add_wiki``, and ``add_wikipage`` to copy its
+        pages too (generic.wiki.duplicates)."""
+        from generic.wiki.duplicates import duplicate_wiki
+
+        source = self.get_object()
+        pages = as_bool(request.data.get("pages", True))
+
+        if pages and not can(request.user, "add"):
+            raise PermissionDenied(gettext("You may not add pages."))
+
+        serializer = WikiSerializer(
+            data={
+                "name": request.data.get("name") or source.name,
+                "description": request.data.get(
+                    "description", source.description
+                ),
+            },
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        copy = duplicate_wiki(source, request.user, serializer, pages=pages)
+
+        return Response(
+            WikiSerializer(copy, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
         )
 
     @action(
@@ -296,6 +342,40 @@ class WikiPageViewSet(viewsets.ModelViewSet):
             # only moves in the menu.
             if (saved.title, saved.content) != (before.title, before.content):
                 WikiRevision.keep(before)
+
+    @action(detail=True, methods=["post"])
+    def duplicate(self, request: Any, pk: Any = None) -> Response:
+        """A copy of the page beside it: ``{"title", "subpages"}``. The
+        page permission ``add_wikipage``, in a wiki the user writes in
+        (generic.wiki.duplicates)."""
+        from generic.wiki.duplicates import duplicate_page
+
+        page = self.get_object()
+        title = str(request.data.get("title") or "").strip()
+
+        if not title:
+            return Response(
+                {"title": [gettext("This field is required.")]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(title) > TITLE_MAX_LENGTH:
+            return Response(
+                {"title": [gettext("This title is too long.")]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        copy = duplicate_page(
+            page,
+            request.user,
+            title,
+            subpages=as_bool(request.data.get("subpages", False)),
+        )
+
+        return Response(
+            WikiPageSerializer(copy, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=["get"])
     def revisions(self, request: Any, pk: Any = None) -> Response:
