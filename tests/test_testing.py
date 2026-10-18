@@ -101,3 +101,46 @@ def test_skipping_it_is_the_way_out():
         skipped = {"odd-page": "takes a thing"}
 
     Sweep().test_every_page_is_covered()
+
+
+def test_a_column_read_row_by_row_fails_the_query_count(
+    client, support_desk, admin_user, monkeypatch
+):
+    """An N+1 - here a column the queryset defers, so each row loads it
+    on its own - costs a query per row, and the sweep says so."""
+    from example.models import Ticket
+    from generic.sites import site
+
+    resource = site.get_resource(Ticket)
+    monkeypatch.setattr(
+        resource,
+        "get_queryset",
+        lambda request: Ticket.objects.defer("title"),
+    )
+    client.force_login(admin_user)
+
+    with pytest.raises(AssertionError, match="queries for 1 row"):
+        PageSweep().test_rows_cost_the_same_however_many(
+            "example.ticket", client, {}
+        )
+
+
+def test_rows_read_together_pass_the_query_count(
+    client, support_desk, admin_user
+):
+    client.force_login(admin_user)
+
+    PageSweep().test_rows_cost_the_same_however_many(
+        "example.ticket", client, {}
+    )
+
+
+def test_a_lone_record_is_copied_to_have_two_rows(db, support_desk):
+    from example.models import Tag
+    from generic.testing.pages import copy_of
+
+    tag = support_desk["regression"]
+    copy = copy_of(tag)
+
+    assert copy is not None and copy.pk != tag.pk
+    assert Tag.objects.count() >= 2
