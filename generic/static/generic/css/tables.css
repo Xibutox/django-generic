@@ -148,3 +148,13 @@
   color: var(--color-accent-contrast);
   font-weight: 600;
 }
+
+/* A short window (docs/ui.md, Size): a row is its line of text and
+   little more, as in the data tables. */
+@media (max-height: 820px) {
+  .object-table th,
+  .object-table td {
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+}

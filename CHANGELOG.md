@@ -17,7 +17,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   - 1920x1080 at 125% leaves about 730 - the page keeps its type and
   controls and gives up the air between them: a slimmer top bar, page
   margins and card gaps a quarter smaller, closer navigation links,
-  slimmer table rows and summary figures, and charts at most 28% of
+  slimmer table rows, summary figures and label and value lists - the
+  account page among them - and charts at most 28% of
   the window tall, so a list shows its rows under its charts. Between
   1025px and 1400px of width the pinned navigation is 15rem. At 100%
   on a 1080p screen nothing moves. See docs/ui.md, *Size*.
@@ -36,6 +37,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ### Fixed
 - The table under a list's charts touched them: the chart builder
   between them broke the rule spacing the two.
+- The account page's Appearance card had twice the space under its
+  title that the other cards have.
 
 ## [1.4.0] - 2026-10-18
 

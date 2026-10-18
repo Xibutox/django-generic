@@ -2064,7 +2064,8 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
 - **Short windows** (`@media (max-height: 820px)`: 1080p at 125% is
   ~1536x730): `tokens.css` sets `--header-height: 3rem` and
   `--space-5..7` a quarter smaller; `base.css` (nav links),
-  `datatables.css` (row padding), `summary.css` (figures) and
+  `datatables.css` (row padding), `tables.css` (`object-table`),
+  `components.css` (`detail-list`, `empty-state`), `summary.css` (figures) and
   `charts.css` (`.chart-card__body` `max-height: max(10rem, 28vh)`)
   tighten in the same query. 1025-1400px wide: `--sidebar-width: 15rem`.
   Density follows the window's height there, not a setting; a new

@@ -541,7 +541,9 @@ between them:
   `--space-7` a quarter smaller: the page's margins, the gaps between
   cards, the cards' padding;
 - the navigation's links stand closer, a table's rows are their line of
-  text and little more, a summary's figures sit on one slim line;
+  text and little more (data tables and `object-table` alike), a
+  summary's figures sit on one slim line, label and value lists
+  (`detail-list`) and empty states take less height;
 - a chart is never taller than 28% of the window (`10rem` at least), so
   a list's rows still show under its charts.
 
