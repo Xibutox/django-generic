@@ -4244,3 +4244,23 @@ msgstr "Empilé"
 #: generic/templates/generic/charts/builder.html
 msgid "Horizontal"
 msgstr "Horizontal"
+
+#: generic/sites/chart_builder.py generic/templates/generic/charts/body.html
+msgid "Table"
+msgstr "Tableau croisé"
+
+#: generic/sites/chart_builder.py generic/templates/generic/charts/body.html
+msgid "Total"
+msgstr "Total"
+
+#: generic/sites/chart_builder.py generic/templates/generic/charts/body.html
+msgid "Download as CSV"
+msgstr "Télécharger en CSV"
+
+#: generic/sites/chart_builder.py generic/templates/generic/charts/body.html
+msgid "Click a figure to filter the table."
+msgstr "Cliquez sur un chiffre pour filtrer la table."
+
+#: generic/sites/chart_builder.py generic/templates/generic/charts/body.html
+msgid "The largest rows and columns only; the totals count every row."
+msgstr "Les plus grandes lignes et colonnes seulement ; les totaux comptent toutes les lignes."

@@ -933,7 +933,7 @@ parent and returns to the tab. Tables start lazily when their tab opens.
 Chart(
     "name",                          # URL: api/<app>/<model>/charts/<name>/
     title=_("..."), description="", icon="bar_chart",
-    type="bar",                      # bar line area pie donut funnel heatmap
+    type="bar",                      # bar line area pie donut funnel heatmap pivot
     group_by="field__path",          # relation, choice, boolean, date (bucketed), value
     split_by="other_path",           # series / heatmap rows (optional)
     value=Sum("hours"),              # default Count("pk", distinct=True)
@@ -951,6 +951,13 @@ Chart(
   `_related`, and aggregates over `get_queryset(request)` selected by pk.
 - Above a list (`list_charts`) charts follow the table; clicking a bar or
   slice filters the table.
+- `type="pivot"` (also the builder's *Table* form) draws no chart: a
+  table of figures, rows = `group_by`, columns = `split_by`, plus
+  `totals: {rows, columns, all}` each its own aggregate (an average's
+  total is the average of all rows), every row kept (no `limit`/*Other*)
+  up to `PIVOT_ROWS` 200 x `PIVOT_COLUMNS` 50, `truncated` past it; a
+  figure clicked filters the table; downloads as CSV (`charts.js`
+  `pivotCsv`).
 - On a summary page: `RelatedTable(charts=...)` in the tab, and
   `detail_charts`.
 - Anywhere: `{% load generic_ui %}{% generic_chart "app.model" "name" height="20rem" %}`

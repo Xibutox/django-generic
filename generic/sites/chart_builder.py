@@ -46,7 +46,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from generic.sites.auto import is_private
-from generic.sites.charts import PERIOD_LABELS, PERIODS, Chart
+from generic.sites.charts import PERIOD_LABELS, PERIODS, PIVOT, Chart
 
 #: What the panel offers to draw, with the icon of each.
 TYPES = {
@@ -57,8 +57,10 @@ TYPES = {
     "donut": (_("Donut"), "donut_large"),
     "funnel": (_("Funnel"), "filter_alt"),
     "heatmap": (_("Heatmap"), "grid_on"),
+    # Not a drawing: the figures crossed, with their totals.
+    "pivot": (_("Table"), "pivot_table_chart"),
 }
-DEFAULT_TYPES = ("bar", "line", "area", "pie", "donut", "heatmap")
+DEFAULT_TYPES = ("bar", "line", "area", "pie", "donut", "heatmap", "pivot")
 
 #: Forms with one series only: a second field means nothing to them.
 SINGLE_SERIES = frozenset({"pie", "donut", "funnel"})
@@ -411,6 +413,8 @@ class BoundChartBuilder:
 
         measure = self.measures[value]
         dates = self.dimensions[group_by].kind == "date"
+        # A table keeps every row: an "Other" row would add up averages.
+        limit = None if dates or kind == PIVOT else LIMITS.get(kind, LIMIT)
 
         return Chart(
             "builder",
@@ -425,7 +429,7 @@ class BoundChartBuilder:
             periods=PERIODS,
             stacked=bool(split_by) and is_on(params.get("stacked")),
             horizontal=kind == "bar" and is_on(params.get("horizontal")),
-            limit=None if dates else LIMITS.get(kind, LIMIT),
+            limit=limit,
         )
 
     def title(self, measure: Measure, group_by: str, split_by: str) -> str:

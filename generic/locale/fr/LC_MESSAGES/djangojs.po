@@ -2194,3 +2194,7 @@ msgstr "Masquer le graphique"
 #: generic/static/generic/js/datatables/toolbar.js
 msgid "Show a chart of these rows"
 msgstr "Afficher un graphique de ces lignes"
+
+#: generic/static/generic/js/charts.js
+msgid "Total"
+msgstr "Total"
