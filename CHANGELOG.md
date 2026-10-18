@@ -13,6 +13,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Boards: records as cards, a column per value of a field - a choice,
+  a yes or no, or a foreign key - with *Not set* for records without
+  one. `boards = (Board("name", field=..., ...),)` on a resource gives
+  a page `<model>/<name>/` with the list's search and filters above
+  it, each column's count and first 100 cards, cards coloured by a tag
+  field and showing the values named in `fields`. With
+  `editable=True`, a card dragged to another column - or sent there
+  from its *Move to* menu, by keyboard - takes that value, written
+  through `save_editable` (the field must be in `editable_fields`; a
+  state field stays read only). `GET api/<app>/<model>/boards/<name>/`
+  and `PATCH api/<app>/<model>/<pk>/boards/<name>/` `{"column"}`. In the
+  example: *Support › Priorities*, tickets by priority. See
+  docs/boards.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks

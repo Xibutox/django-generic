@@ -174,6 +174,7 @@ class GenericSite:
             resource.get_kpis()
             resource.get_cards()
             resource.get_calendars()
+            resource.get_boards()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)

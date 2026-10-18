@@ -4244,3 +4244,23 @@ msgstr "Empilé"
 #: generic/templates/generic/charts/builder.html
 msgid "Horizontal"
 msgstr "Horizontal"
+
+#: generic/sites/boards.py
+msgid "Board"
+msgstr "Tableau"
+
+#: generic/sites/boards.py
+msgid "Not set"
+msgstr "Non renseigné"
+
+#: generic/sites/boards.py
+msgid "Cards of this board are not moved here."
+msgstr "Les cartes de ce tableau ne se déplacent pas ici."
+
+#: generic/sites/boards.py
+msgid "Send the column to move it to."
+msgstr "Indiquez la colonne où le déplacer."
+
+#: generic/sites/boards.py
+msgid "This board has no such column."
+msgstr "Ce tableau n'a pas cette colonne."

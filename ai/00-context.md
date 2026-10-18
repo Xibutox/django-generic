@@ -112,7 +112,7 @@ generic/
 │   ├── viewsets.py         ResourceViewSet: one endpoint per resource (rows, CRUD, schema,
 │   │                       summary, exports, actions, autocomplete, charts, _related,
 │   │                       _grid, cells, rows, trees/<name>/, kpis/<name>/,
-│   │                       cards/<name>/, calendars/<name>/)
+│   │                       cards/<name>/, calendars/<name>/, boards/<name>/)
 │   ├── views.py            generated pages: list, add/change, detail (summary), delete,
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
@@ -121,6 +121,8 @@ generic/
 │   │                       (self FK or link model), a level at a time; no cycles
 │   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
 │   │                       days, a page each, moved by dragging (§5.20)
+│   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
+│   │                       per value of a field, moved by dragging (§5.22)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
@@ -248,6 +250,7 @@ generic/
     │                       element (tree, cards, calendar); loaded by base.html
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
+    ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
     ├── js/select2.js       Generic.select2 helpers
     ├── js/bulk_edit.js     Generic.bulkEdit.open: the selection bar's bulk edit dialog (§5.21)
     ├── js/wiki.js          Alpine wikiPage
@@ -671,6 +674,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
+| `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -1566,6 +1570,34 @@ class TicketResource(ModelResource):
   Example: `TicketResource` (a closed ticket keeps its team), and the
   Equipment group through `auto()`. See `docs/bulk-edit.md`.
 
+### 5.22 Boards (`Board`)
+
+```python
+boards = (
+    Board("priorities", field="priority",     # choices, BooleanField or ForeignKey
+          title=_("Priorities"), icon="view_kanban", description=_("..."),
+          columns=None,                       # values / related pks shown, in order
+          show_empty=True,                    # "Not set" column when the field is null-able
+          label=None,                         # card text; default the record's label
+          color="status",                     # a tag field: first tag's colour
+          fields=("team", "assignee"),        # summary-typed values on the card
+          editable=True,                      # drag = save_editable; field in editable_fields
+          navigation=True, permission=None),
+)
+```
+
+A page `<model>/<name>/` (button on the list; `navigation` adds a
+sidebar entry) with the resource's table above it, rows hidden, whose
+`filters`/`search` the board follows (`board` is a table action). A
+column per choice (Yes/No; a relation's records the reader may see, at
+most 30 - `MAX_COLUMNS`), coloured by the field's tag style; at most 100
+cards a column (`MAX_CARDS`), with the count and `truncated`. Cards from
+`get_list_queryset`. Moving (drag, or the card's *Move to* select for a
+keyboard) goes through `save_editable`; a `transitions` state field
+cannot be `editable`. *Add* on a column opens the add form with
+`?<field>=<key>`. Names are unique across a resource's boards and
+calendars. `docs/boards.md`; example: *Support › Priorities*.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1600,6 +1632,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
 | `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
+| `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,
 condition = `{"column": "<public name>", "operator": "...", "value": ...}`,

@@ -228,6 +228,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, the chart each reader draws above a list (`chart_builder`), computed charts, the payload
 - [Key figures and cards](docs/dashboard.md) — `Kpi(...)`, `Cards(...)`: numbers and records on the dashboard, each a filter over the list it opens, coloured by thresholds, live
 - [Calendars](docs/calendars.md) — `Calendar(...)`: records on their days, by month, week or list, the list's filters above them, dragged to another day
+- [Boards](docs/boards.md) — `Board(...)`: records as cards, a column per value of a field, the list's filters above them, dragged to another column
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
 - [Numbering](docs/numbering.md) — `allocate("{team}-{year}-{seq:04}", team="LEG")`: numbers from a pattern, each series counting on its own, under a lock
