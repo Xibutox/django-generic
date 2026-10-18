@@ -526,9 +526,18 @@ Every token is in `rem`, and the root font size is the browser's own:
 the type, the spacing, the controls and the frame - `--sidebar-width`
 and `--header-height` included - follow a reader who asked their
 browser for larger text, and the browser's zoom enlarges the rest. The
-application has no size setting of its own; a system that scales its
-display (125%, 150%) is answered by the layout's breakpoints, as it
-should be.
+application has no size setting of its own.
+
+One exception: a laptop whose system scales its display by 125% or
+150% - a 1920x1080 Dell at the Windows default is 1536px wide at 1.25
+device pixels per CSS pixel - drew every letter and button a quarter
+larger than the same window at 100%, and the interface read as zoomed
+in. A window between 1025px and 1800px wide at 1.2 to 1.75 device
+pixels per pixel takes the root font size **a tenth smaller** (`html {
+font-size: 90% }` in `base.css`), every rem with it: about what Windows
+draws at 110%. Phones, retina screens (2x) and 1x screens keep the
+browser's size, and the browser's zoom works on top. A project that
+wants none of it sets `html { font-size: 100% }` in its own stylesheet.
 
 Those breakpoints look at the height too. A 1920x1080 laptop at the
 125% Windows sets by default leaves the browser about 1536x730 CSS

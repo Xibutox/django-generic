@@ -20,6 +20,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* A laptop the system scales by 125% or 150% - a 1920x1080 Dell at the
+   Windows default is 1536px wide at 1.25 pixels per pixel - drew every
+   letter and button a quarter larger than the same window at 100%, and
+   the interface read as zoomed in. A desktop-width window there takes
+   the root a tenth smaller, every rem with it, which looks about as
+   Windows does at 110%. A phone, a retina screen (2x) and a plain 1x
+   screen are left alone; the browser's zoom still works on top. */
+@media (min-width: 1025px) and (max-width: 1800px) and (min-resolution: 1.2dppx) and (max-resolution: 1.75dppx) {
+  html {
+    font-size: 90%;
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

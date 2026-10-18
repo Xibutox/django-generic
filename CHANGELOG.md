@@ -13,6 +13,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Changed
+- Laptops at 125% or 150% display scaling draw the interface a tenth
+  smaller: a desktop-width window (1025px to 1800px) at 1.2 to 1.75
+  device pixels per pixel takes a 90% root font size, every rem with
+  it - about what Windows draws at 110%. Phones, retina and 1x screens
+  are unchanged. See docs/ui.md, *Size*.
 - Laptops at 125% or 150% display scaling: under 820px of window height
   - 1920x1080 at 125% leaves about 730 - the page keeps its type and
   controls and gives up the air between them: a slimmer top bar, page

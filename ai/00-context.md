@@ -2061,6 +2061,9 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   the browser's; no size preference (removed in 1.0.0 - the browser's
   text size and zoom do it). A project changes its root size in its own
   stylesheet.
+- **Scaled laptops**: `base.css` sets `html { font-size: 90% }` for
+  1025-1800px wide at 1.2-1.75dppx (Windows 125%/150%); not 1x, not
+  retina. Everything in rem follows; px values do not.
 - **Short windows** (`@media (max-height: 820px)`: 1080p at 125% is
   ~1536x730): `tokens.css` sets `--header-height: 3rem` and
   `--space-5..7` a quarter smaller; `base.css` (nav links),

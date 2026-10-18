@@ -111,3 +111,39 @@ def test_a_records_buttons_and_last_change_share_a_line(signed_in, desk):
     assert state.bounding_box()["y"] == pytest.approx(
         actions.bounding_box()["y"], abs=1
     )
+
+
+def scale_display(page, factor, size=SCALED):
+    """The window as Windows scaling draws it: CSS pixels, each worth
+    ``factor`` screen pixels."""
+    session = page.context.new_cdp_session(page)
+    session.send(
+        "Emulation.setDeviceMetricsOverride",
+        {**size, "deviceScaleFactor": factor, "mobile": False},
+    )
+
+
+def root_font_size(page):
+    return page.evaluate(
+        "parseFloat(getComputedStyle(document.documentElement).fontSize)"
+    )
+
+
+@pytest.mark.parametrize("factor", [1.25, 1.5])
+def test_a_scaled_laptop_draws_the_interface_a_tenth_smaller(
+    signed_in, factor
+):
+    page = signed_in
+    scale_display(page, factor)
+    open_list(page)
+
+    assert root_font_size(page) == pytest.approx(16 * 0.9)
+
+
+@pytest.mark.parametrize("factor", [1, 2])
+def test_plain_and_retina_screens_keep_the_browsers_size(signed_in, factor):
+    page = signed_in
+    scale_display(page, factor)
+    open_list(page)
+
+    assert root_font_size(page) == 16
