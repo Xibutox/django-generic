@@ -189,6 +189,11 @@ class ModelResource(PagesMixin):
     #: removed from. Empty - the default - offers nothing. See
     #: ``generic.sites.bulk_edit``.
     bulk_edit_fields: Sequence[str] = ()
+    #: Fields the selection bar's *Compare the selected ...* sets side
+    #: by side, two to six records at once, the values that differ
+    #: marked. ``True``: the summary page's sections and fields. Empty -
+    #: the default - offers nothing. See ``generic.sites.compare``.
+    compare_fields: Sequence[str] | bool = ()
     #: State fields (django-fsm-2 ``FSMField``) whose ``@transition``
     #: methods become buttons on a record's page. The fields become read
     #: only in forms and grids. See ``generic.sites.transitions``.
@@ -536,6 +541,9 @@ class ModelResource(PagesMixin):
     def get_bulk_edit_url(self) -> str:
         return self._reverse(self.api_url_name("bulk-edit"))
 
+    def get_compare_url(self) -> str:
+        return self._reverse(self.api_url_name("compare"))
+
     def get_mailing_url(self, request: Any) -> str:
         """The add form of a mailing of this list, or ``""``."""
         from generic.mailings.models import ScheduledMailing
@@ -846,6 +854,12 @@ class ModelResource(PagesMixin):
                 if bound.name not in names:
                     declared.append(calendar_page(bound))
 
+        if self.compare_fields:
+            from generic.sites.compare import PAGE_NAME, compare_page
+
+            if PAGE_NAME not in names:
+                declared.append(compare_page())
+
         if self.trash and "trash" not in names:
             from generic.sites.pages import trash_page
 
@@ -1057,6 +1071,8 @@ class ModelResource(PagesMixin):
             "bulkActionsUrl": self.get_actions_url(),
             # "Edit the selected ...", first in the selection bar's menu.
             "bulkEdit": self.get_bulk_edit_options(request),
+            # "Compare the selected ...": two to six rows side by side.
+            "compare": self.get_compare_options(request),
             # The Views menu: presets, saved views, the state left.
             **saved_view_options(request, self.get_presets(request)),
             # Where "Send by e-mail on a schedule" leads, for who may.
@@ -1193,6 +1209,7 @@ class ModelResource(PagesMixin):
             bulkActionsUrl=f"{self.get_actions_url()}?{TRASH_PARAM}=1",
             # What is in the trash is restored, not edited.
             bulkEdit={},
+            compare={},
         )
 
         options["bulkActions"] = [
@@ -1843,6 +1860,47 @@ class ModelResource(PagesMixin):
             "label": self._describe(
                 gettext("Edit the selected %(verbose_name_plural)s")
             ),
+        }
+
+    # -- comparing records --------------------------------------------------
+
+    def get_compare_sections(self) -> list[tuple[str, list[str]]]:
+        """The sections compared, ``(title, names)``, resolved and
+        checked once per process (``generic.sites.compare.check``)."""
+        sections = self.__dict__.get("_compare_sections")
+
+        if sections is None:
+            from generic.sites.compare import check
+
+            sections = check(self)
+            self.__dict__["_compare_sections"] = sections
+
+        return list(sections)
+
+    def can_compare(self, request: Any) -> bool:
+        """Whether this reader is offered *Compare the selected ...*."""
+        if not self.get_compare_sections():
+            return False
+
+        from generic.sites.compare import PAGE_NAME
+
+        page = self.get_page(PAGE_NAME)
+
+        return page is not None and self.has_page_permission(request, page)
+
+    def get_compare_options(self, request: Any) -> dict[str, Any]:
+        """The selection bar's entry, or nothing for who may not."""
+        if not self.can_compare(request):
+            return {}
+
+        from generic.sites.compare import MAX_COMPARED, PAGE_NAME
+
+        return {
+            "url": self.get_page_url(PAGE_NAME),
+            "label": self._describe(
+                gettext("Compare the selected %(verbose_name_plural)s")
+            ),
+            "max": MAX_COMPARED,
         }
 
     def save_bulk_edit(self, request: Any, serializer: Any, obj: Any) -> Any:

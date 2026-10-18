@@ -13,6 +13,16 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Records side by side: `compare_fields` on a resource (`True` for
+  the summary page's sections, or a tuple of fields) puts *Compare the
+  selected ...* in the list's selection bar, for two to six rows
+  ticked. The page `<model>/compare/?ids=3,8,12` shows a column per
+  record and a row per field, each value drawn as the summary page
+  draws it, the rows that differ marked, a switch showing only them,
+  and records taken out one by one. Records come through the list's
+  queryset and each one's view permission.
+  `GET api/<app>/<model>/compare/?ids=`. In the example: tickets and
+  articles. See docs/compare.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks
