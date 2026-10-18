@@ -177,6 +177,8 @@ class GenericSite:
             resource.get_boards()
             # And the fields its records are compared on.
             resource.get_compare_sections()
+            # And what its labels show.
+            resource.get_labels()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)

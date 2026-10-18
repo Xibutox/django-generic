@@ -58,6 +58,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   one filters the table, and the table downloads as CSV. Every row is
   kept, with no *Other*, up to 200 rows and 50 columns. A declared
   `Chart(type="pivot", ...)` draws the same table. See docs/charts.md.
+- Labels with QR codes: `labels = True` or `Labels(fields=...,
+  size=..., content=...)` on a resource adds the bulk action *Print
+  labels* (the rows ticked or every matching row, up to 500) and a
+  *Label* button on each record's page. The sheet lays out stickers of
+  the record's name, a few values and a QR code holding the address of
+  its page (or a field's value), printed without the frame at small,
+  medium or large sizes. Codes come from segno, the new `labels` extra;
+  without it the address is written out. In the example: equipment.
+  See docs/labels.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks

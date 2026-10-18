@@ -60,6 +60,7 @@ from generic.sites import (
     Grid,
     Import,
     Kpi,
+    Labels,
     ModelResource,
     RelatedRows,
     RelatedTable,
@@ -1360,7 +1361,14 @@ class TagResource(ModelResource):
 EQUIPMENT = _("Equipment")
 
 auto(Supplier, related=("equipment",), group=EQUIPMENT)
-auto(Equipment, related=("maintenances",), group=EQUIPMENT)
+auto(
+    Equipment,
+    related=("maintenances",),
+    group=EQUIPMENT,
+    # A label to stick on each device: its serial number, what it is,
+    # and a QR code opening its page.
+    labels=Labels(fields=("serial_number", "kind", "supplier")),
+)
 
 
 # ---------------------------------------------------------------------

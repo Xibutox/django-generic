@@ -1,0 +1,152 @@
+/*
+ * Labels to print (generic.sites.labels). A label is white with black
+ * ink whatever the page's theme: a QR code is read dark on light only,
+ * and the label is a sticker, not a part of the screen.
+ */
+
+.label-card {
+  padding: var(--space-4);
+}
+
+.label-card__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* The sizes of generic.sites.labels.SIZES, in millimetres. */
+.label-sheet,
+.label-sheet--medium {
+  --label-width: 63mm;
+  --label-height: 38mm;
+}
+
+.label-sheet--small {
+  --label-width: 38mm;
+  --label-height: 21mm;
+}
+
+.label-sheet--large {
+  --label-width: 99mm;
+  --label-height: 57mm;
+}
+
+.label-sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--label-width));
+  gap: 3mm;
+}
+
+.print-label {
+  display: flex;
+  gap: 2.5mm;
+  box-sizing: border-box;
+  width: var(--label-width);
+  height: var(--label-height);
+  padding: 2mm;
+  overflow: hidden;
+  color: #000000;
+  background: #ffffff;
+  border: 1px dashed var(--border-strong);
+  border-radius: 1.5mm;
+  break-inside: avoid;
+}
+
+.print-label__code {
+  flex: 0 0 auto;
+  width: calc(var(--label-height) - 4mm);
+  height: calc(var(--label-height) - 4mm);
+}
+
+.print-label__address {
+  flex: 0 0 auto;
+  width: calc(var(--label-height) - 4mm);
+  margin: 0;
+  font-size: 2.2mm;
+  overflow-wrap: anywhere;
+}
+
+.print-label__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.6mm;
+}
+
+.print-label__title {
+  margin: 0;
+  font-size: 3.4mm;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.print-label__line {
+  margin: 0;
+  font-size: 2.6mm;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.print-label__name {
+  font-weight: 600;
+}
+
+.print-label__name::after {
+  content: ":";
+}
+
+/* Small labels: the code and the title, the values left out. */
+.label-sheet--small .print-label__line {
+  display: none;
+}
+
+.label-sheet--small .print-label__title {
+  font-size: 2.8mm;
+}
+
+.label-sheet--large .print-label__title {
+  font-size: 4.6mm;
+}
+
+.label-sheet--large .print-label__line {
+  font-size: 3.2mm;
+}
+
+/* On paper: the labels alone, edge to edge of the sheet's margins. */
+@media print {
+  @page {
+    margin: 8mm;
+  }
+
+  .page-labels .sidebar,
+  .page-labels .sidebar-edge,
+  .page-labels .sidebar-backdrop,
+  .page-labels .topbar,
+  .page-labels .page-header,
+  .page-labels .site-footer,
+  .page-labels .skip-link,
+  .page-labels .label-card__toolbar,
+  .page-labels .toast-region {
+    display: none !important;
+  }
+
+  .page-labels,
+  .page-labels .app,
+  .page-labels .app__main,
+  .page-labels .content,
+  .page-labels .label-card {
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .print-label {
+    border-color: #d0d0d0;
+  }
+}

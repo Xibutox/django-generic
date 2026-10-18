@@ -125,6 +125,7 @@ generic/
 │   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
 │   │                       per value of a field, moved by dragging (§5.22)
 │   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
+│   ├── labels.py           Labels, LabelSheetView: stickers with a QR code, printed (§5.24)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
@@ -684,6 +685,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
+| `labels` | `None` | `True` or `Labels(fields=, size=, content=, title=, permission=)`: bulk action *Print labels* and a record's *Label* page, QR codes (§5.24) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -1613,6 +1615,7 @@ keyboard) goes through `save_editable`; a `transitions` state field
 cannot be `editable`. *Add* on a column opens the add form with
 `?<field>=<key>`. Names are unique across a resource's boards and
 calendars. `docs/boards.md`; example: *Support › Priorities*.
+
 ### 5.23 Comparing records (`compare_fields`)
 
 ```python
@@ -1630,6 +1633,26 @@ show the same thing; *Only the differences* hides the rest; records are
 taken out one by one, the address following. Records through
 `get_list_queryset` and `has_view_permission(request, obj)`, the others
 counted in `missing`. `docs/compare.md`; example: tickets, articles.
+
+### 5.24 Labels (`Labels`)
+
+```python
+labels = Labels(
+    fields=("serial_number", "kind"),   # default: list_display[1:4]
+    size="medium",                      # small 38x21 (no values), medium 63x38, large 99x57 mm
+    content=None,                       # code holds: record page's absolute URL, or this field's value
+    title=None, permission=None,
+)
+```
+
+Adds the bulk action `print_labels` (view permission, every matching
+row allowed, at most `MAX_LABELS` 500) answering `{"redirect":
+"<model>/labels/?ids=..."}`, the page `labels` (`button=False`) and the
+record page `label` (`detail=True`, *Label* on the summary). Records
+through `get_list_queryset` + `has_view_permission`. QR codes: segno
+(extra `labels`), inline SVG, black on white; without segno the
+address is printed. Print CSS hides the frame (`.page-labels`).
+`docs/labels.md`; example: equipment (`auto(..., labels=...)`).
 
 ## 6. URLs and endpoints (generated)
 

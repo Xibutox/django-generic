@@ -253,6 +253,7 @@ and installed again with `pip install -r requirements.txt`.
 | `beat` | django-celery-beat | schedules managed from the Tasks pages |
 | `results` | django-celery-results | every Celery task's result, read from the Tasks pages |
 | `wiki` | nh3 | the wiki (`generic.wiki`) |
+| `labels` | segno | QR codes on printed labels, see [Labels](labels.md) (without it, the address is printed) |
 | `postgres` | psycopg | PostgreSQL (and `generic.search`'s trigram indexes there) |
 | `dev` | pytest, linters, Debug Toolbar | working on the framework itself |
 | `browser` | Playwright, pytest-playwright | its browser tests, with `python -m playwright install chromium` ([Testing](testing.md#browser-tests)) |
