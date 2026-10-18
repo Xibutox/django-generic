@@ -196,14 +196,15 @@
     this.sentRows = [];
   };
 
-  Inline.prototype.populate = function (rows) {
+  /** `asNew`: rows to create - a copy of a record's - not saved ones. */
+  Inline.prototype.populate = function (rows, asNew) {
     var self = this;
     var definition = this.definition;
 
     this.clear();
 
     (rows || []).forEach(function (values) {
-      self.addRow(values, false);
+      self.addRow(values, Boolean(asNew));
     });
 
     if (!this.readOnly && definition.canAdd) {

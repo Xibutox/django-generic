@@ -819,3 +819,25 @@ select.input[multiple] {
 
 /* Select2 is themed in select2.css, loaded after the library's own
    stylesheet so its rules win. */
+
+/* -- A copy of a record ------------------------------------------------
+ *
+ * The duplicate form's "Copy with it": a box per relation the copy may
+ * hold, its count beside it.
+ */
+
+.form-copies__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.form-copies__item label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-copies__count {
+  font-variant-numeric: tabular-nums;
+}

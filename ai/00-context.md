@@ -125,6 +125,8 @@ generic/
 │   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
 │   │                       per value of a field, moved by dragging (§5.22)
 │   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
+│   ├── duplicates.py       duplicate / Duplicate: a record copied into a new add form,
+│   │                       relations ticked to come along (§5.25)
 │   ├── labels.py           Labels, LabelSheetView: stickers with a QR code, printed (§5.24)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
@@ -685,6 +687,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
+| `duplicate` | `False` (`auto`: `True`) | `True` or `Duplicate(exclude=, related=, values=, permission=)`: *Duplicate* on a record's page and row menu, the add form filled with its values and a *Copy with it* box per M2M field, inline and `related` relation (§5.25) |
 | `labels` | `None` | `True` or `Labels(fields=, size=, content=, title=, permission=)`: bulk action *Print labels* and a record's *Label* page, QR codes (§5.24) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
@@ -721,6 +724,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `has_record_action(request, obj, name)` | whether the record's page offers the bulk action `name` for this record now (default True). Override so a record's page shows only what applies to its state - few buttons, none answering "already done"; the list keeps them all |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
+| `can_duplicate(request, obj=None)`, `get_duplicate_initial(request, obj)`, `save_duplicate(request, source, target, related)` | who is offered *Duplicate*; what its form opens with (`values`, `display`, `inlines`, `copies`); the copy of the ticked relations after the new record is saved, in its transaction (§5.25) |
 | `save_bulk_edit(request, serializer, obj)`, `can_bulk_edit(request)` | write one record of a bulk edit (default `save_model(..., change=True)`; raise a `ValidationError` to leave it as it was, named); who is offered it (§5.21) |
 | `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
 | `create_editable(request, values, fixed)` | create the record of a row added in a grid; `values` by column, `fixed` by field (§5.10) |
@@ -1380,7 +1384,16 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   each its `url`).
   API `wiki/api/wikis/` (add/change/delete_wiki; `page_count`,
   `pdf_url`), `pages/?wiki=<id>`; a page's `wiki` is set on create
-  only, its parent must share it. Every read goes through
+  only, its parent must share it. Duplicating (`generic/wiki/duplicates.py`):
+  `POST pages/<id>/duplicate/` `{"title", "subpages"}` (add_wikipage in
+  a wiki written in; beside the page, subpages under the copy) and
+  `POST wikis/<id>/duplicate/` `{"name", "description", "pages"}`
+  (add_wiki, + add_wikipage for the pages; tree and slugs kept): text
+  copied, history not, uploads shared, never pinned; signal
+  `wiki_duplicated(sender=Wiki, source, copy, user)` in the copy's
+  transaction - docmanager's `keep_readers` copies the `TeamWiki`.
+  `Generic.dialogs.fields` takes `{type: "checkbox"}` (a boolean).
+  Every read goes through
   `Wiki.objects.readable_by(user)`, narrowed by
   `GENERIC["WIKI_ACCESS"]` (`(user, wikis) -> wikis`). Writing pages:
   `Wiki.objects.writable_by(user)`, those read narrowed by
@@ -1654,6 +1667,44 @@ through `get_list_queryset` + `has_view_permission`. QR codes: segno
 address is printed. Print CSS hides the frame (`.page-labels`).
 `docs/labels.md`; example: equipment (`auto(..., labels=...)`).
 
+### 5.25 Duplicating records (`duplicate`)
+
+```python
+duplicate = True                                  # form fields, M2M values, inline rows
+duplicate = Duplicate(exclude=("due_on",),        # left to their default
+                      related=("bom_lines",),     # reverse FKs copied server side, on request
+                      values={"status": "open"},  # or callable(request, obj) -> dict
+                      permission=None)            # str | callable(request, obj)
+```
+
+*Duplicate* (summary toolbar, row menu, the change form when
+`object_page = "change"`) for `can_duplicate(request, obj)`: declared +
+add permission + the record's view permission + `permission`. Page
+`<model>/<pk>/duplicate/` (`site:<app>_<model>_duplicate`,
+`ResourceDuplicateView`, a `ResourceFormView` in create mode): config
+`initial` (the record through `get_form_serializer_for(request)` -
+field permissions apply - without unique fields, files, read-only and
+`exclude`d ones, `values` over it), `initialDisplay`, `initialInlines`
+(rows without key nor parent key, as new rows), `cancelUrl` (the
+record), `duplicate: {source, sourceLabel, copies}`. `form.js`
+`renderCopies` draws *Copy with it*: `kind` `field` (M2M, ticked;
+unticked empties it), `inline` (ticked; unticked no rows), `related`
+(unticked; `disabled` past `MAX_COPIED_ROWS` 500; only for the related
+resource's add permission). Saved through the ordinary `POST
+api/<app>/<model>/` with `"_duplicate": {"source", "related": [...]}`:
+`ResourceViewSet.create` reads it first (`duplicates.read_request`:
+source in `get_queryset` else 404, `can_duplicate` else 403, undeclared
+relation 400), `perform_create` calls `save_duplicate` after
+`save_model`, inside the create's transaction; each related record
+through the related resource's form serializer + `save_model` (its
+`get_queryset(request)` rows only), a refusal raises `_duplicate`
+errors and rolls the whole copy back. `related` names one-to-many
+accessors of registered models, never an inline; checked at
+registration (`get_duplicate`); a detail page named `duplicate` raises
+while it is on. Wikis: `pages/<id>/duplicate/` and
+`wikis/<id>/duplicate/` (§5.17, wiki). `docs/duplicate.md`; example:
+tickets (`True`), articles (`related=("bom_lines",)`), `auto()`.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1689,6 +1740,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
 | `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
 | `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
+| `POST api/<app>/<model>/` + `"_duplicate": {"source", "related"}` | a copy of a record (§5.25) |
 | `GET .../compare/?ids=3,8,12` | 2-6 records side by side `{records, sections: [{title, rows: [{name, label, same, values}]}], missing}` (§5.23) |
 
 `filters` = `{"match": "all"|"any", "conditions": [condition or group, ...]}`,

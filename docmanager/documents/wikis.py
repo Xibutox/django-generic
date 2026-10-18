@@ -52,3 +52,17 @@ def wikis_my_teams_write(user: Any, wikis: QuerySet) -> QuerySet:
     return wikis.filter(
         Q(pk__in=edited_by_my_teams(user)) | ~Q(pk__in=restricted)
     )
+
+
+def keep_readers(sender: Any, source: Any, copy: Any, **kwargs: Any) -> None:
+    """A team's wiki copied stays that team's: the copy gets the
+    source's ``TeamWiki`` row - its readers and its editing teams - in
+    the copy's transaction, before anyone can open it
+    (``generic.wiki.duplicates.wiki_duplicated``)."""
+    link = TeamWiki.objects.filter(wiki=source).first()
+
+    if link is None:
+        return
+
+    copied = TeamWiki.objects.create(wiki=copy, team=link.team)
+    copied.editing_teams.set(link.editing_teams.all())

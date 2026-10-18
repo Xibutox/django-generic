@@ -878,6 +878,22 @@ WIKI_SCENARIO = PRELUDE + textwrap.dedent("""
     # Then Legal's own members read it, and no longer write in it.
     assert "legal-handbook" in reads("viewer")
     assert "legal-handbook" not in writes("viewer")
+
+    # A team's wiki copied stays the team's: same readers, same editors.
+    legal = Wiki.objects.get(slug="legal-handbook")
+    copied = signed_in("admin").post(
+        f"/wiki/api/wikis/{legal.pk}/duplicate/",
+        json.dumps({"name": "Legal handbook 2027"}),
+        content_type="application/json",
+    )
+    assert copied.status_code == 201, copied.content
+    slug = copied.json()["slug"]
+    copy = TeamWiki.objects.get(wiki__slug=slug)
+    assert copy.team == link.team
+    assert set(copy.editing_teams.all()) == set(link.editing_teams.all())
+    assert Wiki.objects.get(slug=slug).pages.count() == legal.pages.count()
+    assert (slug in reads("bob")) == ("legal-handbook" in reads("bob"))
+    assert slug not in reads("carol")
     print("ok")
     """)
 

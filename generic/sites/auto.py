@@ -433,6 +433,9 @@ class AutoResource(ModelResource):
     #: The *Chart* button above the list, its fields worked out: the
     #: reader draws what they need (generic.sites.chart_builder).
     chart_builder: Any = True
+    #: *Duplicate* on each record: the add form opened with its values,
+    #: its many-to-many values and inline rows (generic.sites.duplicates).
+    duplicate: Any = True
 
     def __init__(self, model: Any, site: Any) -> None:
         super().__init__(model, site)

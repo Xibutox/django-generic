@@ -57,6 +57,7 @@ from generic.sites import (
     Cards,
     Chart,
     DataResource,
+    Duplicate,
     Grid,
     Import,
     Kpi,
@@ -248,6 +249,11 @@ class TicketResource(ModelResource):
 
     # Two to six tickets side by side, as their summary pages show them.
     compare_fields = True
+
+    # *Duplicate* on a ticket's page and in its row menu: the add form
+    # opened with the ticket's values - its tags and comments ticked to
+    # come along - the reference left to fill in (it is unique).
+    duplicate = True
 
     # A set of tickets of the project's choosing, corrected many at
     # once: the open ones, to assign and prioritise in one sitting. It
@@ -1429,6 +1435,11 @@ class ArticleResource(ModelResource):
     # others read them without it - no column, filter, export or form
     # field, nowhere on the summary or in the trees (docs/sites.md).
     field_permissions = {"unit_cost": "example.change_article"}
+    # A variant of an assembly starts as a copy of it: *Duplicate* opens
+    # the add form with its values (the unique reference left empty, the
+    # cost only for who may change it) and offers to copy its bill of
+    # materials - the BOM lines, each written through its own form.
+    duplicate = Duplicate(related=("bom_lines",))
     detail_stats = ("component_count", "used_in_count")
     # The tree to read first, then the grid to edit it, then where used.
     tab_order = ("tree-bom", "bom_lines")

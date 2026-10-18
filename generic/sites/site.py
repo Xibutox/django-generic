@@ -177,6 +177,8 @@ class GenericSite:
             resource.get_boards()
             # And the fields its records are compared on.
             resource.get_compare_sections()
+            # And what a copy of a record leaves out and copies with it.
+            resource.get_duplicate()
             # And what its labels show.
             resource.get_labels()
             self._registry[model] = resource
@@ -623,6 +625,22 @@ class GenericSite:
                         model=resource.model,
                     ),
                     name=f"{name}_delete",
+                ),
+                # A record copied into a new one, where declared.
+                *(
+                    [
+                        path(
+                            f"{prefix}<path:pk>/duplicate/",
+                            views.ResourceDuplicateView.as_view(
+                                site=self,
+                                resource=resource,
+                                mode="create",
+                            ),
+                            name=f"{name}_duplicate",
+                        )
+                    ]
+                    if resource.get_duplicate() is not None
+                    else []
                 ),
                 # Spreadsheets read into records, where declared.
                 *(

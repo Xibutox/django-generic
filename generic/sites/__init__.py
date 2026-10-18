@@ -81,6 +81,7 @@ from generic.sites.charts import Chart, chart_payload
 from generic.sites.dashboard import Cards, Kpi
 from generic.sites.data import DataResource, RelatedRows, RowLink
 from generic.sites.decorators import action, display
+from generic.sites.duplicates import Duplicate
 from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
@@ -109,6 +110,7 @@ __all__ = [
     "Chart",
     "ChartBuilder",
     "DataResource",
+    "Duplicate",
     "GenericSite",
     "Grid",
     "Import",
