@@ -14,7 +14,7 @@
 #                    hashed names - run by Daphne as a user that owns
 #                    nothing it could damage.
 
-ARG PYTHON_VERSION=3.12
+ARG PYTHON_VERSION=3.13
 
 # The scheduler behind the Schedules pages. Its own metadata still pins
 # Django below 6.1, so it is installed without its dependencies, and
@@ -50,6 +50,12 @@ RUN apt-get update \
 # a change to the source reuses this layer.
 COPY pyproject.toml README.md LICENSE ./
 COPY generic/__init__.py ./generic/__init__.py
+
+# Every version taken from requirements/constraints.txt (written by
+# scripts/lock.py): two builds of the same commit install the same
+# packages, and pip-audit in CI checked those very versions.
+COPY requirements/constraints.txt ./requirements/constraints.txt
+ENV PIP_CONSTRAINT=/app/requirements/constraints.txt
 
 # -- dev ----------------------------------------------------------------
 
