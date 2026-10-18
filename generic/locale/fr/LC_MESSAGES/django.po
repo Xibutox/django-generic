@@ -4486,3 +4486,50 @@ msgstr "Exporter"
 #: generic/wiki/archive.py
 msgid "Export the wiki as an archive another site can import"
 msgstr "Exporter le wiki en archive qu’un autre site peut importer"
+
+#: generic/history/undo.py
+msgid "Undo"
+msgstr "Annuler"
+
+#: generic/history/undo.py
+msgid "This can no longer be undone."
+msgstr "Il n’est plus possible d’annuler."
+
+#: generic/history/undo.py
+msgid ""
+"Nothing was undone: deleting what was created would take other records "
+"with it."
+msgstr ""
+"Rien n’a été annulé : supprimer ce qui a été créé emporterait d’autres "
+"enregistrements."
+
+#: generic/history/undo.py
+#, python-format
+msgid "Nothing was undone: %(reason)s"
+msgstr "Rien n’a été annulé : %(reason)s"
+
+#: generic/history/undo.py
+#, python-format
+msgid "Undone: %(count)s record is back as it was."
+msgid_plural "Undone: %(count)s records are back as they were."
+msgstr[0] "Annulé : %(count)s enregistrement est revenu tel qu’il était."
+msgstr[1] "Annulé : %(count)s enregistrements sont revenus tels qu’ils étaient."
+
+#: generic/history/undo.py
+#, python-format
+msgid "Nothing was undone: “%(name)s” has changed since."
+msgstr "Rien n’a été annulé : « %(name)s » a changé depuis."
+
+#: generic/history/undo.py
+msgid "Nothing was undone: you may no longer make this change."
+msgstr "Rien n’a été annulé : vous ne pouvez plus faire ce changement."
+
+#: generic/history/undo.py
+#, python-format
+msgid "Nothing was undone: “%(name)s” no longer exists."
+msgstr "Rien n’a été annulé : « %(name)s » n’existe plus."
+
+#: generic/history/undo.py
+#, python-format
+msgid "Nothing was undone: “%(name)s” exists again."
+msgstr "Rien n’a été annulé : « %(name)s » existe de nouveau."

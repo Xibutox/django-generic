@@ -482,12 +482,37 @@
         });
       }
 
+      // The delete page's Undo, carried by its message to this page.
+      var undo = message.querySelector(".js-undo-message");
+      var offer = {
+        url: message.dataset.undoUrl,
+        token: message.dataset.undoToken
+      };
+
+      if (undo && Generic.undo && Generic.undo.valid(offer)) {
+        undo.addEventListener("click", function () {
+          undo.disabled = true;
+          Generic.undo.run(offer).then(
+            function () {
+              message.remove();
+            },
+            function () {
+              undo.disabled = false;
+            }
+          );
+        });
+      } else if (undo) {
+        undo.remove();
+      }
+
       var level = message.dataset.messageLevel;
 
       if (level === "success" || level === "info") {
         window.setTimeout(function () {
-          message.remove();
-        }, 6000);
+          if (!message.contains(document.activeElement)) {
+            message.remove();
+          }
+        }, undo ? 15000 : 6000);
       }
     });
   }

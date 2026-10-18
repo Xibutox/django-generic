@@ -38,6 +38,7 @@ from django.utils.encoding import force_str
 
 from generic.conf import generic_settings
 from generic.history.actor import current_actor
+from generic.history.capture import noticed
 from generic.history.models import HistoryEntry
 
 logger = logging.getLogger(__name__)
@@ -252,6 +253,7 @@ def _store(
 ) -> HistoryEntry:
     """Add a version, or fold this write into the one being written."""
     actor = current_actor()
+    noticed(actor.batch)
     label = force_str(resource.get_object_label(obj))[:LABEL_LENGTH]
     same_work = (
         previous is not None

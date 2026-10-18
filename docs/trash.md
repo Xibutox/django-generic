@@ -28,7 +28,8 @@ action, the delete page, the API's `DELETE` - sets its `deleted_at`
 and `deleted_by` instead. The record keeps its relations; the screens
 and endpoints of the resource simply stop showing it. The dialogs say
 *Move to the trash*, and list nothing that would go with it, since
-nothing does.
+nothing does. The answer's *Undo* ([Undo](undo.md)) takes the record
+straight back out.
 
 The list offers a **Trash** page (the `trash` page of the resource, a
 `ResourcePage` behind the delete permission). It is the same table,

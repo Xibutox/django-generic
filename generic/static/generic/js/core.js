@@ -510,26 +510,165 @@
       '<span class="icon material-symbols-outlined icon--sm" ' +
       'aria-hidden="true">close</span>';
 
+    var timer = null;
+
     function dismiss() {
+      window.clearTimeout(timer);
       element.remove();
     }
 
     close.addEventListener("click", dismiss);
-    element.append(icon, text, close);
+    element.append(icon, text);
+
+    // One thing to do about it - Undo - beside the message.
+    if (options.action) {
+      element.appendChild(actionButton(options.action, dismiss));
+    }
+
+    element.appendChild(close);
     region.appendChild(element);
 
     var timeout = options.timeout !== undefined
       ? options.timeout
       : level === "success" || level === "info"
-        ? 5000
+        ? options.action ? 15000 : 5000
         : 0;
 
-    if (timeout) {
-      window.setTimeout(dismiss, timeout);
+    function wait() {
+      window.clearTimeout(timer);
+
+      if (timeout) {
+        timer = window.setTimeout(dismiss, timeout);
+      }
     }
+
+    // Read, or about to be clicked: it stays while the pointer or the
+    // focus is on it.
+    if (timeout) {
+      element.addEventListener("mouseenter", function () {
+        window.clearTimeout(timer);
+      });
+      element.addEventListener("focusin", function () {
+        window.clearTimeout(timer);
+      });
+      element.addEventListener("mouseleave", wait);
+      element.addEventListener("focusout", wait);
+    }
+
+    wait();
 
     return element;
   }
+
+  /**
+   * A toast's (or a card's) one action: `{label, icon, run}`, `run`
+   * returning a promise. The button waits for it, then `done()`; a
+   * failure leaves it to be tried again.
+   */
+  function actionButton(action, done) {
+    var node = document.createElement("button");
+    node.type = "button";
+    node.className = "button button--sm button--ghost toast__action";
+
+    if (action.icon) {
+      var glyph = document.createElement("span");
+      glyph.className = "icon material-symbols-outlined icon--sm";
+      glyph.setAttribute("aria-hidden", "true");
+      glyph.textContent = action.icon;
+      node.appendChild(glyph);
+    }
+
+    var label = document.createElement("span");
+    label.textContent = String(action.label || "");
+    node.appendChild(label);
+
+    node.addEventListener("click", function () {
+      node.disabled = true;
+
+      Promise.resolve()
+        .then(action.run)
+        .then(
+          function () {
+            if (done) {
+              done();
+            }
+          },
+          function () {
+            node.disabled = false;
+          }
+        );
+    });
+
+    return node;
+  }
+
+  /* -- Undo -------------------------------------------------------------
+   *
+   * A delete, a bulk action or a bulk edit answers with `undo: {url,
+   * token, label}` while what it did can still be put back
+   * (generic.history.undo). The answer's toast gets the button; once
+   * undone, `generic:undone` tells the page (a record's summary
+   * refreshes) and `generic:tables-reload` reloads its tables.
+   */
+
+  function isLocalPath(value) {
+    return typeof value === "string" && /^\/(?![\/\\])/.test(value);
+  }
+
+  var undo = {
+    /** Whether `offer` is one this page may send. */
+    valid: function (offer) {
+      return Boolean(offer && offer.token && isLocalPath(offer.url));
+    },
+
+    /** Send the undo; resolves to the answer, rejects on a refusal. */
+    run: function (offer) {
+      return api.post(offer.url, { token: offer.token }).then(
+        function (answer) {
+          toast((answer && answer.message) || t("Undone."), "success");
+          document.dispatchEvent(
+            new CustomEvent("generic:undone", { detail: { answer: answer } })
+          );
+          // Every table on the page shows the rows as they are again.
+          document.dispatchEvent(new CustomEvent("generic:tables-reload"));
+
+          return answer;
+        },
+        function (error) {
+          toast((error && error.message) || t("This could not be undone."), "error");
+
+          throw error;
+        }
+      );
+    },
+
+    /** The button's action, or null when there is nothing to undo. */
+    action: function (offer) {
+      if (!undo.valid(offer)) {
+        return null;
+      }
+
+      return {
+        label: offer.label || t("Undo"),
+        icon: "undo",
+        run: function () {
+          return undo.run(offer);
+        }
+      };
+    },
+
+    /** A toast saying what was done, with Undo when it may be. */
+    toast: function (message, level, offer) {
+      return toast(message, level, { action: undo.action(offer) });
+    },
+
+    /** The Undo button alone, for a card of its own (operations.js). */
+    button: function (offer, done) {
+      var action = undo.action(offer);
+
+      return action ? actionButton(action, done) : null;
+    }
+  };
 
   /* -- Flash ------------------------------------------------------------
    *
@@ -539,11 +678,15 @@
 
   var FLASH_KEY = "generic.flash";
 
-  function flash(message, level) {
+  function flash(message, level, offer) {
     try {
       window.sessionStorage.setItem(
         FLASH_KEY,
-        JSON.stringify({ message: String(message), level: level || "success" })
+        JSON.stringify({
+          message: String(message),
+          level: level || "success",
+          undo: undo.valid(offer) ? offer : null
+        })
       );
     } catch (error) {
       /* Without storage the message is simply not carried over. */
@@ -558,7 +701,7 @@
         window.sessionStorage.removeItem(FLASH_KEY);
 
         var data = JSON.parse(raw);
-        toast(data.message, data.level);
+        undo.toast(data.message, data.level, data.undo);
       }
     } catch (error) {
       /* A malformed entry is dropped with nothing to show. */
@@ -835,6 +978,7 @@
     relativeTime: relativeTime,
     t: t,
     theme: theme,
-    toast: toast
+    toast: toast,
+    undo: undo
   });
 })(window, document);

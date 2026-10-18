@@ -137,6 +137,10 @@ nothing either: the record that changed is at the other end of the
 relation, and reaching back to it would cost a query per row on every
 link. Set it from the record's own side.
 
+An action's versions are also how it is undone: a delete, a bulk
+action or a bulk edit offers an *Undo* that writes back, for each
+record, the version before the action's batch - see [Undo](undo.md).
+
 ## Who did it
 
 A signal has no request. The acting user is ambient, and there are two

@@ -585,6 +585,16 @@ priority, tags, team* - and each keeps its own tags beside *billing*. *Select al
 ticket the filters match. As `viewer` the entry is not offered. See
 [Bulk edit](bulk-edit.md).
 
+**Undo.** In *Tickets*, tick two rows and choose *Delete selected*:
+the toast saying they were deleted has an *Undo* button. Press it and
+both tickets are back, with their tags and comments - their *History*
+tab ends on a version whose source is *Undo*. The same button follows
+*Mark billable*, a transition such as *Close*, an applied *Edit the
+selected …*, a row menu's *Delete* and the *Delete* of a ticket's page
+(on the list it returns to). Change one of the tickets in between and
+the undo is refused, naming it. Deleting a *tag* offers none: the
+tickets' links to it would not come back. See [Undo](undo.md).
+
 **A record copied.** Open *Manufacturing › Articles › City bicycle*
 and choose *Duplicate*: the add form opens with its values, the
 reference empty (it is unique), and *Copy with it* offers *BOM lines*,

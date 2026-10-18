@@ -941,19 +941,36 @@ class ResourceDeleteView(GenericDeleteView):
         return context
 
     def form_valid(self, form: Any) -> HttpResponse:
-        if not self.resource.trash:
-            return super().form_valid(form)
+        from generic.history.undo import capture
 
-        # Into the trash, through the resource like the API's delete.
-        self.object = self.get_object()
-        label = str(self.object)
-        self.resource.delete_model(self.request, self.object)
+        with capture() as self.captured:
+            if not self.resource.trash:
+                return super().form_valid(form)
+
+            # Into the trash, through the resource like the API's delete.
+            self.object = self.get_object()
+            label = str(self.object)
+            self.resource.delete_model(self.request, self.object)
+
         messages.success(
             self.request,
             gettext("%(name)s was moved to the trash.") % {"name": label},
+            extra_tags=self.get_success_message_tags(),
         )
 
         return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_message_tags(self) -> str:
+        """The Undo of the delete, carried by its message to the next
+        page (``generic/components/messages.html``)."""
+        from generic.history.undo import message_tags, offer
+
+        captured = getattr(self, "captured", None)
+
+        if captured is None:
+            return ""
+
+        return message_tags(offer(self.resource, self.request, captured))
 
 
 __all__ = [

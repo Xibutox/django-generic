@@ -475,6 +475,12 @@
           var self = this;
           var topic = this.data.topic;
 
+          // An Undo puts the record back: shown as it is again, with
+          // or without the live events.
+          document.addEventListener("generic:undone", function () {
+            self.refresh();
+          });
+
           if (!topic || !Generic.events) {
             return;
           }

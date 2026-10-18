@@ -151,6 +151,11 @@ class GenericDeleteView(
 
         return super().get_success_url()
 
+    def get_success_message_tags(self) -> str:
+        """Extra tags of the message saying the record was deleted -
+        asked once it is gone (a resource's page adds its Undo)."""
+        return ""
+
     def form_valid(self, form: Any) -> HttpResponse:
         self.object = self.get_object()
         summary = collect_deletion_summary(self.object)
@@ -177,6 +182,7 @@ class GenericDeleteView(
         messages.success(
             self.request,
             gettext("%(name)s was deleted successfully.") % {"name": label},
+            extra_tags=self.get_success_message_tags(),
         )
 
         if self.is_popup():

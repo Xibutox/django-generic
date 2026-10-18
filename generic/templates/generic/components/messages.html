@@ -3,9 +3,16 @@
   <ul class="messages" role="status" aria-live="polite">
     {% for message in messages %}
       {% message_icon message.tags as level %}
-      <li class="message message--{{ level }}" data-message-level="{{ level }}">
+      {% message_undo message.tags as undo %}
+      <li class="message message--{{ level }}" data-message-level="{{ level }}"{% if undo %} data-undo-url="{{ undo.url }}" data-undo-token="{{ undo.token }}"{% endif %}>
         {% icon level %}
         <span class="message__text">{{ message }}</span>
+        {% if undo %}
+          <button type="button" class="button button--sm button--ghost message__undo js-undo-message">
+            {% icon "undo" "icon--sm" %}
+            <span>{{ undo.label }}</span>
+          </button>
+        {% endif %}
         <button type="button"
                 class="icon-button icon-button--sm message__dismiss js-dismiss-message">
           {% translate "Dismiss" as dismiss_label %}
