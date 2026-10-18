@@ -1,0 +1,49 @@
+{% load i18n generic_ui %}
+{# A chart card's drawing, its figures as a table, its states. Inside a #}
+{# genericChart component.                                              #}
+<div class="chart-card__body" :style="{ height: config.height }">
+  <div class="chart-card__canvas" x-ref="canvas" x-show="view === 'chart'"></div>
+
+  <div class="chart-card__table" x-show="view === 'table'">
+    <template x-if="payload && !payload.empty">
+      <table class="object-table chart-table">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <template x-for="(series, column) in payload.series" :key="column">
+              <th scope="col" x-text="series.name"></th>
+            </template>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(category, row) in payload.categories" :key="row">
+            <tr>
+              <th scope="row" x-text="category"></th>
+              <template x-for="(series, column) in payload.series" :key="column">
+                <td x-text="format(series.data[row])"></td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+  </div>
+
+  <div class="chart-card__state" x-show="loading && !payload">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>{% translate "Loading" %}&hellip;</span>
+  </div>
+  <div class="chart-card__state chart-card__state--error" role="alert" x-show="!loading && error">
+    {% icon "error" "icon--sm" %}
+    <span x-text="error"></span>
+  </div>
+  <div class="chart-card__state" x-show="!error && payload && payload.empty">
+    {% icon "bar_chart" %}
+    <span>{% translate "Nothing to show for these filters." %}</span>
+  </div>
+</div>
+
+<p class="chart-card__hint" x-show="linked && payload && !payload.empty && view === 'chart'">
+  {% icon "touch_app" "icon--sm" %}
+  {% translate "Click a bar or a slice to filter the table." %}
+</p>

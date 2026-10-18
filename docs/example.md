@@ -101,6 +101,7 @@ record.
 | `/auth/user/`, `/auth/group/` | accounts and groups, as `admin` only |
 | `/notifications/` | the notification history |
 | `/example/equipment/`, `/example/supplier/` | pages nobody wrote: two `auto()` lines, the rest worked out from the models |
+| `/api/example/equipment/chart-builder/?group_by=state&value=sum:price` | the chart the equipment list's *Chart* button draws |
 | `/example/equipment/1/change/` | a form laid out two fields a row, and the maintenance visits as a tab of rows — also worked out |
 | `/data/services/`, `/data/services/paylane/` | rows that are in no table: an external API's answer, listed, filtered and exported, and a page per service, read only, with a tab of its incidents |
 | `/data/incidents/inc-2050/` | a row of another data resource, reached from its service's tab and leading back to it |
@@ -433,6 +434,16 @@ declared nowhere: its pages exist all the same, out of the navigation,
 reached from the equipment. Try to delete a supplier: the equipment it
 sold is `PROTECT`, and the delete page says so. See
 [Pages from the model](auto.md).
+
+**A chart of one's own.** Above the equipment list, the toolbar's
+*Chart* button opens a chart that is not declared anywhere either: group
+by *State*, split by *Supplier*, show *Price (total)*, tick *Stacked* -
+then click the *In use* bar, and the table is filtered on it. Switch to
+*Donut*, or group by *Purchased on* by quarter. Reload: the chart is as
+you left it; *Views › Save this view* keeps it with the view, *Back to
+the default layout* closes it. *Tickets* has the same button
+(`chart_builder = True` on `TicketResource`), under its two declared
+charts. See [Charts](charts.md#drawn-by-the-reader-chart_builder).
 
 **Rows from an API.** *Support › External services* lists the services
 the desk relies on — e-mail, payments, telephony — as a status API

@@ -58,7 +58,8 @@ linking to the related records, and a tab per related table, each one
 the related model's full table narrowed to that record. Charts are
 declared the same way, computed by the database, served by the same
 endpoint under the same filters, and drawn with Apache ECharts in the
-page's own colours.
+page's own colours - or drawn by the reader: a *Chart* button above the
+list, closed until opened, groups the rows by the field they choose.
 
 One layer down, the same machinery is available à la carte. A column
 declared on a serializer field drives the table configuration, the
@@ -224,7 +225,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Rows from elsewhere](docs/data.md) — `DataResource`: a list and a page per row for data that is not a model's, an external API's answer
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
-- [Charts](docs/charts.md) — declaring charts, where they are drawn, computed charts, the payload
+- [Charts](docs/charts.md) — declaring charts, where they are drawn, the chart each reader draws above a list (`chart_builder`), computed charts, the payload
 - [Key figures and cards](docs/dashboard.md) — `Kpi(...)`, `Cards(...)`: numbers and records on the dashboard, each a filter over the list it opens, coloured by thresholds, live
 - [Calendars](docs/calendars.md) — `Calendar(...)`: records on their days, by month, week or list, the list's filters above them, dragged to another day
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table

@@ -60,6 +60,7 @@ generic/
 │   ├── calendars.py     Calendar: records on their days, moved by dragging
 │   ├── dashboard.py     Kpi, Cards: key figures and records on the dashboard
 │   ├── charts.py        Chart: declared aggregates -> chart payloads
+│   ├── chart_builder.py chart_builder: the chart its reader draws above a list
 │   ├── imports.py       Import: a spreadsheet read, mapped, validated, written
 │   ├── bulk_edit.py     bulk_edit_fields: a selection given one value, reviewed, written
 │   ├── transitions.py   A model's FSM transitions: buttons, bulk actions, endpoint

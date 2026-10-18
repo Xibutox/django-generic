@@ -128,6 +128,7 @@ generic/
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── files.py            a record's files: download URL, which are shown, the answer
 │   ├── charts.py           Chart: declared aggregates -> chart payload; chart_payload()
+│   ├── chart_builder.py    chart_builder: the chart its reader draws above a list (§5.7)
 │   ├── transitions.py      a model's django-fsm-2 transitions: read, offered, taken
 │   ├── imports.py          Import, Importer: a spreadsheet read, mapped, converted,
 │   │                       validated by the form serializer, written all or nothing
@@ -223,6 +224,7 @@ generic/
 │   ├── datatable.html      a page with one DataTable (vendor scripts included)
 │   ├── resource/list.html, form.html, detail.html   generated pages (+ includes/)
 │   ├── charts/chart.html, grid.html                 a chart card, a grid of cards
+│   │   builder.html (+ tools.html, body.html)       the reader's chart above a list
 │   ├── site/index.html     the dashboard
 │   ├── account/, auth/, chrome/, components/, wiki/
 │   └── list.html, detail.html, form.html, delete_confirmation.html   classic views
@@ -238,7 +240,7 @@ generic/
     ├── js/dialogs.js       Generic.dialogs.confirm/alert
     ├── js/ui.js            Alpine: themeMenu, appearanceEditor, notificationBell,
     │                       commandPalette, watchControl, apiResource
-    ├── js/charts.js        Alpine genericChart; Generic.charts (ECharts, lazy)
+    ├── js/charts.js        Alpine genericChart, genericChartBuilder; Generic.charts (ECharts, lazy)
     ├── js/summary.js       Alpine recordSummary (summary page)
     ├── js/history.js       Alpine recordHistory (the History tab)
     ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
@@ -672,6 +674,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
+| `chart_builder` | `False` (`auto`: `True`) | the chart its reader draws above the list, behind the toolbar's *Chart* button, closed until opened: `True` (fields worked out), field paths to group by, or `ChartBuilder(group_by=, values=, types=)` (§5.7) |
 | `realtime` | True | publish changes; open tables, summaries and charts refresh |
 | `mailing` | True | the list may be e-mailed on a schedule (§13d), offered to holders of `generic.add_scheduledmailing` |
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
@@ -959,6 +962,23 @@ Chart(
 - Any DRF view can return `chart_payload(categories=..., series=..., type=...)`
   and be drawn by including `generic/charts/chart.html` with
   `chart={"config_id": "...", "config": {"title", "url", "height", "periods": [], "extraParams": {}}}`.
+- **The reader's chart** (`generic/sites/chart_builder.py`):
+  `chart_builder = True | ("status", "team") | ChartBuilder(group_by=(...),
+  values=("hours",), types=("bar", "donut"))`; on by default on
+  `AutoResource`, off on `ModelResource`. A *Chart* button in the table
+  toolbar opens a card above the list (closed by default) where the
+  reader picks the type, `group_by`, `split_by`, `value` (`count`,
+  `sum:<field>`, `avg:<field>`), `period`, stacked, horizontal.
+  Worked out: groupable fields (relation, choices, boolean, date) of the
+  list's columns then the model; number fields for sum/avg; never
+  `exclude`d or secret-named fields. `GET .../chart-builder/?type=&group_by=&...`
+  accepts only offered keys (400 per bad parameter, 404 without a
+  builder), builds a transient `Chart("builder", ...)` and reuses its
+  computation over `chart_queryset()` (the table's rows). Declarations
+  checked at registration. The page: `generic/charts/builder.html`,
+  Alpine `genericChartBuilder` (extends `genericChart`); choices kept in
+  localStorage per table and in saved views/presets under the state key
+  `chart` through `controller.stateParts` (`{capture, apply, reset}`).
 
 ### 5.8 Inlines
 
@@ -1031,7 +1051,8 @@ non-editable dates kept, `max_columns`=7), `search_fields` (text fields
 `tag_choices=False` to skip), `fieldsets` (name alone, short fields two
 a row, long text/M2M full width), `detail_fieldsets` (+ kept dates),
 `icon` (`ICONS` by word of the class name), `bulk_edit_fields` (the
-form's choices, booleans, relations and dates, never unique; §5.21).
+form's choices, booleans, relations and dates, never unique; §5.21),
+`chart_builder = True` (the reader's chart above the list; §5.7).
 **`related` is the only
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a

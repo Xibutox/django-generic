@@ -13,6 +13,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- A chart each reader draws above a list: `chart_builder` on a
+  resource puts a *Chart* button in its table's toolbar, opening a
+  card above the list - closed until opened - where the reader picks
+  the form (bars, lines, areas, pie, donut, heatmap), the field the rows
+  are grouped by, a second one splitting them, and the count of rows or
+  the total or average of a number; a date by day, week, month, quarter
+  or year. It follows the table's filters, a click on a bar filters the
+  table, and the choices are remembered per table and saved with the
+  table's views. `auto()` resources have it, the fields worked out
+  (`chart_builder = False` takes it away); a `ModelResource` says
+  `chart_builder = True`, a tuple of fields, or `ChartBuilder(...)`.
+  `GET api/<app>/<model>/chart-builder/` accepts only the offered
+  fields, by key. In the example: equipment and tickets. See
+  docs/charts.md.
 - `scripts/new_project.py`: a new project on the framework in one
   command, ready to deploy - the code, the framework's wheel in
   `vendor/`, a development and a production Docker stack, and

@@ -677,7 +677,7 @@
     var self = this;
     var api = this.instance;
 
-    return {
+    return Object.assign({
       columns: this.dataColumns()
         .filter(function (entry) {
           return api.column(entry.index).visible();
@@ -698,7 +698,23 @@
       filters: this.collectFilters(true) || query.forState(query.emptyTree()),
       search: api.search() || "",
       pageLength: api.page.len()
-    };
+    }, this.capturedParts());
+  };
+
+  /**
+   * What lives beside the table and is saved with its views - the
+   * chart its reader draws above it: `controller.stateParts[name]` is
+   * {capture, apply, reset}.
+   */
+  GenericDataTable.prototype.capturedParts = function () {
+    var parts = this.stateParts || {};
+    var captured = {};
+
+    Object.keys(parts).forEach(function (name) {
+      captured[name] = parts[name].capture();
+    });
+
+    return captured;
   };
 
   /**
@@ -758,6 +774,16 @@
 
     this.batching = false;
 
+    // A view saved with a part applies it; one saved without - a
+    // preset declared before the part existed - leaves it alone.
+    var parts = this.stateParts || {};
+
+    Object.keys(parts).forEach(function (name) {
+      if (Object.prototype.hasOwnProperty.call(state, name)) {
+        parts[name].apply(state[name]);
+      }
+    });
+
     this.table.dispatchEvent(
       new CustomEvent("generic:datatable-state", {
         bubbles: true,
@@ -770,8 +796,14 @@
 
   /** Forget the saved layout and go back to the declared one. */
   GenericDataTable.prototype.resetLayout = function () {
+    var parts = this.stateParts || {};
+
     this.instance.state.clear();
     this.applyState({});
+
+    Object.keys(parts).forEach(function (name) {
+      parts[name].reset();
+    });
   };
 
   /* -- Export ---------------------------------------------------------- */

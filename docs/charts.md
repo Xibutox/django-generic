@@ -185,6 +185,94 @@ A chart is a card with the title, a period switch when the dimension is
 a date, a button showing the figures as a table — for reading exact
 values, and for screen readers — and one downloading the image.
 
+## Drawn by the reader: `chart_builder`
+
+`list_charts` are the charts a project decided on. `chart_builder` is
+the one each reader draws: a **Chart** button in the table's toolbar
+opens a card above the list - **closed until opened** - where the
+reader picks
+
+- the form: bars, lines, areas, pie, donut, heatmap;
+- the field the rows are grouped by, and a second one splitting them
+  (one series per value, or the rows of a heatmap);
+- what is shown: the number of rows, or the total or the average of a
+  number field;
+- for a date, the period - day, week, month, quarter, year - and, where
+  it means something, *Stacked* and *Horizontal*.
+
+![The chart builder above the equipment list](screenshots/chart-builder.png)
+
+```python
+class TicketResource(ModelResource):
+    chart_builder = True                       # the fields worked out
+    chart_builder = ("status", "team", "opened_at")   # these, to group by
+    chart_builder = ChartBuilder(
+        group_by=("status", "priority", "team", "opened_at"),
+        values=("estimated_hours",),          # summed and averaged
+        types=("bar", "line", "donut"),       # the first is drawn first
+    )
+```
+
+**`auto(...)` has it on**: a list worked out from the model gets the
+button without asking. `chart_builder = False` takes it away, on an
+`AutoResource` as on a `ModelResource` (where it is off by default).
+
+| Worked out (`True`, or `None` in `ChartBuilder`) | From the model |
+| --- | --- |
+| `group_by` | the list's columns that sort a record - a relation, a field with choices, a yes or no, a date - then the model's other such fields. Never what names a row, long text, a file, a key |
+| `values` | the number fields (integer, decimal, float) that are neither a key nor a choice: each offered as *total* and *average* |
+
+Never offered: a field the resource `exclude`s, nor one named like a
+secret (`password`, `token`, `secret`, `api_key`, `hash`) - the rule
+`auto` applies to its columns. A declared path that is not a field, a
+field a chart cannot group by (a value of its own per row) or a
+`values` entry that is not a number raises `ImproperlyConfigured` at
+registration.
+
+It is a chart like the others, served by
+
+```
+GET /api/<app>/<model>/chart-builder/?type=bar&group_by=status
+    &split_by=priority&value=sum:estimated_hours&period=month
+    &stacked=1&horizontal=1&filters=...
+```
+
+- **The request names options, never field paths.** `group_by` and
+  `split_by` must be among the offered fields, `value` is `count`,
+  `sum:<field>` or `avg:<field>` of an offered number, `type` one of the
+  offered forms; anything else is a 400 naming the parameter. A
+  heatmap needs `split_by`; a pie, a donut or a funnel ignores it.
+- The selection becomes a `Chart` and goes through the same
+  computation - over the table's rows, its filters, its search,
+  `get_queryset` - so the card follows the table and a click on a bar
+  filters it. A category-like dimension keeps its 20 largest groups (8
+  in a pie), the rest gathered as *Other*; dates are never cut.
+- 404 for a resource without it; the resource's view permission
+  otherwise, like the table.
+
+The reader's choices, and whether the card is open, are remembered in
+the browser per table, and **saved with the table's views**: a view
+saved with a chart opens it again, the *Default layout* closes it. A
+declared preset may open it too:
+
+```python
+presets = {
+    _("Hours by team"): {
+        "filters": {...},
+        "chart": {"open": True, "type": "bar", "group_by": "team",
+                  "value": "sum:estimated_hours"},
+    },
+}
+```
+
+The page side is `generic/charts/builder.html`, an Alpine component
+`genericChartBuilder` extending `genericChart` (`charts.js`); the
+toolbar button appears for a table whose page holds a builder for it
+(`data-chart-builder-table="#datatable"`). A saved view carries what
+lives beside its table through `controller.stateParts[name]` -
+`{capture, apply, reset}` - which `captureState`, `applyState` and
+`resetLayout` call.
+
 ## Computed charts
 
 When one query cannot say it — two sums over two relations, data from
@@ -362,7 +450,8 @@ own.
 - A chart is only reachable through a resource the user may view, and
   its optional `permission`; otherwise 403 or 404.
 - Grouping paths come from the declaration, never from the request. The
-  request may only pick among the declared `periods`.
+  request may only pick among the declared `periods` - and, for the
+  chart builder, among the fields and values it offers, by key.
 - Filters go through the table serializer's whitelist, `_related`
   through the resource's declaration: the chart can never see a row the
   table would not show.
