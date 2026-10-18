@@ -39,6 +39,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   between them broke the rule spacing the two.
 - The account page's Appearance card had twice the space under its
   title that the other cards have.
+- The Appearance card's sample buttons showed a *Save* that saved
+  nothing, next to the card's own *Save*: the sample is an *Add*.
 
 ## [1.4.0] - 2026-10-18
 
