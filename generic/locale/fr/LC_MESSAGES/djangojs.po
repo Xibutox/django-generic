@@ -2194,3 +2194,31 @@ msgstr "Masquer le graphique"
 #: generic/static/generic/js/datatables/toolbar.js
 msgid "Show a chart of these rows"
 msgstr "Afficher un graphique de ces lignes"
+
+#: generic/static/generic/js/board.js
+msgid "The board could not be loaded."
+msgstr "Le tableau n'a pas pu être chargé."
+
+#: generic/static/generic/js/board.js
+msgid "No record here."
+msgstr "Aucun enregistrement ici."
+
+#: generic/static/generic/js/board.js
+msgid "The first %(count)s only: filter the table."
+msgstr "Les %(count)s premiers seulement : filtrez la table."
+
+#: generic/static/generic/js/board.js
+msgid "Add to %(column)s"
+msgstr "Ajouter à %(column)s"
+
+#: generic/static/generic/js/board.js
+msgid "Move to…"
+msgstr "Déplacer vers…"
+
+#: generic/static/generic/js/board.js
+msgid "Move %(label)s to"
+msgstr "Déplacer %(label)s vers"
+
+#: generic/static/generic/js/board.js
+msgid "%(label)s moved to %(column)s."
+msgstr "%(label)s déplacé vers %(column)s."

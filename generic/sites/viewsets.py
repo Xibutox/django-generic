@@ -27,6 +27,9 @@ Every generated screen talks to it, and so can anything else:
 ``GET    .../calendars/<name>/``         a declared calendar's records,
                                         ``?start=&end=``
 ``PATCH  .../<pk>/calendars/<name>/``    a record moved to another day
+``GET    .../boards/<name>/``            a declared board's columns and
+                                        cards
+``PATCH  .../<pk>/boards/<name>/``       a card moved to another column
 ==========================  ======================================
 
 The table endpoints - and the charts - also take ``_related``, which
@@ -91,6 +94,7 @@ TABLE_ACTIONS = frozenset(
         "facets",
         "tree",
         "calendar",
+        "board",
     }
 )
 
@@ -138,6 +142,7 @@ class ResourcePermission(BasePermission):
             "cells",
             "take_transition",
             "calendar_move",
+            "board_move",
         ):
             return resource.has_change_permission(request)
 
@@ -166,7 +171,13 @@ class ResourcePermission(BasePermission):
         resource = view.resource
         name = view.action
 
-        if name in ("update", "partial_update", "cells", "calendar_move"):
+        if name in (
+            "update",
+            "partial_update",
+            "cells",
+            "calendar_move",
+            "board_move",
+        ):
             return resource.has_change_permission(request, obj)
 
         if name == "destroy":
@@ -880,6 +891,55 @@ class ResourceViewSet(
         """Move one record to another day: ``{"date": "YYYY-MM-DD"}``,
         written by the resource's cell writer."""
         bound = self.get_bound_calendar(calendar)
+        record = self.get_object()
+        bound.move(request, record, request.data)
+        record.refresh_from_db()
+
+        return Response(bound.describe(request, record, True))
+
+    # -- boards ------------------------------------------------------------
+
+    def get_bound_board(self, name: str) -> Any:
+        """The board ``name``, for a reader who may open its page."""
+        bound = self.resource.get_board(name)
+        declared = self.resource.get_page(name) if bound else None
+
+        if (
+            bound is None
+            or declared is None
+            or not self.resource.has_page_permission(self.request, declared)
+        ):
+            raise NotFound(gettext("There is no such board."))
+
+        return bound
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"boards/(?P<board>[a-z0-9-]+)",
+        url_name="board",
+    )
+    def board(self, request: Any, board: str = "") -> Response:
+        """A declared board's columns, each with its count and first
+        cards, under the table's own ``filters`` and ``search``
+        (generic.sites.boards)."""
+        bound = self.get_bound_board(board)
+        queryset = self.filter_queryset(self.get_queryset())
+
+        return Response(bound.answer(request, queryset))
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path=r"boards/(?P<board>[a-z0-9-]+)",
+        url_name="board-move",
+    )
+    def board_move(
+        self, request: Any, pk: Any = None, board: str = ""
+    ) -> Response:
+        """Move one card to another column: ``{"column": <its key>}``,
+        written by the resource's cell writer."""
+        bound = self.get_bound_board(board)
         record = self.get_object()
         bound.move(request, record, request.data)
         record.refresh_from_db()

@@ -297,6 +297,9 @@ class ModelResource(PagesMixin):
     #: Records on a calendar, by a date field: Calendar(...), a page each
     #: (generic.sites.calendars).
     calendars: Sequence[Any] = ()
+    #: Records on a board, a column per value of a field: Board(...), a
+    #: page each (generic.sites.boards).
+    boards: Sequence[Any] = ()
 
     # -- live updates ------------------------------------------------------
 
@@ -829,7 +832,7 @@ class ModelResource(PagesMixin):
         return getattr(obj, "pk", obj)
 
     def get_page_declarations(self) -> list[Any]:
-        """The pages declared, the page of each tree and calendar, and
+        """The pages declared, the page of each tree, calendar and board, and
         the *Trash* when ``trash`` keeps one - each unless a page
         declared takes its name."""
         declared = list(super().get_page_declarations())
@@ -855,6 +858,13 @@ class ModelResource(PagesMixin):
             for bound in self.get_calendars():
                 if bound.name not in names:
                     declared.append(calendar_page(bound))
+
+        if self.boards:
+            from generic.sites.boards import board_page
+
+            for bound in self.get_boards():
+                if bound.name not in names:
+                    declared.append(board_page(bound))
 
         if self.trash and "trash" not in names:
             from generic.sites.pages import trash_page
@@ -1409,6 +1419,34 @@ class ModelResource(PagesMixin):
 
     def get_calendar(self, name: str) -> Any:
         for bound in self.get_calendars():
+            if bound.name == name:
+                return bound
+
+        return None
+
+    def get_boards(self) -> list[Any]:
+        """The declared boards, resolved once against this resource."""
+        bound = self.__dict__.get("_bound_boards")
+
+        if bound is None:
+            from generic.sites.boards import bind_board
+
+            bound = [bind_board(item, self) for item in self.boards]
+            names = [board.name for board in bound]
+            calendars = {calendar.name for calendar in self.get_calendars()}
+
+            if len(set(names)) != len(names) or calendars & set(names):
+                raise ImproperlyConfigured(
+                    f"{type(self).__name__}.boards declares the same name "
+                    f"twice, or a calendar's."
+                )
+
+            self.__dict__["_bound_boards"] = bound
+
+        return list(bound)
+
+    def get_board(self, name: str) -> Any:
+        for bound in self.get_boards():
             if bound.name == name:
                 return bound
 
