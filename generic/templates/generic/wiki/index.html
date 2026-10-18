@@ -16,6 +16,11 @@
 {% endblock %}
 
 {% block object_tools %}
+  {% if can.import %}
+    <button type="button" class="button" x-data @click="$dispatch('wiki-import')" title="{% translate 'Make a new wiki from an archive exported here or on another site' %}">
+      {% icon "upload" %} {% translate "Import a wiki" %}
+    </button>
+  {% endif %}
   {% if can.add %}
     <button type="button" class="button button--primary" x-data @click="$dispatch('wiki-create')">
       {% icon "add" %} {% translate "New wiki" %}
@@ -26,7 +31,10 @@
 {% block content %}
   {{ wikis_config|json_script:"wikis-config" }}
 
-  <div x-data="wikiList('wikis-config')" @wiki-create.window="create()">
+  <div x-data="wikiList('wikis-config')" @wiki-create.window="create()" @wiki-import.window="chooseArchive()">
+    {% if can.import %}
+      <input type="file" accept=".zip,application/zip" hidden x-ref="archive" @change="importArchive($event)">
+    {% endif %}
     {% if wikis %}
       <div class="wiki-list">
         {% for wiki in wikis %}
@@ -64,6 +72,11 @@
                 {% if pdf_available and wiki.page_count %}
                   {% include "generic/wiki/pdf_menu.html" with url=wiki.get_pdf_url compact=False only %}
                 {% endif %}
+                {% if archive_available and wiki.page_count %}
+                  <a class="button button--ghost button--sm" href="{{ wiki.get_archive_url }}" title="{% translate 'Download the wiki as an archive another site can import' %}">
+                    {% icon "folder_zip" "icon--sm" %} {% translate "Export" %}
+                  </a>
+                {% endif %}
                 <a class="button button--sm" href="{{ wiki.get_absolute_url }}">
                   {% translate "Open" %}
                 </a>
@@ -79,6 +92,11 @@
         {% if can.add %}
           <button type="button" class="button button--primary" @click="create()">
             {% icon "add" %} {% translate "New wiki" %}
+          </button>
+        {% endif %}
+        {% if can.import %}
+          <button type="button" class="button" @click="chooseArchive()">
+            {% icon "upload" %} {% translate "Import a wiki" %}
           </button>
         {% endif %}
       </div>

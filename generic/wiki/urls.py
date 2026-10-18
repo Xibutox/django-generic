@@ -5,7 +5,9 @@ path("wiki/", include("generic.wiki.urls")),
 ``wiki/`` lists the wikis, ``wiki/<wiki>/`` opens one at its first
 page, ``wiki/<wiki>/<page>/`` is a page,
 ``wiki/<wiki>/<page>/versions/<id>/`` one of its versions, read-only,
-and ``wiki/<wiki>/export.pdf`` the whole wiki as a PDF.
+``wiki/<wiki>/export.pdf`` the whole wiki as a PDF and
+``wiki/<wiki>/export.zip`` as an archive to import elsewhere
+(``api/wikis/import/``).
 
 The editor uploads its images to ``api/generic/wiki/images/``, in
 ``generic.urls``; they are shown from ``images/<id>/`` here, so their
@@ -31,6 +33,11 @@ urlpatterns = [
     path("files/<int:pk>/", views.WikiFileView.as_view(), name="file"),
     # A page's address never holds a dot: this is never a page.
     path("<str:wiki>/export.pdf", views.WikiPdfView.as_view(), name="pdf"),
+    path(
+        "<str:wiki>/export.zip",
+        views.WikiArchiveView.as_view(),
+        name="archive",
+    ),
     path("<str:wiki>/", views.WikiIndexView.as_view(), name="wiki"),
     path("<str:wiki>/<str:slug>/", views.WikiPageView.as_view(), name="page"),
     path(

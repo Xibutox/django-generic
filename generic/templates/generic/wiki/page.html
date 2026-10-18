@@ -30,8 +30,18 @@
         <a class="wiki__menu-name" href="{{ wiki.get_absolute_url }}">
           {% icon "auto_stories" "icon--sm" %} <span>{{ wiki.name }}</span>
         </a>
-        {% if pdf_url and menu %}
-          {% include "generic/wiki/pdf_menu.html" with url=pdf_url compact=True only %}
+        {% if menu and pdf_url or menu and archive_url %}
+          <span class="wiki__menu-downloads">
+            {% if pdf_url %}
+              {% include "generic/wiki/pdf_menu.html" with url=pdf_url compact=True only %}
+            {% endif %}
+            {% if archive_url %}
+              {% translate "Export the wiki as an archive another site can import" as archive_label %}
+              <a class="icon-button icon-button--sm" href="{{ archive_url }}" title="{{ archive_label }}">
+                {% icon "folder_zip" "icon--sm" archive_label %}
+              </a>
+            {% endif %}
+          </span>
         {% endif %}
       </div>
       {% if other_wikis %}
