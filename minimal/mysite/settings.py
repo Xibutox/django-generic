@@ -113,6 +113,29 @@ else:
 
 # Everything has a default (docs/settings.md). No live updates: the
 # pages open no WebSocket, so plain WSGI and runserver serve them all.
+# What a password set on the People screens is checked against: Django's
+# own four, twelve characters at least (ISO/IEC 27002 5.17). Without
+# them any password is accepted.
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation."
+        "NumericPasswordValidator"
+    },
+]
+
 GENERIC = {
     "SITE_TITLE": "Minimal example",
     "EVENTS_WEBSOCKET_URL": None,

@@ -246,6 +246,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows, files uploaded and downloaded behind the record's permission
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
 - [Bulk edit](docs/bulk-edit.md) — `bulk_edit_fields`: the selected rows given one value per field, reviewed before written, each record through its form
+- [Field permissions](docs/field-permissions.md) — `field_permissions`: a field some readers may not see, or not change, gone from every column, filter, export, form, summary and chart for them
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS
 - [Events, notifications and messages](docs/events.md) — who hears what, messages from an administrator, publishing, topics, the client protocol
 - [Watching](docs/watch.md) — being told when a record, or a model, changes
@@ -263,6 +264,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [A new project, ready to deploy](docs/new-project.md) — `scripts/new_project.py`: a project, its random secrets, a hardened Docker stack and encrypted backups that test their own restore, in one command
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
 - [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
+- [Sessions, pages and passwords](docs/security.md) — signed out after a silence, a Content-Security-Policy, API rate limits, Argon2, password rules
 - [Security events](docs/security-log.md) — sign-ins and their failures, lockouts, passwords, API tokens, rights granted and exports, in the log and on a screen
 - [Testing](docs/testing.md) — running and extending the suite
 

@@ -4,9 +4,10 @@
 # the suite on plain python images, the suite again against Postgres and
 # Redis as services, then the project's own image, built and tried.
 #
-#   quality      black, isort, flake8, mypy, bandit, pip-audit, message catalogs
-#   test         the suite on 3.10 to 3.13 (SQLite), the oldest Django
-#                and DRF accepted included; the browser tests, the
+#   quality      black, isort, flake8, mypy (no new error), bandit,
+#                pip-audit, message catalogs, pinned versions
+#   test         the suite on 3.10 to 3.14 (SQLite), the oldest Django
+#                and DRF accepted included, and the previous Django; the browser tests, the
 #                example driven through Chromium (tests/browser)
 #   integration  the same suite against Postgres and Redis
 #   package      the wheel built and installed alone in a clean
@@ -54,16 +55,23 @@ variables:
 
 # -- quality ------------------------------------------------------------
 
+# The versions the images ship (requirements/constraints.txt), and
+# every extra mypy's baseline was written with.
 lint:
   extends: .python
   stage: quality
+  before_script:
+    - pip install --upgrade pip uv
+    - pip install -c requirements/constraints.txt -e ".[export,import,events,tasks,postgres,wiki,api,fsm,status,results,dev]" -r docmanager/requirements.txt
   script:
     - black --check .
     - isort --check-only .
     - flake8 generic tests example example_project minimal docmanager scripts debug.py
-    # Reported, not blocking: django-stubs has not caught up with the
-    # Django this runs on, and most of what it says is that.
-    - mypy generic || true
+    # The errors carried today (mostly django-stubs trailing Django)
+    # are in scripts/mypy-baseline.txt; a new one fails.
+    - python scripts/mypy_baseline.py
+    # constraints.in changed without running scripts/lock.py.
+    - python scripts/lock.py --check
     # B101 (assert) is noise where asserts are internal invariants.
     - bandit -r generic example docmanager minimal -ll --skip B101
     # Known vulnerabilities in the dependencies; the one skipped is
@@ -88,7 +96,10 @@ test:
   image: python:$PYTHON_VERSION-slim
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
+      - PYTHON_VERSION: ["3.11", "3.13", "3.14"]
+      # The previous Django, still supported.
+      - PYTHON_VERSION: "3.12"
+        PINS: "Django==6.0.*"
       # The oldest Python, Django and DRF the package accepts.
       - PYTHON_VERSION: "3.10"
         PINS: "Django==5.2.* djangorestframework==3.16.*"
@@ -118,7 +129,7 @@ browser:
   stage: test
   cache: *pip-cache
   script:
-    - pip install -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
+    - pip install -c requirements/constraints.txt -e ".[export,import,events,tasks,wiki,fsm,api,dev,browser]"
     - python -m playwright install --with-deps chromium
     - >-
       pytest tests/browser -m browser
@@ -136,8 +147,16 @@ browser:
 integration:
   extends: .python
   stage: integration
+  # 16: what the compose files start by default; 17: what a new
+  # installation can take (POSTGRES_IMAGE, docs/deployment.md).
+  parallel:
+    matrix:
+      - POSTGRES_VERSION: ["16", "17"]
+  before_script:
+    - pip install --upgrade pip
+    - pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,dev]"
   services:
-    - name: postgres:16
+    - name: postgres:$POSTGRES_VERSION
       alias: postgres
     - name: redis:7
       alias: redis

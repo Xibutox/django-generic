@@ -220,8 +220,40 @@
     $select.on("select2:select select2:unselect select2:clear", function () {
       notify(select);
     });
+    name(select, $select);
 
     return $select;
+  }
+
+  /**
+   * Give the box Select2 draws the select's own name. Select2 names a
+   * single choice after its label, not a multiple one: a screen reader
+   * then announces a nameless combobox.
+   */
+  function name(select, $select) {
+    var instance = $select.data("select2");
+    var box = instance && instance.$selection && instance.$selection[0];
+
+    if (!box || (!select.multiple && box.getAttribute("aria-labelledby"))) {
+      return;
+    }
+
+    var label = select.labels && select.labels[0];
+
+    if (label) {
+      if (!label.id) {
+        label.id = (select.id || "select") + "-label";
+      }
+
+      box.setAttribute("aria-labelledby", label.id);
+      return;
+    }
+
+    var text = select.getAttribute("aria-label") || select.title || select.name;
+
+    if (text) {
+      box.setAttribute("aria-label", text);
+    }
   }
 
   function destroy(select) {

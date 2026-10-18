@@ -348,6 +348,20 @@
       ajax: Object.assign({}, userAjax, {
         url: this.url,
         type: userAjax.type || "GET",
+        // How long the reader has left the page alone: a redraw the
+        // page makes by itself keeps no idle session alive (core.js).
+        beforeSend: function (xhr, settings) {
+          if (window.Generic && window.Generic.activity) {
+            xhr.setRequestHeader(
+              window.Generic.activity.HEADER,
+              String(window.Generic.activity.idleSeconds())
+            );
+          }
+
+          if (typeof userAjax.beforeSend === "function") {
+            return userAjax.beforeSend.call(this, xhr, settings);
+          }
+        },
         data: function (requestData) {
           requestData.format = "datatables";
           compactRequest(requestData);
@@ -377,6 +391,10 @@
           return requestData;
         },
         error: function (xhr) {
+          if (window.Generic && window.Generic.activity) {
+            window.Generic.activity.checkXhr(xhr);
+          }
+
           self.reportAjaxError(xhr);
         }
       })

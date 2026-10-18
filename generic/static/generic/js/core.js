@@ -327,6 +327,55 @@
     });
   }
 
+  /* -- Activity ---------------------------------------------------------
+   *
+   * The server signs out a session nobody uses (SESSION_IDLE_MINUTES).
+   * What the page fetches by itself - a live table redrawn by an event -
+   * says how long ago the reader last clicked, typed or scrolled, so it
+   * keeps nobody signed in; and when the server answers that the
+   * session is over, the page reloads onto the sign-in page instead of
+   * showing errors.
+   */
+
+  var lastActivity = Date.now();
+
+  ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (name) {
+    window.addEventListener(
+      name,
+      function () {
+        lastActivity = Date.now();
+      },
+      { capture: true, passive: true }
+    );
+  });
+
+  function idleSeconds() {
+    return Math.max(0, Math.floor((Date.now() - lastActivity) / 1000));
+  }
+
+  var reloading = false;
+
+  function noticeSignOut(header) {
+    if (header === "idle" && !reloading) {
+      reloading = true;
+      window.location.reload();
+    }
+  }
+
+  var activity = {
+    HEADER: "X-Generic-Idle",
+    idleSeconds: idleSeconds,
+    headers: function () {
+      return { "X-Generic-Idle": String(idleSeconds()) };
+    },
+    // An XMLHttpRequest's answer (DataTables): did it end the session?
+    checkXhr: function (xhr) {
+      if (xhr && xhr.getResponseHeader) {
+        noticeSignOut(xhr.getResponseHeader("X-Generic-Signed-Out"));
+      }
+    }
+  };
+
   function request(method, url, options) {
     options = options || {};
 
@@ -335,6 +384,7 @@
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest"
       },
+      activity.headers(),
       options.headers || {}
     );
 
@@ -364,6 +414,8 @@
     var target = options.params ? buildUrl(url, options.params) : url;
 
     return window.fetch(target, init).then(function (response) {
+      noticeSignOut(response.headers.get("X-Generic-Signed-Out"));
+
       if (response.status === 204) {
         return null;
       }
@@ -764,6 +816,7 @@
   };
 
   Object.assign(Generic, {
+    activity: activity,
     appearance: appearance,
     api: api,
     colors: colors,

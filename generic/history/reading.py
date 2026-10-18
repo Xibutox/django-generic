@@ -313,7 +313,13 @@ def build_history(
     rows = list(queryset.select_related("user")[offset : offset + limit + 1])
     page = rows[:limit]
 
-    fields = {field.name: field for field in tracked_fields(resource)}
+    # A field the reader may not see is not shown changing either.
+    hidden = resource.get_hidden_fields(request)
+    fields = {
+        field.name: field
+        for field in tracked_fields(resource)
+        if field.name not in hidden
+    }
     order = list(fields)
     labels = resolve_labels(fields, rows)
 

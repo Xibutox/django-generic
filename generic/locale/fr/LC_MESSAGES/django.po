@@ -4019,6 +4019,7 @@ msgstr "Avant de télécharger"
 #: generic/grants/__init__.py
 msgid "I have read this reminder and will handle the data accordingly."
 msgstr "J'ai lu ce rappel et traiterai les données en conséquence."
+
 #: generic/help/models.py
 msgid "Enter an e-mail address after mailto:."
 msgstr "Saisissez une adresse e-mail après mailto:."
@@ -4244,6 +4245,11 @@ msgstr "Empilé"
 #: generic/templates/generic/charts/builder.html
 msgid "Horizontal"
 msgstr "Horizontal"
+
+#: generic/middleware.py
+#, python-format
+msgid "You were signed out after %(minutes)s minutes without activity."
+msgstr "Vous avez été déconnecté après %(minutes)s minutes sans activité."
 
 #: generic/sites/boards.py
 msgid "Board"
