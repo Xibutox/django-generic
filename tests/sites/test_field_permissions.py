@@ -361,3 +361,46 @@ class TestTheTickets:
         assert "title" in names
         assert "estimated_hours" not in names
         assert "priority" not in names
+
+
+class TestTheViewsAddedBeside:
+    """Boards and comparisons keep a field from who may not see it."""
+
+    def test_a_comparison_has_no_row_for_it(self, client, reader, article):
+        other = Article.objects.create(
+            reference="SP-2", name="Nipple", kind="part", unit_cost="0.10"
+        )
+        client.force_login(reader)
+        response = client.get(
+            "/api/example/article/compare/",
+            {"ids": f"{article.pk},{other.pk}"},
+        )
+        names = [
+            row["name"]
+            for section in response.json()["sections"]
+            for row in section["rows"]
+        ]
+
+        assert response.status_code == 200
+        assert "unit_cost" not in names
+        assert "kind" in names
+
+    def test_a_board_on_it_asks_for_its_permission_too(
+        self, rf, reader, maintainer
+    ):
+        from generic.sites import Board, ModelResource
+        from generic.sites.boards import bind_board, board_page
+
+        class Articles(ModelResource):
+            list_display = ("name", "kind")
+            field_permissions = {"kind": "example.change_article"}
+
+        resource = Articles(Article, site)
+        page = board_page(bind_board(Board("kinds", field="kind"), resource))
+        request = rf.get("/")
+
+        request.user = reader
+        assert not resource.has_page_permission(request, page)
+
+        request.user = maintainer
+        assert resource.has_page_permission(request, page)

@@ -19,10 +19,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   may not see is gone for them from the list's columns, filters,
   ordering, search and facets, the exports and mailings, the form, the
   record's JSON, imports, the summary's sections and figures, the
-  history tab, charts and the chart builder, trees and calendars. A
-  field they may see but not change is read only in the form and
-  refused in table cells, grids, bulk edits, imports and calendar
-  moves. The example's articles show their cost to who may change
+  history tab, charts and the chart builder, trees, calendars, boards,
+  comparisons and labels. A field they may see but not change is read
+  only in the form and refused in table cells, grids, bulk edits,
+  imports, calendar and board moves. The example's articles show their cost to who may change
   them. See docs/field-permissions.md.
 - Accessibility checks: the browser tests run axe-core (vendored for
   the tests only) on every kind of page of the example, light and dark,

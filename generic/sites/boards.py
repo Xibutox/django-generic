@@ -511,6 +511,28 @@ def bind_board(definition: Any, resource: Any) -> BoundBoard:
     return bound
 
 
+def board_permission(bound: BoundBoard) -> Any:
+    """The board's own permission, and the one its field asks to be
+    seen (``field_permissions``): its columns would tell the field's
+    value of every card."""
+    required = bound.definition.permission
+    rules = bound.resource.get_field_permissions()
+    view = rules.get(bound.field.name, (None, None))[0]
+
+    if not view:
+        return required
+
+    if required is None:
+        return view
+
+    if callable(required):
+        return lambda user: required(user) and user.has_perm(view)
+
+    names = [required] if isinstance(required, str) else list(required)
+
+    return [*names, view]
+
+
 def board_page(bound: BoundBoard) -> ResourcePage:
     return ResourcePage(
         bound.name,
@@ -519,7 +541,7 @@ def board_page(bound: BoundBoard) -> ResourcePage:
         icon=bound.definition.icon,
         description=bound.definition.description,
         navigation=bound.definition.navigation,
-        permission=bound.definition.permission,
+        permission=board_permission(bound),
     )
 
 
