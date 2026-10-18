@@ -585,7 +585,7 @@ class Importer:
         return names
 
     def get_serializer_fields(self) -> dict[str, Any]:
-        serializer = self.resource.get_form_serializer_class()(
+        serializer = self.resource.get_form_serializer_for(self.request)(
             context={"request": self.request}
         )
 
@@ -673,7 +673,7 @@ class Importer:
     def get_export_titles(self) -> dict[str, str]:
         """What the export writes above each column, by column name."""
         try:
-            serializer = self.resource.get_table_serializer_class()
+            serializer = self.resource.get_rows_serializer_class(self.request)
             columns = serializer.get_export_columns()
         except Exception:  # pragma: no cover - a table that cannot say
             return {}
@@ -1122,7 +1122,7 @@ class Importer:
                 )
 
             data = {**self.get_defaults(), **values}
-            serializer = self.resource.get_form_serializer_class()(
+            serializer = self.resource.get_form_serializer_for(self.request)(
                 data=data, context={"request": self.request}
             )
             action = "create"
@@ -1142,7 +1142,7 @@ class Importer:
                     [RowError(gettext("You may not change this record."))]
                 )
 
-            serializer = self.resource.get_form_serializer_class()(
+            serializer = self.resource.get_form_serializer_for(self.request)(
                 instance,
                 data=values,
                 partial=True,

@@ -11,3 +11,7 @@
 *.woff binary
 *.woff2 binary
 *.ttf binary
+
+# axe-core, vendored for the browser tests: a minified file no one reads
+# in a diff, and not this project's code.
+tests/browser/vendor/*.js -diff linguist-vendored

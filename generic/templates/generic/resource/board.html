@@ -1,0 +1,32 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# The page of a board (generic.sites.boards): the resource's records   #}
+{# as cards, a column per value of a field.                            #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/board.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'generic/js/board.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  {{ board_config|json_script:"board-config" }}
+
+  <section class="card board-card">
+    {# The resource's table, its filters and search box only: the board #}
+    {# shows the records they select.                                   #}
+    <div class="board-filters">
+      {{ filter_table|json_script:"board-filter-table" }}
+      <table class="js-board-filters display" data-config="board-filter-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="generic-board" data-config="board-config" data-autostart></div>
+  </section>
+{% endblock %}

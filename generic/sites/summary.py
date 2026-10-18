@@ -347,13 +347,31 @@ def describe_entry(
     obj: Any,
     name: str,
 ) -> dict[str, Any]:
-    """One entry of a section or a figure: a field, or something computed."""
+    """One entry of a section or a figure: a field, or something computed.
+
+    A field the reader may not see (``field_permissions``) is described
+    as empty, wherever it is asked for: a calendar's label, a card's
+    subtitle, a tree's column.
+    """
     model = resource.model
 
     try:
         field = model._meta.get_field(name)
     except FieldDoesNotExist:
         field = None
+
+    hidden = getattr(resource, "get_hidden_fields", None)
+
+    if hidden is not None and name.split("__")[0] in hidden(request):
+        label = getattr(field, "verbose_name", None) or name
+        return {
+            "name": name,
+            "label": capfirst(force_str(label)),
+            "type": "text",
+            "display": "",
+            "empty": True,
+            "hidden": True,
+        }
 
     if field is not None:
         label = getattr(field, "verbose_name", None) or (
@@ -411,7 +429,13 @@ def build_sections(
     for index, (title, options) in enumerate(
         resource.get_detail_fieldsets(request)
     ):
-        names = flatten_fieldsets([(title, options)])
+        names = resource.visible_paths(
+            request, flatten_fieldsets([(title, options)])
+        )
+
+        if not names:
+            continue
+
         classes = tuple(options.get("classes", ()))
         title = force_str(title or "")
 
@@ -515,7 +539,9 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
         ],
         "stats": [
             describe_entry(resource, request, obj, name)
-            for name in resource.get_detail_stats(request)
+            for name in resource.visible_paths(
+                request, resource.get_detail_stats(request)
+            )
         ],
         "sections": build_sections(resource, request, obj),
         "related": related,

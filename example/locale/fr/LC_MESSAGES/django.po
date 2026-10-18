@@ -2124,3 +2124,11 @@ msgstr "Je traiterai ces données personnelles comme le demande la politique de 
 #: example_project/settings/base.py
 msgid "Files sent by customers may hold personal data. Keep them on the company's storage and delete them once you are done."
 msgstr "Les fichiers envoyés par les clients peuvent contenir des données personnelles. Gardez-les sur le stockage de l'entreprise et supprimez-les une fois terminé."
+
+#: example/resources.py
+msgid "Priorities"
+msgstr "Priorités"
+
+#: example/resources.py
+msgid "Every ticket in the column of its priority."
+msgstr "Chaque ticket dans la colonne de sa priorité."

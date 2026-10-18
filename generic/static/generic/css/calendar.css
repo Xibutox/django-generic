@@ -73,6 +73,10 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
+.calendar-grid__week {
+  display: contents;
+}
+
 .calendar-grid__weekday {
   padding: var(--space-1) var(--space-2);
   color: var(--text-secondary);

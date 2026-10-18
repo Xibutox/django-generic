@@ -52,6 +52,7 @@ from generic.api import (
     TagsColumn,
 )
 from generic.sites import (
+    Board,
     Calendar,
     Cards,
     Chart,
@@ -670,6 +671,24 @@ class TicketResource(ModelResource):
             description=_("Every ticket on the day it is due."),
             color="priority",
             fields=("customer", "status", "assignee"),
+            editable=True,
+            navigation=True,
+        ),
+    )
+
+    # The open work by priority: drag a ticket to another column to
+    # change it, through the same writer as the Triage grid (priority is
+    # one of the editable_fields). The status is a state field: its
+    # transitions move it, so it makes no editable board.
+    boards = (
+        Board(
+            "priorities",
+            field="priority",
+            title=_("Priorities"),
+            icon="view_kanban",
+            description=_("Every ticket in the column of its priority."),
+            color="status",
+            fields=("team", "assignee", "due_on"),
             editable=True,
             navigation=True,
         ),
@@ -1398,6 +1417,10 @@ class ArticleResource(ModelResource):
         )
     }
     fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
+    # What an article costs is for whoever maintains the articles: the
+    # others read them without it - no column, filter, export or form
+    # field, nowhere on the summary or in the trees (docs/sites.md).
+    field_permissions = {"unit_cost": "example.change_article"}
     detail_stats = ("component_count", "used_in_count")
     # The tree to read first, then the grid to edit it, then where used.
     tab_order = ("tree-bom", "bom_lines")

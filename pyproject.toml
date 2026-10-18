@@ -26,6 +26,7 @@ classifiers = [
     "Framework :: Django",
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
+    "Framework :: Django :: 6.1",
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Natural Language :: French",
@@ -36,6 +37,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
@@ -81,6 +83,10 @@ results = ["django-celery-results>=2.5"]
 
 postgres = ["psycopg[binary]>=3.1"]
 
+# Passwords hashed with Argon2, as OWASP recommends: a project lists
+# Argon2PasswordHasher first in PASSWORD_HASHERS (docs/security.md).
+argon2 = ["argon2-cffi>=23.1"]
+
 # The Server status page's figures (generic.status): processors, memory,
 # swap and the process, measured the same way on every system. Without
 # it the page still works, from the standard library and /proc.
@@ -106,6 +112,7 @@ api = [
 wiki = ["nh3>=0.2.17", "fpdf2>=2.8"]
 
 dev = [
+    "argon2-cffi>=23.1",
     "nh3>=0.2.17",
     "fpdf2>=2.8",
     "defusedxml>=0.7",
@@ -139,6 +146,8 @@ dev = [
     "bandit>=1.7",
     # The dependencies checked against the known vulnerabilities.
     "pip-audit>=2.7",
+    # The same checks before each commit (.pre-commit-config.yaml).
+    "pre-commit>=4.0",
     # debug.py --listen: a debugger attaching to a server in Docker.
     "debugpy>=1.8",
 ]
@@ -190,7 +199,16 @@ check_untyped_defs = true
 exclude = ["tests/testapp/migrations/"]
 
 [[tool.mypy.overrides]]
-module = ["openpyxl.*", "channels.*", "factory.*"]
+module = [
+    "openpyxl.*",
+    "channels.*",
+    "factory.*",
+    "celery.*",
+    "django_celery_results.*",
+    "knox.*",
+    "psutil.*",
+    "django_celery_beat.*",
+]
 ignore_missing_imports = true
 
 [tool.django-stubs]

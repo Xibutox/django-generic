@@ -228,6 +228,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, the chart each reader draws above a list (`chart_builder`), computed charts, the payload
 - [Key figures and cards](docs/dashboard.md) — `Kpi(...)`, `Cards(...)`: numbers and records on the dashboard, each a filter over the list it opens, coloured by thresholds, live
 - [Calendars](docs/calendars.md) — `Calendar(...)`: records on their days, by month, week or list, the list's filters above them, dragged to another day
+- [Boards](docs/boards.md) — `Board(...)`: records as cards, a column per value of a field, the list's filters above them, dragged to another column
 - [Comparing records](docs/compare.md) — `compare_fields`: two to six records ticked in the list, side by side, the values that differ marked
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
@@ -246,6 +247,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows, files uploaded and downloaded behind the record's permission
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
 - [Bulk edit](docs/bulk-edit.md) — `bulk_edit_fields`: the selected rows given one value per field, reviewed before written, each record through its form
+- [Field permissions](docs/field-permissions.md) — `field_permissions`: a field some readers may not see, or not change, gone from every column, filter, export, form, summary and chart for them
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS
 - [Events, notifications and messages](docs/events.md) — who hears what, messages from an administrator, publishing, topics, the client protocol
 - [Watching](docs/watch.md) — being told when a record, or a model, changes
@@ -263,6 +265,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [A new project, ready to deploy](docs/new-project.md) — `scripts/new_project.py`: a project, its random secrets, a hardened Docker stack and encrypted backups that test their own restore, in one command
 - [Development and production](docs/deployment.md) — the two settings modules, the two Docker stacks, debugging in VS Code, the variables, starting a new project
 - [Logs and error reports](docs/logging.md) — a log file shared by every process, the unexpected errors mailed to the admins
+- [Sessions, pages and passwords](docs/security.md) — signed out after a silence, a Content-Security-Policy, API rate limits, Argon2, password rules
 - [Security events](docs/security-log.md) — sign-ins and their failures, lockouts, passwords, API tokens, rights granted and exports, in the log and on a screen
 - [Testing](docs/testing.md) — running and extending the suite
 
