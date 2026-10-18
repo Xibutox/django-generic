@@ -2,7 +2,7 @@
 # constraints.txt (python scripts/lock.py). Constraints, not
 # requirements: each install still names what it wants, and gets the
 # version written there.
--e .[export,import,api,fsm,events,tasks,postgres,wiki,results,status,dev,browser]
+-e .[export,import,api,fsm,events,tasks,postgres,wiki,results,status,argon2,labels,dev,browser]
 -r ../docmanager/requirements.txt
 # Installed with --no-deps (its metadata caps Django below 6.1): the
 # override in overrides.txt lifts that cap for the resolution too.
