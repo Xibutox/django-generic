@@ -267,10 +267,15 @@ class BoundTree:
                 "key": f"node.{name}",
                 "label": entry_label(self.resource, self.model, name),
             }
-            for name in self.definition.columns
+            for name in self.get_node_columns(request)
         ]
 
         return columns
+
+    def get_node_columns(self, request: Any) -> Sequence[str]:
+        """The records' values, without the fields this reader may not
+        see (``field_permissions``)."""
+        return self.resource.visible_paths(request, self.definition.columns)
 
     def get_link_columns(self, request: Any) -> Sequence[str]:
         """The link's values, for whoever may read the links."""
@@ -284,7 +289,12 @@ class BoundTree:
         ):
             return ()
 
-        return tuple(self.definition.link_columns)
+        if link_resource is None:
+            return tuple(self.definition.link_columns)
+
+        return link_resource.visible_paths(
+            request, self.definition.link_columns
+        )
 
     # -- what a reader sees --------------------------------------------
 
@@ -388,10 +398,12 @@ class BoundTree:
         fields = self.resource.get_search_fields(request)
 
         if fields:
-            return tuple(fields)
+            return self.resource.visible_paths(request, fields)
 
         return tuple(
-            self.resource.get_table_serializer_class().get_search_fields()
+            self.resource.get_rows_serializer_class(
+                request
+            ).get_search_fields()
         )
 
     def get_node_ordering(self, request: Any) -> list[str]:
@@ -857,7 +869,7 @@ class BoundTree:
         ]
         cells += [
             describe_entry(self.resource, request, obj, name)
-            for name in self.definition.columns
+            for name in self.get_node_columns(request)
         ]
         item = {
             "key": force_str(link.pk) if link is not None else pk,

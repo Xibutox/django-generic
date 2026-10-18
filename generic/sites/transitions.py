@@ -353,7 +353,7 @@ def take(
                 for field, value in (values or {}).items()
                 if field in info.fields
             }
-            serializer = resource.get_form_serializer_class()(
+            serializer = resource.get_form_serializer_for(request)(
                 obj,
                 data=written,
                 partial=True,
