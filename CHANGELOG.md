@@ -10,7 +10,7 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-18
 
 ### Added
 - Field permissions: `field_permissions` on a resource names who may
@@ -22,8 +22,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   history tab, charts and the chart builder, trees, calendars, boards,
   comparisons and labels. A field they may see but not change is read
   only in the form and refused in table cells, grids, bulk edits,
-  imports, calendar and board moves. The example's articles show their cost to who may change
-  them. See docs/field-permissions.md.
+  imports, calendar and board moves. The example's articles show
+  their cost to who may change them. See docs/field-permissions.md.
 - Accessibility checks: the browser tests run axe-core (vendored for
   the tests only) on every kind of page of the example, light and dark,
   against WCAG 2.1 AA, and on a tag in any colour. See docs/testing.md.
@@ -94,7 +94,6 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   verify | restore-test | restore` from the project, on any system;
   its `SECURITY-CONTROLS.md` maps each choice to ISO/IEC 27001 Annex A.
   See docs/new-project.md.
-
 - `PageSweep` counts queries: `test_rows_cost_the_same_however_many`
   reads each resource's rows once with one row and once with up to
   `query_rows` (25), and fails, listing the SQL, when the second costs
@@ -103,83 +102,6 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   with one record gets a copy of it to compare. Every project's sweep
   gains the test; `generic.testing.capture_queries` counts the queries
   of any block. The framework's 32 resources all pass.
-
-### Security
-- Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
-  and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
-  for that long. What a page fetches by itself carries `X-Generic-Idle`
-  (seconds since the reader last clicked, typed or scrolled), so a live
-  table refreshing all night keeps nobody signed in; the refused page
-  reloads onto the sign-in page, which says why. The example, the
-  document manager and new projects: an hour, in a session of a working
-  day at most (`SESSION_COOKIE_AGE`, the example's was Django's two
-  weeks).
-- A Content-Security-Policy: `generic.middleware.CSPMiddleware` and
-  `GENERIC["CONTENT_SECURITY_POLICY"]` (`"recommended"`, or directives of
-  your own; `CONTENT_SECURITY_POLICY_REPORT_ONLY` to try it). Nothing
-  from elsewhere runs in a page; the framework's three inline scripts
-  carry the request's nonce (`{% csp_nonce %}`), and the API docs page
-  loads its script from its own address. The browser tests run under
-  it, so a page it would break fails CI. On in the example, the document
-  manager and new projects.
-- API rate limits in the example and new projects: DRF's throttles, 600
-  requests a minute per person and 60 per signed-out address
-  (`DJANGO_API_RATE_USER`, `DJANGO_API_RATE_ANON`).
-- Argon2: the `argon2` extra (`argon2-cffi`); the example and the
-  document manager hash with it when it is installed, as their images
-  do, and rehash older passwords at the next sign-in.
-- Password rules in the minimal example and the document manager, which
-  accepted any password: Django's four validators, twelve characters at
-  least. See docs/security.md.
-
-- Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
-  `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
-  record - is written to Excel as a text cell, and to the CSV behind an
-  apostrophe, so it never runs in the spreadsheet of whoever exports
-  the table or receives it by mailing (CWE-1236).
-- Security events (`generic.audit`): every sign-in, failed sign-in,
-  lockout, sign-out, password change, API token made or deleted, right
-  granted or refused and export (Excel, CSV, mailings: the table and
-  the number of rows) is written to the `generic.security` logger -
-  refusals at `WARNING`, with the account and the address - and to the
-  read-only *History › Security events* screen
-  (`generic.view_securityevent`). Nothing to declare; `SECURITY_LOG`
-  turns it off, `SECURITY_LOG_RETENTION_DAYS` keeps it to a size.
-  Migration `generic 0022`. The lockout's own log line, which named
-  neither the account nor the address, is replaced by its event.
-  See docs/security-log.md.
-- `SECURITY.md`: how to report a vulnerability privately, what
-  follows, the versions supported, and the one dependency
-  vulnerability accepted and why. The CI checks every dependency with
-  `pip-audit`, runs `bandit` over the example applications too, and
-  Dependabot proposes updates of the packages, Actions and images.
-  The document manager reads Office XML through `defusedxml`.
-- The history records every write. `QuerySet.update()`,
-  `bulk_update()` and `bulk_create()` - which fire no signal and left
-  no trace, nor did the framework's own uses of them (a right granted,
-  a folder moved to another team) - now record a version of each row,
-  as the database holds it, with the person behind it
-  (`generic.history.bulk`; `with unrecorded():` for a data migration).
-  On PostgreSQL a trigger on every recorded table records what is
-  written outside the application - `psql`, another application, raw
-  SQL - by the database role, "Database (outside the application)";
-  the ORM's own statements are tagged and left to the application, so
-  nothing is recorded twice (`generic.history.triggers`, installed
-  after `migrate`, `manage.py history_triggers`, `HISTORY_TRIGGERS`).
-  An API token's history is kept at last (`HistoryEntry.object_id`
-  holds 128 characters, migration `generic 0023`), without its hash.
-- Retention that runs: `manage.py apply_retention` and the managed
-  task `generic.apply_retention` (to schedule daily) delete the history,
-  access log and notifications older than `HISTORY_RETENTION_DAYS`,
-  `ACCESS_LOG_RETENTION_DAYS` and `EVENTS_RETENTION_DAYS`
-  (`generic.retention`). `EVENTS_RETENTION_DAYS` (90) was documented
-  but applied by nothing: notifications were kept forever. The example
-  keeps its access log a year, as the CNIL recommends.
-- Document manager: an approval given for somebody else is stamped
-  under the name of who gave it - "Alice (for Bob)" - on the approved
-  PDF. It named the person asked, who had approved nothing.
-
-### Added
 - Bulk edit: `bulk_edit_fields = ("team", "assignee", "tags", ...)` on
   a resource puts *Edit the selected …* first in its tables' selection
   bar. A dialog asks which fields to change and to what - in the form's
@@ -374,6 +296,80 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   large". Tables also ask for less: of what DataTables builds, they
   send only what the endpoint reads (each column's name, the order, the
   search box), not six parameters a column.
+
+### Security
+- Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
+  and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
+  for that long. What a page fetches by itself carries `X-Generic-Idle`
+  (seconds since the reader last clicked, typed or scrolled), so a live
+  table refreshing all night keeps nobody signed in; the refused page
+  reloads onto the sign-in page, which says why. The example, the
+  document manager and new projects: an hour, in a session of a working
+  day at most (`SESSION_COOKIE_AGE`, the example's was Django's two
+  weeks).
+- A Content-Security-Policy: `generic.middleware.CSPMiddleware` and
+  `GENERIC["CONTENT_SECURITY_POLICY"]` (`"recommended"`, or directives of
+  your own; `CONTENT_SECURITY_POLICY_REPORT_ONLY` to try it). Nothing
+  from elsewhere runs in a page; the framework's three inline scripts
+  carry the request's nonce (`{% csp_nonce %}`), and the API docs page
+  loads its script from its own address. The browser tests run under
+  it, so a page it would break fails CI. On in the example, the document
+  manager and new projects.
+- API rate limits in the example and new projects: DRF's throttles, 600
+  requests a minute per person and 60 per signed-out address
+  (`DJANGO_API_RATE_USER`, `DJANGO_API_RATE_ANON`).
+- Argon2: the `argon2` extra (`argon2-cffi`); the example and the
+  document manager hash with it when it is installed, as their images
+  do, and rehash older passwords at the next sign-in.
+- Password rules in the minimal example and the document manager, which
+  accepted any password: Django's four validators, twelve characters at
+  least. See docs/security.md.
+- Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
+  `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
+  record - is written to Excel as a text cell, and to the CSV behind an
+  apostrophe, so it never runs in the spreadsheet of whoever exports
+  the table or receives it by mailing (CWE-1236).
+- Security events (`generic.audit`): every sign-in, failed sign-in,
+  lockout, sign-out, password change, API token made or deleted, right
+  granted or refused and export (Excel, CSV, mailings: the table and
+  the number of rows) is written to the `generic.security` logger -
+  refusals at `WARNING`, with the account and the address - and to the
+  read-only *History › Security events* screen
+  (`generic.view_securityevent`). Nothing to declare; `SECURITY_LOG`
+  turns it off, `SECURITY_LOG_RETENTION_DAYS` keeps it to a size.
+  Migration `generic 0022`. The lockout's own log line, which named
+  neither the account nor the address, is replaced by its event.
+  See docs/security-log.md.
+- `SECURITY.md`: how to report a vulnerability privately, what
+  follows, the versions supported, and the one dependency
+  vulnerability accepted and why. The CI checks every dependency with
+  `pip-audit`, runs `bandit` over the example applications too, and
+  Dependabot proposes updates of the packages, Actions and images.
+  The document manager reads Office XML through `defusedxml`.
+- The history records every write. `QuerySet.update()`,
+  `bulk_update()` and `bulk_create()` - which fire no signal and left
+  no trace, nor did the framework's own uses of them (a right granted,
+  a folder moved to another team) - now record a version of each row,
+  as the database holds it, with the person behind it
+  (`generic.history.bulk`; `with unrecorded():` for a data migration).
+  On PostgreSQL a trigger on every recorded table records what is
+  written outside the application - `psql`, another application, raw
+  SQL - by the database role, "Database (outside the application)";
+  the ORM's own statements are tagged and left to the application, so
+  nothing is recorded twice (`generic.history.triggers`, installed
+  after `migrate`, `manage.py history_triggers`, `HISTORY_TRIGGERS`).
+  An API token's history is kept at last (`HistoryEntry.object_id`
+  holds 128 characters, migration `generic 0023`), without its hash.
+- Retention that runs: `manage.py apply_retention` and the managed
+  task `generic.apply_retention` (to schedule daily) delete the history,
+  access log and notifications older than `HISTORY_RETENTION_DAYS`,
+  `ACCESS_LOG_RETENTION_DAYS` and `EVENTS_RETENTION_DAYS`
+  (`generic.retention`). `EVENTS_RETENTION_DAYS` (90) was documented
+  but applied by nothing: notifications were kept forever. The example
+  keeps its access log a year, as the CNIL recommends.
+- Document manager: an approval given for somebody else is stamped
+  under the name of who gave it - "Alice (for Bob)" - on the approved
+  PDF. It named the person asked, who had approved nothing.
 
 ## [1.3.0] - 2026-10-05
 

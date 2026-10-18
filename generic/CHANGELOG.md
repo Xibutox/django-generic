@@ -9,6 +9,300 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.4.0] - 2026-10-18
+
+### Added
+- Field permissions: `field_permissions` on a resource names who may
+  see a field and who may change it (`{"unit_cost":
+  "example.change_article"}`, or `(view, change)`). A field a reader
+  may not see is gone for them from the list's columns, filters,
+  ordering, search and facets, the exports and mailings, the form, the
+  record's JSON, imports, the summary's sections and figures, the
+  history tab, charts and the chart builder, trees, calendars, boards,
+  comparisons and labels. A field they may see but not change is read
+  only in the form and refused in table cells, grids, bulk edits,
+  imports, calendar and board moves. See docs/field-permissions.md.
+- Boards: records as cards, a column per value of a field - a choice,
+  a yes or no, or a foreign key - with *Not set* for records without
+  one. `boards = (Board("name", field=..., ...),)` on a resource gives
+  a page `<model>/<name>/` with the list's search and filters above
+  it, each column's count and first 100 cards, cards coloured by a tag
+  field and showing the values named in `fields`. With
+  `editable=True`, a card dragged to another column - or sent there
+  from its *Move to* menu, by keyboard - takes that value, written
+  through `save_editable` (the field must be in `editable_fields`; a
+  state field stays read only). `GET api/<app>/<model>/boards/<name>/`
+  and `PATCH api/<app>/<model>/<pk>/boards/<name>/` `{"column"}`. See
+  docs/boards.md.
+- Records side by side: `compare_fields` on a resource (`True` for
+  the summary page's sections, or a tuple of fields) puts *Compare the
+  selected ...* in the list's selection bar, for two to six rows
+  ticked. The page `<model>/compare/?ids=3,8,12` shows a column per
+  record and a row per field, each value drawn as the summary page
+  draws it, the rows that differ marked, a switch showing only them,
+  and records taken out one by one. Records come through the list's
+  queryset and each one's view permission.
+  `GET api/<app>/<model>/compare/?ids=`. See docs/compare.md.
+- A chart each reader draws above a list: `chart_builder` on a
+  resource puts a *Chart* button in its table's toolbar, opening a
+  card above the list - closed until opened - where the reader picks
+  the form (bars, lines, areas, pie, donut, heatmap), the field the rows
+  are grouped by, a second one splitting them, and the count of rows or
+  the total or average of a number; a date by day, week, month, quarter
+  or year. It follows the table's filters, a click on a bar filters the
+  table, and the choices are remembered per table and saved with the
+  table's views. `auto()` resources have it, the fields worked out
+  (`chart_builder = False` takes it away); a `ModelResource` says
+  `chart_builder = True`, a tuple of fields, or `ChartBuilder(...)`.
+  `GET api/<app>/<model>/chart-builder/` accepts only the offered
+  fields, by key. See docs/charts.md.
+- Pivot tables: the chart builder's new *Table* form crosses the
+  chosen fields in a table of figures - a row per value of the first,
+  a column per value of the second - with a total column, a total row
+  and the grand total, each its own aggregate (the total of an average
+  is the average of every row). Figures are tinted by size, a click on
+  one filters the table, and the table downloads as CSV. Every row is
+  kept, with no *Other*, up to 200 rows and 50 columns. A declared
+  `Chart(type="pivot", ...)` draws the same table. See docs/charts.md.
+- Bulk edit: `bulk_edit_fields = ("team", "assignee", "tags", ...)` on
+  a resource puts *Edit the selected ...* first in its tables'
+  selection bar. A dialog asks which fields to change and to what - in
+  the form's own controls; a many-to-many may be added to or removed
+  from, an optional field cleared - then reviews the change (the whole
+  edit run and rolled back: how many records would change, which would
+  be left as they are and why) before writing it. Each record goes
+  through its form serializer and `save_bulk_edit` (`save_model` by
+  default), asked `has_change_permission(request, obj)` and
+  `can_edit_column`; one history version each (*Bulk edit:
+  <fields>*), one live event. `BULK_EDIT_MAX_ROWS` (1000). `auto()`
+  works the fields out. See docs/bulk-edit.md.
+- Labels with QR codes: `labels = True` or `Labels(fields=...,
+  size=..., content=...)` on a resource adds the bulk action *Print
+  labels* (the rows ticked or every matching row, up to 500) and a
+  *Label* button on each record's page. The sheet lays out stickers of
+  the record's name, a few values and a QR code holding the address of
+  its page (or a field's value), printed without the frame at small,
+  medium or large sizes. Codes come from segno, the new `labels` extra;
+  without it the address is written out. See docs/labels.md.
+- Rights given on request: with `GENERIC["ACCESS_ON_REQUEST"] =
+  ("export", "download")`, exporting tables (Excel, CSV, copy, print,
+  scheduled mailings) and downloading files are permissions
+  (`generic.export_rows`, `generic.download_files`) that people ask
+  for. The export menu offers *Ask for permission...*, a record's file
+  *Ask to download*, and the account page lists each right with a
+  button to ask or remind. Every superuser and holder of
+  `generic.validate_accessrequest` is notified, and grants or refuses
+  on *People › Access requests*, which keeps every request. Asking
+  again reminds them, no more than once an hour per person and right
+  (`ACCESS_REQUEST_INTERVAL`). Off by default. Migration
+  `generic 0021`. See docs/access-requests.md.
+- A reminder before exporting or downloading: `EXPORT_DISCLAIMER` and
+  `DOWNLOAD_DISCLAIMER` (a text, or `{"text", "title", "checkbox"}`)
+  show a privacy notice with a box to tick before every table export,
+  scheduled mailing and file download. Off by default.
+- Reporting a bug: a bug icon in the top bar of every page - and
+  *Report a bug* in the account menu and on the help page - opens the
+  team's ticket service in a new tab. The project sets it with
+  `GENERIC["BUG_REPORT_URL"]`; an administrator holding
+  `generic.change_helpsettings` replaces it for everyone from the form
+  on the help page, without a deployment. `https://`, `http://` or
+  `mailto:` only; nothing is drawn while no link is set. Migration
+  `generic 0020`. See docs/ui.md.
+- Server status: *Monitoring › Server status* shows this server's
+  processors, memory, swap and disks as gauges, a trend line since the
+  page opened, and whether each database, the migrations, each cache,
+  the channel layer, Celery, the media folder and the tasks are
+  working - and, beside it, every other server running django-generic
+  added under *Monitoring › Monitored servers* with its address and
+  token (`STATUS_TOKEN` on the other side). One maintenance server
+  watches them all; a server that does not answer says why. Projects
+  add checks of their own with `@generic.status.register_check`.
+  Every server answers the same JSON at `api/generic/status/`, and
+  `api/generic/status/health/` is the one-word answer for a load
+  balancer. psutil, the new `status` extra, measures; without it the
+  page reads the standard library and `/proc`. Migration
+  `generic 0019`, permission `generic.view_status`. See
+  docs/status.md.
+- A user guide for every application built on the framework: the
+  everyday actions - finding one's way, the search, filtering, views,
+  exports, bulk actions, a record's page, the forms, deleting, the
+  history, the wiki, the account - written once, in English and French.
+  Every wiki starts with it: a migration puts *User guide* / *Guide
+  utilisateur* in the first wiki, one page per language of the site,
+  and `manage.py wiki_user_guide` puts it back or brings it up to date
+  (`--update`, the replaced text kept in the page's history). The same
+  text as a Word document, illustrated, is
+  `docs/user-guide/guide-utilisateur.docx`.
+- Wiki history: every version can be read without restoring it -
+  *View* opens it in the page's layout, read-only, with the way back
+  to the page and, for a writer, *Restore*
+  (`wiki/<wiki>/<page>/versions/<id>/`). The history marks the page's
+  current version, and restoring a version no longer writes it to the
+  history a second time: the page points back at its entry.
+- Text colour in the wiki's editor: the *A* in its toolbar colours the
+  selected text red, orange, green, blue, purple or gray, or gives it
+  back its own colour. The colours read in the light and the dark
+  scheme (`--wiki-text-*` tokens) and are printed in the wiki's PDF;
+  the server keeps only these (`TEXT_COLORS` in
+  `generic.wiki.sanitize`, as `ql-color-<name>` classes), never an
+  inline style.
+- Tables in the wiki's editor: the table button in its toolbar, or
+  Ctrl+Alt+T, puts a 3 x 3 table on a line of its own; the menu next to
+  it adds a row above or below, a column left or right, or deletes the
+  row, the column or the table. A table already in a page is now kept
+  as a table when the page is edited (Quill's table module), and an
+  empty cell keeps a line's height on the page.
+- More styles in the wiki's editor: *Heading 1* joins the style menu
+  (Heading 1 to 4, Normal), and a size menu beside it makes text
+  small, large or huge (`ql-size-*` classes, printed in the PDF). The
+  menus' names are translated.
+- Text beside an image in the wiki: click an image, then the image
+  menu puts it on the left or the right with the text running beside
+  it, or back in the line (`wiki-float-left` / `-right` on the image,
+  at most half the text's width). The PDF does the same: the image on
+  its side, the following paragraphs in the room beside it until one
+  starts below it.
+- Several images side by side look the same in the wiki's editor, on
+  its page, on the dashboard and in the PDF: images in a line of their
+  own stay on it, each at most its share of the width; images to one
+  side stand next to each other, the next below when the line is full;
+  a heading starts below the images beside the text.
+- A wiki's PDF in landscape: its *PDF* button offers *Portrait* or
+  *Landscape* (`export.pdf?orientation=landscape`;
+  `generic.wiki.pdf.render(wiki, orientation="landscape")`).
+- `PageSweep` counts queries: `test_rows_cost_the_same_however_many`
+  reads each resource's rows once with one row and once with up to
+  `query_rows` (25), and fails, listing the SQL, when the second costs
+  more - a column reading a relation row by row (an N+1) is caught on a
+  test database of a few records instead of in production. A resource
+  with one record gets a copy of it to compare. Every project's sweep
+  gains the test; `generic.testing.capture_queries` counts the queries
+  of any block.
+
+### Changed
+- Python 3.14 and Django 6.1 join the supported versions, and the
+  framework is tested on PostgreSQL 17 beside 16.
+
+### Fixed
+- Tags keep a readable text whatever colour a record gives them: its
+  lightness is held where it reads on the tag's background in either
+  scheme (4.5:1); an orange tag read at 4.4:1, a white one at 2:1.
+- The warning colour (badges, the appearance preview) reads at 4.5:1 on
+  its background.
+- A Select2 choosing several values is named after its label for screen
+  readers.
+- The table's *Search or filter* box is a combobox: the suggestions it
+  offers are announced.
+- The calendar's days sit in rows, one per week, as a grid's cells
+  must.
+- A message at the top of a page, and a toast in the corner, reads on
+  one line: its icon and its dismiss button centre on its first line
+  of text, where the icon stood a few pixels above it and the text a
+  pixel below. A long message wraps beneath them, and a one-line
+  message is no taller than its text and padding.
+- Small misalignments across the interface, the style unchanged. The
+  navigation's filter box shares the edges of the links below it, and
+  the version in the sidebar's foot their icons' column. A table's
+  tools are one height: the filter-row toggle, the reload button and
+  the page buttons now match the small buttons beside them, and the
+  server-rendered list's *Apply* its action picker. A chart's period
+  picker is a small control again, so a chart card holding one has
+  the header height of the card beside it. Cards laid out by a grid or
+  a stack take only its gap: the wiki's page starts level with its
+  menu, every task card on the task catalogue level with the first,
+  and the cards of the account page, the help and the import pages no
+  longer stand twice as far apart as anywhere else. The account page's
+  *Watching* rows start where the card's title does. The dashboard's
+  shortcuts keep their titles on one line across a row, a two-line
+  description no longer pushing one down. *Yes* and *No* in a table
+  sit on the line of the row's text, not a pixel above.
+- Tables ask for less: of what DataTables builds, they send only what
+  the endpoint reads (each column's name, the order, the search box),
+  not six parameters a column, so a table with many columns or filters
+  no longer goes over a server's request-line limit (gunicorn's 4094
+  bytes, answered 400 "request line is too large").
+- A table pasted into the wiki's editor from Excel, Word, Google
+  Sheets or a web page no longer breaks the page. Merged cells no
+  longer push the cells after them into the wrong column: the content
+  stays in the first cell and the covered cells are left empty. A cell
+  holding several paragraphs or a list stays one cell, the text on one
+  line, instead of being torn into several cells or tables. Headers
+  become plain cells and a caption becomes a line above the table. A
+  single copied cell pastes as plain text, and a table pasted inside a
+  table pastes as its text.
+- A wiki's PDF no longer fails on a table cell whose text is partly
+  formatted - a bold word, a coloured figure, as Excel and Word paste
+  them - which fpdf2 refuses: such a cell is printed as its text, and a
+  cell formatted throughout keeps its format. A table fpdf2 still
+  cannot draw - a row taller than the paper, as a wide spreadsheet
+  makes ("The row with index ... is too high") - is printed as lines of
+  text, a row a line, its cells separated by " | ", rather than
+  stopping the whole wiki's PDF.
+- A wiki's PDF keeps the editor's indentation - a paragraph, heading,
+  quote or list item moved right with the indent buttons or Tab is
+  moved right in the PDF too, an image in it included - and a tab
+  typed in a line is printed as space, not dropped. On the page, tabs
+  and runs of spaces show as in the editor.
+- A table in a wiki's PDF has its borders: every cell framed, as the
+  page shows it, and the table as wide as the text. fpdf2 drew only a
+  line over it.
+- A large image no longer runs off a wiki's PDF: every image is drawn
+  at most the text's width and a page's height, its shape kept, and a
+  smaller one at the size the page shows it.
+
+### Security
+- Signed out after a silence: `generic.middleware.SessionIdleMiddleware`
+  and `GENERIC["SESSION_IDLE_MINUTES"]` sign out a session nobody used
+  for that long. What a page fetches by itself carries `X-Generic-Idle`
+  (seconds since the reader last clicked, typed or scrolled), so a live
+  table refreshing all night keeps nobody signed in; the refused page
+  reloads onto the sign-in page, which says why. Off by default.
+- A Content-Security-Policy: `generic.middleware.CSPMiddleware` and
+  `GENERIC["CONTENT_SECURITY_POLICY"]` (`"recommended"`, or directives
+  of your own; `CONTENT_SECURITY_POLICY_REPORT_ONLY` to try it).
+  Nothing from elsewhere runs in a page; the framework's three inline
+  scripts carry the request's nonce (`{% csp_nonce %}`), and the API
+  docs page loads its script from its own address. Off by default.
+- Argon2: the `argon2` extra (`argon2-cffi`); a project listing
+  `Argon2PasswordHasher` first in `PASSWORD_HASHERS` rehashes older
+  passwords at the next sign-in. See docs/security.md.
+- Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
+  `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a
+  record - is written to Excel as a text cell, and to the CSV behind an
+  apostrophe, so it never runs in the spreadsheet of whoever exports
+  the table or receives it by mailing (CWE-1236).
+- Security events (`generic.audit`): every sign-in, failed sign-in,
+  lockout, sign-out, password change, API token made or deleted, right
+  granted or refused and export (Excel, CSV, mailings: the table and
+  the number of rows) is written to the `generic.security` logger -
+  refusals at `WARNING`, with the account and the address - and to the
+  read-only *History › Security events* screen
+  (`generic.view_securityevent`). Nothing to declare; `SECURITY_LOG`
+  turns it off, `SECURITY_LOG_RETENTION_DAYS` keeps it to a size.
+  Migration `generic 0022`. The lockout's own log line, which named
+  neither the account nor the address, is replaced by its event.
+  See docs/security-log.md.
+- The history records every write. `QuerySet.update()`,
+  `bulk_update()` and `bulk_create()` - which fire no signal and left
+  no trace, nor did the framework's own uses of them (a right granted,
+  a folder moved to another team) - now record a version of each row,
+  as the database holds it, with the person behind it
+  (`generic.history.bulk`; `with unrecorded():` for a data migration).
+  On PostgreSQL a trigger on every recorded table records what is
+  written outside the application - `psql`, another application, raw
+  SQL - by the database role, "Database (outside the application)";
+  the ORM's own statements are tagged and left to the application, so
+  nothing is recorded twice (`generic.history.triggers`, installed
+  after `migrate`, `manage.py history_triggers`, `HISTORY_TRIGGERS`).
+  An API token's history is kept at last (`HistoryEntry.object_id`
+  holds 128 characters, migration `generic 0023`), without its hash.
+- Retention that runs: `manage.py apply_retention` and the managed
+  task `generic.apply_retention` (to schedule daily) delete the history,
+  access log and notifications older than `HISTORY_RETENTION_DAYS`,
+  `ACCESS_LOG_RETENTION_DAYS` and `EVENTS_RETENTION_DAYS`
+  (`generic.retention`). `EVENTS_RETENTION_DAYS` (90) was documented
+  but applied by nothing: notifications were kept forever.
+
 ## [1.3.0] - 2026-10-05
 
 ### Added
