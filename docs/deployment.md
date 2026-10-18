@@ -206,8 +206,8 @@ missing required one stops `docker compose` before anything starts.
 | **migrate** | `prod` target | `migrate --noinput`, once per start; web, worker and beat wait for it to succeed |
 | **worker** | `prod` target | the Celery worker |
 | **beat** | `prod` target | the scheduler, reading the Schedules pages. One, never two: each would send every task |
-| **db** | `postgres:16-alpine` | not published; data in the `postgres-data` volume |
-| **redis** | `redis:7-alpine` | not published; kept on disk (`appendonly`), since the task queue lives there |
+| **db** | `postgres:16-alpine` (`POSTGRES_IMAGE`) | not published; data in the `postgres-data` volume |
+| **redis** | `redis:7-alpine` (`REDIS_IMAGE`) | not published; kept on disk (`appendonly`), since the task queue lives there |
 
 ### The variables
 
@@ -400,6 +400,26 @@ A project written by `scripts/new_project.py` does this by itself:
 every day, encrypted, checked, pruned, with a weekly restore test and
 a one-command restore ([A new project](new-project.md#the-backups)).
 
+### Upgrading PostgreSQL
+
+The stack runs PostgreSQL 16 unless `POSTGRES_IMAGE` names another
+image, so an existing `postgres-data` volume keeps starting. CI tests
+16 and 17. A new major version cannot read an older one's files, so a
+move from 16 to 17 goes through a dump:
+
+```bash
+C="docker compose -f docker/docker-compose.prod.yml --env-file docker/prod.env"
+$C exec -T db pg_dump -U generic generic > backup.sql   # 1. the dump, from 16
+$C down                                                 # 2. everything stopped
+docker volume rm django-generic-prod_postgres-data       # 3. the old files (docker volume ls)
+echo "POSTGRES_IMAGE=postgres:17-alpine" >> docker/prod.env
+$C up -d db                                             # 4. an empty 17
+$C exec -T db psql -U generic generic < backup.sql      # 5. the data back
+$C up -d --build                                        # 6. the rest
+```
+
+Keep `backup.sql` until the site has been checked on the new version.
+
 ### More than one web process
 
 Daphne is one process. Events already work across several, through
@@ -414,10 +434,18 @@ of the `upstream` block.
 
 | Target | From | Holds |
 | --- | --- | --- |
-| `dev` | `python:3.12-slim` | every extra, the test tools, the Debug Toolbar, the source; `runserver` |
-| `prod` (default) | `python:3.12-slim` | `export,import,api,fsm,events,tasks,postgres,wiki` and the scheduler, the source, the collected static files; Daphne, as user `app` |
+| `dev` | `python:3.13-slim` | every extra, the test tools, the Debug Toolbar, the source; `runserver` |
+| `prod` (default) | `python:3.13-slim` | `export,import,api,fsm,events,tasks,postgres,wiki` and the scheduler, the source, the collected static files; Daphne, as user `app` |
 | `proxy` | `caddy:2-alpine` | `docker/Caddyfile` and the static files collected by the `prod` build |
 | `nginx` | `nginx:stable-alpine` | `docker/nginx/` and the same static files; `NGINX_MODE` picks the server block when it starts |
+
+Every package is installed at the version written in
+`requirements/constraints.txt` (the `PIP_CONSTRAINT` variable of the
+images): two builds of the same commit hold the same packages, the ones
+CI tested and pip-audit checked. `python scripts/lock.py` writes that
+file after a change to `requirements/constraints.in`, and
+`python scripts/lock.py --upgrade` moves every package to its newest
+version; CI fails when the file no longer matches what it lists.
 
 The dependencies are installed from `pyproject.toml` and a stub of the
 package before the source is copied, so a change to the code rebuilds
