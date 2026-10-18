@@ -78,6 +78,7 @@ from generic.sites.decorators import action, display
 from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
+from generic.sites.labels import Labels
 from generic.sites.pages import ResourcePage, ResourcePageView, page
 from generic.sites.related import RelatedTable
 from generic.sites.resources import ModelResource, ResourceAction
@@ -96,6 +97,7 @@ __all__ = [
     "AlreadyRegistered",
     "AutoResource",
     "Calendar",
+    "Labels",
     "Cards",
     "Chart",
     "ChartBuilder",

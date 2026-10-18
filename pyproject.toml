@@ -105,7 +105,12 @@ api = [
 # included.
 wiki = ["nh3>=0.2.17", "fpdf2>=2.8"]
 
+# QR codes on printed labels (generic.sites.labels), drawn by segno -
+# pure Python, no dependency. Without it, labels print the address.
+labels = ["segno>=1.6"]
+
 dev = [
+    "segno>=1.6",
     "nh3>=0.2.17",
     "fpdf2>=2.8",
     "defusedxml>=0.7",

@@ -189,6 +189,11 @@ class ModelResource(PagesMixin):
     #: removed from. Empty - the default - offers nothing. See
     #: ``generic.sites.bulk_edit``.
     bulk_edit_fields: Sequence[str] = ()
+    #: Labels to print, each with a QR code leading to its record:
+    #: ``True`` (the list's first columns) or ``Labels(fields=...,
+    #: size=...)``. The selection bar gains *Print labels*, a record's
+    #: page a *Label* button. See ``generic.sites.labels``.
+    labels: Any = None
     #: State fields (django-fsm-2 ``FSMField``) whose ``@transition``
     #: methods become buttons on a record's page. The fields become read
     #: only in forms and grids. See ``generic.sites.transitions``.
@@ -845,6 +850,17 @@ class ModelResource(PagesMixin):
             for bound in self.get_calendars():
                 if bound.name not in names:
                     declared.append(calendar_page(bound))
+
+        if self.labels:
+            from generic.sites import labels
+
+            definition = self.get_labels()
+
+            if labels.SHEET_PAGE not in names:
+                declared.append(labels.sheet_page(definition))
+
+            if labels.RECORD_PAGE not in names:
+                declared.append(labels.record_page(definition))
 
         if self.trash and "trash" not in names:
             from generic.sites.pages import trash_page
@@ -1691,7 +1707,47 @@ class ModelResource(PagesMixin):
         if self.transition_actions and not trashing:
             actions.update(self.get_transition_actions(request))
 
+        if self.labels and not trashing:
+            actions.update(self.get_label_actions(request))
+
         return actions
+
+    # -- labels -------------------------------------------------------------
+
+    def get_labels(self) -> Any:
+        """The labels declared, checked once per process
+        (``generic.sites.labels.check``); None without."""
+        if "_labels" not in self.__dict__:
+            from generic.sites.labels import check
+
+            self.__dict__["_labels"] = check(self)
+
+        return self.__dict__["_labels"]
+
+    def get_label_actions(self, request: Any) -> dict[str, ResourceAction]:
+        """*Print labels*, for a reader who may open the sheet."""
+        from generic.sites import labels
+
+        page = self.get_page(labels.SHEET_PAGE)
+
+        if page is None or not self.has_page_permission(request, page):
+            return {}
+
+        return {
+            labels.ACTION_NAME: ResourceAction(
+                name=labels.ACTION_NAME,
+                function=labels.print_action(self),
+                description=gettext("Print labels"),
+                icon="qr_code_2",
+                help=self._describe(
+                    gettext(
+                        "A sheet of labels of the selected "
+                        "%(verbose_name_plural)s, each with a QR code "
+                        "leading to its page."
+                    )
+                ),
+            )
+        }
 
     # -- transitions ----------------------------------------------------------
 

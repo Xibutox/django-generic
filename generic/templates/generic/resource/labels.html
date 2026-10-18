@@ -1,0 +1,60 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static generic_ui %}
+
+{# Labels to print (generic.sites.labels): a record's name, a few of its #}
+{# values and a QR code leading to its page. On paper, only the labels.  #}
+
+{% block bodyclass %}{{ block.super }} page-labels{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/labels.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'generic/js/labels.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+  <section class="card label-card">
+    <div class="label-card__toolbar">
+      <span class="muted">
+        {% blocktranslate count count=labels|length trimmed %}
+          {{ count }} label
+        {% plural %}
+          {{ count }} labels
+        {% endblocktranslate %}
+      </span>
+      {% if labels %}
+        <button type="button" class="button button--primary button--sm js-print-labels">
+          {% icon "print" "icon--sm" %}
+          <span>{% translate "Print" %}</span>
+        </button>
+      {% endif %}
+    </div>
+
+    {% if labels %}
+      <div class="label-sheet label-sheet--{{ label_size }}">
+        {% for label in labels %}
+          <article class="print-label">
+            {% if label.code %}
+              {{ label.code }}
+            {% else %}
+              <p class="print-label__address">{{ label.content }}</p>
+            {% endif %}
+            <div class="print-label__text">
+              <h2 class="print-label__title">{{ label.title }}</h2>
+              {% for line in label.lines %}
+                <p class="print-label__line"><span class="print-label__name">{{ line.label }}</span> {{ line.text }}</p>
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>{% translate "No record to label: tick some in the list, then choose Print labels." %}</p>
+      <a class="button button--sm" href="{{ list_url }}">{% translate "Back to the list" %}</a>
+    {% endif %}
+  </section>
+{% endblock %}

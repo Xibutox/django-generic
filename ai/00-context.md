@@ -121,6 +121,7 @@ generic/
 │   │                       (self FK or link model), a level at a time; no cycles
 │   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
 │   │                       days, a page each, moved by dragging (§5.20)
+│   ├── labels.py           Labels, LabelSheetView: stickers with a QR code, printed (§5.24)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
@@ -671,6 +672,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
 | `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
+| `labels` | `None` | `True` or `Labels(fields=, size=, content=, title=, permission=)`: bulk action *Print labels* and a record's *Label* page, QR codes (§5.24) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
 | `detail_charts` | `()` | `"<related table name>.<chart name of that related resource>"` on the summary page |
@@ -1565,6 +1567,26 @@ class TicketResource(ModelResource):
   the declaration, 400 bad change / mode / nothing selected, 404 trash.
   Example: `TicketResource` (a closed ticket keeps its team), and the
   Equipment group through `auto()`. See `docs/bulk-edit.md`.
+
+### 5.24 Labels (`Labels`)
+
+```python
+labels = Labels(
+    fields=("serial_number", "kind"),   # default: list_display[1:4]
+    size="medium",                      # small 38x21 (no values), medium 63x38, large 99x57 mm
+    content=None,                       # code holds: record page's absolute URL, or this field's value
+    title=None, permission=None,
+)
+```
+
+Adds the bulk action `print_labels` (view permission, every matching
+row allowed, at most `MAX_LABELS` 500) answering `{"redirect":
+"<model>/labels/?ids=..."}`, the page `labels` (`button=False`) and the
+record page `label` (`detail=True`, *Label* on the summary). Records
+through `get_list_queryset` + `has_view_permission`. QR codes: segno
+(extra `labels`), inline SVG, black on white; without segno the
+address is printed. Print CSS hides the frame (`.page-labels`).
+`docs/labels.md`; example: equipment (`auto(..., labels=...)`).
 
 ## 6. URLs and endpoints (generated)
 

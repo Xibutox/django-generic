@@ -4244,3 +4244,42 @@ msgstr "Empilé"
 #: generic/templates/generic/charts/builder.html
 msgid "Horizontal"
 msgstr "Horizontal"
+
+#: generic/sites/labels.py
+msgid "Print labels"
+msgstr "Imprimer des étiquettes"
+
+#: generic/sites/labels.py
+msgid "Labels"
+msgstr "Étiquettes"
+
+#: generic/sites/labels.py
+msgid "Print"
+msgstr "Imprimer"
+
+#: generic/sites/labels.py
+msgid "A label of this record, to print."
+msgstr "Une étiquette de cet enregistrement, à imprimer."
+
+#: generic/sites/labels.py
+msgid "No record to label: tick some in the list, then choose Print labels."
+msgstr "Aucun enregistrement à étiqueter : cochez-en dans la liste, puis choisissez Imprimer des étiquettes."
+
+#: generic/sites/labels.py
+msgid "At most %(count)s labels are printed at once: filter the list further."
+msgstr "Au plus %(count)s étiquettes s'impriment à la fois : filtrez davantage la liste."
+
+#: generic/sites/labels.py
+msgid "A sheet of labels of the selected %(verbose_name_plural)s, each with a QR code leading to its page."
+msgstr "Une planche d'étiquettes des %(verbose_name_plural)s sélectionnés, chacune avec un code QR menant à sa page."
+
+#: generic/templates/generic/resource/labels.html
+msgid "%(count)s label"
+msgid_plural "%(count)s labels"
+msgstr[0] "%(count)s étiquette"
+msgstr[1] "%(count)s étiquettes"
+
+#: generic/sites/labels.py
+msgctxt "sticker"
+msgid "Label"
+msgstr "Étiquette"
