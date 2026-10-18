@@ -50,6 +50,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   queryset and each one's view permission.
   `GET api/<app>/<model>/compare/?ids=`. In the example: tickets and
   articles. See docs/compare.md.
+- Pivot tables: the chart builder's new *Table* form crosses the
+  chosen fields in a table of figures - a row per value of the first,
+  a column per value of the second - with a total column, a total row
+  and the grand total, each its own aggregate (the total of an average
+  is the average of every row). Figures are tinted by size, a click on
+  one filters the table, and the table downloads as CSV. Every row is
+  kept, with no *Other*, up to 200 rows and 50 columns. A declared
+  `Chart(type="pivot", ...)` draws the same table. See docs/charts.md.
 - A chart each reader draws above a list: `chart_builder` on a
   resource puts a *Chart* button in its table's toolbar, opening a
   card above the list - closed until opened - where the reader picks

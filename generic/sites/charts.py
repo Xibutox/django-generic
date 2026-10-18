@@ -59,8 +59,18 @@ from generic.api.tags import TagStyle, clean_color, json_key
 #: What the declarative form draws. ``data`` may return any other type
 #: the client knows, and ``options`` any ECharts setting.
 CHART_TYPES = frozenset(
-    {"bar", "line", "area", "pie", "donut", "funnel", "heatmap"}
+    {"bar", "line", "area", "pie", "donut", "funnel", "heatmap", "pivot"}
 )
+
+#: The form drawn as a table of figures - a pivot table - not a chart:
+#: a row per value of ``group_by``, a column per value of ``split_by``,
+#: and their totals.
+PIVOT = "pivot"
+
+#: A pivot table's rows and columns at most, in the chart's order: past
+#: them, ``truncated`` says so, and the totals still count every row.
+PIVOT_ROWS = 200
+PIVOT_COLUMNS = 50
 
 #: How a date dimension is bucketed.
 PERIODS = ("day", "week", "month", "quarter", "year")
@@ -517,6 +527,9 @@ class Chart:
         else:
             payload.update(self.compute(resource, queryset, period))
 
+            if self.type == PIVOT:
+                payload.update(self.pivot(resource, queryset, period, payload))
+
         payload["empty"] = not any(
             any(plain_number(value) for value in series_values(entry))
             for entry in payload["series"]
@@ -664,6 +677,76 @@ class Chart:
 
         return payload
 
+    # -- a pivot table ------------------------------------------------------
+
+    def pivot(
+        self,
+        resource: Any,
+        queryset: Any,
+        period: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """A table's rows and columns, cut to what a page can hold, and
+        its totals - each its own aggregate, so that the total of an
+        average is the average of every row, not a sum of averages."""
+        value = (
+            self.value
+            if self.value is not None
+            else Count("pk", distinct=True)
+        )
+        whole = queryset.order_by().aggregate(_pivot_total=value)
+        rows = self.totals_by(resource, queryset, period, self.group_by)
+        columns = (
+            self.totals_by(resource, queryset, period, self.split_by)
+            if self.split_by
+            else {}
+        )
+        series = payload["series"]
+        count = len(payload["categories"])
+        truncated = len(series) > PIVOT_COLUMNS or count > PIVOT_ROWS
+        count = min(count, PIVOT_ROWS)
+        cut = {
+            name: payload[name][:count]
+            for name in ("categories", "keys", "ranges", "colors")
+            if name in payload
+        }
+        series = [
+            dict(entry, data=entry["data"][:count])
+            for entry in series[:PIVOT_COLUMNS]
+        ]
+
+        return {
+            **cut,
+            "series": series,
+            "totals": {
+                "rows": [rows.get(key, 0) for key in cut["keys"]],
+                "columns": (
+                    [columns.get(entry["key"], 0) for entry in series]
+                    if self.split_by
+                    else [None for _entry in series]
+                ),
+                "all": plain_number(whole["_pivot_total"] or 0),
+            },
+            "truncated": truncated,
+        }
+
+    def totals_by(
+        self,
+        resource: Any,
+        queryset: Any,
+        period: str,
+        path: str | None,
+    ) -> dict[Any, Any]:
+        """The value of each key of one dimension alone, by its key as
+        the payload writes it."""
+        alone = dataclasses.replace(
+            self, type="bar", group_by=path, split_by=None, limit=None
+        )
+        computed = alone.compute(resource, queryset, period)
+        data = computed["series"][0]["data"] if computed["series"] else []
+
+        return dict(zip(computed["keys"], data))
+
     def ordered(
         self,
         dimension: Dimension,
@@ -704,7 +787,8 @@ class Chart:
         totals: Mapping[Any, Any],
     ) -> tuple[list[Any], dict[tuple[Any, Any], Any]]:
         """The ``limit`` largest categories, the rest gathered."""
-        if not self.limit or dimension.kind == "date":
+        # A table keeps every row: an "Other" row would add averages up.
+        if not self.limit or dimension.kind == "date" or self.type == PIVOT:
             return keys, cells
 
         if len(keys) <= self.limit:

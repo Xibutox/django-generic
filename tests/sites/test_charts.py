@@ -393,3 +393,22 @@ class TestDeclaration:
             Chart("wrong", group_by="nothing").get_payload(
                 resource, None, Ticket.objects.all()
             )
+
+
+class TestADeclaredPivotTable:
+    def test_a_declared_table_has_its_totals(self, support_desk):
+        resource = site.get_resource(Ticket)
+        chart = Chart(
+            "workload",
+            type="pivot",
+            group_by="team",
+            split_by="priority",
+            limit=1,
+        )
+        body = chart.get_payload(resource, None, Ticket.objects.all())
+
+        assert body["type"] == "pivot"
+        # A table keeps every row: ``limit`` gathers nothing in "Other".
+        assert body["categories"] == ["Front office", "Infrastructure"]
+        assert body["totals"]["rows"] == [2, 1]
+        assert body["totals"]["all"] == 3

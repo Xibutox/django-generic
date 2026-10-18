@@ -1068,6 +1068,15 @@
           return;
         }
 
+        // A table of figures: the template draws it, not ECharts.
+        if (raw.type === "pivot") {
+          if (chart) {
+            chart.clear();
+          }
+
+          return;
+        }
+
         if (!chart) {
           chart = echarts.init(this.$refs.canvas, null, {
             renderer: "canvas",
@@ -1082,7 +1091,7 @@
       },
 
       redraw: function () {
-        if (chart && raw) {
+        if (chart && raw && raw.type !== "pivot") {
           chart.setOption(buildOption(raw, readTheme()), { notMerge: true });
         }
       },
@@ -1153,7 +1162,119 @@
         return formatValue(value, raw && raw.value);
       },
 
+      /* -- A pivot table: the figures crossed, with their totals --------- */
+
+      isPivot: function () {
+        return Boolean(this.payload && this.payload.type === "pivot");
+      },
+
+      /** Whether the table has a column of totals: with a second field. */
+      pivotSplit: function () {
+        return Boolean(this.payload && this.payload.split);
+      },
+
+      /** A cell's tint, 0 to 1 of the largest cell: --pivot-shade. */
+      pivotShade: function (value) {
+        var largest = 0;
+
+        ((raw && raw.series) || []).forEach(function (entry) {
+          (entry.data || []).forEach(function (number) {
+            largest = Math.max(largest, Math.abs(Number(number) || 0));
+          });
+        });
+
+        var share = largest ? Math.abs(Number(value) || 0) / largest : 0;
+
+        return "--pivot-shade: " + share.toFixed(3);
+      },
+
+      /**
+       * A figure clicked filters the linked table on its row's value,
+       * its column's, or both; a total, on the one it adds up.
+       */
+      selectCell: function (row, column) {
+        this.select({
+          dataIndex: row === null ? -1 : row,
+          seriesIndex: column === null ? -1 : column
+        });
+      },
+
+      /** The figures as CSV: the rows, the columns, their totals. */
+      pivotCsv: function () {
+        var payload = raw || {};
+        var series = payload.series || [];
+        var totals = payload.totals || {};
+        var split = Boolean(payload.split);
+        var lines = [];
+
+        function cell(value) {
+          var text = value === null || value === undefined ? "" : String(value);
+
+          // A spreadsheet must not read a label as a formula.
+          if (/^[=+\-@\t\r]/.test(text)) {
+            text = "'" + text;
+          }
+
+          return /[",\n;]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+        }
+
+        var head = [""].concat(
+          series.map(function (entry) {
+            return entry.name;
+          })
+        );
+
+        if (split) {
+          head.push(t("Total"));
+        }
+
+        lines.push(head.map(cell).join(","));
+
+        (payload.categories || []).forEach(function (label, row) {
+          var values = [label].concat(
+            series.map(function (entry) {
+              return entry.data[row];
+            })
+          );
+
+          if (split) {
+            values.push((totals.rows || [])[row]);
+          }
+
+          lines.push(values.map(cell).join(","));
+        });
+
+        var foot = [t("Total")].concat(
+          split
+            ? (totals.columns || []).concat([totals.all])
+            : [totals.all]
+        );
+
+        lines.push(foot.map(cell).join(","));
+
+        return lines.join("\r\n") + "\r\n";
+      },
+
       download: function () {
+        if (raw && raw.type === "pivot") {
+          var file = document.createElement("a");
+          var blob = new window.Blob(["\ufeff" + this.pivotCsv()], {
+            type: "text/csv;charset=utf-8"
+          });
+          var address = window.URL.createObjectURL(blob);
+
+          file.href = address;
+          file.download = (this.config.name || "table") + ".csv";
+          document.body.appendChild(file);
+          file.click();
+          file.remove();
+          window.setTimeout(function () {
+            window.URL.revokeObjectURL(address);
+          }, 0);
+
+          return;
+        }
+
         if (!chart) {
           return;
         }

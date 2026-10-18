@@ -192,7 +192,8 @@ the one each reader draws: a **Chart** button in the table's toolbar
 opens a card above the list - **closed until opened** - where the
 reader picks
 
-- the form: bars, lines, areas, pie, donut, heatmap;
+- the form: bars, lines, areas, pie, donut, heatmap, or a **table**
+  (below);
 - the field the rows are grouped by, and a second one splitting them
   (one series per value, or the rows of a heatmap);
 - what is shown: the number of rows, or the total or the average of a
@@ -249,6 +250,30 @@ GET /api/<app>/<model>/chart-builder/?type=bar&group_by=status
   in a pie), the rest gathered as *Other*; dates are never cut.
 - 404 for a resource without it; the resource's view permission
   otherwise, like the table.
+
+### A pivot table
+
+The *Table* form draws no chart: it crosses the fields in a table of
+figures, a row per value of the first field and a column per value of
+the second, each figure tinted by its share of the largest. A
+**Total** column, a **Total** row and the grand total sit beside them,
+each an aggregate of its own: the total of an average is the average
+of every row, never the averages added up. A table keeps every row,
+with no *Other*, up to 200 rows and 50 columns (`PIVOT_ROWS`,
+`PIVOT_COLUMNS` in `generic.sites.charts`, the largest first); past
+that, `truncated` says so and the totals still count every row.
+
+A figure clicked filters the table on its row's value and its
+column's; a total, on the one it adds up. The download button gives
+the table as CSV, totals included.
+
+A declared chart may be a table too - `Chart("workload", type="pivot",
+group_by="team", split_by="priority")` in `list_charts`, on a summary
+page or on the dashboard - with the same totals. Its payload adds
+`totals: {rows, columns, all}` (`columns` is `[null]` without
+`split_by`) and `truncated`.
+
+### Remembered
 
 The reader's choices, and whether the card is open, are remembered in
 the browser per table, and **saved with the table's views**: a view
