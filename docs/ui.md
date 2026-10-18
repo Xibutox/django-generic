@@ -530,6 +530,30 @@ application has no size setting of its own; a system that scales its
 display (125%, 150%) is answered by the layout's breakpoints, as it
 should be.
 
+Those breakpoints look at the height too. A 1920x1080 laptop at the
+125% Windows sets by default leaves the browser about 1536x730 CSS
+pixels, against some 1920x950 at 100%: the same type in a quarter less
+height. Under **820px of height** the interface keeps its type and its
+controls - what the scaling was asked for - and gives up the air
+between them:
+
+- `--header-height` is `3rem`, and `--space-5`, `--space-6`,
+  `--space-7` a quarter smaller: the page's margins, the gaps between
+  cards, the cards' padding;
+- the navigation's links stand closer, a table's rows are their line of
+  text and little more, a summary's figures sit on one slim line;
+- a chart is never taller than 28% of the window (`10rem` at least), so
+  a list's rows still show under its charts.
+
+Between 1025px and 1400px of width - 1366x768 at 125% is 1093px wide -
+the pinned navigation is `15rem` instead of `17rem`. A project's own
+values for these tokens (`GENERIC["THEME"]`) still win.
+
+A chart card **folds** to its title with the chevron at the end of its
+tools, remembered per page and chart in the browser: above a list on a
+small screen, the reader keeps the rows and opens the chart when they
+want it. A folded chart fetches nothing until it is opened.
+
 The page takes the window's whole width, the navigation shown or not:
 `--content-max-width` is `none`. A project that would rather cap it on
 very wide screens gives it a length (`--content-max-width: 1600px`).

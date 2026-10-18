@@ -250,6 +250,32 @@
   --transition-base: 200ms ease;
 }
 
+/*
+ * A short window: a 1920x1080 laptop at the 125% scaling Windows sets
+ * by default leaves about 1536x730 CSS pixels once the taskbar and the
+ * browser have taken theirs, against some 950 at 100%. The page keeps
+ * its type and controls - they are what the scaling was asked for -
+ * and gives up the air between them, so a list still shows its rows
+ * under the page's charts. A project's own values (GENERIC["THEME"])
+ * still win.
+ */
+@media (max-height: 820px) {
+  :root {
+    --header-height: 3rem;
+    --space-5: 1.125rem;
+    --space-6: 1.5rem;
+    --space-7: 2.25rem;
+  }
+}
+
+/* A narrow desktop (1366x768 at 125% is 1093px wide): the pinned
+   navigation gives the page back a few columns. */
+@media (min-width: 1025px) and (max-width: 1400px) {
+  :root {
+    --sidebar-width: 15rem;
+  }
+}
+
 /* An explicit choice, which wins over the system in both directions. */
 :root[data-theme="light"] {
   color-scheme: light;

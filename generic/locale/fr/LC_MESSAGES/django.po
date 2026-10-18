@@ -868,6 +868,10 @@ msgstr "terminée à"
 msgid "Floating over the page"
 msgstr "Flottante au-dessus de la page"
 
+#: generic/templates/generic/charts/chart.html:38
+msgid "Fold the chart"
+msgstr "Replier le graphique"
+
 #: generic/accounts/models.py:34
 msgid "Follow the system"
 msgstr "Suivre le système"
@@ -1728,6 +1732,11 @@ msgstr "afficher sur le tableau de bord"
 #: generic/templates/generic/wiki/page.html:135
 msgid "Show on the dashboard"
 msgstr "Afficher sur le tableau de bord"
+
+#: generic/templates/generic/charts/chart.html:38
+#: generic/templates/generic/charts/tools.html:8
+msgid "Show the chart"
+msgstr "Afficher le graphique"
 
 #: generic/templates/generic/charts/chart.html:36
 msgid "Show the figures"

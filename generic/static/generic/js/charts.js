@@ -804,6 +804,13 @@
       readJson(configId)
     );
 
+    // Folded to its title by its reader - above a list on a short
+    // window, the table under it is what they came for. Remembered per
+    // page and chart in this browser.
+    var foldKey = config.name
+      ? "generic.chart.folded:" + window.location.pathname + ":" + config.name
+      : "";
+
     return {
       config: config,
       payload: null,
@@ -812,6 +819,7 @@
       view: "chart",
       period: config.period || "",
       linked: false,
+      folded: remembered(foldKey) === true,
 
       init: function () {
         var self = this;
@@ -1144,6 +1152,13 @@
         });
 
         controller.redraw();
+      },
+
+      /** Fold the card to its title, or unfold it. The drawing starts,
+          or takes its new size, once it can be seen again. */
+      toggleFolded: function () {
+        this.folded = !this.folded;
+        remember(foldKey, this.folded);
       },
 
       toggleView: function () {

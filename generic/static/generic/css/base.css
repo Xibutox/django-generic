@@ -422,6 +422,24 @@ html:not(.sidebar-unpinned).sidebar-closed .sidebar {
   font-size: var(--font-size-sm);
 }
 
+/* A short window: the links closer together, so more of the
+   navigation shows without scrolling it. */
+@media (max-height: 820px) {
+  .nav-link {
+    min-height: 2rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .nav-group + .nav-group {
+    margin-top: var(--space-3);
+  }
+
+  .sidebar__search {
+    padding-top: var(--space-2);
+  }
+}
+
 .sidebar__footer {
   flex: 0 0 auto;
   padding: var(--space-3) var(--space-5);

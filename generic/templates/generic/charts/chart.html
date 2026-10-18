@@ -6,7 +6,7 @@
   {{ chart.config|json_script:chart.config_id }}
   <section class="card chart-card"
            x-data="genericChart('{{ chart.config_id|escapejs }}')"
-           :class="{ 'is-loading': loading }"
+           :class="{ 'is-loading': loading, 'is-folded': folded }"
            aria-labelledby="{{ chart.config_id }}-title">
     <header class="chart-card__header">
       <h2 class="chart-card__title" id="{{ chart.config_id }}-title">
@@ -15,25 +15,41 @@
       </h2>
 
       <div class="chart-card__tools">
-        <template x-if="config.periods.length">
-          <select class="input input--sm chart-card__period"
-                  x-model="period"
-                  @change="load()"
-                  aria-label="{% translate 'Period' %}">
-            <template x-for="option in config.periods" :key="option.value">
-              <option :value="option.value" :selected="option.value === period" x-text="option.label"></option>
-            </template>
-          </select>
-        </template>
+        <span class="chart-card__extra" x-show="!folded">
+          <template x-if="config.periods.length">
+            <select class="input input--sm chart-card__period"
+                    x-model="period"
+                    @change="load()"
+                    aria-label="{% translate 'Period' %}">
+              <template x-for="option in config.periods" :key="option.value">
+                <option :value="option.value" :selected="option.value === period" x-text="option.label"></option>
+              </template>
+            </select>
+          </template>
 
-        {% include "generic/charts/tools.html" %}
+          {% include "generic/charts/tools.html" %}
+        </span>
+
+        {# Folded to its title: a chart above a list on a short window  #}
+        {# leaves the rows the room.                                     #}
+        <button type="button"
+                class="icon-button icon-button--sm chart-card__fold"
+                @click="toggleFolded()"
+                :aria-expanded="(!folded).toString()"
+                :title="folded ? '{{ _('Show the chart')|escapejs }}' : '{{ _('Fold the chart')|escapejs }}'">
+          <span class="icon material-symbols-outlined icon--sm" aria-hidden="true"
+                x-text="folded ? 'expand_more' : 'expand_less'">expand_less</span>
+          <span class="sr-only" x-text="folded ? '{{ _('Show the chart')|escapejs }}' : '{{ _('Fold the chart')|escapejs }}'">{% translate "Fold the chart" %}</span>
+        </button>
       </div>
     </header>
 
-    {% if chart.config.description %}
-      <p class="chart-card__description">{{ chart.config.description }}</p>
-    {% endif %}
+    <div class="chart-card__content" x-show="!folded">
+      {% if chart.config.description %}
+        <p class="chart-card__description">{{ chart.config.description }}</p>
+      {% endif %}
 
-    {% include "generic/charts/body.html" %}
+      {% include "generic/charts/body.html" %}
+    </div>
   </section>
 {% endif %}

@@ -10,6 +10,33 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Changed
+- Laptops at 125% or 150% display scaling: under 820px of window height
+  - 1920x1080 at 125% leaves about 730 - the page keeps its type and
+  controls and gives up the air between them: a slimmer top bar, page
+  margins and card gaps a quarter smaller, closer navigation links,
+  slimmer table rows and summary figures, and charts at most 28% of
+  the window tall, so a list shows its rows under its charts. Between
+  1025px and 1400px of width the pinned navigation is 15rem. At 100%
+  on a 1080p screen nothing moves. See docs/ui.md, *Size*.
+- A record's summary puts its state buttons, its actions and its last
+  change on one line, where each took a line of its own.
+- A summary section shows its fields in two columns from a narrower
+  card (10rem a column, was 12rem).
+- A table's search box gives up width before its tools wrap onto a
+  second line.
+
+### Added
+- A chart card folds to its title with a chevron beside its tools,
+  remembered per page and chart in the browser; folded, it fetches
+  nothing until opened. See docs/charts.md.
+
+### Fixed
+- The table under a list's charts touched them: the chart builder
+  between them broke the rule spacing the two.
+
 ## [1.4.0] - 2026-10-18
 
 ### Added
