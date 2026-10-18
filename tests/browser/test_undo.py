@@ -36,7 +36,9 @@ def test_a_row_deleted_from_its_menu_comes_back(tickets):
     menu.scroll_into_view_if_needed()
     menu.click()
     page.get_by_role("menuitem", name="Delete", exact=True).click()
-    page.get_by_role("dialog").get_by_role("button", name="Yes, delete").click()
+    page.get_by_role("dialog").get_by_role(
+        "button", name="Yes, delete"
+    ).click()
 
     toast = page.locator(".toast").filter(has_text="was deleted")
     expect(toast).to_be_visible()
@@ -54,7 +56,9 @@ def test_a_record_deleted_from_its_form_is_undone_from_the_list(tickets):
     ticket = Ticket.objects.get(reference="SD-1005")
     page.goto(f"/example/ticket/{ticket.pk}/change/")
     page.get_by_role("button", name="Delete").first.click()
-    page.get_by_role("dialog").get_by_role("button", name="Yes, delete").click()
+    page.get_by_role("dialog").get_by_role(
+        "button", name="Yes, delete"
+    ).click()
 
     page.wait_for_url(f"**{LIST}")
     toast = page.locator(".toast").filter(has_text="was deleted")
