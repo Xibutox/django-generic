@@ -98,6 +98,64 @@ def is_api(path: str) -> bool:
     return any(segment == "api" for segment in plain.split("/"))
 
 
+class capture_queries:
+    """The SQL run inside the block, in ``captured``; ``len()`` counts it."""
+
+    def __enter__(self) -> "capture_queries":
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        self.context = CaptureQueriesContext(connection)
+        self.context.__enter__()
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self.context.__exit__(*exc)
+
+    def __len__(self) -> int:
+        return len(self.context)
+
+    @property
+    def captured(self) -> list[str]:
+        return [query["sql"] for query in self.context.captured_queries]
+
+
+def copy_of(record: Any) -> Any:
+    """A second row like ``record``, or ``None`` when it cannot be made.
+
+    The sweep's ``records`` give one row per model; comparing the cost
+    of one row and of several takes two. Each field is copied, a unique
+    text gets a suffix; anything else unique, or a constraint refusing
+    the copy, gives up - the test then skips rather than guesses.
+    """
+    from django.db import models, transaction
+
+    if record is None:
+        return None
+
+    copy = type(record)._default_manager.get(pk=record.pk)
+    copy.pk = None
+
+    for field in copy._meta.concrete_fields:
+        if field.primary_key or not field.unique:
+            continue
+        if not isinstance(field, models.CharField) or field.choices:
+            return None
+        value = getattr(copy, field.attname) or ""
+        suffix = "-2"
+        limit = (field.max_length or 255) - len(suffix)
+        setattr(copy, field.attname, value[:limit] + suffix)
+
+    try:
+        with transaction.atomic():
+            copy._state.adding = True
+            copy.save()
+    except Exception:  # nosec B110 - any refusal means "no copy"
+        return None
+
+    return copy
+
+
 #: Namespaces other applications test themselves: Django's admin, the
 #: Debug Toolbar's panels.
 FOREIGN_NAMESPACES = ("admin", "djdt")
@@ -165,6 +223,7 @@ class PageSweep:
     )
     urlconf: Any = None
     site: Any = None
+    query_rows: int = 25
     excluded_namespaces: tuple[str, ...] = FOREIGN_NAMESPACES
 
     # -- what to open ------------------------------------------------------
@@ -490,6 +549,56 @@ class PageSweep:
         expected = (200,) if is_recorded(entry) else (404,)
 
         assert history.status_code in expected, f"{resource} history"
+
+    def test_rows_cost_the_same_however_many(
+        self,
+        resource: str,
+        opener: Any,
+        pooled: dict[str, Any],
+    ) -> None:
+        """A table of many rows asks the database no more than one of one.
+
+        Every column a resource declares turns into SQL; one that reads
+        a relation row by row (an N+1) costs a query per row, and a list
+        of 100 rows then costs 100 more - slow in production, invisible
+        on a test database of three records. The rows are read twice,
+        one row and then up to ``query_rows``, and both must cost the
+        same number of queries. A resource with fewer than two rows is
+        skipped: give ``records`` a second one to have it measured.
+        """
+        entry = self.resource_named(resource)
+        prefix = self.prefix_of(entry)
+
+        def cost(length: int) -> tuple[int, dict, list[str]]:
+            with capture_queries() as queries:
+                response = opener.get(
+                    prefix, {"draw": 1, "start": 0, "length": length}
+                )
+            assert response.status_code == 200, f"{resource} rows"
+            return len(queries), response.json(), queries.captured
+
+        # Once first: caches filled on a first request (content types,
+        # permissions, the site's chrome) are no part of a row's cost.
+        cost(1)
+        one, answer, _ = cost(1)
+        total = answer.get("recordsFiltered") or 0
+
+        if total < 2 and copy_of(pooled.get(resource)) is not None:
+            one, answer, _ = cost(1)
+            total = answer.get("recordsFiltered") or 0
+
+        if total < 2:
+            pytest.skip(f"{resource}: fewer than two rows to compare")
+
+        rows = min(total, self.query_rows)
+        many, _, captured = cost(rows)
+
+        assert many <= one, (
+            f"{resource}: {one} queries for 1 row, {many} for {rows} - "
+            f"a column reads a relation once per row; select_related "
+            f"or prefetch_related it (get_queryset), or annotate it. "
+            f"The queries:\n" + "\n".join(sql for sql in captured)
+        )
 
     def test_every_column_lists_its_values(
         self,

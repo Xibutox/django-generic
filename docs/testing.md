@@ -261,6 +261,7 @@ page or per resource:
 | `test_page_never_breaks_for_a_stranger` | signed out: below 500 |
 | `test_page_never_breaks_without_permissions` | signed in, allowed nothing: below 500 |
 | `test_resource_endpoints` | rows, form schema, a record's summary and history |
+| `test_rows_cost_the_same_however_many` | the rows endpoint costs as many queries for 25 rows as for one: a column reading a relation row by row (an N+1) fails it, with the queries |
 | `test_every_column_lists_its_values` | each column's `facets/`: 200 or 400, never 500 |
 | `test_resource_exports` | both exports stream |
 | `test_every_chart_draws` | each declared chart |
@@ -276,6 +277,7 @@ What a subclass may set:
 | `expected` | `{url name: (status, ...)}`, where a superuser does not get 200 |
 | `languages` | `("en", "fr")` opens every page in each; empty, once |
 | `value_for(url_name, argument, records)` | the value of an address argument the default cannot work out; call `super()` for the rest |
+| `query_rows` | how many rows the query count compares with one (25) |
 | `urlconf`, `site`, `excluded_namespaces` | another URLconf or site; the namespaces left to their own tests (`admin`, `djdt`) |
 
 The framework's own screens - people, groups, permissions, changes,
@@ -286,6 +288,30 @@ writes - nothing lands in a project's `MEDIA_ROOT` - so its page is
 expected to answer 200 or 404. `scripts/smoke_install.py --sweep` runs such a
 subclass against the installed wheel in CI, so the helper is tested as
 a project uses it.
+
+### Queries that grow with the rows
+
+`test_rows_cost_the_same_however_many` reads each resource's rows twice
+- one row, then up to `query_rows` - and fails when the second costs
+more queries than the first. That is the N+1: a method column, a
+deferred field or a relation read on each row, which costs nothing on a
+test database of three records and a query per row in production. The
+failure lists the queries; the fix is `select_related` or
+`prefetch_related` in `get_queryset`, or an annotation. A resource with
+a single record gets a copy of it (a unique text field gets a suffix);
+one that cannot be copied, and has fewer than two rows, is skipped -
+give `records` a second record to have it measured.
+
+Elsewhere, `generic.testing.capture_queries` counts the queries of a
+block:
+
+```python
+from generic.testing import capture_queries
+
+with capture_queries() as queries:
+    client.get(url)
+assert len(queries) <= 6, queries.captured
+```
 
 ## Fixtures
 

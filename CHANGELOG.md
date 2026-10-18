@@ -41,6 +41,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   its `SECURITY-CONTROLS.md` maps each choice to ISO/IEC 27001 Annex A.
   See docs/new-project.md.
 
+- `PageSweep` counts queries: `test_rows_cost_the_same_however_many`
+  reads each resource's rows once with one row and once with up to
+  `query_rows` (25), and fails, listing the SQL, when the second costs
+  more - a column reading a relation row by row (an N+1) is caught on a
+  test database of a few records instead of in production. A resource
+  with one record gets a copy of it to compare. Every project's sweep
+  gains the test; `generic.testing.capture_queries` counts the queries
+  of any block. The framework's 32 resources all pass.
+
 ### Security
 - Exports no longer carry formulas: a text starting with `=`, `+`, `-`,
   `@`, a tab or a carriage return - `=HYPERLINK(...)` typed into a

@@ -1848,6 +1848,8 @@ Read them via `from generic.conf import generic_settings`.
   permissions and a stranger → anything below 500), plus every
   generated endpoint per resource — rows, form schema, summary,
   history, each column's `facets/`, both exports, every chart, the
+  rows' query count (25 rows must cost no more queries than one: an
+  N+1 fails, with its SQL; `capture_queries` counts a block's), the
   import's schema and template, a record's transitions — and the
   OpenAPI description. A new page needs no new test; a page whose
   address needs a value adds a record to the `records` fixture (by model
