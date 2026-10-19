@@ -363,8 +363,8 @@ class TestThePagesWork:
 class TestARowOpensItsRecord:
     """Records holding records: a supplier's equipment, each holding its
     maintenance visits. The supplier's form edits the equipment rows;
-    each saved row links to the equipment's own form, where its visits
-    are, and that form comes back to the supplier."""
+    each row opens the equipment's own form in a popup window, where its
+    visits are, and is read again once that form saved it."""
 
     SUPPLIER = "/api/example/supplier/form-schema/"
 
@@ -379,6 +379,7 @@ class TestARowOpensItsRecord:
 
         assert inline["name"] == "equipment"
         assert inline["changeUrl"] == "/example/equipment/{id}/change/"
+        assert inline["recordUrl"] == "/api/example/equipment/{id}/"
 
     def test_the_record_s_form_edits_its_own_rows(self, admin_client):
         schema = admin_client.get(f"{EQUIPMENT}form-schema/").json()
@@ -387,17 +388,18 @@ class TestARowOpensItsRecord:
             "maintenances"
         ]
 
-    def test_its_form_comes_back_to_the_parent(self, admin_client, workshop):
+    def test_it_opens_as_a_popup(self, admin_client, workshop):
         laptop = workshop["laptop"]
-        back = f"/example/supplier/{workshop['supplier'].pk}/change/"
         page = admin_client.get(
             f"/example/equipment/{laptop.pk}/change/",
-            {"_next": f"{back}#tab-inline-equipment"},
+            {"_popup": "1", "_relation_request": "inline-1"},
         )
+        config = page.context["form_config"]
 
         assert page.status_code == 200
-        assert page.context["form_config"]["returnUrl"] == (
-            f"{back}#tab-inline-equipment"
+        assert (config["popup"], config["popupRequest"]) == (
+            True,
+            "inline-1",
         )
 
     def test_no_link_to_a_model_without_pages(self, other_site, rf):
@@ -417,6 +419,7 @@ class TestARowOpensItsRecord:
         ).get_inline_definitions(request)
 
         assert definition.change_url_template == ""
+        assert definition.record_url_template == ""
 
     def test_a_reader_may_open_it_read_only(self, client):
         from django.contrib.auth.models import Permission

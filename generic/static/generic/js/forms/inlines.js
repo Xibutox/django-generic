@@ -389,36 +389,132 @@
   };
 
   /**
-   * A saved row's link to its record's own page - where its files and
-   * the rows it holds in turn are edited - coming back here after.
+   * The row's record opened in a popup window, the way a relation's
+   * pencil opens its record: what the row cannot show - the rows it
+   * holds in turn, its files - is edited there, while this form keeps
+   * its own changes. A row not saved yet is saved with the form first.
    */
   Inline.prototype.openLink = function (row) {
-    var template = this.definition.changeUrl;
+    var self = this;
+    var definition = this.definition;
 
-    if (!template || row.isNew || row.primaryKey === null || this.form.config.popup) {
+    if (!definition.changeUrl) {
       return null;
     }
 
-    var back = window.location.pathname + window.location.search;
+    var button = el("button", "icon-button icon-button--sm");
+    var label = t("Open in a window");
+    button.type = "button";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.appendChild(icon("edit_square", "icon--sm"));
+    button.addEventListener("click", function () {
+      if (row.isNew || row.primaryKey === null) {
+        self.saveFirst();
+      } else {
+        self.openRecord(row);
+      }
+    });
 
-    if (this.definition.tab) {
-      back += "#tab-inline-" + this.definition.name;
+    return button;
+  };
+
+  /** A new row has no record yet: offer to save the form, and stay. */
+  Inline.prototype.saveFirst = function () {
+    var form = this.form;
+
+    if (this.readOnly || !Generic.dialogs) {
+      Generic.toast(t("Save the form first: the row opens once saved."), "info");
+      return;
     }
 
+    Generic.dialogs
+      .confirm({
+        title: t("Save first?"),
+        message: t("This row is not saved yet. Save the form, then open the row again."),
+        confirmLabel: t("Save"),
+        confirmIcon: "check"
+      })
+      .then(function (yes) {
+        if (yes) {
+          form.save("continue");
+        }
+      });
+  };
+
+  Inline.prototype.openRecord = function (row) {
+    var form = this.form;
     var url = new URL(
-      String(template).replace("{id}", encodeURIComponent(row.primaryKey)),
+      String(this.definition.changeUrl).replace("{id}", encodeURIComponent(row.primaryKey)),
       window.location.origin
     );
-    url.searchParams.set("_next", back);
+    var requestId = "inline-" + Date.now() + "-" + Math.random().toString(36).slice(2);
 
-    var label = t("Open its page");
-    var link = el("a", "icon-button icon-button--sm");
-    link.href = url.pathname + url.search;
-    link.title = label;
-    link.setAttribute("aria-label", label);
-    link.appendChild(icon("edit_square", "icon--sm"));
+    url.searchParams.set("_popup", "1");
+    url.searchParams.set("_relation_request", requestId);
 
-    return link;
+    var width = 1100;
+    var height = 800;
+    var left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+    var top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+    var popup = window.open(
+      url.toString(),
+      requestId,
+      "popup=yes,width=" + width + ",height=" + height + ",left=" + left +
+        ",top=" + top + ",resizable=yes,scrollbars=yes"
+    );
+
+    if (!popup) {
+      Generic.toast(t("The browser blocked the popup window."), "warning");
+      return;
+    }
+
+    form.relationRequests.set(requestId, { inline: this, row: row });
+    popup.focus();
+  };
+
+  /**
+   * The record was saved in its window: its new values replace the
+   * row's, except where the row was changed here and not saved yet.
+   */
+  Inline.prototype.refreshRow = function (row) {
+    var self = this;
+    var template = this.definition.recordUrl;
+
+    if (!template || this.rows.indexOf(row) === -1) {
+      return Promise.resolve();
+    }
+
+    var url = String(template).replace("{id}", encodeURIComponent(row.primaryKey));
+
+    return Generic.api.get(url).then(function (record) {
+      var current = self.rowValues(row);
+      var labels = record._display || {};
+
+      self.fields().forEach(function (field) {
+        var widget = row.widgets[field.name];
+
+        if (
+          !widget ||
+          !(field.name in record) ||
+          !same(current[field.name], row.initial[field.name])
+        ) {
+          return;
+        }
+
+        widget.set(record[field.name], labels[field.name]);
+      });
+
+      var fresh = self.rowValues(row);
+
+      Object.keys(fresh).forEach(function (name) {
+        if (same(current[name], row.initial[name])) {
+          row.initial[name] = fresh[name];
+        }
+      });
+
+      self.form.updateDirty();
+    });
   };
 
   Inline.prototype.renderDeleteButton = function (row) {

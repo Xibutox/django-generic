@@ -76,9 +76,10 @@ form should not carry them all.
 An article holds references, and each reference holds characteristics.
 A form edits one level of rows: the article's form has a tab of
 references, and the characteristics are edited on the reference's
-form. Each saved row carries an icon (*Open its page*) leading there,
-and *Save* or *Cancel* on that page comes back to the article's form,
-on its references tab:
+form. Each row carries an icon (*Open in a window*) that opens it
+there, in a popup window as a relation's pencil does: the article's
+form stays as it is, changes not saved yet included, and once the
+window saved the reference its row is read again:
 
 ```python
 auto(Article, related=("references",))
@@ -90,10 +91,11 @@ characteristics: a related model `auto` completes on its own gets
 pages, but no `related` of its own - that is never guessed. The icon
 is there for any inline, `auto` or declared, whose model has pages on
 the site and that the reader may see (the page is read only without
-the change permission); a row not yet saved has none. Changes not yet
-saved on the article's form are asked about before leaving it, as for
-any other link. The example: a supplier's equipment, each with its
-maintenance visits.
+the change permission). A row not saved yet has no record to open: its
+icon offers to save the form first, which keeps the page where it is,
+and the row opens after that. A row's window opens the rows it holds
+the same way, a level further down. The example: a supplier's
+equipment, each with its maintenance visits.
 
 ```python
 auto(Customer, related=("tickets", "invoices"), related_inlines=("invoices",))

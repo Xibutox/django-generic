@@ -122,10 +122,12 @@ class InlineFormDefinition:
     collapsed: bool = False
     add_label: str = _("Add a row")
     delete_label: str = _("Remove")
-    #: The page of one saved row's record, ``{id}`` standing for its
-    #: key: each row offers a link to it, for what the row cannot show
-    #: - the record's own related rows, its files. Empty: no link.
+    #: The form of one row's record, ``{id}`` standing for its key:
+    #: each row opens it in a popup window, for what the row cannot
+    #: show - the record's own related rows, its files. Empty: no icon.
     change_url_template: str = ""
+    #: The record's API, read again once the popup saved it.
+    record_url_template: str = ""
 
     #: Presentation overrides applied on top of the serializer metadata.
     form_overrides: dict[str, dict[str, Any]] = dataclasses.field(
@@ -218,6 +220,7 @@ class InlineFormDefinition:
                 "addLabel": str(self.add_label),
                 "deleteLabel": str(self.delete_label),
                 "changeUrl": self.change_url_template or None,
+                "recordUrl": self.record_url_template or None,
                 "fields": self.get_form_fields(request=request),
             }
         )

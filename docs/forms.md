@@ -240,8 +240,10 @@ Errors are addressed by collection and row index:
 row.
 
 An inline's schema carries `changeUrl` (`"/shop/reference/{id}/change/"`)
-when its model has pages on the site the reader may see: each saved row
-links there, with `_next` bringing the reader back to the form.
+and `recordUrl` (`"/api/shop/reference/{id}/"`) when its model has
+pages on the site the reader may see: each row opens the first in a
+popup window (`_popup=1`), and reads the second again once the popup
+reports the record saved.
 
 ## Deletion preview
 

@@ -1018,12 +1018,16 @@ Chart(
 `serializer_class`. Parent and rows are saved in one request
 (`_inlines`) and one transaction. Inlines answer to their own model's
 permissions. Use inlines for a handful of rows; use a `RelatedTable` for
-many. A saved row whose model is registered on the site (and viewable
-by the reader) links to its change page (`InlineResource.
-get_change_url_template` -> `InlineFormDefinition.change_url_template`
--> schema `changeUrl`; `inlines.js` `openLink`, `_next` = the form's
-URL + `#tab-inline-<name>`): rows of rows (article > references >
-characteristics) are edited one level per form, never nested.
+many. A row whose model is registered on the site (and viewable by the
+reader) opens its change page in a popup window, like a relation's
+pencil (`InlineResource.get_record_urls` -> `InlineFormDefinition.
+change_url_template` / `record_url_template` -> schema `changeUrl` /
+`recordUrl`; `inlines.js` `openLink`/`openRecord`/`refreshRow`, the
+popup's message handled in `form.js` `handleRelationMessage`): the
+parent form keeps its unsaved changes, the row's untouched fields are
+read again after the popup saved, a new row offers `save("continue")`
+first. Rows of rows (article > references > characteristics) are
+edited one level per form, never nested.
 
 ### 5.9 Navigation, dashboard, search
 
@@ -1091,7 +1095,7 @@ form's choices, booleans, relations and dates, never unique; §5.21),
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a
 form tab (required fields + up to 6; `related_inlines` selects, `()`
-none; each saved row links to its record's form, §5.8 - nested levels
+none; each row opens its record's form in a popup, §5.8 - nested levels
 need their own `auto(Reference, related=("characteristics",))`). A
 related model nobody registered is registered as an
 `AutoResource` with `show_in_navigation=False` by

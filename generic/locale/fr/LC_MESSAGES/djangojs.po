@@ -766,8 +766,20 @@ msgid "Only the first options are listed here."
 msgstr "Seules les premières options sont listées ici."
 
 #: generic/static/generic/js/forms/inlines.js
-msgid "Open its page"
-msgstr "Ouvrir sa fiche"
+msgid "Open in a window"
+msgstr "Ouvrir dans une fenêtre"
+
+#: generic/static/generic/js/forms/inlines.js
+msgid "Save first?"
+msgstr "Enregistrer d'abord ?"
+
+#: generic/static/generic/js/forms/inlines.js
+msgid "Save the form first: the row opens once saved."
+msgstr "Enregistrez d'abord le formulaire : la ligne s'ouvre une fois enregistrée."
+
+#: generic/static/generic/js/forms/inlines.js
+msgid "This row is not saved yet. Save the form, then open the row again."
+msgstr "Cette ligne n'est pas encore enregistrée. Enregistrez le formulaire, puis ouvrez-la de nouveau."
 
 #: generic/static/generic/js/datatables/rowactions.js:257
 msgid "Open the link in a new tab"
