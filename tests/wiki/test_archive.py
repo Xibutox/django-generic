@@ -245,6 +245,21 @@ class TestExport:
         wikis = client.get("/wiki/api/wikis/").json()
         assert wikis[0]["archive_url"] == "/wiki/handbook/export.zip"
 
+    def test_the_list_offers_it_as_an_icon_beside_the_tools(
+        self, client, handbook
+    ):
+        """An icon in the card's header, not a labelled footer button:
+        a reader who may not change the wiki still gets it."""
+        client.force_login(UserFactory())
+
+        html = client.get("/wiki/").content.decode()
+        tools = html.split('class="wiki-list__tools"', 1)[1]
+        tools = tools.split("</div>", 1)[0]
+        assert 'class="icon-button icon-button--sm" href="' in tools
+        assert "/wiki/handbook/export.zip" in tools
+        footer = html.split('class="wiki-list__footer"', 1)[1]
+        assert "export.zip" not in footer
+
 
 class TestImport:
     def test_an_export_comes_back_as_a_new_wiki(self, handbook, media):

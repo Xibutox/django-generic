@@ -469,8 +469,8 @@ ones, and other characters `?`. The Docker image installs DejaVu
 
 ## Export and import
 
-*Export* on a wiki's card, or the archive button beside its name in the
-menu, downloads the whole wiki as one zip, `<wiki>.zip`, that any site
+The archive button on a wiki's card, beside *Duplicate*, or beside its
+name in the menu, downloads the whole wiki as one zip, `<wiki>.zip`, that any site
 running the wiki - another project on the framework, the same one after
 a reinstall, a test server - makes a new wiki from with *Import a wiki*
 on the list of wikis. The PDF is to read; the archive is to move a

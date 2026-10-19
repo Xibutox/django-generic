@@ -44,13 +44,19 @@
                 {% icon "auto_stories" %}
                 <a href="{{ wiki.get_absolute_url }}">{{ wiki.name }}</a>
               </h2>
-              {% if can.add or can.change or can.delete %}
+              {% if can.add or can.change or can.delete or archive_available and wiki.page_count %}
                 <div class="wiki-list__tools">
                   {% if can.add %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Duplicate' %}" @click="duplicate({{ wiki.pk }})">
                       {% translate "Duplicate" as duplicate_label %}
                       {% icon "content_copy" "icon--sm" duplicate_label %}
                     </button>
+                  {% endif %}
+                  {% if archive_available and wiki.page_count %}
+                    {% translate "Export the wiki as an archive another site can import" as archive_label %}
+                    <a class="icon-button icon-button--sm" href="{{ wiki.get_archive_url }}" title="{{ archive_label }}">
+                      {% icon "folder_zip" "icon--sm" archive_label %}
+                    </a>
                   {% endif %}
                   {% if can.change %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Edit' %}" @click="edit({{ wiki.pk }})">
@@ -77,11 +83,6 @@
               <span class="wiki-list__actions">
                 {% if pdf_available and wiki.page_count %}
                   {% include "generic/wiki/pdf_menu.html" with url=wiki.get_pdf_url compact=False only %}
-                {% endif %}
-                {% if archive_available and wiki.page_count %}
-                  <a class="button button--ghost button--sm" href="{{ wiki.get_archive_url }}" title="{% translate 'Download the wiki as an archive another site can import' %}">
-                    {% icon "folder_zip" "icon--sm" %} {% translate "Export" %}
-                  </a>
                 {% endif %}
                 <a class="button button--sm" href="{{ wiki.get_absolute_url }}">
                   {% translate "Open" %}

@@ -1417,7 +1417,8 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
 - Wiki archive (`generic/wiki/archive.py`): `wiki/<wiki>/export.zip`
   (`archive`, `WikiArchiveView`; readers who `may_download` - the
   archive holds files; `Wiki.get_archive_url()`, `archive_url` in the
-  wiki JSON and the page context, *Export* on the card) is a zip:
+  wiki JSON and the page context, an icon beside *Duplicate* on the card)
+  is a zip:
   `wiki.json` (`FORMAT` "django-generic.wiki", `VERSION` 1, `wiki`
   {name, slug, description}, `pages` [{id (archive number), parent,
   title, slug, position, show_on_dashboard, created_at, updated_at,
