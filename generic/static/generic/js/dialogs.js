@@ -374,7 +374,8 @@
   /**
    * Preview, confirm and delete one record.
    *
-   * Resolves to true once the record is gone, false otherwise. A refusal
+   * Resolves to true once the record is gone - `{undo}` when the
+   * delete may still be undone (its offer) - and false otherwise. A refusal
    * from the server - a relation appeared in the meantime - is shown in
    * the dialog rather than lost.
    */
@@ -485,10 +486,11 @@
     accept.addEventListener("click", function () {
       accept.disabled = true;
 
+      // ?undo=1: the answer carries the Undo of the delete, if any.
       Generic.api
-        .delete(options.deleteUrl)
-        .then(function () {
-          dialog.close(true);
+        .delete(options.deleteUrl, { params: { undo: 1 } })
+        .then(function (answer) {
+          dialog.close(answer && answer.undo ? { undo: answer.undo } : true);
         })
         .catch(function (error) {
           accept.disabled = false;
@@ -497,6 +499,10 @@
     });
 
     return dialog.closed.then(function (result) {
+      if (result && typeof result === "object" && result.undo) {
+        return result;
+      }
+
       return result === true;
     });
   }

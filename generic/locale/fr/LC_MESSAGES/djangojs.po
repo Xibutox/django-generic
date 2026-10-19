@@ -2346,3 +2346,11 @@ msgstr "Laissés de côté : %(names)s."
 #: generic/static/generic/js/wiki.js
 msgid "The wiki could not be imported."
 msgstr "Le wiki n’a pas pu être importé."
+
+#: generic/static/generic/js/core.js
+msgid "Undone."
+msgstr "Annulé."
+
+#: generic/static/generic/js/core.js
+msgid "This could not be undone."
+msgstr "L’annulation a échoué."

@@ -73,6 +73,9 @@ keeps its other tags.
   `bulk` event for the open tables (`realtime.batch`); watchers are
   told of each record. A record already holding the values is not
   saved at all.
+- **It can be taken back.** The report of an applied edit ends on an
+  *Undo* button: every record put back as it was before, unless one
+  was changed since ([Undo](undo.md)).
 - **It has a size.** `GENERIC["BULK_EDIT_MAX_ROWS"]` (1000) records at
   most; a larger selection is refused with a request to narrow it with
   the filters first.

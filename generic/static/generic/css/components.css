@@ -1123,6 +1123,19 @@ a.tag:focus-visible {
   word-break: break-word;
 }
 
+/* The one thing to do about it - Undo - beside the message, its
+   middle on the first line like the icon's. */
+.toast > .toast__action,
+.message > .message__undo {
+  flex: 0 0 auto;
+  margin-block: calc((var(--message-line) - var(--control-height-sm)) / 2);
+  color: inherit;
+}
+
+.operation__body > .toast__action {
+  margin-top: var(--space-2);
+}
+
 /* -- Operations: a toast holding a report ------------------------------
    operations.js draws what the work behind a button had to say: a
    headline, then a tree of levelled lines whose sections fold. The same

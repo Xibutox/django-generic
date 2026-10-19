@@ -448,7 +448,10 @@ class TestBulkActions:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
+        answer = response.json()
+        # What it wrote may be undone (tests/test_undo.py).
+        assert answer.pop("undo")["count"] == 2
+        assert answer == {
             "message": (
                 "Close: 2 done, 0 skipped (not in a state that allows it, "
                 "or not allowed)."

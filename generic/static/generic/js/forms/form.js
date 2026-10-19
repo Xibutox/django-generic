@@ -1047,9 +1047,9 @@
     this.snapshot();
   };
 
-  SchemaForm.prototype.leave = function (url, message) {
+  SchemaForm.prototype.leave = function (url, message, undo) {
     if (message) {
-      Generic.flash(message, "success");
+      Generic.flash(message, "success", undo);
     }
 
     this.dirty = false;
@@ -1243,7 +1243,8 @@
           config.listUrl || "/",
           Generic.format(t("\u201c%(name)s\u201d was deleted."), {
             name: config.objectLabel || ""
-          })
+          }),
+          deleted.undo
         );
       });
   };

@@ -177,7 +177,8 @@ generic/
 │                           registered model; actor (who), recording (signals
 │                           -> versions), bulk (update/bulk_* recorded),
 │                           triggers (PostgreSQL: writes outside the ORM),
-│                           reading (versions -> changes), the Changes page
+│                           reading (versions -> changes), the Changes page,
+│                           capture (the batches a block wrote in), undo (§13c)
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
 ├── retention.py            apply(): history, access log, notifications pruned
@@ -699,6 +700,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `watchable` | True | users may ask to be told when a record, or any record, changes (§13a) |
 | `history` | True | keep a version of every record, read back by its History tab (§13c) |
 | `history_exclude` | `()` | fields left out of that version, by name |
+| `undo` | True | a delete, bulk action or bulk edit answers an *Undo* (needs `history`; §13c) |
 | `trash` | False | delete moves records to a trash (the model inherits `generic.trash.Trashable`): a *Trash* page lists them to who may delete, *Restore* puts them back, *Delete for good* deletes; `empty_trash` deletes what is older than `TRASH_DAYS` (§13j) |
 | `access_log` | False | record who opens a record's summary page and who downloads its files; an *Access log* link on the summary page (§13j) |
 | `team_field` | None | path to the record's `generic_teams.Team` (`"team"`, `"folder__team"`, `"teams"`): every screen and endpoint narrowed to the reader's teams (§13h) |
@@ -1753,7 +1755,8 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../form-schema/` | form schema |
 | `GET .../<pk>/deletion-preview/` | cascade preview |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
-| `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}` |
+| `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}`; the answer may carry `undo` |
+| `POST .../undo/` | `{"token"}` from an answer's `undo`: what it did, put back (§13c) |
 | `GET/POST .../bulk-edit/` | where `bulk_edit_fields` is declared: the dialog's fields; `{ids or all, "changes": {name: {"mode", "value"}}, "commit"}` (§5.21) |
 | `GET .../import/schema/`, `.../import/template/`, `POST .../import/` | where `imports` is declared (§5.15) |
 | `GET .../<pk>/transitions/`, `POST .../<pk>/transitions/<name>/` | where `transitions` is declared (§5.16) |
@@ -1965,7 +1968,8 @@ strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
-`IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
+`IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `UNDO_SECONDS` (600; None:
+no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
 `FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`, `FILE_MAX_SIZE`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
@@ -2492,6 +2496,41 @@ history_of(ticket)                 # every version, newest first
   `generic.apply_retention`, to schedule daily - prunes history, access
   log and notifications (`EVENTS_RETENTION_DAYS`, 90) at once. See
   `docs/history.md#retention`.
+
+### Undo (`generic.history.undo`)
+
+- A delete (`DELETE <pk>/?undo=1` - 200 `{"undo"}`, else 204 as
+  ever; the delete page's message), a bulk action (`actions/`, not an
+  error, a `redirect` or a `TaskRun`) and an applied bulk edit answer
+  `undo: {token, url, label, count, seconds}`. The endpoint wraps the
+  work in `generic.history.capture.capture()` (the recorder's
+  `_store` calls `noticed(actor.batch)`), `undo.offer(resource,
+  request, captured)` plans it and signs `{r: label_lower, u: user pk,
+  b: batches}` (salt `generic.history.undo`, `UNDO_SECONDS`).
+- `POST <model>/undo/ {"token"}` (`ResourceViewSet.undo`,
+  `undo.undo`): per record the batches touched, the version before the
+  first is put back - changed: fields set back (`auto_now` left),
+  `save(update_fields=)`, M2M `set`; deleted: created again, same pk,
+  creation stamps rewritten by `update()`, M2M set; created: deleted
+  (refused if the cascade takes more). Newest first, one transaction,
+  `acting_as(user, source="Undo")`, `realtime.batch` per resource.
+  400 bad/expired/other's token; 409 a newer version exists (changed
+  since, already undone), key taken again, database refusal; 403 the
+  permission (change / add / delete) or `get_queryset(request)` (or
+  its trash) no longer allows it.
+- Not offered (`plan` answers None): `history`/`undo` off, a deleted
+  model whose resource has `history_exclude` or whose delete reaches an
+  unrecorded model or another model's M2M (`deletion_is_recorded`), a
+  change with no earlier version, > `UNDO_MAX_RECORDS`.
+- Browser: `Generic.toast(message, level, {action: {label, icon,
+  run}})` (15 s, kept while hovered or focused), `Generic.undo`
+  (`toast(message, level, offer)`, `run(offer)`, `button`, `valid`);
+  `operations.handle` and its cards, `dialogs.deletion` (resolves
+  `{undo}`), the row menu, `form.js` (through `Generic.flash(message,
+  level, offer)`), `messages.html` (extra tag `generic-undo=<url>|<token>`,
+  `undo.message_tags`, `{% message_undo %}`). After an undo:
+  `generic:undone` (summary refreshes) and `generic:tables-reload`.
+  `docs/undo.md`; tests `tests/test_undo.py`.
 
 ## 13j. Trash and access log
 

@@ -13,6 +13,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Undo after a delete, a bulk action or a bulk edit: the toast (or the
+  report, or the delete page's message) gets an *Undo* button, and for
+  `GENERIC["UNDO_SECONDS"]` (ten minutes) it puts every record the
+  action touched back as its history had it - deleted records created
+  again with their key, many-to-many values and what the delete took
+  with them, changed ones given their values back, created ones
+  deleted. Refused, with nothing changed, when a record was changed
+  since, the reader lost the permission, or the token is somebody
+  else's; not offered when the history could not bring everything
+  back (a cascade to a model without one, `history_exclude`). Nothing
+  to declare; `undo = False` on a resource, `UNDO_SECONDS = None` for a
+  project. The API's `DELETE` answers its undo with `?undo=1`. See
+  docs/undo.md.
 - Duplicating a record: `duplicate = True`, or `Duplicate(exclude=...,
   related=..., values=..., permission=...)`, on a resource puts
   *Duplicate* on each record's page and row menu. It opens the add form

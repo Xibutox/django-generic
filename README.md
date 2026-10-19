@@ -249,6 +249,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Forms and inlines](docs/forms.md) — schema, sections, related rows, files uploaded and downloaded behind the record's permission
 - [Editing in the table](docs/editable.md) — editable cells, fields of another model, the write
 - [Bulk edit](docs/bulk-edit.md) — `bulk_edit_fields`: the selected rows given one value per field, reviewed before written, each record through its form
+- [Undo](docs/undo.md) — an *Undo* button after a delete, a bulk action or a bulk edit: every record it touched put back from its history, for ten minutes, refused when somebody changed one since
 - [Field permissions](docs/field-permissions.md) — `field_permissions`: a field some readers may not see, or not change, gone from every column, filter, export, form, summary and chart for them
 - [UI layer](docs/ui.md) — the classic generic views, templates, CSS and JS
 - [Events, notifications and messages](docs/events.md) — who hears what, messages from an administrator, publishing, topics, the client protocol

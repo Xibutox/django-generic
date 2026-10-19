@@ -96,8 +96,26 @@ def field_value(row: Any, name: str) -> Any:
 @register.simple_tag
 def message_icon(tags: str) -> str:
     """Icon name matching a Django message level."""
+    from generic.history.undo import MESSAGE_TAG
+
+    # An Undo's tag holds a token, whose letters are no level.
+    words = " ".join(
+        word
+        for word in (tags or "").split()
+        if not word.startswith(MESSAGE_TAG)
+    )
+
     for level in ("error", "warning", "success"):
-        if level in (tags or ""):
+        if level in words:
             return level
 
     return "info"
+
+
+@register.simple_tag
+def message_undo(tags: str) -> dict | None:
+    """The Undo a message carries (``{url, token, label}``), if any:
+    the delete page's, read back on the page it redirects to."""
+    from generic.history.undo import from_message_tags
+
+    return from_message_tags(tags)

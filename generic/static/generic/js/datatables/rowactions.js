@@ -47,9 +47,10 @@
           return;
         }
 
-        Generic.toast(
+        Generic.undo.toast(
           core.format(t("\u201c%(name)s\u201d was deleted."), { name: label }),
-          "success"
+          "success",
+          deleted.undo
         );
         controller.reload(false);
       });

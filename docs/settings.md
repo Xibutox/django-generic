@@ -79,6 +79,15 @@ See [Imports](imports.md).
 
 See [Bulk edit](bulk-edit.md).
 
+## Undo
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `UNDO_SECONDS` | `600` | How long a delete, a bulk action or a bulk edit may be undone from its *Undo* button. `None` or `0` offers none anywhere; a resource opts out with `undo = False` |
+| `UNDO_MAX_RECORDS` | `1000` | Records one undo may put back; an action that touched more offers no *Undo* |
+
+See [Undo](undo.md).
+
 ## Autocomplete
 
 | Setting | Default | Meaning |

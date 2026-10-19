@@ -272,6 +272,15 @@ DEFAULTS: dict[str, Any] = {
     # (generic.history.triggers). None: on PostgreSQL; False: never,
     # and the next migrate removes them.
     "HISTORY_TRIGGERS": None,
+    # --- Undo ----------------------------------------------------------
+    # Seconds during which a delete, a bulk action or a bulk edit may be
+    # undone from the Undo button of its answer (generic.history.undo).
+    # None or 0 offers no Undo anywhere; one resource opts out with
+    # ``undo = False``.
+    "UNDO_SECONDS": 600,
+    # Records one undo may put back; an action that touched more offers
+    # no Undo.
+    "UNDO_MAX_RECORDS": 1000,
     # --- Trash ---------------------------------------------------------
     # Days a record deleted from a resource declaring ``trash = True``
     # stays in its trash. ``generic.trash.empty()``, the ``empty_trash``

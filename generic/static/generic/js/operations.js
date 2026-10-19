@@ -252,6 +252,17 @@
       body.appendChild(link);
     }
 
+    // What it wrote may still be put back: Undo, under the report.
+    var undo = finished && answer.undo
+      ? Generic.undo.button(answer.undo, function () {
+          dismiss(card);
+        })
+      : null;
+
+    if (undo) {
+      body.appendChild(undo);
+    }
+
     card.appendChild(body);
     card.appendChild(close);
 
@@ -265,7 +276,7 @@
         !counts.warning && !counts.error) {
       card.dismissTimer = window.setTimeout(function () {
         dismiss(card);
-      }, 8000);
+      }, undo ? 15000 : 8000);
     }
 
     card.operation = operation;
@@ -332,9 +343,9 @@
     if (answer && answer.operation) {
       show(answer);
     } else if (answer && answer.message) {
-      Generic.toast(answer.message, answer.level || "success");
+      Generic.undo.toast(answer.message, answer.level || "success", answer.undo);
     } else {
-      Generic.toast(t("Done."), "success");
+      Generic.undo.toast(t("Done."), "success", answer && answer.undo);
     }
 
     return answer;

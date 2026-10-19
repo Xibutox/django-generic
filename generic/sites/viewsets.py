@@ -18,6 +18,8 @@ Every generated screen talks to it, and so can anything else:
 ``GET    .../<pk>/deletion-preview/``    what a delete would take with it
 ``GET    .../export/``, ``export-csv/``  every filtered row
 ``POST   .../actions/``                  run a bulk action
+``POST   .../undo/``                     undo a delete, action or bulk
+                                        edit, from its answer's token
 ``GET    .../autocomplete/``             Select2 results
 ``GET    .../charts/<name>/``            one declared chart's data
 ``GET    .../chart-builder/``            the chart its reader draws
@@ -425,9 +427,46 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        self.resource.delete_model(request, instance)
+        from generic.history import undo
+
+        with undo.capture() as captured:
+            self.resource.delete_model(request, instance)
+
+        # 204 as ever; asked for (``?undo=1``, the delete dialog), the
+        # answer carries the Undo of what just went.
+        if request.query_params.get("undo") == "1":
+            offered = undo.offer(self.resource, request, captured)
+
+            if offered is not None:
+                return Response({"undo": offered})
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -- undo --------------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="undo",
+        url_name="undo",
+    )
+    def undo(self, request: Any) -> Response:
+        """Put back what a delete, bulk action or bulk edit of this
+        resource just did: ``{"token": ...}``, from its answer's
+        ``undo`` (generic.history.undo)."""
+        from generic.history import undo
+
+        try:
+            answer = undo.undo(
+                self.resource, request, request.data.get(undo.TOKEN)
+            )
+        except undo.Refused as refused:
+            return Response(
+                {"detail": refused.message, "level": "error"},
+                status=refused.status,
+            )
+
+        return Response(answer)
 
     # -- summary -----------------------------------------------------------
 
@@ -1025,12 +1064,43 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        result = entry.function(request, queryset)
+        from generic.history import undo
+
+        with undo.capture() as captured:
+            result = entry.function(request, queryset)
 
         if isinstance(result, Response):
             return result
 
-        return Response(self.describe_result(result, count, entry))
+        payload = self.describe_result(result, count, entry)
+        offered = self.offer_undo(request, captured, payload, result)
+
+        if offered is not None:
+            payload["undo"] = offered
+
+        return Response(payload)
+
+    def offer_undo(
+        self,
+        request: Any,
+        captured: Any,
+        payload: dict,
+        result: Any = None,
+    ) -> dict | None:
+        """The Undo of what an action just wrote, when it may be offered:
+        not after an error, nor a page to open, nor work still going on
+        elsewhere (a task run writes in another unit of work)."""
+        from generic.history import undo
+        from generic.tasks.models import TaskRun
+
+        if (
+            payload.get("level") == "error"
+            or payload.get("redirect")
+            or isinstance(result, TaskRun)
+        ):
+            return None
+
+        return undo.offer(self.resource, request, captured)
 
     def get_selection(self, request: Any) -> Any:
         """The rows a bulk request names, or the 400 answering it.
@@ -1097,15 +1167,24 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            bulk_edit.run(
+        from generic.history import undo
+
+        with undo.capture() as captured:
+            payload = bulk_edit.run(
                 self.resource,
                 request,
                 queryset,
                 request.data.get("changes"),
                 commit=request.data.get("commit") is True,
             )
-        )
+
+        if payload.get("committed"):
+            offered = self.offer_undo(request, captured, payload)
+
+            if offered is not None:
+                payload["undo"] = offered
+
+        return Response(payload)
 
     @staticmethod
     def describe_result(result: Any, count: int, entry: Any) -> dict:

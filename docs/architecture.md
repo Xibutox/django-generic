@@ -94,6 +94,8 @@ generic/
 │   ├── actor.py         Who is acting, where no request can be passed
 │   ├── recording.py     Model changes -> a version, folded per request
 │   ├── bulk.py          update(), bulk_update(), bulk_create() recorded too
+│   ├── capture.py       capture(): the units of work a block wrote in
+│   ├── undo.py          Undo: what an action did, put back from the versions
 │   ├── triggers.py      PostgreSQL: writes outside the ORM recorded by trigger
 │   ├── reading.py       Versions -> what changed, written out
 │   └── resources.py     The Changes page

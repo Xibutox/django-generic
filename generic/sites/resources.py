@@ -342,6 +342,11 @@ class ModelResource(PagesMixin):
     #: should read twice - a token, a secret - belongs here: the tab
     #: shows what was recorded, whatever the form shows.
     history_exclude: Sequence[str] = ()
+    #: A delete, a bulk action or a bulk edit answers with an *Undo*
+    #: button, for ``GENERIC["UNDO_SECONDS"]``: every record it touched
+    #: put back as its history had it (generic.history.undo). Needs the
+    #: history; False offers none.
+    undo: bool = True
 
     # -- trash and access log --------------------------------------------
 
@@ -541,6 +546,10 @@ class ModelResource(PagesMixin):
 
     def get_api_url(self) -> str:
         return self._reverse(self.api_url_name("list"))
+
+    def get_undo_api_url(self) -> str:
+        """Where an *Undo* is sent (``POST undo/``, the offer's token)."""
+        return self._reverse(self.api_url_name("undo"))
 
     def get_object_api_url(self, pk: Any) -> str:
         return self._reverse(self.api_url_name("detail"), pk=pk)
