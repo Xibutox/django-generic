@@ -4476,14 +4476,6 @@ msgid "Import a wiki"
 msgstr "Importer un wiki"
 
 #: generic/wiki/archive.py
-msgid "Download the wiki as an archive another site can import"
-msgstr "Télécharger le wiki en archive qu’un autre site peut importer"
-
-#: generic/wiki/archive.py
-msgid "Export"
-msgstr "Exporter"
-
-#: generic/wiki/archive.py
 msgid "Export the wiki as an archive another site can import"
 msgstr "Exporter le wiki en archive qu’un autre site peut importer"
 
