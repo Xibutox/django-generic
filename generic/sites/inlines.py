@@ -215,7 +215,25 @@ class InlineResource:
             collapsed="collapse" in self.classes,
             add_label=gettext("Add another %(name)s") % {"name": verbose_name},
             form_overrides={},
+            change_url_template=self.get_change_url_template(request),
         )
+
+    def get_change_url_template(self, request: Any) -> str:
+        """The page of one row's record, for the link on each row.
+
+        A row shows a few fields; its record's own page has the rest -
+        its files, and the rows it holds in turn (a reference's
+        characteristics, under an article). The link is offered when
+        the related model has pages on the site and the reader may see
+        them: the change page, read only without the change permission.
+        """
+        site = self.site
+        resource = site.get_resource(self.model) if site else None
+
+        if resource is None or not resource.has_view_permission(request):
+            return ""
+
+        return resource.get_change_url_template("{id}") or ""
 
 
 class TabularInline(InlineResource):

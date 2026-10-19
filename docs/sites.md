@@ -717,6 +717,11 @@ land in one transaction. Removals run before the remaining rows are
 validated, so one save can free a unique position and reuse it. See
 [Forms and inlines](forms.md#tabular-inlines) for the wire format.
 
+A saved row whose model has pages on the site carries an icon opening
+its record's own page, and that page's *Save* or *Cancel* comes back
+here: that is where a row's own rows - a reference's characteristics,
+under an article - are edited ([auto](auto.md#records-holding-records)).
+
 Inlines suit a handful of rows edited with their parent. For a record
 with many related records, a related table on the summary page is the
 better tool.

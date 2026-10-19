@@ -13,6 +13,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Records holding records, from the top one's form: each saved row of
+  an inline gets an icon opening its record's own page - where the
+  rows it holds in turn are edited, a reference's characteristics
+  under an article - and *Save* or *Cancel* there comes back to the
+  form, on the inline's tab. Offered when the related model has pages
+  on the site (declared, or worked out by `auto`) and the reader may
+  see them: read only without the change permission. Nothing to
+  declare. See docs/auto.md, *Records holding records*.
 - Undo after a delete, a bulk action or a bulk edit: the toast (or the
   report, or the delete page's message) gets an *Undo* button, and for
   `GENERIC["UNDO_SECONDS"]` (ten minutes) it puts every record the

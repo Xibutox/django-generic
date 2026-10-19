@@ -535,6 +535,12 @@ select.input[multiple] {
   text-align: right;
 }
 
+.inline-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .inline-row.is-deleted td:not(.inline-table__actions),
 .inline-card.is-deleted .inline-card__body {
   opacity: 0.45;

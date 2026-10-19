@@ -1018,7 +1018,12 @@ Chart(
 `serializer_class`. Parent and rows are saved in one request
 (`_inlines`) and one transaction. Inlines answer to their own model's
 permissions. Use inlines for a handful of rows; use a `RelatedTable` for
-many.
+many. A saved row whose model is registered on the site (and viewable
+by the reader) links to its change page (`InlineResource.
+get_change_url_template` -> `InlineFormDefinition.change_url_template`
+-> schema `changeUrl`; `inlines.js` `openLink`, `_next` = the form's
+URL + `#tab-inline-<name>`): rows of rows (article > references >
+characteristics) are edited one level per form, never nested.
 
 ### 5.9 Navigation, dashboard, search
 
@@ -1086,7 +1091,9 @@ form's choices, booleans, relations and dates, never unique; §5.21),
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a
 form tab (required fields + up to 6; `related_inlines` selects, `()`
-none). A related model nobody registered is registered as an
+none; each saved row links to its record's form, §5.8 - nested levels
+need their own `auto(Reference, related=("characteristics",))`). A
+related model nobody registered is registered as an
 `AutoResource` with `show_in_navigation=False` by
 `site.complete_auto()` - at the end of `GenericConfig.ready()` (after
 the framework's own screens) and in `get_urls()` - so a later explicit

@@ -266,6 +266,8 @@
       row.deleteButton = deleteButton;
     }
 
+    var openLink = this.openLink(row);
+
     if (this.tabular) {
       row.element = el("tr", "inline-row" + (isNew ? " is-new" : ""));
 
@@ -292,6 +294,10 @@
 
       var actions = el("td", "inline-table__actions");
 
+      if (openLink) {
+        actions.appendChild(openLink);
+      }
+
       if (deleteButton) {
         actions.appendChild(deleteButton);
       }
@@ -310,9 +316,17 @@
       }
       cardHeader.appendChild(row.title);
 
-      if (deleteButton) {
-        cardHeader.appendChild(deleteButton);
+      var cardActions = el("span", "inline-card__actions");
+
+      if (openLink) {
+        cardActions.appendChild(openLink);
       }
+
+      if (deleteButton) {
+        cardActions.appendChild(deleteButton);
+      }
+
+      cardHeader.appendChild(cardActions);
 
       var cardBody = el("div", "inline-card__body");
       var grid = el("div", "sf-grid");
@@ -372,6 +386,39 @@
     this.update();
 
     return row;
+  };
+
+  /**
+   * A saved row's link to its record's own page - where its files and
+   * the rows it holds in turn are edited - coming back here after.
+   */
+  Inline.prototype.openLink = function (row) {
+    var template = this.definition.changeUrl;
+
+    if (!template || row.isNew || row.primaryKey === null || this.form.config.popup) {
+      return null;
+    }
+
+    var back = window.location.pathname + window.location.search;
+
+    if (this.definition.tab) {
+      back += "#tab-inline-" + this.definition.name;
+    }
+
+    var url = new URL(
+      String(template).replace("{id}", encodeURIComponent(row.primaryKey)),
+      window.location.origin
+    );
+    url.searchParams.set("_next", back);
+
+    var label = t("Open its page");
+    var link = el("a", "icon-button icon-button--sm");
+    link.href = url.pathname + url.search;
+    link.title = label;
+    link.setAttribute("aria-label", label);
+    link.appendChild(icon("edit_square", "icon--sm"));
+
+    return link;
   };
 
   Inline.prototype.renderDeleteButton = function (row) {

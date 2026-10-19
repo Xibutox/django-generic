@@ -358,3 +358,78 @@ class TestThePagesWork:
         client.force_login(django_user_model.objects.create_user("nobody"))
 
         assert client.get("/example/equipment/").status_code == 403
+
+
+class TestARowOpensItsRecord:
+    """Records holding records: a supplier's equipment, each holding its
+    maintenance visits. The supplier's form edits the equipment rows;
+    each saved row links to the equipment's own form, where its visits
+    are, and that form comes back to the supplier."""
+
+    SUPPLIER = "/api/example/supplier/form-schema/"
+
+    def inline(self, client):
+        schema = client.get(self.SUPPLIER).json()
+        (inline,) = schema["inlines"]
+
+        return inline
+
+    def test_each_row_links_to_its_record_s_form(self, admin_client):
+        inline = self.inline(admin_client)
+
+        assert inline["name"] == "equipment"
+        assert inline["changeUrl"] == "/example/equipment/{id}/change/"
+
+    def test_the_record_s_form_edits_its_own_rows(self, admin_client):
+        schema = admin_client.get(f"{EQUIPMENT}form-schema/").json()
+
+        assert [inline["name"] for inline in schema["inlines"]] == [
+            "maintenances"
+        ]
+
+    def test_its_form_comes_back_to_the_parent(self, admin_client, workshop):
+        laptop = workshop["laptop"]
+        back = f"/example/supplier/{workshop['supplier'].pk}/change/"
+        page = admin_client.get(
+            f"/example/equipment/{laptop.pk}/change/",
+            {"_next": f"{back}#tab-inline-equipment"},
+        )
+
+        assert page.status_code == 200
+        assert page.context["form_config"]["returnUrl"] == (
+            f"{back}#tab-inline-equipment"
+        )
+
+    def test_no_link_to_a_model_without_pages(self, other_site, rf):
+        from generic.sites import ModelResource, TabularInline
+
+        class MaintenanceInline(TabularInline):
+            model = Maintenance
+
+        class EquipmentResource(ModelResource):
+            inlines = (MaintenanceInline,)
+
+        other_site.register(Equipment, EquipmentResource)
+        request = rf.get("/")
+        request.user = get_user_model().objects.create_superuser("root")
+        (definition,) = other_site.get_resource(
+            Equipment
+        ).get_inline_definitions(request)
+
+        assert definition.change_url_template == ""
+
+    def test_a_reader_may_open_it_read_only(self, client):
+        from django.contrib.auth.models import Permission
+
+        user = get_user_model().objects.create_user("auditor")
+        user.user_permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="example",
+                codename__in=("view_supplier", "view_equipment"),
+            )
+        )
+        client.force_login(user)
+
+        assert self.inline(client)["changeUrl"] == (
+            "/example/equipment/{id}/change/"
+        )

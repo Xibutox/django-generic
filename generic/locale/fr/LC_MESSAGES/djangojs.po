@@ -765,6 +765,10 @@ msgstr "Océan"
 msgid "Only the first options are listed here."
 msgstr "Seules les premières options sont listées ici."
 
+#: generic/static/generic/js/forms/inlines.js
+msgid "Open its page"
+msgstr "Ouvrir sa fiche"
+
 #: generic/static/generic/js/datatables/rowactions.js:257
 msgid "Open the link in a new tab"
 msgstr "Ouvrir le lien dans un nouvel onglet"

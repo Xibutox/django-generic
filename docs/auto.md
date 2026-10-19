@@ -71,6 +71,30 @@ For each one:
 A relation with hundreds of rows per record is a table, not a tab: a
 form should not carry them all.
 
+### Records holding records
+
+An article holds references, and each reference holds characteristics.
+A form edits one level of rows: the article's form has a tab of
+references, and the characteristics are edited on the reference's
+form. Each saved row carries an icon (*Open its page*) leading there,
+and *Save* or *Cancel* on that page comes back to the article's form,
+on its references tab:
+
+```python
+auto(Article, related=("references",))
+auto(Reference, related=("characteristics",))
+```
+
+The second line is what gives the reference's form its tab of
+characteristics: a related model `auto` completes on its own gets
+pages, but no `related` of its own - that is never guessed. The icon
+is there for any inline, `auto` or declared, whose model has pages on
+the site and that the reader may see (the page is read only without
+the change permission); a row not yet saved has none. Changes not yet
+saved on the article's form are asked about before leaving it, as for
+any other link. The example: a supplier's equipment, each with its
+maintenance visits.
+
 ```python
 auto(Customer, related=("tickets", "invoices"), related_inlines=("invoices",))
 ```
