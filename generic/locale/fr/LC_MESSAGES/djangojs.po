@@ -2370,3 +2370,67 @@ msgstr "Annulé."
 #: generic/static/generic/js/core.js
 msgid "This could not be undone."
 msgstr "L’annulation a échoué."
+
+#: generic/static/generic/js/calendar.js
+msgid "Day"
+msgstr "Jour"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(hours)s h %(minutes)s"
+msgstr "%(hours)s h %(minutes)s"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(hours)s h"
+msgstr "%(hours)s h"
+
+#: generic/static/generic/js/calendar.js
+msgid "Time on this day"
+msgstr "Temps sur ce jour"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag across the hours to add one."
+msgstr "Faites glisser sur les heures pour en ajouter un."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag a record to move it, its lower edge to change its end."
+msgstr "Faites glisser un enregistrement pour le déplacer, son bord inférieur pour changer sa fin."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drop one of the list on a time to plan it."
+msgstr "Déposez un élément de la liste sur une heure pour le planifier."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag to change its end"
+msgstr "Faites glisser pour changer la fin"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(label)s changed."
+msgstr "%(label)s modifié."
+
+#: generic/static/generic/js/calendar.js
+msgid "Show more"
+msgstr "Afficher plus"
+
+#: generic/static/generic/js/calendar.js
+msgid "Search %(name)s"
+msgstr "Rechercher dans %(name)s"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag one onto the calendar."
+msgstr "Faites-en glisser un sur le calendrier."
+
+#: generic/static/generic/js/calendar.js
+msgid "Nothing to offer."
+msgstr "Rien à proposer."
+
+#: generic/static/generic/js/calendar.js
+msgid "The list could not be loaded."
+msgstr "La liste n’a pas pu être chargée."
+
+#: generic/static/generic/js/calendar.js
+msgid "%(label)s planned."
+msgstr "%(label)s planifié."
+
+#: generic/static/generic/js/calendar.js
+msgid "The record could not be created."
+msgstr "L’enregistrement n’a pas pu être créé."

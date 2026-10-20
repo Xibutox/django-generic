@@ -681,6 +681,20 @@ class TicketResource(ModelResource):
             editable=True,
             navigation=True,
         ),
+        # When the tickets come in, hour by hour: the week and the day
+        # drawn as hours (opened_at is a date and time). Read only -
+        # nobody moves the moment a ticket was opened.
+        Calendar(
+            "arrivals",
+            date="opened_at",
+            title=_("Arrivals"),
+            icon="schedule",
+            description=_("Each ticket at the hour it was opened."),
+            color="priority",
+            fields=("customer", "team"),
+            hours=(7, 20),
+            views=("week", "day", "month"),
+        ),
     )
 
     # The open work by priority: drag a ticket to another column to

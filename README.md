@@ -337,6 +337,26 @@ python manage.py runserver
 
 See [its README](docmanager/README.md).
 
+### The logbook
+
+`logbook/` is a planner merged with a note-taking app and a time
+tracker. Notes are written line by line - headings, bullets, check
+boxes - and a line can be a task: an FNC (a ticket) or a DM (an
+evolution), numbered on its own, with its status and a timer beside
+it. The tasks are on a board, by status or by person; the time logged
+is on a timesheet drawn on the hours, where an entry is moved and
+stretched, a task dropped on a time logs an hour of it, and a lead
+verifies the week:
+
+```bash
+cd logbook
+python manage.py migrate
+python manage.py seed_planner
+python manage.py runserver
+```
+
+See [its README](logbook/README.md).
+
 ### The full example
 
 The bundled example is a small support desk chosen for coverage: every

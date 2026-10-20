@@ -13,6 +13,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- A logbook beside the examples, `logbook/`: notes written line by
+  line, where a line can be a task - an FNC (a ticket) or a DM (an
+  evolution), numbered FNC-0001, DM-0001 - with its status and a
+  timer beside it; a board of the tasks by status; a timesheet on the
+  hours where the time is moved, stretched, and tasks dropped on a time
+  to log it, then verified by a lead. See logbook/README.md.
+- *Support › Arrivals*: the tickets at the hour they were opened, on
+  the new hourly week and day views.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are

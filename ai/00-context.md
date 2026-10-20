@@ -120,8 +120,9 @@ generic/
 │   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
 │   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
 │   │                       (self FK or link model), a level at a time; no cycles
-│   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
-│   │                       days, a page each, moved by dragging (§5.20)
+│   ├── calendars.py        Calendar, Allocate, BoundCalendar, CalendarPageView: records
+│   │                       on their days or hours, a page each, moved by dragging,
+│   │                       related records dropped on a time (§5.20)
 │   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
 │   │                       per value of a field, moved by dragging (§5.22)
 │   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
@@ -256,7 +257,8 @@ generic/
     ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
     │                       element (tree, cards, calendar); loaded by base.html
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
-    ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
+    ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
+    │                       resize, allocate (§5.20)
     ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
     ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
@@ -372,6 +374,35 @@ role *Quality*), types, a document without a file, three workflows,
 three reviews under way, and Word/PDF/text samples (`samples.py`; a
 `.dotx` holds `{{ documents }}`). Kept working by
 `tests/test_docmanager.py`, run in its own process.
+
+`logbook/` is a fourth, self-contained project (`logsite/settings.py`,
+app `planner`, French and English): notes, tasks and time. `Note`
+(title, project, labels, pinned, author) holds ordered `NoteLine`s
+(kind text/heading/bullet/check/task, indent, done); a *task* line owns
+a `Task` (one-to-one, `line`): `kind` FNC (a ticket) or DM (an
+evolution), `reference` numbered per kind by `generic.numbering`
+(FNC-0001), status backlog/todo/doing/review/done (`done_at` kept),
+priority, assignee, due date, estimate. `TimeEntry` (task, user,
+`started_at`, `ended_at` - empty while the timer runs - `hours`
+computed, comment, `verified`/`_by`/`_at`, permission
+`verify_timeentry`). The note's detail page carries a line editor
+(`planner/static/planner/note.js`, template
+`generic/resource/planner/note/detail.html`) that reads and posts the
+whole note to the `@page document` (`planner/documents.py`: lines
+synced in one transaction, a task created by a task line - `add_task`
+- renamed with it, and deleted when its line goes only if untouched).
+`planner/timers.py`: one running entry a person, starting one stops
+the other and moves a backlog/todo task to doing (`@page timer`,
+*Start timer*/*Stop timer* actions). Everything else is the
+framework's: the task board (`Board` on status, editable) and one by
+assignee, a due-date calendar, kpis and cards on the dashboard, charts,
+and the *Timesheet* (`Calendar` with `hours`, `editable`, `Allocate`
+of the tasks under way; `create_editable` fills the user), verified by
+the *Verify* action. `seed_planner` (idempotent) makes groups
+Planners, Leads (verify) and Readers, accounts admin, alice, bob and
+viewer (password `demo`), three projects, five notes, fifteen tasks
+and four weeks of time. Kept working by `tests/test_logbook.py`, run in
+its own process.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -686,7 +717,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
-| `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
+| `calendars` | `()` | `Calendar(...)`: records on their days (or hours), a page each with the list's filters above, drag to move, `Allocate` to drop related records (§5.20) |
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
 | `duplicate` | `False` (`auto`: `True`) | `True` or `Duplicate(exclude=, related=, values=, permission=)`: *Duplicate* on a record's page and row menu, the add form filled with its values and a *Copy with it* box per M2M field, inline and `related` relation (§5.25) |
@@ -1576,7 +1607,12 @@ calendars = (
              color="priority",                # a tag field: first tag's colour
              fields=("customer", "status"),   # summary-typed values
              editable=True,                   # drag = save_editable; date must be in editable_fields
-             views=("month", "week", "list"), navigation=True, permission=None),
+             views=("month", "week", "list"),  # + "day"
+             hours=None,                      # (7, 20): week/day on the hours (datetime date)
+             step=15,                         # snap minutes: 5 10 15 20 30 60
+             allocate=None,                   # Allocate("task", title, filters, ordering,
+                                              #   fields, color, duration=60, limit=20) or "task"
+             navigation=True, permission=None),
 )
 ```
 
@@ -1589,8 +1625,20 @@ of a range through `get_list_queryset`, a date-and-time placed on its
 local day with its time. Moving goes through `save_editable` (change
 permission, `can_edit_column`, form validation); a datetime keeps its
 time, `end` shifts by as many days. *Add* on a day opens the add form
-with the date filled. `docs/calendars.md`; example: *Support › Due
-dates*.
+with the date filled. With `hours`: week and day as columns of hours
+(`drawHours`), a record as tall as it lasts, side by side when they
+overlap, day totals in the header, a now line; drag moves the start
+(the end follows, `move_in_time`), the foot handle the end, a drag over
+empty hours opens the add form in a popup with both filled
+(`generic:relation-saved` refreshes). `allocate`: a panel of the
+related list (its `get_list_queryset`, `filters` through
+`FilterTreeBuilder`, `q`, pages of `limit` ≤ `MAX_SOURCES`) whose
+records dropped on a time POST `calendars/<name>/` and are created
+through `create_editable(request, {}, {date, end, fk})` (add
+permission, 201). Events carry `startsAt`/`endsAt` (`wall_clock`); the
+browser sends `YYYY-MM-DDTHH:MM` (`parse_moment`). Declarations checked
+by `check_hours`. `docs/calendars.md`; example: *Support › Due dates*,
+*Arrivals* (hourly); `logbook/` *Timesheet* (allocates tasks).
 
 ### 5.21 Bulk edit (`bulk_edit_fields`)
 
@@ -1777,7 +1825,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
-| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
+| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` or `{"start", "end"}` moves one; `POST .../calendars/<name>/` `{record, start, end?}` allocates; `GET .../calendars/<name>/sources/` the panel (§5.20) |
 | `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
 | `POST api/<app>/<model>/` + `"_duplicate": {"source", "related"}` | a copy of a record (§5.25) |
 | `GET .../compare/?ids=3,8,12` | 2-6 records side by side `{records, sections: [{title, rows: [{name, label, same, values}]}], missing}` (§5.23) |

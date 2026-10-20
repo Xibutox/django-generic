@@ -9,6 +9,25 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [Unreleased]
+
+### Added
+- Calendars on the hours: `Calendar(..., hours=(7, 20))` draws the week
+  and a new **day** view as columns of hours, each record as tall as it
+  lasts, side by side when they overlap, with the day's total in its
+  header and a line at the current time. With `editable=True` a record
+  dragged to another time starts there (its end follows), its foot
+  stretches it, and a drag across empty hours opens the add form with
+  the start and the end filled in; moves snap to `step` minutes. The
+  move endpoint takes `{"start"}` and `{"end"}`. See docs/calendars.md,
+  *On the hours*.
+- `Allocate`: a calendar's panel of related records to drop on a time -
+  tasks on a timesheet, tickets on a planning. Each drop creates a
+  record pointing at the one dropped, through `create_editable`; the
+  panel follows the declared filters, a search and pages
+  (`calendars/<name>/sources/`). See docs/calendars.md, *Dropping
+  records on it*.
+
 ## [1.4.0] - 2026-10-18
 
 ### Added

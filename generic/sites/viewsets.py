@@ -29,6 +29,10 @@ Every generated screen talks to it, and so can anything else:
 ``GET    .../calendars/<name>/``         a declared calendar's records,
                                         ``?start=&end=``
 ``PATCH  .../<pk>/calendars/<name>/``    a record moved to another day
+                                        (or time, on the hours)
+``POST   .../calendars/<name>/``         a record created on a time
+``GET    .../calendars/<name>/sources/``
+                                        what may be dropped on it
 ``GET    .../boards/<name>/``            a declared board's columns and
                                         cards
 ``PATCH  .../<pk>/boards/<name>/``       a card moved to another column
@@ -131,7 +135,7 @@ class ResourcePermission(BasePermission):
         resource = view.resource
         name = view.action
 
-        if name in ("create", "rows"):
+        if name in ("create", "rows", "calendar_allocate"):
             return resource.has_add_permission(request)
 
         # Declared, and allowed to write what the declaration writes:
@@ -934,6 +938,32 @@ class ResourceViewSet(
         queryset = self.filter_queryset(self.get_queryset())
 
         return Response(bound.answer(request, queryset, request.query_params))
+
+    @calendar.mapping.post
+    def calendar_allocate(self, request: Any, calendar: str = "") -> Response:
+        """Create a record on a time, pointing at a record of the
+        calendar's ``allocate`` relation: ``{"record", "start", "end"?}``
+        (generic.sites.calendars)."""
+        bound = self.get_bound_calendar(calendar)
+        record = bound.allocate(request, request.data)
+
+        return Response(bound.describe(request, record, True), status=201)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"calendars/(?P<calendar>[a-z0-9-]+)/sources",
+        url_name="calendar-sources",
+    )
+    def calendar_sources(self, request: Any, calendar: str = "") -> Response:
+        """The records offered beside an hourly calendar, to drop on a
+        time: ``?q=`` searches, ``?page=`` pages."""
+        bound = self.get_bound_calendar(calendar)
+
+        if bound.allocation is None:
+            raise NotFound(gettext("This calendar allocates nothing."))
+
+        return Response(bound.sources(request, request.query_params))
 
     @action(
         detail=True,
