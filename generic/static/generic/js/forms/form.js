@@ -1308,6 +1308,16 @@
 
     this.relationRequests.delete(data.requestId);
 
+    // A row of an inline, opened in its own window.
+    if (request.row) {
+      request.inline.refreshRow(request.row);
+      Generic.toast(
+        Generic.format(t("\u201c%(name)s\u201d was saved."), { name: data.label || String(data.id) }),
+        "success"
+      );
+      return;
+    }
+
     var id = String(data.id);
     var labels = {};
     labels[id] = data.label || id;

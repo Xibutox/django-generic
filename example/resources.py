@@ -1363,6 +1363,9 @@ class TagResource(ModelResource):
 # maintenance visits, the same. Maintenance is declared nowhere: it is
 # given pages of its own, out of the navigation, reached from the
 # equipment it belongs to.
+# On the supplier's form, each piece of equipment opens its own form in
+# a popup window - where its visits are edited - and its row is read
+# again once saved.
 
 EQUIPMENT = _("Equipment")
 

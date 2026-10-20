@@ -239,6 +239,12 @@ Errors are addressed by collection and row index:
 `_errors` holds problems belonging to the collection rather than to one
 row.
 
+An inline's schema carries `changeUrl` (`"/shop/reference/{id}/change/"`)
+and `recordUrl` (`"/api/shop/reference/{id}/"`) when its model has
+pages on the site the reader may see: each row opens the first in a
+popup window (`_popup=1`), and reads the second again once the popup
+reports the record saved.
+
 ## Deletion preview
 
 `GET /api/books/{pk}/deletion-preview/` reports what a deletion would
