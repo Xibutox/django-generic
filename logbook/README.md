@@ -7,12 +7,16 @@ the [minimal example](../minimal/README.md): one settings file, plain
 WSGI, SQLite.
 
 - **Notes**, written line by line as in a notebook: text, headings,
-  bullets, check boxes - and **task lines**. Type `/fnc ` or `/dm ` at
-  the start of a line (or pick *FNC task* / *DM task* in the line's
-  menu) and the line becomes a task: an **FNC** (a ticket, a fault to
-  fix) or a **DM** (an evolution), numbered on its own - FNC-0001,
-  DM-0001. The line is the task's title; its status and a timer sit
-  beside it. The note saves itself as you type.
+  bullets, check boxes - and **task lines**. Type `/fnc `, `/dm ` or
+  `/aut ` at the start of a line (or pick the kind in the line's menu)
+  and the line becomes a task: an **FNC** (a ticket, a fault to fix,
+  with its **criticality**: minor, major or critical), a **DM** (an
+  evolution) or an **AUT** (anything else: a meeting, support given to
+  someone), each numbered on its own - FNC-0001, DM-0001, AUT-0001. The
+  line is the task's title; its status, a ticket's criticality and a
+  timer sit beside it. The note saves itself as you type.
+- A task is about **several projects, or none**: one written in a note
+  starts with the note's project.
 - **Tasks** on a **board**, a column per status (*Backlog*, *To do*,
   *In progress*, *In review*, *Done*), dragged from one to the next; a
   second board by person; a calendar of the due dates.

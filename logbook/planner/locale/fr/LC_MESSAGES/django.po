@@ -436,3 +436,39 @@ msgstr "Chargement de la note..."
 
 msgid "The note"
 msgstr "La note"
+
+msgid "criticality"
+msgstr "criticité"
+
+msgid "AUT - other"
+msgstr "AUT - autre"
+
+msgid "Minor"
+msgstr "Mineure"
+
+msgid "Major"
+msgstr "Majeure"
+
+msgid "Critical"
+msgstr "Critique"
+
+msgid "FNC tickets only: minor, major or critical."
+msgstr "Pour les FNC seulement : mineure, majeure ou critique."
+
+msgid "A ticket (FNC) needs its criticality."
+msgstr "Une FNC doit avoir sa criticité."
+
+msgid "FNC tickets, DM evolutions and AUT others (meetings, support), from the notes or not."
+msgstr "Les FNC, les DM et les autres tâches AUT (réunions, support), venues des notes ou non."
+
+msgid "Others (AUT)"
+msgstr "Autres (AUT)"
+
+msgid "Critical tickets"
+msgstr "FNC critiques"
+
+msgid "Projects"
+msgstr "Projets"
+
+msgid "Tasks by project"
+msgstr "Tâches par projet"

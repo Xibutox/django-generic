@@ -341,9 +341,10 @@ See [its README](docmanager/README.md).
 
 `logbook/` is a planner merged with a note-taking app and a time
 tracker. Notes are written line by line - headings, bullets, check
-boxes - and a line can be a task: an FNC (a ticket) or a DM (an
-evolution), numbered on its own, with its status and a timer beside
-it. The tasks are on a board, by status or by person; the time logged
+boxes - and a line can be a task: an FNC (a ticket, with its
+criticality), a DM (an evolution) or an AUT (a meeting, support),
+numbered on its own, with its status and a timer beside it, about
+several projects or none. The tasks are on a board, by status or by person; the time logged
 is on a timesheet drawn on the hours, where an entry is moved and
 stretched, a task dropped on a time logs an hour of it, and a lead
 verifies the week:

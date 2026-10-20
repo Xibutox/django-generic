@@ -5,7 +5,7 @@
  * task line is a task: saved once, it is numbered (FNC-0007, DM-0003),
  * shows its status, the time spent on it, and a button starting or
  * stopping the timer. Typing at the start of a line changes its kind:
- * "# " a heading, "- " a bullet, "[] " a to-do, "/fnc " or "/dm " a
+ * "# " a heading, "- " a bullet, "[] " a to-do, "/fnc ", "/dm " or "/aut " a
  * task. Enter starts a line, Backspace on an empty one removes it, Tab
  * and Shift+Tab indent. The note saves itself a moment after the last
  * change (Ctrl+S at once): the whole note is posted to its document
@@ -28,7 +28,8 @@
     { kind: "bullet", icon: "format_list_bulleted", label: t("Bullet") },
     { kind: "check", icon: "check_box", label: t("To-do") },
     { kind: "task", taskKind: "FNC", icon: "bug_report", label: t("FNC task - a ticket") },
-    { kind: "task", taskKind: "DM", icon: "rocket_launch", label: t("DM task - an evolution") }
+    { kind: "task", taskKind: "DM", icon: "rocket_launch", label: t("DM task - an evolution") },
+    { kind: "task", taskKind: "AUT", icon: "groups", label: t("AUT task - a meeting, support") }
   ];
 
   //: What a line may start with to change its kind.
@@ -38,7 +39,8 @@
     { pattern: /^\[\s?\]\s/, kind: "check" },
     { pattern: /^\[x\]\s/i, kind: "check", done: true },
     { pattern: /^\/fnc\s/i, kind: "task", taskKind: "FNC" },
-    { pattern: /^\/dm\s/i, kind: "task", taskKind: "DM" }
+    { pattern: /^\/dm\s/i, kind: "task", taskKind: "DM" },
+    { pattern: /^\/(aut|autre|autres|other)\s/i, kind: "task", taskKind: "AUT" }
   ];
 
   var SAVE_DELAY = 900;
@@ -136,6 +138,7 @@
     this.canAddTasks = !!answer.canAddTasks;
     this.canTime = !!answer.canTime;
     this.statuses = answer.statuses || [];
+    this.criticalities = answer.criticalities || [];
     this.title = answer.title || "";
     this.lines = (answer.lines || []).map(function (line) {
       return {
@@ -202,7 +205,7 @@
         el(
           "p",
           "note-editor__help muted",
-          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc or /dm for a task. Tab indents.")
+          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents.")
         )
       );
     }
@@ -334,6 +337,25 @@
     });
     box.appendChild(status);
 
+    // A ticket says how bad it is.
+    if (task.kind === "FNC" && this.criticalities.length) {
+      var criticality = el("select", "input input--sm note-line__criticality note-line__criticality--" + (task.criticality || "none"));
+
+      criticality.setAttribute("aria-label", t("Criticality"));
+      criticality.disabled = !this.canEdit;
+      this.criticalities.forEach(function (option) {
+        var item = el("option", "", option.label);
+
+        item.value = option.value;
+        item.selected = option.value === task.criticality;
+        criticality.appendChild(item);
+      });
+      criticality.addEventListener("change", function () {
+        self.setTaskField(line, "criticality", criticality.value);
+      });
+      box.appendChild(criticality);
+    }
+
     var spent = el("span", "note-line__hours", hours(task.hours));
 
     spent.title = t("Time spent");
@@ -385,7 +407,7 @@
         return;
       }
 
-      // A task keeps its kind: its number says FNC or DM.
+      // A task keeps its kind: its number says FNC, DM or AUT.
       if (line.task && entry.kind === "task" && entry.taskKind !== line.task.kind) {
         return;
       }
@@ -799,17 +821,23 @@
   /* -- A task's status and timer --------------------------------------------- */
 
   NoteEditor.prototype.setStatus = function (line, status) {
+    this.setTaskField(line, "status", status);
+  };
+
+  NoteEditor.prototype.setTaskField = function (line, name, value) {
     var self = this;
     var task = line.task;
+    var body = {};
 
     if (!task || !task.api) {
       return;
     }
 
+    body[name] = value;
     Generic.api
-      .patch(task.api, { status: status })
+      .patch(task.api, body)
       .then(function () {
-        task.status = status;
+        task[name] = value;
         self.paintTask(line);
       })
       .catch(function (error) {

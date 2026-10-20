@@ -104,3 +104,12 @@ msgstr "Temps saisi sur %(task)s."
 
 msgid "The timer could not be changed."
 msgstr "Le chronomètre n’a pas pu être modifié."
+
+msgid "AUT task - a meeting, support"
+msgstr "Tâche AUT - une réunion, du support"
+
+msgid "Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents."
+msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une case à cocher, /fnc, /dm ou /aut pour une tâche. Tab indente."
+
+msgid "Criticality"
+msgstr "Criticité"

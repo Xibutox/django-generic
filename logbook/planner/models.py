@@ -3,9 +3,11 @@
 A note is written line by line (``NoteLine``): plain text, a heading, a
 bullet, a to-do ticked off - or a task line, which *is* a task: the
 line holds the ``Task`` it became, and the task the note it came from.
-Tasks are of two kinds, FNC (a ticket: something to fix) and DM (an
-evolution: something to build), each numbered in its own series
-(FNC-0001, DM-0001) by the framework's numbering. Time is logged
+Tasks are of three kinds, FNC (a ticket: something to fix, with its
+criticality), DM (an evolution: something to build) and AUT (the rest:
+a meeting, help given to someone), each numbered in its own series
+(FNC-0001, DM-0001, AUT-0001) by the framework's numbering. A task is
+about any number of projects, none included. Time is logged
 against a task (``TimeEntry``): started and ended - a running timer has
 no end yet - then checked by whoever verifies the timesheet.
 """
@@ -16,6 +18,7 @@ import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -100,11 +103,20 @@ class Note(models.Model):
 
 
 class Task(models.Model):
-    """Something to do: a ticket (FNC) or an evolution (DM)."""
+    """Something to do: a ticket (FNC), an evolution (DM), or anything
+    else (AUT) - a meeting, support given to someone."""
 
     class Kind(models.TextChoices):
         FNC = "FNC", _("FNC - ticket")
         DM = "DM", _("DM - evolution")
+        AUT = "AUT", _("AUT - other")
+
+    class Criticality(models.TextChoices):
+        """How bad a ticket is - FNC tasks only."""
+
+        MINOR = "minor", _("Minor")
+        MAJOR = "major", _("Major")
+        CRITICAL = "critical", _("Critical")
 
     class Status(models.TextChoices):
         BACKLOG = "backlog", _("Backlog")
@@ -131,11 +143,16 @@ class Task(models.Model):
         blank=True,
         help_text=_("What is expected: the ticket's facts, or the spec."),
     )
-    project = models.ForeignKey(
+    criticality = models.CharField(
+        _("criticality"),
+        max_length=10,
+        choices=Criticality.choices,
+        blank=True,
+        help_text=_("FNC tickets only: minor, major or critical."),
+    )
+    projects = models.ManyToManyField(
         Project,
-        verbose_name=_("project"),
-        on_delete=models.SET_NULL,
-        null=True,
+        verbose_name=_("projects"),
         blank=True,
         related_name="tasks",
     )
@@ -188,7 +205,22 @@ class Task(models.Model):
     def __str__(self) -> str:
         return f"{self.reference} {self.title}".strip()
 
+    def clean(self) -> None:
+        super().clean()
+
+        if self.kind == self.Kind.FNC and not self.criticality:
+            raise ValidationError(
+                {"criticality": _("A ticket (FNC) needs its criticality.")}
+            )
+
     def save(self, *args, **kwargs) -> None:
+        # Only tickets are critical; a ticket written in a note starts
+        # as major, until someone says otherwise.
+        if self.kind != self.Kind.FNC:
+            self.criticality = ""
+        elif not self.criticality:
+            self.criticality = self.Criticality.MAJOR
+
         # Numbered once, in the transaction that stores the number: the
         # series is locked until it commits (generic.numbering).
         with transaction.atomic():

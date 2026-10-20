@@ -54,10 +54,21 @@ SCENARIO = textwrap.dedent("""
 
     # Seeded once, whatever the number of runs.
     assert Note.objects.count() == 5, Note.objects.count()
-    assert Task.objects.count() == 15, Task.objects.count()
+    assert Task.objects.count() == 18, Task.objects.count()
     assert TimeEntry.objects.running().count() == 1
     references = set(Task.objects.values_list("reference", flat=True))
-    assert "FNC-0001" in references and "DM-0001" in references, references
+    assert {"FNC-0001", "DM-0001", "AUT-0001"} <= references, references
+
+    # Only tickets are critical; a task is about several projects, or
+    # none.
+    assert not Task.objects.filter(kind="FNC", criticality="").exists()
+    assert not Task.objects.exclude(kind="FNC").exclude(
+        criticality=""
+    ).exists()
+    assert Task.objects.get(title="Admin dashboard").projects.count() == 2
+    assert not Task.objects.get(
+        title="Help the support desk with the VPN"
+    ).projects.exists()
 
     admin, bob, viewer = signed_in("admin"), signed_in("bob"), signed_in("viewer")
 
@@ -74,6 +85,10 @@ SCENARIO = textwrap.dedent("""
         f"/planner/task/{task.pk}/",
         "/planner/task/board/",
         "/planner/task/people/",
+        "/planner/task/add/",
+        f"/planner/project/{Task.objects.get(title='Admin dashboard').projects.first().pk}/",
+        "/api/planner/task/charts/by_kind/",
+        "/api/planner/timeentry/charts/by_project/",
         "/planner/task/due/",
         "/planner/timeentry/",
         "/planner/timeentry/timesheet/",
@@ -104,12 +119,44 @@ SCENARIO = textwrap.dedent("""
     lines.append(
         {"kind": "task", "text": "Export the timesheet", "taskKind": "DM"}
     )
+    lines.append(
+        {"kind": "task", "text": "Demo to the customer", "taskKind": "AUT"}
+    )
     lines.append({"kind": "text", "text": "Just a thought."})
     written = send(bob, "post", DOCUMENT, {"title": note.title, "lines": lines})
     assert written.status_code == 200, written.content
     made = Task.objects.get(title="Export the timesheet")
     assert made.kind == "DM" and made.note == note
     assert made.reference.startswith("DM-")
+    assert [p.name for p in made.projects.all()] == ["Website"]
+    meeting = Task.objects.get(title="Demo to the customer")
+    assert meeting.reference.startswith("AUT-") and not meeting.criticality
+    lines_read = written.json()["lines"]
+    assert {c["value"] for c in written.json()["criticalities"]} == {
+        "minor", "major", "critical"
+    }
+    fnc = next(
+        line["task"] for line in lines_read
+        if line["task"] and line["task"]["kind"] == "FNC"
+    )
+    assert fnc["criticality"] in ("minor", "major", "critical")
+
+    # A ticket's criticality, changed from the note, as the editor does.
+    changed = send(
+        bob, "patch", fnc["api"], {"criticality": "critical"}
+    )
+    assert changed.status_code == 200, changed.content
+    assert Task.objects.get(pk=fnc["id"]).criticality == "critical"
+
+    # The form refuses a ticket without one.
+    from planner.models import Task as T
+    from django.core.exceptions import ValidationError
+    try:
+        T(kind="FNC", title="x").full_clean(exclude=["reference"])
+    except ValidationError as error:
+        assert "criticality" in error.message_dict
+    else:
+        raise AssertionError("a ticket without criticality")
     assert Task.objects.filter(
         title="Login fails after a password reset (Safari)"
     ).exists()

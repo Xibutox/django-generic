@@ -379,9 +379,12 @@ three reviews under way, and Word/PDF/text samples (`samples.py`; a
 app `planner`, French and English): notes, tasks and time. `Note`
 (title, project, labels, pinned, author) holds ordered `NoteLine`s
 (kind text/heading/bullet/check/task, indent, done); a *task* line owns
-a `Task` (one-to-one, `line`): `kind` FNC (a ticket) or DM (an
-evolution), `reference` numbered per kind by `generic.numbering`
-(FNC-0001), status backlog/todo/doing/review/done (`done_at` kept),
+a `Task` (one-to-one, `line`): `kind` FNC (a ticket), DM (an evolution)
+or AUT (other: meetings, support), `criticality` minor/major/critical
+(FNC only: required by `clean`, emptied for the others by `save`, a
+ticket from a note starting major), `projects` (many-to-many, may be
+empty; a note's task starts with the note's project), `reference`
+numbered per kind by `generic.numbering` (FNC-0001), status backlog/todo/doing/review/done (`done_at` kept),
 priority, assignee, due date, estimate. `TimeEntry` (task, user,
 `started_at`, `ended_at` - empty while the timer runs - `hours`
 computed, comment, `verified`/`_by`/`_at`, permission

@@ -54,7 +54,12 @@ from planner.models import Label, Note, NoteLine, Project, Task, TimeEntry
 GROUP = _("Planner")
 TIME = _("Time")
 
-KIND_COLORS = {"FNC": "#dc2626", "DM": "#7c3aed"}
+KIND_COLORS = {"FNC": "#dc2626", "DM": "#7c3aed", "AUT": "#0d9488"}
+CRITICALITY_COLORS = {
+    "minor": "#64748b",
+    "major": "#ea580c",
+    "critical": {"background": "#b91c1c", "color": "#ffffff"},
+}
 STATUS_COLORS = {
     "backlog": "#64748b",
     "todo": "#2563eb",
@@ -71,6 +76,13 @@ PRIORITY_COLORS = {
 
 #: Tasks still to finish.
 NOT_DONE = {"column": "status", "operator": "none_of", "value": ["done"]}
+
+#: Tickets that stop the work.
+CRITICAL = {
+    "column": "criticality",
+    "operator": "any_of",
+    "value": ["critical"],
+}
 
 #: Work under way: what the timesheet offers to plan first.
 UNDER_WAY = {
@@ -121,12 +133,19 @@ class ProjectResource(ModelResource):
     detail_stats = ("open_tasks", "logged")
     detail_fieldsets = ((None, {"fields": ("is_active", "description")}),)
     related_tables = (
-        RelatedTable("tasks", charts=("by_status",)),
+        RelatedTable(
+            "tasks",
+            model=Task,
+            lookup="projects",
+            title=_("Tasks"),
+            icon="task_alt",
+            charts=("by_status",),
+        ),
         RelatedTable("notes"),
         RelatedTable(
             "time",
             model=TimeEntry,
-            lookup="task__project",
+            lookup="task__projects",
             title=_("Time"),
             icon="schedule",
             charts=("by_week",),
@@ -155,7 +174,7 @@ class ProjectResource(ModelResource):
     @display(description=_("Hours logged"))
     def logged(self, project: Project) -> Decimal:
         return hours(
-            TimeEntry.objects.filter(task__project=project).aggregate(
+            TimeEntry.objects.filter(task__projects=project).aggregate(
                 total=Sum("hours")
             )["total"]
         )
@@ -361,14 +380,18 @@ class TaskResource(ModelResource):
     icon = "task_alt"
     group = GROUP
     order = 1
-    description = _("FNC tickets and DM evolutions, from the notes or not.")
+    description = _(
+        "FNC tickets, DM evolutions and AUT others (meetings, support), "
+        "from the notes or not."
+    )
     list_display = (
         "reference",
         "title",
         "kind",
+        "criticality",
         "status",
         "priority",
-        "project",
+        "projects",
         "assignee",
         "due_on",
         "time_spent",
@@ -376,22 +399,26 @@ class TaskResource(ModelResource):
         "note",
     )
     list_display_hidden = ("estimate", "note")
-    search_fields = ("reference", "title", "description", "project__name")
+    search_fields = ("reference", "title", "description", "projects__name")
     ordering = ("-created_at", "-pk")
     tag_fields = {
         "kind": TagStyle(colors=KIND_COLORS),
         "status": TagStyle(colors=STATUS_COLORS),
         "priority": TagStyle(colors=PRIORITY_COLORS),
-        "project": TagStyle(color="color"),
+        "criticality": TagStyle(colors=CRITICALITY_COLORS),
+        "projects": TagStyle(color="color"),
     }
     fieldsets = (
-        (None, {"fields": (("kind", "title"), "description")}),
+        (
+            None,
+            {"fields": (("kind", "criticality"), "title", "description")},
+        ),
         (
             _("Planning"),
             {
                 "fields": (
                     ("status", "priority"),
-                    ("project", "assignee"),
+                    ("projects", "assignee"),
                     ("due_on", "estimate"),
                     "note",
                 )
@@ -406,9 +433,10 @@ class TaskResource(ModelResource):
             {
                 "fields": (
                     "kind",
+                    "criticality",
                     "status",
                     "priority",
-                    "project",
+                    "projects",
                     "assignee",
                     "due_on",
                     "note",
@@ -429,7 +457,8 @@ class TaskResource(ModelResource):
     bulk_edit_fields = (
         "status",
         "priority",
-        "project",
+        "criticality",
+        "projects",
         "assignee",
         "due_on",
     )
@@ -459,6 +488,18 @@ class TaskResource(ModelResource):
                 ],
             },
         },
+        _("Others (AUT)"): {
+            "filters": {
+                "match": "all",
+                "conditions": [
+                    {"column": "kind", "operator": "any_of", "value": ["AUT"]},
+                    NOT_DONE,
+                ],
+            },
+        },
+        _("Critical tickets"): {
+            "filters": {"match": "all", "conditions": [CRITICAL, NOT_DONE]},
+        },
     }
     charts = (
         Chart(
@@ -469,8 +510,8 @@ class TaskResource(ModelResource):
         ),
         Chart(
             "by_kind",
-            title=_("Tickets and evolutions"),
-            group_by="project",
+            title=_("Tasks by project"),
+            group_by="projects",
             split_by="kind",
             stacked=True,
             horizontal=True,
@@ -489,7 +530,13 @@ class TaskResource(ModelResource):
             icon="view_kanban",
             description=_("Every task in the column of its status."),
             color="kind",
-            fields=("project", "priority", "assignee", "time_spent"),
+            fields=(
+                "projects",
+                "criticality",
+                "priority",
+                "assignee",
+                "time_spent",
+            ),
             editable=True,
             navigation=True,
         ),
@@ -500,7 +547,7 @@ class TaskResource(ModelResource):
             icon="group",
             description=_("The tasks still open, by person."),
             color="status",
-            fields=("project", "due_on"),
+            fields=("projects", "due_on"),
             editable=True,
         ),
     )
@@ -544,6 +591,15 @@ class TaskResource(ModelResource):
             },
             order=1,
         ),
+        Kpi(
+            "critical-tickets",
+            title=_("Critical tickets"),
+            icon="priority_high",
+            filters={"match": "all", "conditions": [CRITICAL, NOT_DONE]},
+            warning=1,
+            danger=3,
+            order=2,
+        ),
     )
     cards = (
         Cards(
@@ -561,7 +617,7 @@ class TaskResource(ModelResource):
                 ],
             },
             ordering=("due_on",),
-            subtitle="project",
+            subtitle="projects",
             fields=("kind", "assignee", "time_spent"),
             limit=6,
             order=1,
@@ -696,7 +752,7 @@ class TimeEntryResource(ModelResource):
         "hours",
         "task",
         "task__kind",
-        "task__project",
+        "projects",
         "user",
         "comment",
         "check_state",
@@ -775,7 +831,7 @@ class TimeEntryResource(ModelResource):
             ),
             label="task",
             color="check_state",
-            fields=("project", "user"),
+            fields=("projects", "user"),
             editable=True,
             navigation=True,
             hours=(7, 20),
@@ -786,7 +842,7 @@ class TimeEntryResource(ModelResource):
                 title=_("Tasks under way"),
                 filters={"match": "all", "conditions": [UNDER_WAY]},
                 ordering=("-created_at",),
-                fields=("project",),
+                fields=("projects", "criticality"),
                 color="kind",
                 duration=60,
             ),
@@ -811,7 +867,7 @@ class TimeEntryResource(ModelResource):
         Chart(
             "by_project",
             title=_("Hours by project"),
-            group_by="task__project",
+            group_by="task__projects",
             value=Sum("hours"),
             value_label=_("Hours"),
             unit="h",
@@ -902,9 +958,9 @@ class TimeEntryResource(ModelResource):
             request, values, {"user": request.user.pk, **fixed}
         )
 
-    @display(description=_("Project"))
-    def project(self, entry: TimeEntry) -> Any:
-        return entry.task.project
+    @display(description=_("Projects"))
+    def projects(self, entry: TimeEntry) -> str:
+        return ", ".join(project.name for project in entry.task.projects.all())
 
     @display(description=_("Check"), tags=True)
     def check_state(self, entry: TimeEntry) -> list[dict[str, str]]:

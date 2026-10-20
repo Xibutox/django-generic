@@ -6,7 +6,7 @@ forms, charts, coloured tags, wiki, real-time events) plus a runnable
 example, `example/` + `example_project/`, and a minimal one,
 `minimal/` (the least a project needs: one settings file, one model),
 a document manager, `docmanager/` (teams, folders, versioned files),
-and a logbook, `logbook/` (notes, FNC/DM tasks, board, timesheet).
+and a logbook, `logbook/` (notes, FNC/DM/AUT tasks, board, timesheet).
 
 Before changing anything, read **`ai/00-context.md`** — the reference for
 the rules, the file map and every declaration. Then the use-case prompt

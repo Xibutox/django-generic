@@ -59,6 +59,7 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
             "id": task.pk,
             "reference": task.reference,
             "kind": task.kind,
+            "criticality": task.criticality,
             "status": task.status,
             "statusLabel": str(task.get_status_display()),
             "url": task_resource.get_object_url(task.pk),
@@ -76,6 +77,10 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
         "statuses": [
             {"value": value, "label": str(label)}
             for value, label in Task.Status.choices
+        ],
+        "criticalities": [
+            {"value": value, "label": str(label)}
+            for value, label in Task.Criticality.choices
         ],
         "lines": [
             {
@@ -218,13 +223,18 @@ def sync_task(
                 gettext("You may not create tasks: this line stays text.")
             )
 
-        return Task.objects.create(
+        task = Task.objects.create(
             kind=item["task_kind"],
             title=title,
             note=note,
-            project=note.project,
             assignee=user if user.is_authenticated else None,
         )
+
+        # About what the note is about, to begin with.
+        if note.project_id:
+            task.projects.add(note.project_id)
+
+        return task
 
     if task.title != title:
         if not may_change:

@@ -76,7 +76,8 @@ LABELS = (
 )
 
 #: A note: title, project, labels, pinned, lines. A task line is
-#: ("task", kind, title, status, priority, assignee).
+#: ("task", kind, title, status, priority, assignee); its task is about
+#: the note's project.
 NOTES = (
     (
         "Sprint 42 planning",
@@ -219,17 +220,50 @@ NOTES = (
                 "bob",
             ),
             ("task", "DM", "Single sign-on", "backlog", "normal", "alice"),
+            (
+                "task",
+                "AUT",
+                "Weekly meeting of the tools team",
+                "doing",
+                "normal",
+                "alice",
+            ),
             ("check", "Renew the certificate before the 30th"),
         ),
     ),
 )
 
-#: Tasks written straight on the board, in no note.
+#: Tasks written straight on the board, in no note: kind, title,
+#: status, priority, assignee, projects (several, or none).
 LOOSE_TASKS = (
-    ("FNC", "Broken link in the footer", "done", "low", "bob", "Website"),
-    ("DM", "Admin dashboard", "review", "normal", "alice", "Internal tools"),
-    ("FNC", "Slow search on product pages", "todo", "normal", "", "Website"),
+    ("FNC", "Broken link in the footer", "done", "low", "bob", ("Website",)),
+    (
+        "DM",
+        "Admin dashboard",
+        "review",
+        "normal",
+        "alice",
+        ("Internal tools", "Website"),
+    ),
+    (
+        "FNC",
+        "Slow search on product pages",
+        "todo",
+        "normal",
+        "",
+        ("Website", "Mobile app"),
+    ),
+    ("AUT", "Help the support desk with the VPN", "todo", "normal", "bob", ()),
+    ("AUT", "Onboarding of the new developer", "backlog", "low", "alice", ()),
 )
+
+#: A ticket's criticality, from how urgent it is.
+CRITICALITY = {
+    "urgent": "critical",
+    "high": "major",
+    "normal": "minor",
+    "low": "minor",
+}
 
 COMMENTS = (
     "",
@@ -358,12 +392,15 @@ class Command(BaseCommand):
                         kind=task_kind,
                         title=text,
                         note=note,
-                        project=note.project,
                         status=status,
                         priority=priority,
+                        criticality=CRITICALITY[priority],
                         assignee=people.get(who),
                         estimate=8 if task_kind == "DM" else 3,
                     )
+
+                    if note.project is not None:
+                        item.task.projects.set([note.project])
                 else:
                     item.text = line[1]
                     item.done = len(line) > 2 and bool(line[2])
@@ -376,16 +413,17 @@ class Command(BaseCommand):
             )
 
     def loose_tasks(self, projects: dict, people: dict) -> None:
-        for kind, title, status, priority, who, project in LOOSE_TASKS:
-            Task.objects.create(
+        for kind, title, status, priority, who, names in LOOSE_TASKS:
+            task = Task.objects.create(
                 kind=kind,
                 title=title,
                 status=status,
                 priority=priority,
+                criticality=CRITICALITY[priority],
                 assignee=people.get(who),
-                project=projects[project],
                 due_on=timezone.localdate() + datetime.timedelta(days=5),
             )
+            task.projects.set([projects[name] for name in names])
 
     def time(self, people: dict) -> None:
         """Four weeks of working days, mornings and afternoons cut into
