@@ -19,12 +19,15 @@ framework does, from these declarations.
 
 from __future__ import annotations
 
+import calendar
+import datetime
 from decimal import Decimal
 from typing import Any
 
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q, QuerySet, Sum
-from django.http import JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
@@ -48,8 +51,19 @@ from generic.sites import (
     site,
 )
 from generic.sites.realtime import announce
-from planner import documents, timers
-from planner.models import Label, Note, NoteLine, Project, Task, TimeEntry
+from planner import documents, imputations, timers
+from planner.models import (
+    Direction,
+    Imputation,
+    ImputationShare,
+    KpiRecord,
+    Label,
+    Note,
+    NoteLine,
+    Project,
+    Task,
+    TimeEntry,
+)
 
 GROUP = _("Planner")
 TIME = _("Time")
@@ -105,7 +119,7 @@ class LabelResource(ModelResource):
     search_fields = ("name",)
     tag_fields = {"name": TagStyle(color="color")}
     form_overrides = {"color": {"widget": "color"}}
-    related_tables = (RelatedTable("notes"),)
+    related_tables = (RelatedTable("notes"), RelatedTable("tasks"))
 
     def get_list_queryset(self, request: Any) -> QuerySet:
         return (
@@ -396,9 +410,11 @@ class TaskResource(ModelResource):
         "due_on",
         "time_spent",
         "estimate",
+        "imputation",
+        "labels",
         "note",
     )
-    list_display_hidden = ("estimate", "note")
+    list_display_hidden = ("estimate", "imputation", "labels", "note")
     search_fields = ("reference", "title", "description", "projects__name")
     ordering = ("-created_at", "-pk")
     tag_fields = {
@@ -407,6 +423,7 @@ class TaskResource(ModelResource):
         "priority": TagStyle(colors=PRIORITY_COLORS),
         "criticality": TagStyle(colors=CRITICALITY_COLORS),
         "projects": TagStyle(color="color"),
+        "labels": TagStyle(color="color"),
     }
     fieldsets = (
         (
@@ -419,6 +436,7 @@ class TaskResource(ModelResource):
                 "fields": (
                     ("status", "priority"),
                     ("projects", "assignee"),
+                    ("imputation", "labels"),
                     ("due_on", "estimate"),
                     "note",
                 )
@@ -437,6 +455,8 @@ class TaskResource(ModelResource):
                     "status",
                     "priority",
                     "projects",
+                    "imputation",
+                    "labels",
                     "assignee",
                     "due_on",
                     "note",
@@ -459,6 +479,8 @@ class TaskResource(ModelResource):
         "priority",
         "criticality",
         "projects",
+        "imputation",
+        "labels",
         "assignee",
         "due_on",
     )
@@ -735,6 +757,17 @@ class TaskResource(ModelResource):
         )
 
 
+#: A full working day, for the workdays page: 8 hours.
+WORKDAY_SECONDS = 8 * 3600
+
+
+def parse_day(value: Any) -> datetime.date | None:
+    try:
+        return datetime.date.fromisoformat(str(value or ""))
+    except ValueError:
+        return None
+
+
 #: Not yet checked, ended: what the verification goes through.
 TO_VERIFY = {"column": "verified", "operator": "is_false", "value": None}
 
@@ -785,7 +818,7 @@ class TimeEntryResource(ModelResource):
     )
     editable_fields = ("started_at", "ended_at", "comment")
     bulk_edit_fields = ("task", "user")
-    actions = ("verify", "unverify", "delete_selected")
+    actions = ("verify", "unverify", "export_imputations", "delete_selected")
     presets = {
         _("To verify"): {
             "filters": {
@@ -1008,6 +1041,149 @@ class TimeEntryResource(ModelResource):
             count,
         ) % {"count": count}
 
+    @action(
+        description=_("Export the imputation split (Excel)"),
+        icon="table_view",
+        help=_(
+            "The selected time on 7.4-hour days, spread over the "
+            "distribution matrix."
+        ),
+    )
+    def export_imputations(self, request: Any, queryset: QuerySet) -> dict:
+        keys = ",".join(
+            str(pk) for pk in queryset.values_list("pk", flat=True)
+        )
+
+        return {
+            "redirect": f"{self.get_page_url('imputation-export')}?ids={keys}"
+        }
+
+    @page(title=_("Imputation split"), button=False, icon="table_view")
+    def imputation_export(self, request: Any) -> HttpResponse:
+        """The Excel file of the selected entries (``?ids=``), or of a
+        period (``?start=YYYY-MM-DD&end=YYYY-MM-DD``, end included)."""
+        entries = self.get_list_queryset(request)
+        ids = [key for key in request.GET.get("ids", "").split(",") if key]
+
+        if ids:
+            entries = entries.filter(pk__in=[k for k in ids if k.isdigit()])
+        else:
+            start = parse_day(request.GET.get("start"))
+            end = parse_day(request.GET.get("end"))
+
+            if start is None or end is None:
+                entries = entries.none()
+            else:
+                entries = entries.filter(
+                    started_at__date__gte=start, started_at__date__lte=end
+                )
+
+        try:
+            name, content = imputations.workbook(
+                entries, list(ImputationShare.objects.order_by("number"))
+            )
+        except imputations.ExportError as error:
+            messages.error(request, str(error))
+
+            return HttpResponseRedirect(self.get_list_url())
+
+        response = HttpResponse(
+            content,
+            content_type=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+        response["Content-Disposition"] = f'attachment; filename="{name}"'
+
+        return response
+
+    @page(
+        title=_("Workdays"),
+        icon="event_available",
+        navigation=True,
+        description=_(
+            "Each working day of the month: 8 hours logged, or not."
+        ),
+        template="planner/workdays.html",
+    )
+    def workdays(self, request: Any) -> dict[str, Any]:
+        """The old planner's month of working days: green at exactly 8
+        hours, red otherwise, orange when empty, grey to come - the
+        reader's own time."""
+        today = timezone.localdate()
+
+        try:
+            year, month = (
+                int(part) for part in request.GET.get("month", "").split("-")
+            )
+            first = datetime.date(year, month, 1)
+        except ValueError:
+            first = today.replace(day=1)
+
+        last = calendar.monthrange(first.year, first.month)[1]
+        following = first + datetime.timedelta(days=last)
+        totals: dict[datetime.date, float] = {}
+
+        for started, ended in (
+            self.get_list_queryset(request)
+            .filter(
+                user=request.user,
+                ended_at__isnull=False,
+                started_at__date__gte=first,
+                started_at__date__lt=following,
+            )
+            .values_list("started_at", "ended_at")
+        ):
+            day = timezone.localdate(started)
+            totals[day] = (
+                totals.get(day, 0) + (ended - started).total_seconds()
+            )
+
+        days = []
+
+        for number in range(1, last + 1):
+            day = first.replace(day=number)
+
+            if day.weekday() >= 5:
+                continue
+
+            seconds = round(totals.get(day, 0))
+
+            if day > today:
+                state = "future"
+            elif seconds == 0:
+                state = "empty"
+            elif seconds == WORKDAY_SECONDS:
+                state = "complete"
+            else:
+                state = "incomplete"
+
+            hours, rest = divmod(seconds, 3600)
+            days.append(
+                {
+                    "date": day,
+                    "state": state,
+                    "duration": (
+                        f"{hours} h {rest // 60:02d}" if rest else f"{hours} h"
+                    ),
+                    "url": (
+                        f"{self.get_page_url('timesheet')}"
+                        f"?view=day&date={day.isoformat()}"
+                    ),
+                }
+            )
+
+        previous = (first - datetime.timedelta(days=1)).replace(day=1)
+
+        return {
+            "month": first,
+            "days": days,
+            "previous": f"?month={previous:%Y-%m}",
+            "next": f"?month={following:%Y-%m}",
+            "current": f"?month={today:%Y-%m}",
+        }
+
     def has_record_action(self, request: Any, obj: Any, name: str) -> bool:
         if name == "verify":
             return not obj.verified and obj.ended_at is not None
@@ -1016,6 +1192,56 @@ class TimeEntryResource(ModelResource):
             return obj.verified
 
         return super().has_record_action(request, obj, name)
+
+
+@register(Direction)
+class DirectionResource(ModelResource):
+    icon = "corporate_fare"
+    group = TIME
+    order = 5
+    list_display = ("name",)
+    search_fields = ("name",)
+    related_tables = (RelatedTable("imputations"),)
+
+
+@register(Imputation)
+class ImputationResource(ModelResource):
+    icon = "account_balance"
+    group = TIME
+    order = 4
+    description = _("The accounting codes a task's time is charged to.")
+    list_display = ("name", "number", "direction")
+    search_fields = ("name", "number")
+    fields = (("name", "number"), "direction")
+    related_tables = (RelatedTable("tasks"),)
+
+
+@register(ImputationShare)
+class ImputationShareResource(ModelResource):
+    icon = "pie_chart"
+    group = TIME
+    order = 6
+    description = _(
+        "How the imputation export spreads the time: the shares add up "
+        "to 100 %."
+    )
+    list_display = ("number", "percentage")
+    search_fields = ("number",)
+    fields = (("number", "percentage"),)
+
+
+@register(KpiRecord)
+class KpiRecordResource(ModelResource):
+    icon = "monitoring"
+    group = TIME
+    order = 7
+    description = _(
+        "How many people used DES and COMET, read by sync_kpi; the key "
+        "figures API serves them."
+    )
+    list_display = ("date", "period", "des_users", "comet_users")
+    ordering = ("-date", "period")
+    fields = (("period", "date"), ("des_users", "comet_users"))
 
 
 site.add_shortcut(

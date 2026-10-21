@@ -472,3 +472,102 @@ msgstr "Projets"
 
 msgid "Tasks by project"
 msgstr "Tâches par projet"
+
+msgid "direction"
+msgstr "direction"
+
+msgid "directions"
+msgstr "directions"
+
+msgid "number"
+msgstr "numéro"
+
+msgid "imputation"
+msgstr "imputation"
+
+msgid "imputations"
+msgstr "imputations"
+
+msgid "percentage"
+msgstr "pourcentage"
+
+msgid "matrix line"
+msgstr "ligne de matrice"
+
+msgid "distribution matrix"
+msgstr "matrice d'imputation"
+
+msgid "Month"
+msgstr "Mois"
+
+msgid "Year"
+msgstr "Année"
+
+msgid "period"
+msgstr "période"
+
+msgid "date"
+msgstr "date"
+
+msgid "The first day of the month or the year."
+msgstr "Le premier jour du mois ou de l'année."
+
+msgid "DES users"
+msgstr "Utilisateurs DES"
+
+msgid "COMET users"
+msgstr "Utilisateurs COMET"
+
+msgid "tool usage"
+msgstr "utilisation des outils"
+
+msgid "Export the imputation split (Excel)"
+msgstr "Exporter la répartition des imputations (Excel)"
+
+msgid "The selected time on 7.4-hour days, spread over the distribution matrix."
+msgstr "Le temps sélectionné, sur des journées de 7,4 heures, réparti selon la matrice d'imputation."
+
+msgid "Imputation split"
+msgstr "Répartition des imputations"
+
+msgid "Workdays"
+msgstr "Journées"
+
+msgid "Each working day of the month: 8 hours logged, or not."
+msgstr "Chaque jour ouvré du mois : 8 heures saisies, ou non."
+
+msgid "The accounting codes a task's time is charged to."
+msgstr "Les codes comptables sur lesquels le temps d'une tâche est imputé."
+
+msgid "How the imputation export spreads the time: the shares add up to 100 %."
+msgstr "Comment l'export des imputations répartit le temps : les parts font 100 % au total."
+
+msgid "How many people used DES and COMET, read by sync_kpi; the key figures API serves them."
+msgstr "Le nombre d'utilisateurs de DES et de COMET, relevé par sync_kpi ; l'API des indicateurs les sert."
+
+msgid "Working days"
+msgstr "Jours ouvrés"
+
+msgid "Months"
+msgstr "Mois"
+
+msgid "Previous month"
+msgstr "Mois précédent"
+
+msgid "This month"
+msgstr "Ce mois-ci"
+
+msgid "Next month"
+msgstr "Mois suivant"
+
+msgid "Exactly 8 h"
+msgstr "8 h tout juste"
+
+msgid "Time, but not 8 h"
+msgstr "Du temps, mais pas 8 h"
+
+msgid "Nothing logged"
+msgstr "Rien de saisi"
+
+msgid "To come"
+msgstr "À venir"

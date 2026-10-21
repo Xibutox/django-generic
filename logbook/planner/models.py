@@ -10,6 +10,12 @@ a meeting, help given to someone), each numbered in its own series
 about any number of projects, none included. Time is logged
 against a task (``TimeEntry``): started and ended - a running timer has
 no end yet - then checked by whoever verifies the timesheet.
+
+From the older planner it replaces: a task's ``Imputation`` (with its
+``Direction``), the distribution matrix (``ImputationShare``) the
+imputation export spreads time over, and the COMET/DES usage figures
+(``KpiRecord``) the key figures API serves; ``legacy_id`` marks what
+``import_planner`` brought over.
 """
 
 from __future__ import annotations
@@ -60,6 +66,57 @@ class Project(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class Direction(models.Model):
+    """A department the time is charged to."""
+
+    name = models.CharField(_("name"), max_length=128, unique=True)
+
+    class Meta:
+        ordering = ("name",)
+        verbose_name = _("direction")
+        verbose_name_plural = _("directions")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Imputation(models.Model):
+    """An accounting code a task's time is charged to."""
+
+    name = models.CharField(_("name"), max_length=128, unique=True)
+    number = models.CharField(_("number"), max_length=128, unique=True)
+    direction = models.ForeignKey(
+        Direction,
+        verbose_name=_("direction"),
+        on_delete=models.PROTECT,
+        related_name="imputations",
+    )
+
+    class Meta:
+        ordering = ("name",)
+        verbose_name = _("imputation")
+        verbose_name_plural = _("imputations")
+
+    def __str__(self) -> str:
+        return f"[{self.direction}] {self.name}"
+
+
+class ImputationShare(models.Model):
+    """One line of the distribution matrix: the share of the time the
+    imputation export gives to a number. The shares add up to 100."""
+
+    number = models.CharField(_("number"), max_length=128, unique=True)
+    percentage = models.FloatField(_("percentage"))
+
+    class Meta:
+        ordering = ("number",)
+        verbose_name = _("matrix line")
+        verbose_name_plural = _("distribution matrix")
+
+    def __str__(self) -> str:
+        return f"{self.number} ({self.percentage:g} %)"
 
 
 class Note(models.Model):
@@ -156,6 +213,17 @@ class Task(models.Model):
         blank=True,
         related_name="tasks",
     )
+    imputation = models.ForeignKey(
+        Imputation,
+        verbose_name=_("imputation"),
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="tasks",
+    )
+    labels = models.ManyToManyField(
+        Label, verbose_name=_("labels"), blank=True, related_name="tasks"
+    )
     note = models.ForeignKey(
         Note,
         verbose_name=_("note"),
@@ -195,6 +263,10 @@ class Task(models.Model):
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
     done_at = models.DateTimeField(
         _("done at"), null=True, blank=True, editable=False
+    )
+    #: The task's id in the planner it was imported from, if any.
+    legacy_id = models.BigIntegerField(
+        null=True, blank=True, unique=True, editable=False
     )
 
     class Meta:
@@ -318,7 +390,7 @@ class TimeEntry(models.Model):
         blank=True,
         editable=False,
     )
-    comment = models.CharField(_("comment"), max_length=200, blank=True)
+    comment = models.TextField(_("comment"), blank=True)
     verified = models.BooleanField(_("verified"), default=False)
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -331,6 +403,10 @@ class TimeEntry(models.Model):
     )
     verified_at = models.DateTimeField(
         _("verified at"), null=True, blank=True, editable=False
+    )
+    #: The entry's id in the planner it was imported from, if any.
+    legacy_id = models.BigIntegerField(
+        null=True, blank=True, unique=True, editable=False
     )
 
     objects = TimeEntryQuerySet.as_manager()
@@ -364,3 +440,37 @@ class TimeEntry(models.Model):
 
 def length_in_hours(length: datetime.timedelta) -> Decimal:
     return (Decimal(length.total_seconds()) / 3600).quantize(Decimal("0.01"))
+
+
+class KpiRecord(models.Model):
+    """Figures read from the business tools (COMET, DES): how many
+    people used them in a month, or in a year (``sync_kpi``)."""
+
+    class Period(models.TextChoices):
+        MONTH = "month", _("Month")
+        YEAR = "year", _("Year")
+
+    period = models.CharField(
+        _("period"), max_length=5, choices=Period.choices
+    )
+    date = models.DateField(
+        _("date"), help_text=_("The first day of the month or the year.")
+    )
+    des_users = models.IntegerField(_("DES users"))
+    comet_users = models.IntegerField(_("COMET users"))
+
+    class Meta:
+        ordering = ("-date", "period")
+        verbose_name = _("tool usage")
+        verbose_name_plural = _("tool usage")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("period", "date"), name="planner_kpi_period_date"
+            )
+        ]
+
+    def __str__(self) -> str:
+        if self.period == self.Period.YEAR:
+            return f"{self.date:%Y}"
+
+        return f"{self.date:%m-%Y}"

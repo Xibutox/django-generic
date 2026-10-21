@@ -1,0 +1,99 @@
+/*
+ * The workdays page (TimeEntryResource.workdays): a month of working
+ * days, coloured by whether exactly 8 hours were logged.
+ */
+
+.workdays {
+  padding: var(--space-4) var(--space-5);
+}
+
+.workdays__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.workdays__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  text-transform: capitalize;
+}
+
+.workdays__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.workdays__days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+.workdays__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: var(--space-1) var(--space-2);
+  color: #ffffff;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+}
+
+.workdays__day:hover {
+  filter: brightness(0.92);
+}
+
+.workdays__day--complete {
+  background: #417a4b;
+}
+
+.workdays__day--incomplete {
+  background: #ba2121;
+}
+
+.workdays__day--empty {
+  background: #b45309;
+}
+
+.workdays__day--future {
+  background: #6b7280;
+}
+
+.workdays__date {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.workdays__duration {
+  font-size: var(--font-size-xs);
+}
+
+.workdays__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+.workdays__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.workdays__swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+}

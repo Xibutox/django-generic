@@ -286,3 +286,136 @@ def test_the_migrations_are_up_to_date():
     result = manage("manage.py", "makemigrations", "--check", "--dry-run")
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+#: The old planner's export (a sample written by export_planner.py from
+#: an old planner, with its API's answers), imported twice, then the
+#: key figures, the imputation export and the workdays page.
+LEGACY = textwrap.dedent("""
+    import io
+    import json
+    import os
+
+    os.environ["DJANGO_SETTINGS_MODULE"] = "logsite.settings"
+
+    import django
+    from django.conf import settings
+
+    django.setup()
+    settings.ALLOWED_HOSTS = ["testserver"]
+
+    from django.contrib.auth import get_user_model
+    from django.core.management import call_command
+    from django.db import connection
+    from django.test import Client
+    from django.test.utils import setup_test_environment
+
+    setup_test_environment()
+    connection.creation.create_test_db(verbosity=0)
+    owner = get_user_model().objects.create_superuser("bastien", "", "x")
+
+    from planner.models import (
+        ImputationShare, KpiRecord, Project, Task, TimeEntry,
+    )
+
+    EXPORT = "migration/sample_export.json"
+    data = json.load(open(EXPORT, encoding="utf-8"))
+
+    # A dry run keeps nothing.
+    out = io.StringIO()
+    call_command(
+        "import_planner", EXPORT, "--user", "bastien", "--dry-run",
+        stdout=out,
+    )
+    assert "Dry run" in out.getvalue()
+    assert not Task.objects.exists()
+
+    # Twice: nothing doubled, and the key figures as the old API said.
+    for _ in range(2):
+        out = io.StringIO()
+        call_command("import_planner", EXPORT, "--user", "bastien", stdout=out)
+        report = out.getvalue()
+        assert "differ" not in report, report
+        assert "periods identical to the old API" in report, report
+
+    assert Task.objects.count() == len(data["taches"])
+    assert TimeEntry.objects.count() == len(data["emargements"])
+    assert Project.objects.count() == len(data["activites"])
+    assert ImputationShare.objects.count() == len(data["matrice"])
+    assert KpiRecord.objects.count() == (
+        len(data["kpi_mois"]) + len(data["kpi_annee"])
+    )
+    seconds = sum(
+        (e.ended_at - e.started_at).total_seconds()
+        for e in TimeEntry.objects.all()
+    )
+    assert seconds == data["totaux"]["secondes"], seconds
+    assert all(e.user == owner and e.verified for e in TimeEntry.objects.all())
+    tickets = Task.objects.filter(kind="FNC")
+    assert tickets.count() == sum(t["non_conformite"] for t in data["taches"])
+    assert not tickets.filter(criticality="").exists()
+
+    # The API, at its old address, without signing in.
+    client = Client()
+    for label, old in data["kpi_reponses"]["mois"].items():
+        new = client.get("/planner/api/kpi/", {"date": label}).json()
+        assert new == old, (label, new, old)
+    for label, old in data["kpi_reponses"]["annee"].items():
+        new = client.get("/planner/api/kpi/year/", {"date": label}).json()
+        assert new == old, (label, new, old)
+    assert client.get("/planner/api/kpi/", {"date": "x"}).json() == {
+        "erreur": "Date passée en argument incohérente"
+    }
+
+    # With a token set, only who sends it.
+    settings.LOGBOOK_KPI_TOKEN = "s3cret"
+    assert client.get("/planner/api/kpi/").status_code == 401
+    assert client.get(
+        "/planner/api/kpi/", HTTP_AUTHORIZATION="Token s3cret"
+    ).status_code == 200
+    settings.LOGBOOK_KPI_TOKEN = ""
+
+    # The imputation export: the time on 7.4-hour days, in Excel.
+    client.force_login(owner)
+    ids = list(TimeEntry.objects.values_list("pk", flat=True)[:10])
+    answer = client.post(
+        "/api/planner/timeentry/actions/",
+        json.dumps({"action": "export_imputations", "ids": ids}),
+        content_type="application/json",
+    ).json()
+    response = client.get(answer["redirect"])
+    assert response.status_code == 200
+    assert "repartition_imputations_" in response["Content-Disposition"]
+
+    from openpyxl import load_workbook
+
+    book = load_workbook(io.BytesIO(response.content))
+    rows = list(book["Repartition"].iter_rows(values_only=True))[1:]
+    summary = dict(book["Resume"].iter_rows(values_only=True))
+    hours = sum(
+        (e.ended_at - e.started_at).total_seconds()
+        for e in TimeEntry.objects.filter(pk__in=ids)
+    ) / 3600
+    assert summary["Temps selectionne sur base 8 h"] == hours
+    assert abs(sum(r[1] for r in rows) - hours * 7.4 / 8) < 1e-6
+    assert all(r[1] <= 7.4 + 1e-9 for r in rows)
+
+    # No matrix, no file: said, and back to the list.
+    ImputationShare.objects.all().delete()
+    response = client.get(answer["redirect"])
+    assert response.status_code == 302
+
+    # The workdays page.
+    assert client.get(
+        "/planner/timeentry/workdays/", {"month": "2025-10"}
+    ).status_code == 200
+
+    print("ok")
+    """)
+
+
+def test_the_old_planner_imported():
+    result = manage("-c", LEGACY)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")

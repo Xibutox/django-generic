@@ -54,6 +54,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Under gunicorn (the migration kit's Dockerfile), WhiteNoise serves the
+# static files when it is installed; runserver serves them without it.
+try:
+    import whitenoise  # noqa: F401
+except ImportError:
+    pass
+else:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 ROOT_URLCONF = "logsite.urls"
 
 TEMPLATES = [
@@ -79,6 +88,18 @@ DATABASES = {
         "NAME": os.environ.get("DJANGO_DB_PATH") or BASE_DIR / "db.sqlite3",
     }
 }
+
+# PostgreSQL, from the environment, as the old planner ran:
+# POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT.
+if os.environ.get("POSTGRES_DB"):
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"],
+        "USER": os.environ.get("POSTGRES_USER", ""),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # English and French, the framework's two: the account menu switches.
@@ -105,6 +126,16 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+# The key figures API (planner/kpi.py) is open, as the old planner's
+# was, unless a token is set: then callers send it.
+LOGBOOK_KPI_TOKEN = os.environ.get("LOGBOOK_KPI_TOKEN", "")
+
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin
+]
 
 CONSOLE_MAIL = "django.core.mail.backends.console.EmailBackend"
 

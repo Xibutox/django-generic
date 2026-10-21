@@ -384,7 +384,8 @@ or AUT (other: meetings, support), `criticality` minor/major/critical
 (FNC only: required by `clean`, emptied for the others by `save`, a
 ticket from a note starting major), `projects` (many-to-many, may be
 empty; a note's task starts with the note's project), `reference`
-numbered per kind by `generic.numbering` (FNC-0001), status backlog/todo/doing/review/done (`done_at` kept),
+numbered per kind by `generic.numbering` (FNC-0001), status
+backlog/todo/doing/review/done (`done_at` kept),
 priority, assignee, due date, estimate. `TimeEntry` (task, user,
 `started_at`, `ended_at` - empty while the timer runs - `hours`
 computed, comment, `verified`/`_by`/`_at`, permission
@@ -406,6 +407,26 @@ Planners, Leads (verify) and Readers, accounts admin, alice, bob and
 viewer (password `demo`), three projects, five notes, fifteen tasks
 and four weeks of time. Kept working by `tests/test_logbook.py`, run in
 its own process.
+
+The logbook also replaces an older planner (`logbook/migration/`,
+`logbook/kit/`): `Direction`, `Imputation` (a task's accounting code,
+`Task.imputation`), `ImputationShare` (the distribution matrix) and
+`KpiRecord` (COMET/DES usage by month and year, written by `sync_kpi`
+through `planner/tools.py`, every address and secret from the
+environment). `planner/kpi.py` serves the old key figures API at
+`planner/api/kpi/` and `planner/api/kpi/year/` (plain Django views in
+`logsite/urls.py`, JSON byte-for-byte the old one's, open unless
+`LOGBOOK_KPI_TOKEN`). `planner/imputations.py` is the old Excel export
+(8 h to 7.4 h days, largest-remainder shares), reached by the time
+entries' *Export imputations* action through `@page imputation_export`;
+`@page workdays` shows each day of the month at 8 h or not.
+`migration/export_planner.py` runs in the old project and writes one
+JSON file; `import_planner` reads it (idempotent through `legacy_id` on
+`Task` and `TimeEntry`, `--dry-run`) and compares its key figures with
+the old API's answers the file carries. `scripts/logbook_kit.py`
+assembles a standalone folder: the logbook, the framework's wheel in
+`vendor/`, the Dockerfile, compose (PostgreSQL, gunicorn with
+WhiteNoise, a `sync_kpi` loop) and the export script.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env

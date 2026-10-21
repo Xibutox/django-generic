@@ -36,6 +36,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   none; a board of the tasks by status; a timesheet on the
   hours where the time is moved, stretched, and tasks dropped on a time
   to log it, then verified by a lead. See logbook/README.md.
+- The logbook takes over an older planner: imputations and their
+  distribution matrix with the Excel export on 7.4-hour days, a
+  *Workdays* page (8 hours a day or not), the key figures API at its old
+  address, COMET/DES usage read by `sync_kpi`, and a migration kit -
+  `export_planner.py` on the old side, `import_planner` on the new,
+  `scripts/logbook_kit.py` for a standalone Docker folder. See
+  logbook/kit/README.md.
 - *Support › Arrivals*: the tickets at the hour they were opened, on
   the new hourly week and day views.
 - Records holding records, from the top one's form: each row of an

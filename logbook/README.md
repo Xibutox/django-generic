@@ -51,14 +51,21 @@ logbook/
 │   ├── urls.py         jsi18n/, api/generic/, the site last
 │   └── wsgi.py
 └── planner/
-    ├── models.py       Label, Project, Note, NoteLine, Task, TimeEntry
+    ├── models.py       Label, Project, Note, NoteLine, Task, TimeEntry,
+    │                   Direction, Imputation, ImputationShare, KpiRecord
+    ├── kpi.py          the old planner's key figures API, same JSON
+    ├── imputations.py  the imputation export (Excel, 7.4-hour days)
+    ├── tools.py        COMET and DES, read by sync_kpi
     ├── resources.py    the screens: boards, calendars, key figures, actions
     ├── documents.py    a note as the editor reads and writes it
     ├── timers.py       one timer a person; starting one stops the other
     ├── static/planner/ note.js, note.css: the line editor
     ├── templates/      the note's page: the editor above its tables
     ├── locale/fr/      the French
-    └── management/commands/seed_planner.py
+    └── management/commands/
+        seed_planner.py, import_planner.py, sync_kpi.py
+migration/export_planner.py   run in the old planner: its data as JSON
+kit/                          Docker files for a standalone install
 ```
 
 ## What is the framework's
@@ -78,3 +85,17 @@ editor reads and posts the note to, and its script - and the timer.
 `tests/test_logbook.py` runs it in a process of its own: seeded twice,
 every page opened, a note written with new tasks, the timer, a task
 dropped on the timesheet, moved and stretched, and the verification.
+
+## Coming from the old planner
+
+The logbook replaces an older planner and keeps what it served: the key
+figures API (`planner/api/kpi/?date=MM-YYYY`, `planner/api/kpi/year/`,
+the same JSON), the imputation export to Excel, the 8-hour calendar
+(*Time > Workdays*) and the COMET/DES figures (`sync_kpi`). Its data
+comes over with two scripts: `migration/export_planner.py`, run in the
+old project, and `manage.py import_planner`, which checks the key
+figures against the old API's month by month.
+
+`python scripts/logbook_kit.py <folder>` (from the repository's root)
+makes a standalone folder of it all - the logbook, the framework as a
+wheel, Docker and PostgreSQL - explained in [kit/README.md](kit/README.md).
