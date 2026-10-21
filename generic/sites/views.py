@@ -279,7 +279,9 @@ class ResourceListView(ResourceViewMixin, TemplateView):
         from generic.sites.charts import chart_entries
 
         context = super().get_context_data(**kwargs)
-        context["table_config"] = self.resource.get_table_config(self.request)
+        context["table_config"] = self.resource.get_list_table_config(
+            self.request
+        )
         context["charts"] = chart_entries(
             self.resource.get_list_chart_configs(self.request)
         )

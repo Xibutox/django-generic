@@ -97,7 +97,8 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
-│   │                       RelatedTable, Grid, Tree, Calendar, Kpi, Cards, Chart,
+│   │                       RelatedTable, Grid, Tree, Outline, Level, Calendar, Kpi,
+│   │                       Cards, Chart,
 │   │                       TagStyle, TabularInline,
 │   │                       StackedInline, action, display, chart_payload
 │   ├── site.py             GenericSite: registry, URLs, navigation, search, chrome, add_link,
@@ -118,6 +119,8 @@ generic/
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
 │   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
+│   ├── outlines.py         Outline, Level, BoundOutline: a list unfolding into related
+│   │                       records level by level, edited in place (§5.26)
 │   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
 │   │                       (self FK or link model), a level at a time; no cycles
 │   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
@@ -266,6 +269,7 @@ generic/
     │                       tree + typed syntax), toolbar, filterbar (chips,
     │                       editor, header funnels), filterrow (search fields
     │                       under the headers), selection, rowactions,
+    │                       editable (grid cells; namespace.cells), outline (§5.26),
     │                       realtime, table (controller holding the filters), init
     ├── js/forms/           form.js (schema form), inlines.js, widgets.js
     └── vendor/             jquery, datatables, select2, alpine, quill, echarts, material-symbols
@@ -659,9 +663,9 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
-| `editable_fields` | `()` | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
+| `editable_fields` | `()` (`auto`: worked out) | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
 | `field_permissions` | `{}` | `{field: "app.perm" \| (view, change) \| {"view", "change"}}`: who sees, who changes one field (`None`: the record's own permission). Hidden fields leave `get_rows_serializer_class(request)` / `get_form_serializer_for(request)` (`serializers.restricted`), search (`visible_paths`), summary, history, charts (`Chart.get_fields_read`), the chart builder (`get_chart_builder_for`), trees, calendars, cards, board cards, labels (`describe_entry` answers empty), comparisons (no row); a board on a guarded field asks its view permission too (`boards.board_permission`); locked ones are read only and refused by `may_write_column` (every write). No request: all guarded hidden. Per reader, not per record. `docs/field-permissions.md` |
-| `list_editable` | `False` | whether the resource's own list page offers those cells |
+| `list_editable` | `False` (`auto`: `"toggle"`) | whether the resource's own list page offers those cells: `True` for good, `"toggle"` behind an *Edit* button in its toolbar (`?edit=1`, `get_list_table_config`) |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
 | `bulk_edit_fields` | `()` (`auto`: worked out) | fields a selection may be given one value of: *Edit the selected …* first in the selection bar, a dialog, a review, the write (§5.21) |
@@ -683,6 +687,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
 | `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
+| `outline` | `None` | relation names walked down from the model (`("equipment", "maintenances")`) or `Outline(...)`: an *Outline* button on the list, its rows unfolding level by level, edited in place (§5.26) |
 | `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
@@ -855,7 +860,17 @@ bound = site.get_related_table("example.ticket.time_entries")
 bound.get_table_config(request, ticket, editable=True)    # a page of its own
 RelatedTable("time_entries", editable=True)               # a summary tab
 list_editable = True                                      # the list page (off)
+list_editable = "toggle"                                  # behind its Edit button
 ```
+
+`"toggle"` (what `auto` declares): the list page reads, its toolbar has
+*Edit* (`options.editToggle = {active, param: "edit"}`, toolbar.js
+`buildEditToggle`) reloading the page with `?edit=1`, which
+`ResourceListView` - through `resource.get_list_table_config(request)`
+(`offers_edit_toggle`: declared, `editable_fields`, and
+`get_editable_options(request)` not empty) - answers with the grid
+config; otherwise `get_table_config(editable=None)` grids only for
+`list_editable is True`.
 
 **Editing is the table's decision, not the resource's.** Most tables
 are read; the usual home of this is a page about one record whose rows
@@ -1090,7 +1105,14 @@ non-editable dates kept, `max_columns`=7), `search_fields` (text fields
 a row, long text/M2M full width), `detail_fieldsets` (+ kept dates),
 `icon` (`ICONS` by word of the class name), `bulk_edit_fields` (the
 form's choices, booleans, relations and dates, never unique; §5.21),
+`editable_fields` (`infer_editable_fields`: the list's columns that
+are the model's own concrete fields on its form - no file, key, M2M,
+read-only, `exclude`d or `transitions` field) and `list_editable =
+"toggle"` when there are any (§5.10),
 `chart_builder = True` (the reader's chart above the list; §5.7).
+`outline=(...)` is passed like any attribute (§5.26); its levels'
+models are in `get_related_models()`, so `complete_auto` registers
+them.
 **`related` is the only
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a
@@ -1743,6 +1765,65 @@ while it is on. Wikis: `pages/<id>/duplicate/` and
 `wikis/<id>/duplicate/` (§5.17, wiki). `docs/duplicate.md`; example:
 tickets (`True`), articles (`related=("bom_lines",)`), `auto()`.
 
+### 5.26 Outlines (`outline`)
+
+```python
+auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
+
+class CustomerResource(ModelResource):
+    outline = Outline(
+        Level("tickets", columns=("reference", "title", "assignee"),
+              title=None, editable=True),
+        "time_entries",                      # a plain name is Level(name)
+        title=_("Tickets and time"),         # button label; default "Outline"
+        columns=("name", "segment"),         # the top level's; default visible list columns
+        page_size=25, editable=True, max_columns=6, icon="account_tree")
+```
+
+Each name is a relation of the level above holding rows (reverse FK or
+M2M, either side; `relation_of` resolves the model and `back`, the
+lookup from the level's records to their parent). At most 5 levels;
+`page_size` 1-200. Checked at registration (`resource.get_outline()`,
+`outlines.check`): names, options. Levels' resources and columns are
+resolved at first use (`ImproperlyConfigured`: not registered, unknown
+column). The list page (`get_list_table_config`) puts
+`options.outline = bound.get_config(request)` - `url`, `title`,
+`icon`, `pageSize`, `topics`, `levels: [{name, resource, title, label,
+columns (the level resource's own table columns, editable=False),
+addUrl ("{parent}" token; FK levels with add permission), editable,
+editableUrl}]` - None (no button) when the reader cannot view below the
+top (`get_levels`: down to the first level without view permission).
+Default columns: visible list columns minus the FK back up, at most
+`max_columns`.
+
+`GET api/<app>/<model>/outline/` (`ResourceViewSet.outline`, a table
+action): `level` (0 = top: the table's `filters`, `search`, `ordering`
+applied by its backends; default `get_ordering` + pk), `parent` (a
+record of the level above, in its resource's `get_queryset`, else 404),
+`offset`, `limit` (at most 200) -> `{level, total, offset, limit,
+items: [{id, url, children, row}]}`; `row` is the level resource's
+rows serializer (what its renderers and `cells.valueOf` read),
+`children` an annotation (`count_of`, a Subquery over the next level
+resource's `get_queryset`).
+
+JS `js/datatables/outline.js` (feature `outline`, loaded by
+`generic/datatable.html` with `css/tree.css`): toolbar button
+`.dt-outline-toggle` before the Views menu; `dt-container.is-outline`
+hides the rows, count and pages (and the table's `.dt-edit-toggle`);
+the view (`OutlineView`, tree.css classes, `outline-row`,
+`outline-head` per unfolded level, a foot with *Show more* / *Add ...*)
+follows the table's `xhr.dt`; state in localStorage
+(`generic.outline.<stateKey>`) and `?outline=1`. Its own *Edit*
+(`.dt-outline-edit`, `generic.outline-edit.<stateKey>`, on at start
+with `editToggle.active`) mounts `Generic.forms.widgets` in writable
+cells; a change PATCHes the level's `editableUrl` (filled from the
+row); `namespace.cells` (valueOf, labelsOf, sameValue, flash; from
+editable.js) is shared with grids; live reload of open levels per
+level topic, held while busy, own writes skipped 5 s. Example:
+suppliers (`auto`), customers (`Outline(Level(...))`).
+`docs/outlines.md`; tests `tests/sites/test_outlines.py`,
+`tests/browser/test_outline.py`.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1775,6 +1856,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 | `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
+| `GET .../outline/` | one page of one level of the list's outline: `level` (0: the table's rows, its `filters`/`search`/`ordering`), `parent`, `offset`, `limit` (at most 200) (§5.26) |
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
 | `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |

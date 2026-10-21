@@ -62,7 +62,9 @@ from generic.sites import (
     Import,
     Kpi,
     Labels,
+    Level,
     ModelResource,
+    Outline,
     RelatedRows,
     RelatedTable,
     ResourcePage,
@@ -1057,6 +1059,19 @@ class CustomerResource(ModelResource):
         "hours_logged",
         "average_satisfaction",
     )
+    # The list unfolds: each customer's tickets, each ticket's time
+    # entries - the *Outline* button of the table's toolbar. The cells
+    # the ticket and time entry resources let their reader edit are
+    # edited there (docs/outlines.md).
+    outline = Outline(
+        Level(
+            "tickets",
+            columns=("reference", "title", "assignee", "priority", "due_on"),
+        ),
+        Level("time_entries", columns=("spent_on", "agent", "hours", "note")),
+        title=_("Tickets and time"),
+        columns=("name", "segment", "account_manager", "ticket_count"),
+    )
     related_tables = (
         RelatedTable(
             "tickets",
@@ -1365,11 +1380,20 @@ class TagResource(ModelResource):
 # equipment it belongs to.
 # On the supplier's form, each piece of equipment opens its own form in
 # a popup window - where its visits are edited - and its row is read
-# again once saved.
+# again once saved. Each list also has an *Edit* button, turning it
+# into a grid of the columns worked out as editable.
 
 EQUIPMENT = _("Equipment")
 
-auto(Supplier, related=("equipment",), group=EQUIPMENT)
+auto(
+    Supplier,
+    related=("equipment",),
+    group=EQUIPMENT,
+    # The suppliers' list unfolds into their equipment, and each piece
+    # into its visits: the *Outline* button above the table, every
+    # level edited in place (docs/outlines.md).
+    outline=("equipment", "maintenances"),
+)
 auto(
     Equipment,
     related=("maintenances",),

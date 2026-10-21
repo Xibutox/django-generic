@@ -70,6 +70,11 @@ and on a board, a column per value of a field
 (``generic.sites.boards``)::
 
     boards = (Board("by-status", field="status", editable=True),)
+
+A list may unfold into its related records, level after level, edited
+where they stand (``generic.sites.outlines``)::
+
+    outline = ("equipment", "maintenances")
 """
 
 from generic.api.tags import TagStyle
@@ -86,6 +91,7 @@ from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
 from generic.sites.labels import Labels
+from generic.sites.outlines import Level, Outline
 from generic.sites.pages import ResourcePage, ResourcePageView, page
 from generic.sites.related import RelatedTable
 from generic.sites.resources import ModelResource, ResourceAction
@@ -106,6 +112,7 @@ __all__ = [
     "Board",
     "Calendar",
     "Labels",
+    "Level",
     "Cards",
     "Chart",
     "ChartBuilder",
@@ -117,6 +124,7 @@ __all__ = [
     "InlineResource",
     "Kpi",
     "ModelResource",
+    "Outline",
     "RelatedRows",
     "RelatedTable",
     "ResourceAction",

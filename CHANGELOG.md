@@ -13,6 +13,35 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Outlines: `outline = ("equipment", "maintenances")` on a resource
+  (or `Outline(Level(...), ..., title=, columns=, page_size=,
+  editable=)`) gives its list an *Outline* button in the table's
+  toolbar. The rows make way for a tree drawn like the tree pages: the
+  table's records first - its search, filters and order still apply -
+  each with an arrow to its related records of the next level, which
+  have one to theirs, five levels at most. Each level shows its own
+  resource's columns with its table's renderers and comes from its
+  resource's queryset, a page at a time
+  (`GET api/<app>/<model>/outline/?level=&parent=`); the outline goes
+  as far down as the reader may view. Its *Edit* button turns the
+  cells each level's resource lets the reader write into their
+  controls, written through that resource's `cells/` endpoint and
+  `save_editable`. `auto()` takes `outline=` too, and gives the
+  levels' models pages of their own. See docs/outlines.md.
+- An *Edit* button on a list: `list_editable = "toggle"` keeps the
+  list a list and puts *Edit* in its toolbar, the page coming back as
+  the grid of its `editable_fields` (`?edit=1`, filters kept) for
+  readers who may write one of them. `auto()` now works out
+  `editable_fields` - the list's columns that are the model's own
+  fields on its form, no file, key, read-only or state field - and
+  declares `list_editable = "toggle"`: every `auto` list can be
+  corrected in place without a declaration. See docs/editable.md.
+- Suppliers and customers as outlines: the suppliers' list has an
+  *Outline* button unfolding each supplier into its equipment and each
+  piece into its maintenance visits, every level edited in place; the
+  customers' list unfolds into their tickets and the tickets' time
+  entries (*Tickets and time*). The suppliers', equipment's and
+  visits' lists also get an *Edit* button turning them into a grid.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are

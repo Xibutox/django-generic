@@ -36,6 +36,8 @@ The example's *Equipment* group is exactly these two lines
 | `detail_fieldsets` | the form's rows, plus the dates the application keeps |
 | `icon` | from the words of the model's name — `Equipment` is `devices`, `MaintenanceVisit` is `build`, `Invoice` is `receipt_long`; `table_rows` otherwise |
 | `bulk_edit_fields` | what a selection may be given at once ([Bulk edit](bulk-edit.md)): the form's fields with choices, booleans, relations and dates, never a unique one |
+| `editable_fields` | the cells a grid may write ([Editing in the table](editable.md#an-edit-button-on-the-list)): the list's columns that are the model's own fields on its form — never a file, a key, a read-only or a state field |
+| `list_editable` | `"toggle"` when there are such columns: an **Edit** button in the list's toolbar turns it into their grid, and back |
 | `chart_builder` | the **Chart** button above the list, closed until opened ([Charts](charts.md#drawn-by-the-reader-chart_builder)): grouped by the choices, relations, booleans and dates, the number fields summed and averaged |
 | `related_tables`, `inlines` | from `related` — below |
 
@@ -150,6 +152,21 @@ left worked out.
 
 `site.auto(...)` does the same on a site of your own; `auto(...,
 site=...)` too.
+
+## An outline of the related rows
+
+`related` gives each record a table of its rows on its page. To see
+them from the list - each supplier with an arrow to its equipment,
+each piece of equipment with one to its visits - name the levels:
+
+```python
+auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
+```
+
+The list gets an **Outline** button; every level is drawn with its own
+columns and edited in place, the cells worked out above. The models of
+the levels nobody declared get pages of their own, as `related` ones
+do. See [Outlines](outlines.md).
 
 ## When to use which
 

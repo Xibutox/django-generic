@@ -95,6 +95,7 @@ TABLE_ACTIONS = frozenset(
         "chart_builder",
         "facets",
         "tree",
+        "outline",
         "calendar",
         "board",
         "compare",
@@ -866,6 +867,43 @@ class ResourceViewSet(
             matching = self.filter_queryset(self.get_queryset()).values("pk")
 
         return Response(bound.answer(request, params, matching))
+
+    # -- the outline ------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="outline",
+        url_name="outline",
+    )
+    def outline(self, request: Any) -> Response:
+        """One page of one level of the list's outline.
+
+        The top level is the table's rows - its ``filters``, ``search``
+        and ``ordering`` apply - and each level below a record's related
+        rows: ``level``, ``parent``, ``offset``, ``limit``, see
+        ``BoundOutline.answer``.
+        """
+        bound = self.resource.get_outline()
+
+        if bound is None or not bound.is_visible(request):
+            raise NotFound(gettext("This list has no outline."))
+
+        top = self.filter_queryset(self.get_queryset())
+
+        if request.query_params.get("ordering"):
+            top = top.order_by(*top.query.order_by, "pk")
+        else:
+            top = top.order_by(*bound.get_ordering(request, bound.levels[0]))
+
+        return Response(
+            bound.answer(
+                request,
+                request.query_params,
+                top,
+                self.get_serializer_context(),
+            )
+        )
 
     # -- the dashboard -----------------------------------------------------
 

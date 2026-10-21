@@ -2370,3 +2370,48 @@ msgstr "Annulé."
 #: generic/static/generic/js/core.js
 msgid "This could not be undone."
 msgstr "L’annulation a échoué."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Outline"
+msgstr "Arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Back to the table"
+msgstr "Revenir au tableau"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Show the rows as an outline"
+msgstr "Afficher les lignes en arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit"
+msgstr "Modifier"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Stop editing"
+msgstr "Terminer la modification"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit the rows in place"
+msgstr "Modifier les lignes sur place"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Back to reading the rows"
+msgstr "Revenir à la lecture des lignes"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Open"
+msgstr "Ouvrir"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Add %(name)s"
+msgstr "Ajouter : %(name)s"
+
+#: generic/static/generic/js/datatables/editable.js
+#: generic/static/generic/js/datatables/outline.js
+msgid "This could not be saved."
+msgstr "L’enregistrement a échoué."

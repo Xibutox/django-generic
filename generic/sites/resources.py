@@ -62,6 +62,10 @@ TRASH_DELETE = {
     ),
 }
 
+#: The list page's query parameter asking for its grid, where it
+#: offers an *Edit* button (``list_editable = "toggle"``).
+EDIT_PARAM = "edit"
+
 #: Placeholder reversed into URLs, then swapped for a client template
 #: token. Must survive the ``<path:pk>`` converter.
 PK_PLACEHOLDER = "__pk__"
@@ -174,7 +178,11 @@ class ModelResource(PagesMixin):
     #: Whether this resource's **list page** offers that editing.
     #: False, because a list is usually read on the way to somewhere
     #: else, and a page built for correcting rows is a different page.
-    list_editable: bool = False
+    #: True makes the list a grid for good; ``"toggle"`` keeps it a
+    #: list and puts an *Edit* button in its toolbar, turning it into
+    #: the grid and back (``?edit=1``) - what ``AutoResource`` does
+    #: once it has worked out ``editable_fields``.
+    list_editable: bool | str = False
     #: Grids over sets of this resource's rows chosen by the project:
     #: ``Grid("triage", scope=..., columns=..., editable=...)``, each
     #: shown by a ``GridView``. See ``generic.sites.grids``.
@@ -280,6 +288,11 @@ class ModelResource(PagesMixin):
     #: on the summary page and a page of the whole tree. ``Tree(...)``,
     #: see ``generic.sites.trees``.
     trees: Sequence[Any] = ()
+    #: The list unfolding into related records, edited where they
+    #: stand: an *Outline* button in the list's toolbar. Relation names
+    #: walked down from this model - ``("equipment", "maintenances")``
+    #: - or ``Outline(...)``; see ``generic.sites.outlines``.
+    outline: Any = None
     #: The summary page's tabs to put first, in this order, by name: a
     #: related table's name, ``tree-<name>`` and ``tree-<name>-up``.
     #: The others follow as declared, related tables before trees.
@@ -1239,7 +1252,11 @@ class ModelResource(PagesMixin):
             "options": options,
         }
 
-        if not (self.list_editable if editable is None else editable):
+        if editable is None:
+            # "toggle": a list, until its reader asks for the grid.
+            editable = self.list_editable is True
+
+        if not editable:
             return config
 
         from generic.sites.editable import (
@@ -1423,6 +1440,59 @@ class ModelResource(PagesMixin):
                 return bound
 
         return None
+
+    def get_outline(self) -> Any:
+        """The declared outline, resolved once against the models; None
+        without one."""
+        if "_bound_outline" not in self.__dict__:
+            from generic.sites.outlines import check
+
+            self.__dict__["_bound_outline"] = check(self)
+
+        return self.__dict__["_bound_outline"]
+
+    def get_outline_config(self, request: Any) -> dict[str, Any] | None:
+        """What the list page needs to offer its outline, or None when
+        this reader has nothing to unfold."""
+        bound = self.get_outline()
+
+        if bound is None:
+            return None
+
+        return bound.get_config(request)
+
+    # -- the list page's editing ----------------------------------------
+
+    def offers_edit_toggle(self, request: Any) -> bool:
+        """Whether the list page offers its *Edit* button: declared
+        ``list_editable = "toggle"``, and a cell this reader may write
+        or a row they may add."""
+        if self.list_editable != "toggle" or not self.editable_fields:
+            return False
+
+        return bool(self.get_editable_options(request))
+
+    def get_list_table_config(self, request: Any) -> dict[str, Any]:
+        """The list page's table: a list, or the grid when the page is
+        asked for it (``?edit=1``) and offers its *Edit* button."""
+        toggle = self.offers_edit_toggle(request)
+        editing = toggle and request.GET.get(EDIT_PARAM) == "1"
+        config = self.get_table_config(
+            request, editable=True if editing else None
+        )
+
+        if toggle:
+            config["options"]["editToggle"] = {
+                "active": editing,
+                "param": EDIT_PARAM,
+            }
+
+        outline = self.get_outline_config(request)
+
+        if outline is not None:
+            config["options"]["outline"] = outline
+
+        return config
 
     def get_kpis(self) -> list[Any]:
         """The declared key figures, checked once."""

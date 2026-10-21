@@ -225,3 +225,133 @@
 .tree-filters .dt-container {
   margin: 0;
 }
+
+/* -- A list's outline (js/datatables/outline.js) ----------------------
+ *
+ * The table's toolbar and filters stay; its rows, count and pages make
+ * way for the outline, which follows them for its first level.
+ */
+
+/* As specific as DataTables' own rules. */
+div.dt-container.is-outline div.dt-layout-table,
+div.dt-container.is-outline div.dt-processing,
+div.dt-container.is-outline div.dt-info,
+div.dt-container.is-outline div.dt-paging,
+div.dt-container.is-outline div.dt-length {
+  display: none;
+}
+
+.dt-outline {
+  margin-top: var(--space-3);
+}
+
+.dt-outline-toggle.is-active,
+.dt-edit-toggle.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+}
+
+/* The count of what a record holds follows its name; a control takes
+   the room there is. */
+.outline-row__value {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What a level below the top is made of, above its first record. */
+.outline-head td {
+  padding-block: 0.2rem;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  background: var(--surface-page);
+}
+
+.outline-head__level {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.outline-head__column::before {
+  margin-inline: var(--space-1);
+  content: "\00b7";
+}
+
+/* Its cells, written in place: a grid's (css/datatables.css). */
+.outline-table td.grid-cell {
+  padding: var(--space-1) var(--space-2);
+}
+
+.outline-table td.grid-cell .input:not(.select2-hidden-accessible),
+.outline-table td.grid-cell .select2-container {
+  width: 100% !important;
+}
+
+.outline-table td.grid-cell input.input,
+.outline-table td.grid-cell select.input,
+.outline-table td.grid-cell .select2-selection--single {
+  height: var(--control-height-sm);
+  min-height: var(--control-height-sm);
+  font-size: var(--font-size-sm);
+}
+
+.outline-table td.grid-cell select.input:not([multiple]) {
+  min-width: max-content;
+}
+
+.outline-table td.grid-cell .switch__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.outline-table td.grid-cell .switch {
+  min-height: var(--control-height-sm);
+  margin: 0;
+}
+
+.outline-table td.grid-cell.is-saving .input {
+  opacity: 0.7;
+}
+
+.outline-table td.grid-cell.is-invalid .input,
+.outline-table td.grid-cell.is-invalid .select2-container .select2-selection {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
+.outline-table td.is-saved {
+  animation: generic-cell-saved 1.2s ease-out;
+}
+
+/* The first cell: the arrow, then the control. */
+.outline-table td.tree-row__label.grid-cell .outline-row__value {
+  flex: 1 1 auto;
+  overflow: visible;
+}
+
+/* The table's own Edit makes its rows a grid: hidden while they are
+   not shown. The outline has its own. */
+div.dt-container.is-outline .dt-edit-toggle {
+  display: none;
+}
+
+.dt-outline-edit.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+/* Each level has its own first column: no more room than a value of
+   it needs. */
+.outline-table .tree-table__label {
+  width: 30%;
+}

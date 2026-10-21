@@ -160,6 +160,7 @@ model nobody declared pages of its own. See
 | `detail_stats` | Figures shown as tiles on the summary page |
 | `related_tables` | `RelatedTable` declarations: the summary page's tabs |
 | `trees` | `Tree` declarations: records holding records, a tab per record and a page of the whole tree, unfolded a level at a time, searched at any depth, laid flat as a table ([Trees](trees.md)) |
+| `outline` | Relation names walked down from the model - `("equipment", "maintenances")` - or `Outline(...)`: an *Outline* button on the list, its rows unfolding into their related records level after level, edited in place ([Outlines](outlines.md)) |
 | `tab_order` | The summary page's tabs to show first, by name; the others follow as declared ([below](#the-summary-page)) |
 | `kpis` | `Kpi` declarations: key figures on the dashboard, a count or an aggregate over the rows a filter selects, opening that list ([Key figures and cards](dashboard.md)) |
 | `cards` | `Cards` declarations: a few records drawn as cards on the dashboard ([Key figures and cards](dashboard.md)) |
@@ -170,7 +171,7 @@ model nobody declared pages of its own. See
 | `inlines` | `TabularInline` / `StackedInline` classes |
 | `view_on_site` | Link to `get_absolute_url()` on the record's pages |
 | `editable_fields` | Columns that *may* be edited in a table; a name may walk relations (`"customer__name"`). Turns nothing on by itself: a table asks ([Editing in the table](editable.md)) |
-| `list_editable` | `False`. Whether this resource's own list page offers those cells |
+| `list_editable` | `False`. Whether this resource's own list page offers those cells: `True` for good, `"toggle"` behind an *Edit* button in its toolbar ([Editing in the table](editable.md#an-edit-button-on-the-list)) |
 | `grids` | `Grid` declarations: sets of rows corrected many at once, each shown by a `GridView` ([Editing in the table](editable.md#any-set-of-records-declared-grids)) |
 | `form_field_kwargs` | Serializer options per field, as DRF's `extra_kwargs`: `{"token": {"write_only": True}}`. What the field does, where `form_overrides` is how it is drawn |
 | `realtime` | Publish every change so open tables and summaries refresh |

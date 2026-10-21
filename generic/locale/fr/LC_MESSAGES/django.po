@@ -4525,3 +4525,19 @@ msgstr "Rien n’a été annulé : « %(name)s » n’existe plus."
 #, python-format
 msgid "Nothing was undone: “%(name)s” exists again."
 msgstr "Rien n’a été annulé : « %(name)s » existe de nouveau."
+
+#: generic/sites/outlines.py
+msgid "Outline"
+msgstr "Arborescence"
+
+#: generic/sites/viewsets.py
+msgid "This list has no outline."
+msgstr "Cette liste n’a pas d’arborescence."
+
+#: generic/sites/outlines.py
+msgid "There is no such level."
+msgstr "Ce niveau n’existe pas."
+
+#: generic/sites/outlines.py
+msgid "Name the record to unfold."
+msgstr "Indiquez l’enregistrement à déplier."

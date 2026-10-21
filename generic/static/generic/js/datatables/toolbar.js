@@ -719,6 +719,43 @@
     return button;
   }
 
+  /* -- Editing the list in place ------------------------------------------ */
+
+  /**
+   * The list page's *Edit* button (list_editable = "toggle"): the same
+   * page again as a grid, and back. The address keeps the filters and
+   * the search; `edit=1` asks the server for the grid.
+   */
+  function buildEditToggle(controller) {
+    var toggle = controller.options.editToggle;
+
+    if (!toggle || !toggle.param) {
+      return null;
+    }
+
+    var active = Boolean(toggle.active);
+    var button = toolButton(active ? "edit_off" : "edit", active ? t("Stop editing") : t("Edit"));
+
+    button.classList.add("dt-edit-toggle");
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+    button.title = active ? t("Back to reading the rows") : t("Edit the rows in place");
+
+    button.addEventListener("click", function () {
+      var url = new URL(window.location.href);
+
+      if (active) {
+        url.searchParams.delete(toggle.param);
+      } else {
+        url.searchParams.set(toggle.param, "1");
+      }
+
+      window.location.assign(url.toString());
+    });
+
+    return button;
+  }
+
   /* -- The feature --------------------------------------------------------- */
 
   core.registerFeature({
@@ -738,6 +775,7 @@
       }
 
       [
+        buildEditToggle,
         buildChart,
         buildViews,
         controller.options.columnSelector ? buildColumns : null,
