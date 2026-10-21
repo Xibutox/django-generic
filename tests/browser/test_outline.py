@@ -145,3 +145,20 @@ def test_the_edit_button_turns_the_list_into_a_grid(
     page.locator(".dt-edit-toggle").click()
     page.wait_for_url(lambda url: "edit=1" not in url)
     expect(page.locator("#datatable input.input")).to_have_count(0)
+
+
+def test_a_records_tab_unfolds_too(page, admin, sign_in, stock):
+    sign_in(admin)
+    page.goto(f"{LIST}{stock['acme'].pk}/")
+
+    # The supplier's equipment tab: its rows, then their visits.
+    panel = page.locator("#related-equipment")
+    panel.locator(".dt-outline-toggle").click()
+
+    expect(panel.locator(".dt-outline")).to_be_visible()
+    expect(rows(panel, 0)).to_have_count(2)
+    unfold(panel, 0, "L-1")
+    expect(rows(panel, 1)).to_contain_text("Battery")
+
+    # The page's address is the record's, not the tab's.
+    assert "outline=" not in page.url

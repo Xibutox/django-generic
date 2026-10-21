@@ -949,6 +949,7 @@ related_tables = (
     RelatedTable("agents", columns=("name", "email"), page_length=25,
                  allow_add=True, description=_("..."), icon="groups",
                  charts=("by_team",)),
+    RelatedTable("tickets", outline=("time_entries",)),       # its Outline button (5.26)
 )
 detail_charts = ("time_spent.hours_by_month",)
 ```
@@ -1821,6 +1822,22 @@ row); `namespace.cells` (valueOf, labelsOf, sameValue, flash; from
 editable.js) is shared with grids; live reload of open levels per
 level topic, held while busy, own writes skipped 5 s. Example:
 suppliers (`auto`), customers (`Outline(Level(...))`).
+
+On a summary page: a related table's `RelatedTable(outline=...)`
+(names or `Outline`, from the related model; `False` for none) gives its
+tab the same button. Default (`BoundRelatedTable.bind_outline`): the
+parent's outline below its first level when that level is this relation
+(`outlines.tail`), else the related resource's own `outline`; the
+column back to the record (`prefill`) is left out of the top
+(`resolve(..., top_back)`). Explicit values are checked when the
+related tables are bound. `options.outline` is in the tab's config
+(`get_outline_config(request, obj)`, *Add* back to `<record>#related-
+<name>`); the endpoint is the related resource's `outline/` with the
+tab's `_related`, which narrows the top (`filter_queryset`) and picks
+that table's outline (`ResourceViewSet.outline`); outline.js sends the
+table's `extraParams` at every level and leaves the address alone when
+`syncUrl` is false. Example: a supplier's equipment tab (inherited), a
+team's tickets tab (declared).
 `docs/outlines.md`; tests `tests/sites/test_outlines.py`,
 `tests/browser/test_outline.py`.
 

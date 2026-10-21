@@ -467,3 +467,113 @@ class TestManyToMany:
             other_site.get_resource(Document).get_outline().levels[1].back
             == "documents"
         )
+
+
+class TestOnARecordsPage:
+    """A record's related table unfolds too: its rows are the first
+    level, narrowed to the record."""
+
+    def tab(self, client, url: str, name: str) -> dict:
+        response = client.get(url)
+
+        assert response.status_code == 200
+        (table,) = [
+            table
+            for table in response.context["related_tables"]
+            if table["name"] == name
+        ]
+
+        return table["config"]["options"]
+
+    def test_the_tab_unfolds_what_the_records_outline_has_below_it(
+        self, admin_client, stock
+    ):
+        acme = stock["acme"]
+        url = f"{SUPPLIERS}{acme.pk}/"
+        outline = self.tab(admin_client, url, "equipment")["outline"]
+        top, visits = outline["levels"]
+
+        # The supplier's outline is equipment > visits: its equipment
+        # tab unfolds into the visits.
+        assert [top["name"], visits["name"]] == ["", "maintenances"]
+        assert outline["url"] == "/api/example/equipment/outline/"
+        # The column pointing at the supplier says nothing here.
+        assert "supplier" not in [column["data"] for column in top["columns"]]
+        # Back to this page, on its tab, once a visit is added.
+        assert visits["addUrl"].endswith(
+            "_next=%2Fexample%2Fsupplier%2F"
+            f"{acme.pk}%2F%23related-equipment"
+        )
+
+    def test_its_endpoint_unfolds_the_records_rows(self, admin_client, stock):
+        acme = stock["acme"]
+        url = "/api/example/equipment/outline/"
+        related = f"example.supplier.equipment:{acme.pk}"
+        top = get(admin_client, url, _related=related)
+
+        assert sorted(names(top)) == ["Laptop", "Screen"]
+        assert {
+            item["row"]["name"]: item["children"] for item in top["items"]
+        } == {"Laptop": 2, "Screen": 0}
+
+        below = get(
+            admin_client,
+            url,
+            _related=related,
+            level=1,
+            parent=stock["laptop"].pk,
+        )
+
+        assert sorted(names(below, "description")) == ["Battery", "Keyboard"]
+
+        # The equipment's own list has no outline.
+        get(admin_client, url, status=404)
+
+    def test_a_table_declares_its_own(self, admin_client):
+        from example.models import Team
+
+        team = Team.objects.create(name="Desk", code="DSK")
+        outline = self.tab(
+            admin_client, f"/example/team/{team.pk}/", "tickets"
+        )["outline"]
+
+        assert [level["name"] for level in outline["levels"]] == [
+            "",
+            "time_entries",
+        ]
+        assert "team" not in [
+            column["data"] for column in outline["levels"][0]["columns"]
+        ]
+        assert "outline" not in self.tab(
+            admin_client, f"/example/team/{team.pk}/", "agents"
+        )
+
+    def test_false_offers_none_and_a_misspelt_level_is_refused(self):
+        from generic.sites import RelatedTable
+        from generic.sites.related import bind_related_table
+
+        resource = site.get_resource(Supplier)
+        bound = bind_related_table(
+            RelatedTable("equipment", outline=False), resource
+        )
+
+        assert bound.get_outline() is None
+
+        with pytest.raises(ImproperlyConfigured, match="visits"):
+            bind_related_table(
+                RelatedTable("equipment", outline=("visits",)), resource
+            )
+
+    def test_declared_beats_inherited(self):
+        from generic.sites import RelatedTable
+        from generic.sites.related import bind_related_table
+
+        bound = bind_related_table(
+            RelatedTable(
+                "equipment",
+                outline=Outline(Level("maintenances", title="Visits")),
+            ),
+            site.get_resource(Supplier),
+        )
+
+        assert bound.get_outline().levels[1].declared.title == "Visits"

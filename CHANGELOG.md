@@ -27,7 +27,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   cells each level's resource lets the reader write into their
   controls, written through that resource's `cells/` endpoint and
   `save_editable`. `auto()` takes `outline=` too, and gives the
-  levels' models pages of their own. See docs/outlines.md.
+  levels' models pages of their own. A record's tabs of related rows
+  get the button too (`RelatedTable(outline=...)`): by default what the
+  record's outline has below that relation - a supplier's equipment
+  tab unfolds into the visits - else the related resource's outline.
+  See docs/outlines.md.
 - An *Edit* button on a list: `list_editable = "toggle"` keeps the
   list a list and puts *Edit* in its toolbar, the page coming back as
   the grid of its `editable_fields` (`?edit=1`, filters kept) for
@@ -42,6 +46,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   customers' list unfolds into their tickets and the tickets' time
   entries (*Tickets and time*). The suppliers', equipment's and
   visits' lists also get an *Edit* button turning them into a grid.
+  On a record's page, the supplier's *Equipment* tab, the customer's
+  and the team's *Tickets* tabs unfold the same way.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are

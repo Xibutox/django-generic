@@ -215,13 +215,35 @@ def check(resource: Any) -> Any:
     The resources of the levels may be registered after this one: they
     are found when the outline is first drawn.
     """
-    owner = type(resource).__name__
-    outline = as_outline(getattr(resource, "outline", None), owner)
+    where = f"{type(resource).__name__}.outline"
+    resolved = resolve(
+        resource.model, getattr(resource, "outline", None), where
+    )
+
+    if resolved is None:
+        return None
+
+    outline, levels = resolved
+
+    return BoundOutline(
+        outline=outline, resource=resource, levels=levels, where=where
+    )
+
+
+def resolve(
+    model: Any, value: Any, where: str, top_back: str = ""
+) -> tuple[Outline, list[OutlineLevel]] | None:
+    """The outline ``value`` declares from ``model``, its levels
+    resolved; None when it declares none.
+
+    ``top_back`` is the field of the top level's records pointing at a
+    record they all belong to (a related table's): its column is left
+    out, saying the same thing on every row.
+    """
+    outline = as_outline(value, where.rpartition(".")[0] or where)
 
     if outline is None:
         return None
-
-    where = f"{owner}.outline"
 
     if not outline.levels:
         raise ImproperlyConfigured(
@@ -245,10 +267,9 @@ def check(resource: Any) -> Any:
 
     levels = [
         OutlineLevel(
-            index=0, name="", model=resource.model, back="", declared=None
+            index=0, name="", model=model, back=top_back, declared=None
         )
     ]
-    model = resource.model
 
     for index, declared in enumerate(outline.levels, start=1):
         model, back = relation_of(model, declared.name, where)
@@ -274,11 +295,31 @@ def check(resource: Any) -> Any:
             or not all(isinstance(name, str) for name in columns)
         ):
             raise ImproperlyConfigured(
-                f"{where}: the columns of '{level.name or owner}' are "
+                f"{where}: the columns of '{level.name or 'the top'}' are "
                 f"column names, in a tuple."
             )
 
-    return BoundOutline(outline=outline, resource=resource, levels=levels)
+    return outline, levels
+
+
+def tail(outline: Outline, levels: list[OutlineLevel]) -> Outline | None:
+    """The outline below its first level, drawn from that level: what a
+    record's table of those rows unfolds into. None when nothing is
+    left to unfold."""
+    if len(levels) < 3:
+        return None
+
+    first = outline.levels[0]
+
+    return Outline(
+        *outline.levels[1:],
+        title=outline.title,
+        columns=first.columns,
+        page_size=outline.page_size,
+        editable=outline.editable and first.editable,
+        max_columns=outline.max_columns,
+        icon=outline.icon,
+    )
 
 
 def read_number(value: Any, name: str, default: int) -> int:
@@ -303,6 +344,8 @@ class BoundOutline:
     outline: Outline
     resource: Any
     levels: list[OutlineLevel]
+    #: The declaration, as errors name it.
+    where: str = ""
 
     @property
     def site(self) -> Any:
@@ -322,7 +365,7 @@ class BoundOutline:
 
         if resource is None:
             raise ImproperlyConfigured(
-                f"{type(self.resource).__name__}.outline unfolds into "
+                f"{self.where} unfolds into "
                 f"{level.model.__name__} ('{level.name}'), which is not "
                 f"registered: register it, show_in_navigation=False if "
                 f"it is only reached from here."
@@ -375,7 +418,7 @@ class BoundOutline:
 
             if unknown:
                 raise ImproperlyConfigured(
-                    f"{type(self.resource).__name__}.outline shows "
+                    f"{self.where} shows "
                     f"'{unknown[0]}' of {level.model.__name__}, which is "
                     f"not a column of its list."
                 )
@@ -418,9 +461,12 @@ class BoundOutline:
 
         return {"editable": described, "editableUrl": options["editableUrl"]}
 
-    def get_add_url(self, request: Any, level: OutlineLevel) -> str:
-        """A new record of the level, its parent filled in, back to the
-        list once saved; ``{parent}`` stands for the parent's key."""
+    def get_add_url(
+        self, request: Any, level: OutlineLevel, back: str | None = None
+    ) -> str:
+        """A new record of the level, its parent filled in, back to
+        ``back`` once saved (default: the list); ``{parent}`` stands for
+        the parent's key."""
         from generic.sites.related import NEXT_PARAM
 
         if level.index == 0 or not level.is_foreign_key():
@@ -437,7 +483,9 @@ class BoundOutline:
             return ""
 
         query = {level.back: "__parent__"}
-        back = self.resource.get_list_url()
+
+        if back is None:
+            back = self.resource.get_list_url()
 
         if back:
             query[NEXT_PARAM] = back
@@ -455,9 +503,12 @@ class BoundOutline:
     def get_url(self) -> str:
         return self.resource._reverse(self.resource.api_url_name("outline"))
 
-    def get_config(self, request: Any) -> dict[str, Any] | None:
+    def get_config(
+        self, request: Any, back: str | None = None
+    ) -> dict[str, Any] | None:
         """What the list page needs to draw the outline, or None when
-        there is nothing for this reader to unfold."""
+        there is nothing for this reader to unfold. ``back``: where an
+        *Add* returns, default the list."""
         levels = self.get_levels(request)
 
         if len(levels) < 2:
@@ -475,7 +526,7 @@ class BoundOutline:
                 "title": self.get_title_of(level),
                 "label": resource.get_label(),
                 "columns": columns,
-                "addUrl": self.get_add_url(request, level),
+                "addUrl": self.get_add_url(request, level, back),
                 "rowKey": "_pk",
             }
             entry.update(self.get_editing(request, level, columns))
@@ -614,4 +665,4 @@ class BoundOutline:
         return [level.model for level in self.levels[1:]]
 
 
-__all__ = ["Level", "Outline", "as_outline", "check"]
+__all__ = ["Level", "Outline", "as_outline", "check", "resolve", "tail"]

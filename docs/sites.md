@@ -625,6 +625,7 @@ class CustomerResource(ModelResource):
 | `page_length` | Rows per page (10) |
 | `allow_add` | An *Add* button that fills the record in, and comes back to this tab |
 | `charts` | Charts of the related resource, by name, drawn above the table in its tab |
+| `outline` | An *Outline* button on the tab, its rows unfolding into their own related records: relation names or `Outline(...)` from the related model, `False` for none. Default: what the record's own outline has below this relation, else the related resource's outline ([outlines](outlines.md#on-a-records-page)) |
 
 ```python
 related_tables = (

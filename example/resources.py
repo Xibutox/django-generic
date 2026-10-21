@@ -1073,6 +1073,8 @@ class CustomerResource(ModelResource):
         columns=("name", "segment", "account_manager", "ticket_count"),
     )
     related_tables = (
+        # Its Outline button unfolds the tickets into their time
+        # entries: what the outline above has below the tickets.
         RelatedTable(
             "tickets",
             description=_("Every ticket raised for this customer."),
@@ -1246,7 +1248,11 @@ class TeamResource(ModelResource):
 
     detail_stats = ("open_tickets", "agent_total", "hours_logged")
     related_tables = (
-        RelatedTable("tickets", charts=("by_status",)),
+        # Each of the team's tickets unfolds into its time entries: the
+        # tab's Outline button.
+        RelatedTable(
+            "tickets", charts=("by_status",), outline=("time_entries",)
+        ),
         RelatedTable(
             "agents",
             columns=("name", "email", "is_active", "capacity_hours"),

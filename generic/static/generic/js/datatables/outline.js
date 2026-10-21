@@ -67,9 +67,18 @@
     return "generic.outline." + (controller.options.stateKey || controller.url);
   }
 
+  /** Whether the table owns the page's address: a related table on a
+   * record's page shares it with others, and keeps its choice to itself. */
+  function ownsAddress(controller) {
+    return controller.options.syncUrl !== false;
+  }
+
   function remembered(controller) {
     try {
-      if (new URLSearchParams(window.location.search).get(URL_PARAM) === "1") {
+      if (
+        ownsAddress(controller) &&
+        new URLSearchParams(window.location.search).get(URL_PARAM) === "1"
+      ) {
         return true;
       }
 
@@ -106,7 +115,7 @@
       /* Private mode: the choice simply is not remembered. */
     }
 
-    if (!window.history || !window.history.replaceState) {
+    if (!ownsAddress(controller) || !window.history || !window.history.replaceState) {
       return;
     }
 
@@ -395,6 +404,12 @@
     if (parent === this.top) {
       Object.assign(params, this.tableParams());
     } else {
+      // What the table always sends - a record's tab names its
+      // relation - then the record unfolded.
+      Object.assign(
+        params,
+        core.resolveExtraParams(this.controller.options, this.controller.table)
+      );
       params.parent = parent.id;
     }
 

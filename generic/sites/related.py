@@ -75,6 +75,12 @@ class RelatedTable:
     #: Charts of the related resource drawn above the table, by name:
     #: narrowed to the record, and following the table's filters.
     charts: Sequence[str] = ()
+    #: An *Outline* button on the table, its rows unfolding into their
+    #: own related records (``generic.sites.outlines``): relation names
+    #: from the related model, or ``Outline(...)``. Default: what the
+    #: record's own outline unfolds below this relation, else the
+    #: related resource's outline. ``False``: none.
+    outline: Any = None
 
 
 @dataclasses.dataclass
@@ -100,6 +106,81 @@ class BoundRelatedTable:
 
     def get_resource(self) -> Any:
         return self.parent.site.get_resource(self.model)
+
+    @property
+    def outline_where(self) -> str:
+        return (
+            f"{type(self.parent).__name__}.related_tables"
+            f"['{self.name}'].outline"
+        )
+
+    def get_outline(self) -> Any:
+        """The outline this table's rows unfold into, or None."""
+        if "_bound_outline" not in self.__dict__:
+            self.__dict__["_bound_outline"] = self.bind_outline()
+
+        return self.__dict__["_bound_outline"]
+
+    def bind_outline(self) -> Any:
+        from generic.sites.outlines import BoundOutline, resolve
+
+        resource = self.get_resource()
+        declared = self.definition.outline
+
+        if resource is None or declared is False:
+            return None
+
+        where = self.outline_where
+
+        if declared is None:
+            declared = self.inherited_outline()
+
+        if declared is None:
+            # The related resource's own, its column back to the record
+            # left out.
+            declared = getattr(resource, "outline", None)
+            where = f"{type(resource).__name__}.outline"
+
+        resolved = resolve(self.model, declared, where, self.prefill or "")
+
+        if resolved is None:
+            return None
+
+        outline, levels = resolved
+
+        return BoundOutline(
+            outline=outline, resource=resource, levels=levels, where=where
+        )
+
+    def inherited_outline(self) -> Any:
+        """What the record's own outline unfolds below this relation,
+        when its first level is this table's."""
+        from generic.sites.outlines import tail
+
+        bound = self.parent.get_outline()
+
+        if (
+            bound is None
+            or self.definition.model is not None
+            or bound.levels[1].name != self.name
+        ):
+            return None
+
+        return tail(bound.outline, bound.levels)
+
+    def get_outline_config(self, request: Any, obj: Any) -> Any:
+        """The outline's configuration for this record's table, or None
+        when this reader has nothing to unfold."""
+        bound = self.get_outline()
+
+        if bound is None:
+            return None
+
+        back = self.parent.get_object_url(obj.pk)
+
+        return bound.get_config(
+            request, back=f"{back}#related-{self.name}" if back else ""
+        )
 
     def get_title(self) -> str:
         if self.definition.title:
@@ -197,6 +278,11 @@ class BoundRelatedTable:
 
         if self.definition.page_length:
             options["pageLength"] = self.definition.page_length
+
+        outline = self.get_outline_config(request, obj)
+
+        if outline is not None:
+            options["outline"] = outline
 
         return {**config, "columns": columns, "options": options}
 
@@ -339,6 +425,16 @@ def bind_related_table(definition: RelatedTable, parent: Any) -> Any:
             and field.related_model is parent.model
         ):
             prefill = lookup
+
+    if definition.outline not in (None, False):
+        from generic.sites.outlines import resolve
+
+        # Checked now: a misspelt level fails at start-up.
+        resolve(
+            model,
+            definition.outline,
+            f"{owner}.related_tables['{definition.name}'].outline",
+        )
 
     return BoundRelatedTable(
         definition=definition,

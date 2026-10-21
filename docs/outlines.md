@@ -157,6 +157,39 @@ reader may see. 404 for a level the reader may not view, a parent they
 may not see, or a list without an outline; 400 for a parameter that is
 not a number or a missing `parent`.
 
+## On a record's page
+
+A record's tab of related rows ([`RelatedTable`](sites.md)) gets the
+same **Outline** button, its first level being the tab's rows - the
+record's - and every level below editable as on the list:
+
+```python
+class TeamResource(ModelResource):
+    related_tables = (
+        # Each of the team's tickets unfolds into its time entries.
+        RelatedTable("tickets", outline=("time_entries",)),
+    )
+```
+
+`outline` takes what a resource's does (names, or `Outline(...)`),
+walked down from the related model; `False` offers no button. Left out,
+the tab finds it by itself:
+
+1. **The record's own outline, below this relation.** A supplier's
+   outline is `("equipment", "maintenances")`: on a supplier's page,
+   the *Equipment* tab unfolds into the visits, with the columns the
+   outline gives them. Nothing to declare - `auto` included.
+2. **Else the related resource's outline**, if it declares one.
+
+The column pointing back at the record is left out of the first level,
+as the tab leaves it out of its table. *Add ...* comes back to the
+record's page, on the tab. The choice is remembered per tab, not in the
+page's address, which several tabs share. The endpoint is the related
+resource's `outline/`, with the tab's `_related` parameter: the first
+level is the record's rows, and the levels below those of that tab's
+outline. A misspelt level is refused when the related tables are first
+resolved.
+
 ## The list's own Edit button
 
 A list may also be corrected where it is, as a [grid](editable.md):
@@ -177,6 +210,10 @@ editable_fields=("country",))`, or `list_editable=False` for no button.
 - *Suppliers* (`auto`): the outline unfolds into equipment, then
   maintenance visits, every level editable; *Edit* turns the list into
   its grid.
+- A supplier's page: its *Equipment* tab unfolds into the visits (the
+  supplier's outline, below the equipment). A customer's *Tickets* tab
+  into their time entries; a team's *Tickets* tab too, declared on the
+  tab (`RelatedTable("tickets", outline=("time_entries",))`).
 - *Customers* (by hand): *Tickets and time* unfolds into each
   customer's tickets, then their time entries, with the columns named
   per level; the ticket's assignee, priority and due date and the time

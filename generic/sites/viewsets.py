@@ -882,9 +882,15 @@ class ResourceViewSet(
         The top level is the table's rows - its ``filters``, ``search``
         and ``ordering`` apply - and each level below a record's related
         rows: ``level``, ``parent``, ``offset``, ``limit``, see
-        ``BoundOutline.answer``.
+        ``BoundOutline.answer``. A record's related table
+        (``_related``) unfolds into its own outline.
         """
-        bound = self.resource.get_outline()
+        related = self.get_related()
+        bound = (
+            self.resource.get_outline()
+            if related is None
+            else related[0].get_outline()
+        )
 
         if bound is None or not bound.is_visible(request):
             raise NotFound(gettext("This list has no outline."))
