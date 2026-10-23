@@ -5,7 +5,7 @@
 python-docx>=1.2.0
 docxcompose>=1.4
 # The text of PDFs for the search, and approved PDFs stamped:
-pypdf>=4.0
+pypdf>=6.20.1
 # The XML inside Office files read safely, whoever uploaded them:
 defusedxml>=0.7
 # Word files previewed as HTML (cleaned with nh3, from the wiki extra):
