@@ -507,11 +507,57 @@
     });
   }
 
+  /**
+   * A record's form, in a dialog: the page at `url` drawn in a frame, as
+   * a popup (`_popup`). Resolves to `{saved: true, id, label}` once the
+   * form saved it, `{deleted: true}` once it was deleted there, or null
+   * when the dialog was closed first.
+   */
+  function record(options) {
+    var requestId = "dialog-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    var url = new URL(options.url, window.location.origin);
+
+    url.searchParams.set("_popup", "1");
+    url.searchParams.set("_relation_request", requestId);
+
+    var dialog = open({ title: options.title || "", icon: options.icon || "edit", wide: true });
+    var frame = el("iframe", "dialog__frame");
+
+    frame.src = url.toString();
+    frame.title = options.title || "";
+    dialog.dialog.classList.add("dialog--frame");
+    dialog.body.appendChild(frame);
+    dialog.footer.remove();
+
+    function listen(event) {
+      var data = event.data || {};
+
+      if (event.origin !== window.location.origin || data.requestId !== requestId) {
+        return;
+      }
+
+      if (data.type === "generic:relation-saved") {
+        dialog.close({ saved: true, id: data.id, label: data.label || "" });
+      } else if (data.type === "generic:relation-deleted") {
+        dialog.close({ deleted: true });
+      }
+    }
+
+    window.addEventListener("message", listen);
+
+    return dialog.closed.then(function (result) {
+      window.removeEventListener("message", listen);
+
+      return result || null;
+    });
+  }
+
   Generic.dialogs = {
     fields: fields,
     confirm: confirm,
     deletion: deletion,
     open: open,
+    record: record,
     prompt: prompt,
     renderTree: renderTree
   };

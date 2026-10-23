@@ -84,6 +84,11 @@ GENERIC = {"CONTENT_SECURITY_POLICY": "recommended"}
 | `base-uri`, `form-action` | `'self'` | |
 | `frame-ancestors` | `'self'` | No other site frames these pages |
 
+A record's form opened as a popup (`?_popup=1`) answers
+`X-Frame-Options: SAMEORIGIN`, so the site's own pages can show it in a
+dialog (an outline's records, `Generic.dialogs.record`); every other
+page keeps the site's setting (`DENY` with Django's middleware).
+
 A dict of your own replaces it; `"'nonce'"` in a list stands for the
 request's nonce:
 

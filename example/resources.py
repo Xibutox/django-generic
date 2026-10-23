@@ -491,6 +491,15 @@ class TicketResource(ModelResource):
         ),
         RelatedTable("comments"),
     )
+    # The list's Outline button: each ticket unfolds into its comments,
+    # their text written in place. Comments keep an order of their own
+    # (TicketComment.position, which their ordering starts with): while
+    # editing, they are dragged into another, and a comment's link opens
+    # its whole form in a dialog.
+    outline = Outline(
+        Level("comments", columns=("author", "body", "created_at")),
+        title=_("Conversation"),
+    )
     # A page of each ticket of the project's own: /example/ticket/<pk>/
     # timeline/, a button on the ticket's page and an entry of each row's
     # menu. Written as a view of its own (example/pages.py), which is
@@ -890,6 +899,9 @@ class TicketCommentResource(ModelResource):
     show_in_navigation = False
 
     list_display = ("position", "author", "body", "created_at")
+    # Written in place where the comments are shown as rows: the
+    # tickets' outline.
+    editable_fields = ("author", "body")
     search_fields = ("author", "body")
     ordering = ("ticket", "position")
     fields = ("ticket", "author", "body", "position")

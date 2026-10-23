@@ -80,11 +80,58 @@ written as a [grid](editable.md) writes it:
 *Stop editing* puts the values back. A page opened as the list's grid
 (`?edit=1`, below) opens its outline in edit mode too.
 
+A long text is a textarea in its cell, written when it is left. In edit
+mode, a record's name - and the icon at the end of its row - opens its
+**whole form in a dialog** over the outline, for what its row does not
+show: a text the list leaves out, its own inlines, its files. Saved
+there, its level is read again; the outline stays where it was. The
+dialog is the form's popup (`?_popup=1`), the one a relation's pencil
+opens, in a frame of the page: offered to readers with the change
+permission on the level's model.
+
 `auto()` works `editable_fields` out (see below), so an `auto` outline
 is editable without a word more. On a hand-declared resource the
 levels are as editable as their resources say.
 `Outline(..., editable=False)`, or `Level(..., editable=False)` for one
 level, reads only.
+
+## Putting records in order
+
+Records that keep an order of their own among their parent's - the
+comments of a ticket, the lines of a bill of materials - are dragged
+into another, in edit mode, by the handle before their first column (or
+moved with Alt and the up and down arrows). The order is an integer
+field of the application's model:
+
+```python
+class TicketComment(models.Model):
+    ticket = models.ForeignKey(Ticket, related_name="comments", ...)
+    body = models.TextField()
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "pk")
+```
+
+Nothing more to declare: a level whose ordering starts with an
+ascending integer field - its resource's `ordering`, else the model's,
+the key back up to the parent aside - is put in order by it.
+`Level("comments", position="rank")` names another field,
+`position=False` keeps the level as it is. Only a level reached by a
+foreign key: a record shared by several parents has no place of its
+own among one's.
+
+A move writes the positions the parent's records already had, given out
+again in the new order (1, 2, 3... when some were shared), and only
+those whose place changed - each one saved, so history and live updates
+follow, and each one asked to the level's resource: the change
+permission on the record, the field neither read only nor locked by
+`field_permissions`. A position unique among a parent's records is
+fine: the records moved step out of the way first.
+
+`POST api/<app>/<model>/outline/move/` with `{"level": 1, "parent":
+<key>, "id": <key>, "before": <key>}` (or `"after"`, or neither for
+last) answers the new order.
 
 ## Declaring it
 
@@ -107,6 +154,7 @@ or an `Outline`:
 | `columns` | the level's visible list columns, without the one pointing back up | its columns, by their names in the level resource's `list_display`; the first beside the arrow |
 | `title` | the model's plural name | the heading above its records |
 | `editable` | `True` | `False`: this level read only |
+| `position` | the integer field its ordering starts with | the field keeping the records in order among their parent's, dragged in edit mode; `False`: none |
 
 A name is what `related` takes ([auto](auto.md#related-rows-the-one-thing-to-say)):
 a reverse foreign key's `related_name` or a many-to-many, either side.
@@ -214,6 +262,9 @@ editable_fields=("country",))`, or `list_editable=False` for no button.
   supplier's outline, below the equipment). A customer's *Tickets* tab
   into their time entries; a team's *Tickets* tab too, declared on the
   tab (`RelatedTable("tickets", outline=("time_entries",))`).
+- *Tickets* (by hand): *Conversation* unfolds each ticket into its
+  comments, their text written in place, dragged into another order
+  (`TicketComment.position`), each one opened in a dialog.
 - *Customers* (by hand): *Tickets and time* unfolds into each
   customer's tickets, then their time entries, with the columns named
   per level; the ticket's assignee, priority and due date and the time

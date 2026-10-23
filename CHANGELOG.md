@@ -31,7 +31,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   get the button too (`RelatedTable(outline=...)`): by default what the
   record's outline has below that relation - a supplier's equipment
   tab unfolds into the visits - else the related resource's outline.
-  See docs/outlines.md.
+  In edit mode a record's link opens its whole form in a dialog
+  (`Generic.dialogs.record`, the form's popup in a frame), and records
+  kept in an order of their own - an integer field their ordering
+  starts with, or `Level(position=...)` - are dragged into another
+  (`POST .../outline/move/`). See docs/outlines.md.
 - An *Edit* button on a list: `list_editable = "toggle"` keeps the
   list a list and puts *Edit* in its toolbar, the page coming back as
   the grid of its `editable_fields` (`?edit=1`, filters kept) for
@@ -47,7 +51,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   entries (*Tickets and time*). The suppliers', equipment's and
   visits' lists also get an *Edit* button turning them into a grid.
   On a record's page, the supplier's *Equipment* tab, the customer's
-  and the team's *Tickets* tabs unfold the same way.
+  and the team's *Tickets* tabs unfold the same way. The tickets' list
+  unfolds into their comments (*Conversation*): their text written in
+  place, dragged into another order, each one opened in a dialog.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are

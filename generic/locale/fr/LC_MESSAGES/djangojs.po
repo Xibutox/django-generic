@@ -2415,3 +2415,7 @@ msgstr "Ajouter : %(name)s"
 #: generic/static/generic/js/datatables/outline.js
 msgid "This could not be saved."
 msgstr "L’enregistrement a échoué."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Drag to put in another order"
+msgstr "Glisser pour changer l’ordre"

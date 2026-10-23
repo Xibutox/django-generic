@@ -911,6 +911,28 @@ class ResourceViewSet(
             )
         )
 
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="outline/move",
+        url_name="outline-move",
+    )
+    def outline_move(self, request: Any) -> Response:
+        """Drag one record of a level of the outline before another
+        (``BoundOutline.move``): written through the level's resource,
+        each record changed asked for again."""
+        related = self.get_related()
+        bound = (
+            self.resource.get_outline()
+            if related is None
+            else related[0].get_outline()
+        )
+
+        if bound is None or not bound.is_visible(request):
+            raise NotFound(gettext("This list has no outline."))
+
+        return Response(bound.move(request, request.data))
+
     # -- the dashboard -----------------------------------------------------
 
     @action(

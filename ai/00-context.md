@@ -1841,6 +1841,27 @@ team's tickets tab (declared).
 `docs/outlines.md`; tests `tests/sites/test_outlines.py`,
 `tests/browser/test_outline.py`.
 
+Editing also gives, per level (`get_editing`): `changeUrl` (change
+permission; the first column's link and the open icon open the form in
+`Generic.dialogs.record`, the level reloaded once saved) and `movable`.
+A level below the top reached by a foreign key keeps an order of its
+own when `Level(position=...)` names an integer field, or by default
+when the level resource's `ordering` (else `Meta.ordering`), its key
+back up aside, starts with an ascending integer field
+(`position_of`, `is_position_field`; checked in `resolve`; `False` for
+none); `get_ordering` is then `[position, "pk"]`. `may_move`: editable,
+change permission, the field not read only nor locked
+(`may_write_column`). `POST .../outline/move/` (`outline_move`, the
+tab's `_related` in the query) `{level, parent, id, before | after}`
+-> `{level, moved, order}` (`BoundOutline.move`): the parent's visible
+records get back the positions they had, in the new order (1..n when
+some are shared), the changed ones moved out of the way by `update()`
+(unique constraints) then each `save(update_fields=...)`, each asked
+`has_change_permission(request, obj)`. JS: a handle per row
+(`.outline-row__handle`, shown in edit mode), HTML5 drag among a
+parent's rows, Alt+Up/Down; `config.moveUrl`. Example: tickets >
+comments (`TicketComment.position`, `body` a textarea in place).
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1985,7 +2006,12 @@ button centre on its first line of text (`--message-line`).
   followed until the run ends; anything else a toast.
 - `Generic.toast(message, "success|info|warning|error")`,
   `Generic.flash(message, level)` (after navigation),
-  `Generic.dialogs.confirm({title, message, confirmLabel, variant})`.
+  `Generic.dialogs.confirm({title, message, confirmLabel, variant})`,
+  `Generic.dialogs.record({url, title, icon})` (a record's form in a
+  framed dialog, `?_popup=1&_relation_request=`; resolves `{saved, id,
+  label}`, `{deleted}` or null; form.js posts `generic:relation-saved` /
+  `generic:relation-deleted` to the opener or the framing page;
+  `ResourceFormView` answers `X-Frame-Options: SAMEORIGIN` for popups).
 - `Generic.t(text)`, `Generic.format("%(n)s", {n: 1})`, `Generic.ready(fn)`,
   `Generic.debounce(fn, ms)`, `Generic.isSafeUrl(url)`, `Generic.config()`,
   `Generic.formatSize(bytes)`.

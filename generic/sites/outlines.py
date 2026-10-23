@@ -30,6 +30,12 @@ the same renderers - and the cells its resource lets this reader edit
 Nothing is loaded before it is unfolded: one request a level, a page
 at a time, from ``GET api/<app>/<model>/outline/``.
 
+Below the top, a level whose records are kept in an order of their own
+- an integer field its ordering starts with, ``position`` say - has
+them dragged into another order (``POST .../outline/move/``), and in
+edit mode a record opens in a dialog for the fields its row does not
+show.
+
 The browser names a level by its number and a record by its key; the
 endpoint resolves both through the declaration and the resources' own
 querysets, so a reader never sees a record a resource would not list,
@@ -44,11 +50,16 @@ from urllib.parse import urlencode
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Count, OuterRef, Subquery
+from django.db import models, transaction
+from django.db.models import Count, Max, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.utils.encoding import force_str
 from django.utils.translation import gettext
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import (
+    NotFound,
+    PermissionDenied,
+    ValidationError,
+)
 
 #: The most levels below the top an outline walks.
 MAX_LEVELS = 5
@@ -80,6 +91,11 @@ class Level:
     #: Whether this level's cells are edited in place, where the
     #: resource allows it.
     editable: bool = True
+    #: The integer field keeping the records in their order among their
+    #: parent's, dragged to change it. Default: the field the level's
+    #: ordering starts with (its key back up aside), when it is an
+    #: ascending integer field. ``False``: never dragged.
+    position: Any = None
 
 
 class Outline:
@@ -299,7 +315,44 @@ def resolve(
                 f"column names, in a tuple."
             )
 
+    for level in levels[1:]:
+        position = level.declared.position if level.declared else None
+
+        if position in (None, False):
+            continue
+
+        if not level.is_foreign_key():
+            raise ImproperlyConfigured(
+                f"{where}: '{level.name}' is not reached by a foreign key: "
+                f"its records have no order of their own among a parent's."
+            )
+
+        if not is_position_field(level.model, position):
+            raise ImproperlyConfigured(
+                f"{where}: the position of '{level.name}' is {position!r}, "
+                f"which is not an integer field of {level.model.__name__}."
+            )
+
     return outline, levels
+
+
+def is_position_field(model: Any, name: Any) -> bool:
+    """Whether ``name`` is a field a record's place can be written in."""
+    if not isinstance(name, str) or "__" in name:
+        return False
+
+    try:
+        field = model._meta.get_field(name)
+    except FieldDoesNotExist:
+        return False
+
+    return bool(
+        isinstance(field, models.IntegerField)
+        and field.concrete
+        and field.editable
+        and not field.primary_key
+        and not isinstance(field, models.AutoField)
+    )
 
 
 def tail(outline: Outline, levels: list[OutlineLevel]) -> Outline | None:
@@ -390,6 +443,55 @@ class BoundOutline:
         """Something to unfold: the top and at least one level."""
         return len(self.get_levels(request)) > 1
 
+    def is_editable(self, level: OutlineLevel) -> bool:
+        """What the declaration says about writing the level."""
+        return self.outline.editable and (
+            level.declared is None or level.declared.editable
+        )
+
+    # -- the order of a level -----------------------------------------
+
+    def position_of(self, level: OutlineLevel) -> str | None:
+        """The field keeping the level's records in order, if any."""
+        if level.index == 0 or not level.is_foreign_key():
+            return None
+
+        declared = level.declared.position if level.declared else None
+
+        if declared is False:
+            return None
+
+        if isinstance(declared, str):
+            return declared
+
+        resource = self.resource_of(level)
+        back = level.back.split("__")[0]
+        ordering = [
+            name
+            for name in (resource.ordering or level.model._meta.ordering or ())
+            if isinstance(name, str) and name not in (back, f"{back}_id")
+        ]
+
+        if ordering and is_position_field(level.model, ordering[0]):
+            return ordering[0]
+
+        return None
+
+    def may_move(self, request: Any, level: OutlineLevel) -> bool:
+        """Whether this reader may drag the level's records."""
+        position = self.position_of(level)
+
+        if position is None or not self.is_editable(level):
+            return False
+
+        resource = self.resource_of(level)
+
+        return bool(
+            resource.has_change_permission(request)
+            and position not in resource.get_readonly_fields(request)
+            and resource.may_write_column(request, position)
+        )
+
     # -- columns ------------------------------------------------------
 
     def declared_columns(self, level: OutlineLevel) -> Sequence[str] | None:
@@ -440,15 +542,21 @@ class BoundOutline:
         level: OutlineLevel,
         columns: Sequence[dict[str, Any]],
     ) -> dict[str, Any]:
-        """The schemas of the level's cells this reader may write."""
-        editable = self.outline.editable and (
-            level.declared is None or level.declared.editable
-        )
-
-        if not editable:
+        """What this reader may write in the level: its cells' schemas,
+        the form its records open in, whether they are dragged."""
+        if not self.is_editable(level):
             return {}
 
-        options = self.resource_of(level).get_editable_options(request)
+        resource = self.resource_of(level)
+        editing: dict[str, Any] = {}
+
+        if resource.has_change_permission(request):
+            editing["changeUrl"] = resource.get_change_url_template()
+
+        if self.may_move(request, level):
+            editing["movable"] = True
+
+        options = resource.get_editable_options(request)
         shown = {column.get("data") for column in columns}
         described = {
             name: schema
@@ -456,10 +564,11 @@ class BoundOutline:
             if name in shown
         }
 
-        if not described:
-            return {}
+        if described:
+            editing["editable"] = described
+            editing["editableUrl"] = options["editableUrl"]
 
-        return {"editable": described, "editableUrl": options["editableUrl"]}
+        return editing
 
     def get_add_url(
         self, request: Any, level: OutlineLevel, back: str | None = None
@@ -503,6 +612,11 @@ class BoundOutline:
     def get_url(self) -> str:
         return self.resource._reverse(self.resource.api_url_name("outline"))
 
+    def get_move_url(self) -> str:
+        return self.resource._reverse(
+            self.resource.api_url_name("outline-move")
+        )
+
     def get_config(
         self, request: Any, back: str | None = None
     ) -> dict[str, Any] | None:
@@ -537,6 +651,7 @@ class BoundOutline:
 
         return {
             "url": self.get_url(),
+            "moveUrl": self.get_move_url(),
             "title": self.get_title(),
             "icon": self.outline.icon,
             "pageSize": self.outline.page_size,
@@ -562,6 +677,11 @@ class BoundOutline:
         return Coalesce(Subquery(counted), 0)
 
     def get_ordering(self, request: Any, level: OutlineLevel) -> list[str]:
+        position = self.position_of(level)
+
+        if position is not None:
+            return [position, "pk"]
+
         resource = self.resource_of(level)
         ordering = resource.get_ordering(request) or (
             level.model._meta.ordering
@@ -658,6 +778,111 @@ class BoundOutline:
                 }
                 for obj, data in zip(page, serializer.data)
             ],
+        }
+
+    def move(self, request: Any, data: Any) -> dict[str, Any]:
+        """Put one record of a level before another of the same parent
+        (``before``), after one (``after``), or last (neither):
+        ``{level, parent, id, before | after}``.
+
+        The parent's records this reader may see keep the positions
+        they had between them, given out again in the new order; only
+        the ones whose place changed are written, each one saved -
+        history and live updates follow - and each one asked for.
+        """
+        levels = self.get_levels(request)
+        number = read_number(data.get("level"), "level", 0)
+
+        if not 0 < number < len(levels):
+            raise NotFound(gettext("There is no such level."))
+
+        level = levels[number]
+
+        if not self.may_move(request, level):
+            raise PermissionDenied(
+                gettext("These records are not put in order here.")
+            )
+
+        position = self.position_of(level) or ""
+        resource = self.resource_of(level)
+        parent = self.find_parent(
+            request, levels[number - 1], data.get("parent")
+        )
+        siblings = list(
+            resource.get_queryset(request)
+            .filter(**{level.back: parent.pk})
+            .order_by(*self.get_ordering(request, level))
+        )
+        keys = [force_str(obj.pk) for obj in siblings]
+        moved = force_str(data.get("id", ""))
+
+        if moved not in keys:
+            raise NotFound(gettext("There is no such record."))
+
+        record = siblings.pop(keys.index(moved))
+        keys.remove(moved)
+        place = len(siblings)
+
+        for name, shift in (("before", 0), ("after", 1)):
+            other = data.get(name)
+
+            if other in (None, ""):
+                continue
+
+            other = force_str(other)
+
+            if other not in keys:
+                raise ValidationError(
+                    {name: [gettext("Name another record of this level.")]}
+                )
+
+            place = keys.index(other) + shift
+            break
+
+        siblings.insert(place, record)
+
+        places = sorted(getattr(obj, position) or 0 for obj in siblings)
+
+        # Every record somewhere else: the order is given anew.
+        if len(set(places)) < len(places):
+            places = list(range(1, len(siblings) + 1))
+
+        changed = [
+            (obj, place)
+            for obj, place in zip(siblings, places)
+            if getattr(obj, position) != place
+        ]
+
+        for obj, _place in changed:
+            if not (
+                resource.has_change_permission(request, obj)
+                and resource.may_write_column(request, position, obj)
+            ):
+                raise PermissionDenied
+
+        if changed:
+            with transaction.atomic():
+                # Out of the way first: a position may be unique among a
+                # parent's records, and two of them would meet midway.
+                top = (
+                    level.model._default_manager.aggregate(
+                        highest=Max(position)
+                    )["highest"]
+                    or 0
+                )
+                for offset, (obj, _place) in enumerate(changed, start=1):
+                    level.model._default_manager.filter(pk=obj.pk).update(
+                        **{position: top + offset}
+                    )
+
+                for obj, place in changed:
+                    setattr(obj, position, place)
+                    obj.save(update_fields=[position])
+
+        return {
+            "level": number,
+            "moved": len(changed),
+            "order": [force_str(obj.pk) for obj in siblings],
         }
 
     def models(self) -> list[Any]:

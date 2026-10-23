@@ -577,3 +577,152 @@ class TestOnARecordsPage:
         )
 
         assert bound.get_outline().levels[1].declared.title == "Visits"
+
+
+MOVE = "/api/example/ticket/outline/move/"
+
+
+class TestPuttingInOrder:
+    """The tickets' outline unfolds into their comments, which keep an
+    order of their own (``TicketComment.position``, unique among a
+    ticket's): dragged, they are written in another."""
+
+    @pytest.fixture
+    def thread(self, support_desk) -> dict:
+        from example.models import TicketComment
+
+        login = support_desk["login"]
+        third = TicketComment.objects.create(
+            ticket=login, author="Lea", body="Released.", position=3
+        )
+
+        return {"login": login, "third": third, **support_desk}
+
+    def order(self, ticket) -> list[str]:
+        return list(ticket.comments.values_list("author", flat=True))
+
+    def move(self, client, ticket, record, status: int = 200, **where):
+        response = client.post(
+            MOVE,
+            {"level": 1, "parent": ticket.pk, "id": record.pk, **where},
+            content_type="application/json",
+        )
+
+        assert response.status_code == status, response.content
+
+        return response.json()
+
+    def test_the_level_says_its_records_are_dragged(self, admin_client):
+        outline = admin_client.get("/example/ticket/").context["table_config"][
+            "options"
+        ]["outline"]
+        top, comments = outline["levels"]
+
+        assert outline["moveUrl"] == MOVE
+        assert comments["movable"] is True
+        assert "movable" not in top
+        # Opened in a dialog while editing.
+        assert comments["changeUrl"] == "/example/ticketcomment/{id}/change/"
+        # A long text is written in place too.
+        assert set(comments["editable"]) == {"author", "body"}
+
+    def test_the_position_is_the_field_the_ordering_starts_with(self):
+        from example.models import Ticket
+
+        bound = site.get_resource(Ticket).get_outline()
+
+        # TicketCommentResource.ordering is ("ticket", "position"): the
+        # key back up does not count.
+        assert bound.position_of(bound.levels[1]) == "position"
+        assert bound.get_ordering(None, bound.levels[1]) == ["position", "pk"]
+        # Ordered by date: nothing to drag.
+        visits = site.get_resource(Supplier).get_outline()
+        assert visits.position_of(visits.levels[2]) is None
+
+    def test_before_after_and_last(self, admin_client, thread):
+        login, comment, third = (
+            thread["login"],
+            thread["comment"],
+            thread["third"],
+        )
+
+        answer = self.move(admin_client, login, third, before=comment.pk)
+
+        assert self.order(login) == ["Lea", "Camille", "Yanis"]
+        assert answer["order"] == [
+            str(pk) for pk in login.comments.values_list("pk", flat=True)
+        ]
+        # The positions it had between them, given out again.
+        assert sorted(login.comments.values_list("position", flat=True)) == [
+            1,
+            2,
+            3,
+        ]
+
+        self.move(admin_client, login, third, after=comment.pk)
+        assert self.order(login) == ["Camille", "Lea", "Yanis"]
+
+        self.move(admin_client, login, comment)
+        assert self.order(login) == ["Lea", "Yanis", "Camille"]
+
+    def test_what_names_nothing_is_refused(self, admin_client, thread):
+        login, comment = thread["login"], thread["comment"]
+        other = thread["invoice"]
+
+        # The top level is the table's order, not one of its own.
+        self.move(admin_client, login, comment, status=404, level=0)
+        # A comment of another ticket.
+        self.move(admin_client, other, comment, status=404)
+        self.move(admin_client, login, comment, status=400, before=comment.pk)
+        self.move(admin_client, login, comment, status=400, after="nope")
+
+    def test_a_reader_who_may_not_change_them_is_refused(
+        self, client, django_user_model, thread
+    ):
+        reader = client_with(
+            client,
+            django_user_model,
+            "view_ticket",
+            "view_ticketcomment",
+        )
+        outline = reader.get("/example/ticket/").context["table_config"][
+            "options"
+        ]["outline"]
+
+        assert "movable" not in outline["levels"][1]
+        assert "changeUrl" not in outline["levels"][1]
+        self.move(reader, thread["login"], thread["comment"], status=403)
+        assert self.order(thread["login"]) == ["Camille", "Yanis", "Lea"]
+
+    def test_a_declared_field(self, other_site):
+        other_site.auto(Author, outline=(Level("books", position="pages"),))
+        other_site.complete_auto()
+        bound = other_site.get_resource(Author).get_outline()
+
+        assert bound.position_of(bound.levels[1]) == "pages"
+
+    @pytest.mark.parametrize(
+        "level, message",
+        [
+            (Level("books", position="title"), "not an integer field"),
+            (Level("documents", position="pk"), "not reached by a foreign"),
+        ],
+    )
+    def test_a_position_that_cannot_be_is_refused(
+        self, other_site, level, message
+    ):
+        with pytest.raises(ImproperlyConfigured, match=message):
+            other_site.auto(Author, outline=(level,))
+
+
+class TestTheRecordInADialog:
+    def test_its_form_may_be_framed_by_the_site_as_a_popup(
+        self, admin_client, support_desk
+    ):
+        url = f"/example/ticketcomment/{support_desk['comment'].pk}/change/"
+
+        assert admin_client.get(url + "?_popup=1")["X-Frame-Options"] == (
+            "SAMEORIGIN"
+        )
+        # A page of its own is left to the site's rule.
+        assert admin_client.get(url).get("X-Frame-Options") != "SAMEORIGIN"

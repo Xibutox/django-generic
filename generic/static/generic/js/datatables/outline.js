@@ -145,6 +145,9 @@
     this.editableUrl = config.editableUrl || "";
     this.addUrl = config.addUrl || "";
     this.rowKey = config.rowKey || "_pk";
+    // Opened in a dialog while editing, and dragged into another order.
+    this.changeUrl = config.changeUrl || "";
+    this.movable = Boolean(config.movable);
   }
 
   Level.prototype.writes = function (column) {
@@ -170,8 +173,13 @@
     this.top.expanded = true;
     this.recentWrites = {};
     this.editable = this.levels.some(function (level) {
-      return Object.keys(level.editable).length > 0 && Boolean(level.editableUrl);
-    }) && Boolean(widgets());
+      return (
+        (Object.keys(level.editable).length > 0 && Boolean(level.editableUrl) && Boolean(widgets())) ||
+        level.movable ||
+        Boolean(level.changeUrl && generic().dialogs)
+      );
+    });
+    this.dragging = null;
     this.editing = false;
     this.active = false;
     this.asked = "";
@@ -269,6 +277,17 @@
     this.body.addEventListener("keydown", function (event) {
       self.keydown(event);
     });
+    // Editing: a record's link opens its form in a dialog.
+    this.body.addEventListener("click", function (event) {
+      var link = event.target.closest && event.target.closest("a.tree-row__name, a.outline-row__open");
+      var row = link && link.closest("tr.outline-row");
+
+      if (row && row.outlineNode && self.opensInDialog(row.outlineNode)) {
+        event.preventDefault();
+        self.openRecord(row.outlineNode);
+      }
+    });
+    this.bindDragging();
 
     table.append(head, this.body);
     scroller.appendChild(table);
@@ -557,6 +576,16 @@
           self.toggle(node);
         });
         holder = el("div", "outline-row__value");
+
+        if (level.movable) {
+          var handle = el("span", "outline-row__handle");
+
+          handle.title = t("Drag to put in another order");
+          handle.setAttribute("aria-hidden", "true");
+          handle.appendChild(icon("drag_indicator"));
+          inner.appendChild(handle);
+        }
+
         inner.append(toggle, holder, count);
         td.appendChild(inner);
         node.toggleButton = toggle;
@@ -589,7 +618,7 @@
     }
 
     if (node.url && core.isSafeUrl(node.url)) {
-      var open = el("a", "icon-button icon-button--sm");
+      var open = el("a", "icon-button icon-button--sm outline-row__open");
 
       open.href = node.url;
       open.title = t("Open");
@@ -1232,6 +1261,219 @@
     });
   };
 
+  /* -- A record in a dialog ---------------------------------------------- */
+
+  OutlineView.prototype.opensInDialog = function (node) {
+    var level = this.levels[node.depth];
+
+    return Boolean(this.editing && level && level.changeUrl && generic().dialogs && generic().dialogs.record);
+  };
+
+  /** The record's whole form, over the outline: what its row does not
+   * show - a long text, the fields of its own - is written there. Its
+   * level is read again once it is saved. */
+  OutlineView.prototype.openRecord = function (node) {
+    var self = this;
+    var level = this.levels[node.depth];
+    var url = level.changeUrl.replace("{id}", encodeURIComponent(node.id));
+
+    if (!core.isSafeUrl(url)) {
+      return;
+    }
+
+    generic()
+      .dialogs.record({ url: url, title: level.label, icon: "edit" })
+      .then(function (result) {
+        if (!result) {
+          return;
+        }
+
+        var parent = node.parent || self.top;
+
+        self.recentWrites[level.resource + ":" + node.id] = Date.now();
+        self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length)));
+
+        if (result.saved) {
+          generic().toast(core.format(t("\u201c%(name)s\u201d was saved."), { name: result.label || String(node.id) }), "success");
+        }
+
+        if (node.element) {
+          node.element.focus();
+        }
+      });
+  };
+
+  /* -- Another order ------------------------------------------------------ */
+
+  /** Whether the record can be dragged now: its level keeps an order of
+   * its own, and the outline is being edited. */
+  OutlineView.prototype.movesNow = function (node) {
+    var level = this.levels[node.depth];
+
+    return Boolean(this.editing && level && level.movable && node.parent && node.parent !== this.top);
+  };
+
+  /** Put `node` before or after another record of its parent: written,
+   * then drawn in the order the server answers. */
+  OutlineView.prototype.move = function (node, where) {
+    var self = this;
+    var parent = node.parent;
+    var url = new URL(this.config.moveUrl, window.location.origin);
+    var body = { level: node.depth, parent: parent.id, id: node.id };
+    var extra = core.resolveExtraParams(this.controller.options, this.controller.table);
+
+    if (!this.config.moveUrl || !core.isSafeUrl(this.config.moveUrl)) {
+      return Promise.resolve();
+    }
+
+    Object.keys(extra).forEach(function (key) {
+      url.searchParams.set(key, extra[key]);
+    });
+
+    if (where.before) {
+      body.before = where.before.id;
+    } else if (where.after) {
+      body.after = where.after.id;
+    }
+
+    this.recentWrites[this.levels[node.depth].resource + ":" + node.id] = Date.now();
+    node.element.classList.add("is-saving");
+
+    return generic()
+      .api.post(url.pathname + url.search, body)
+      .then(function (answer) {
+        var order = (answer && answer.order) || [];
+        var rank = {};
+
+        order.forEach(function (key, index) {
+          rank[String(key)] = index;
+        });
+        parent.items.sort(function (a, b) {
+          var left = String(a.id) in rank ? rank[String(a.id)] : Infinity;
+          var right = String(b.id) in rank ? rank[String(b.id)] : Infinity;
+
+          return left - right;
+        });
+        self.redraw(parent);
+
+        if (node.element) {
+          cells().flash(node.element);
+          self.focus(node.element);
+        }
+      })
+      .catch(function (error) {
+        generic().toast((error && error.message) || t("This could not be saved."), "error");
+        self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length)));
+      })
+      .then(function () {
+        if (node.element) {
+          node.element.classList.remove("is-saving");
+        }
+      });
+  };
+
+  /** Rows dragged by their handle, among their parent's records. */
+  OutlineView.prototype.bindDragging = function () {
+    var self = this;
+    var body = this.body;
+
+    function rowAt(event) {
+      var row = event.target.closest && event.target.closest("tr.outline-row");
+
+      return row && row.outlineNode ? row : null;
+    }
+
+    function clearMarks() {
+      Array.prototype.forEach.call(body.querySelectorAll(".is-drop-before, .is-drop-after"), function (row) {
+        row.classList.remove("is-drop-before", "is-drop-after");
+      });
+    }
+
+    function target(event) {
+      var row = rowAt(event);
+      var dragged = self.dragging;
+
+      if (!row || !dragged || row.outlineNode === dragged || row.outlineNode.parent !== dragged.parent) {
+        return null;
+      }
+
+      var box = row.getBoundingClientRect();
+
+      return { row: row, after: event.clientY > box.top + box.height / 2 };
+    }
+
+    body.addEventListener("mousedown", function (event) {
+      var handle = event.target.closest && event.target.closest(".outline-row__handle");
+      var row = handle && rowAt(event);
+
+      if (row && self.movesNow(row.outlineNode)) {
+        row.draggable = true;
+      }
+    });
+
+    body.addEventListener("dragstart", function (event) {
+      var row = rowAt(event);
+
+      if (!row || !row.draggable) {
+        return;
+      }
+
+      self.dragging = row.outlineNode;
+      row.classList.add("is-dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(row.outlineNode.id));
+    });
+
+    body.addEventListener("dragover", function (event) {
+      var place = target(event);
+
+      clearMarks();
+
+      if (!place) {
+        return;
+      }
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      place.row.classList.add(place.after ? "is-drop-after" : "is-drop-before");
+    });
+
+    body.addEventListener("drop", function (event) {
+      var place = target(event);
+      var dragged = self.dragging;
+
+      clearMarks();
+
+      if (!place) {
+        return;
+      }
+
+      event.preventDefault();
+      self.move(dragged, place.after ? { after: place.row.outlineNode } : { before: place.row.outlineNode });
+    });
+
+    body.addEventListener("dragend", function (event) {
+      var row = rowAt(event);
+
+      clearMarks();
+
+      if (row) {
+        row.draggable = false;
+        row.classList.remove("is-dragging");
+      }
+
+      self.dragging = null;
+    });
+
+    document.addEventListener("mouseup", function () {
+      if (!self.dragging) {
+        Array.prototype.forEach.call(body.querySelectorAll("tr[draggable='true']"), function (row) {
+          row.draggable = false;
+        });
+      }
+    });
+  };
+
   /* -- The keyboard: a treegrid's ---------------------------------------- */
 
   OutlineView.prototype.rows = function () {
@@ -1261,6 +1503,20 @@
     var index = rows.indexOf(row);
     var handled = true;
 
+    // Alt and an arrow: the record changes places with its neighbour.
+    if (event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      var siblings = node.parent ? node.parent.items : [];
+      var at = siblings.indexOf(node);
+      var other = siblings[event.key === "ArrowUp" ? at - 1 : at + 1];
+
+      if (this.movesNow(node) && other) {
+        this.move(node, event.key === "ArrowUp" ? { before: other } : { after: other });
+      }
+
+      event.preventDefault();
+      return;
+    }
+
     switch (event.key) {
       case "ArrowDown":
         this.focus(rows[index + 1]);
@@ -1289,7 +1545,9 @@
         }
         break;
       case "Enter":
-        if (node.url && core.isSafeUrl(node.url)) {
+        if (this.opensInDialog(node)) {
+          this.openRecord(node);
+        } else if (node.url && core.isSafeUrl(node.url)) {
           window.location.href = node.url;
         }
         break;

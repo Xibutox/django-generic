@@ -4541,3 +4541,11 @@ msgstr "Ce niveau n’existe pas."
 #: generic/sites/outlines.py
 msgid "Name the record to unfold."
 msgstr "Indiquez l’enregistrement à déplier."
+
+#: generic/sites/outlines.py
+msgid "These records are not put in order here."
+msgstr "Ces enregistrements ne se réordonnent pas ici."
+
+#: generic/sites/outlines.py
+msgid "Name another record of this level."
+msgstr "Indiquez un autre enregistrement de ce niveau."

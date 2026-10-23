@@ -341,7 +341,14 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
                 pk=kwargs["pk"],
             )
 
-        return super().dispatch(request, *args, **kwargs)
+        response = super().dispatch(request, *args, **kwargs)
+
+        # A popup may also be a frame of this site's own pages - a record
+        # edited in a dialog over an outline - never of another site's.
+        if self.is_popup() and not response.has_header("X-Frame-Options"):
+            response["X-Frame-Options"] = "SAMEORIGIN"
+
+        return response
 
     def has_permission(self) -> bool:
         resource = self.resource

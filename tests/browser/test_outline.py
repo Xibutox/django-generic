@@ -162,3 +162,74 @@ def test_a_records_tab_unfolds_too(page, admin, sign_in, stock):
 
     # The page's address is the record's, not the tab's.
     assert "outline=" not in page.url
+
+
+def comment_rows(page):
+    return rows(page, 1)
+
+
+def author_of(row):
+    return row.locator("input").first
+
+
+def test_comments_are_written_moved_and_opened_in_a_dialog(
+    page, admin, sign_in, desk
+):
+    from example.models import TicketComment
+
+    sign_in(admin)
+    page.goto("/example/ticket/?outline=1")
+    unfold(page, 0, "SD-1001")
+    expect(comment_rows(page)).to_have_count(2)
+    page.locator(".dt-outline-edit").click()
+
+    # A long text, in its control.
+    first = comment_rows(page).first
+    body = first.locator("textarea")
+    expect(body).to_have_value("Reproduced on staging.")
+    body.fill("Reproduced on staging, twice.")
+    body.press("Tab")
+    page.wait_for_function(
+        "() => !document.querySelector('.outline-table td.is-saving')"
+    )
+    page.wait_for_timeout(300)
+    assert TicketComment.objects.filter(
+        body="Reproduced on staging, twice."
+    ).exists()
+
+    def order():
+        return list(
+            TicketComment.objects.filter(
+                ticket__reference="SD-1001"
+            ).values_list("author", flat=True)
+        )
+
+    # Dragged by its handle below the other one.
+    second = comment_rows(page).nth(1)
+    height = second.bounding_box()["height"]
+    first.locator(".outline-row__handle").drag_to(
+        second, target_position={"x": 40, "y": height - 6}
+    )
+    expect(author_of(comment_rows(page).first)).to_have_value("Yanis Bertrand")
+    assert order() == ["Yanis Bertrand", "Camille Rousseau"]
+
+    # And back, with the keyboard.
+    comment_rows(page).nth(1).focus()
+    page.keyboard.press("Alt+ArrowUp")
+    expect(author_of(comment_rows(page).first)).to_have_value(
+        "Camille Rousseau"
+    )
+    assert order() == ["Camille Rousseau", "Yanis Bertrand"]
+
+    # Its link opens its whole form over the outline.
+    comment_rows(page).first.locator(".outline-row__open").click()
+    dialog = page.locator("dialog.dialog--frame")
+    expect(dialog).to_be_visible()
+    form = page.frame_locator("dialog.dialog--frame iframe")
+    author = form.locator("input[name='author'], [data-field='author'] input")
+    expect(author.first).to_have_value("Camille Rousseau")
+    author.first.fill("Camille R.")
+    form.get_by_role("button", name="Save", exact=True).click()
+    expect(dialog).to_have_count(0)
+    expect(author_of(comment_rows(page).first)).to_have_value("Camille R.")
+    assert order()[0] == "Camille R."
