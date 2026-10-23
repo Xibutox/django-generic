@@ -223,6 +223,22 @@ def infer_list_display(
     return tuple(names[:limit]) or ("__str__",)
 
 
+def infer_text_columns(
+    model: Any, exclude: Sequence[str] = ()
+) -> tuple[str, ...]:
+    """The long texts a record is written with - a comment's body, a
+    note - as columns the list starts without."""
+    return tuple(
+        field.name
+        for field in model._meta.fields
+        if isinstance(field, models.TextField)
+        and field.editable
+        and not field.auto_created
+        and not is_private(field)
+        and field.name not in exclude
+    )
+
+
 def infer_search_fields(
     model: Any,
     exclude: Sequence[str] = (),
@@ -330,6 +346,40 @@ def infer_detail_rows(
     ]
 
     return tuple(rows) + tuple(kept)
+
+
+def infer_editable_fields(
+    model: Any,
+    columns: Sequence[str],
+    form: Sequence[str],
+    exclude: Sequence[str] = (),
+) -> tuple[str, ...]:
+    """The columns a grid may write: those of the list that are the
+    model's own fields, on its form - never a file, a key or a value
+    the application keeps."""
+    allowed = set(form)
+    names = []
+
+    for name in columns:
+        field = field_of(model, name) if isinstance(name, str) else None
+
+        if (
+            field is None
+            or name in exclude
+            or name not in allowed
+            or field.many_to_many
+            or field.one_to_many
+            or field.auto_created
+            or field.primary_key
+            or not field.editable
+            or not field.concrete
+            or isinstance(field, models.FileField)
+        ):
+            continue
+
+        names.append(name)
+
+    return tuple(names)
 
 
 def infer_icon(model: Any) -> str:
@@ -454,9 +504,16 @@ class AutoResource(ModelResource):
         worked_out: dict[str, Any] = {}
 
         if "list_display" not in declared:
-            worked_out["list_display"] = infer_list_display(
-                model, self.max_columns, exclude
+            texts = infer_text_columns(model, exclude)
+            worked_out["list_display"] = (
+                *infer_list_display(model, self.max_columns, exclude),
+                *texts,
             )
+
+            # Too long for a column at first: the column picker offers
+            # them, an outline shows them, the grid writes them.
+            if texts and "list_display_hidden" not in declared:
+                worked_out["list_display_hidden"] = texts
 
         if "search_fields" not in declared:
             worked_out["search_fields"] = infer_search_fields(model, exclude)
@@ -495,6 +552,27 @@ class AutoResource(ModelResource):
                 (*exclude, *self.readonly_fields, *self.transitions),
             )
 
+        if "editable_fields" not in declared:
+            shown = worked_out.get("list_display", self.list_display)
+            form = (
+                flatten_fieldsets(worked_out["fieldsets"])
+                if "fieldsets" in worked_out
+                else self.get_fields()
+            )
+            worked_out["editable_fields"] = infer_editable_fields(
+                model,
+                shown,
+                form,
+                (*exclude, *self.readonly_fields, *self.transitions),
+            )
+
+        if "list_editable" not in declared and (
+            worked_out.get("editable_fields", self.editable_fields)
+        ):
+            # The list stays a list; its toolbar's *Edit* turns it into
+            # the grid of those columns, and back.
+            worked_out["list_editable"] = "toggle"
+
         fields = [related_field(model, name, owner) for name in self.related]
 
         if "related_tables" not in declared:
@@ -519,11 +597,20 @@ class AutoResource(ModelResource):
         return worked_out
 
     def get_related_models(self) -> list[Any]:
-        """The models of ``related``: they need pages of their own."""
-        return [
+        """The models of ``related``, and those the outline unfolds
+        into: they need pages of their own."""
+        models = [
             related_field(self.model, name).related_model
             for name in self.related
         ]
+        outline = self.get_outline()
+
+        if outline is not None:
+            models += [
+                model for model in outline.models() if model not in models
+            ]
+
+        return models
 
 
 def declared_names(cls: type) -> set[str]:
@@ -553,6 +640,7 @@ def auto(model_or_models: Any, *, site: Any = None, **options: Any) -> None:
 __all__ = [
     "AutoResource",
     "auto",
+    "infer_editable_fields",
     "infer_form_rows",
     "infer_icon",
     "infer_list_display",

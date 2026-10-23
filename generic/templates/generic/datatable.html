@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{% static 'generic/vendor/datatables/dataTables.dataTables.min.css' %}">
   {% endblock %}
   <link rel="stylesheet" href="{% static 'generic/css/datatables.css' %}">
+  {# A list's outline is drawn as a tree (js/datatables/outline.js). #}
+  <link rel="stylesheet" href="{% static 'generic/css/tree.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -63,6 +65,8 @@
     {# widgets come along; they need nothing but select2.js above.     #}
     <script src="{% static 'generic/js/forms/widgets.js' %}" defer></script>
     <script src="{% static 'generic/js/datatables/editable.js' %}" defer></script>
+    {# The list unfolding into its related records, edited the same way. #}
+    <script src="{% static 'generic/js/datatables/outline.js' %}" defer></script>
     {# The selection bar's bulk edit: a dialog of the same controls. #}
     <script src="{% static 'generic/js/bulk_edit.js' %}" defer></script>
     <script src="{% static 'generic/js/datatables/realtime.js' %}" defer></script>

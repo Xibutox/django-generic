@@ -181,6 +181,8 @@ class GenericSite:
             resource.get_duplicate()
             # And what its labels show.
             resource.get_labels()
+            # And the relations its list unfolds into.
+            resource.get_outline()
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)

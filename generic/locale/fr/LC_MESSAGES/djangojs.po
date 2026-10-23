@@ -2434,3 +2434,60 @@ msgstr "%(label)s planifié."
 #: generic/static/generic/js/calendar.js
 msgid "The record could not be created."
 msgstr "L’enregistrement n’a pas pu être créé."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Outline"
+msgstr "Arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Back to the table"
+msgstr "Revenir au tableau"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Show the rows as an outline"
+msgstr "Afficher les lignes en arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit"
+msgstr "Modifier"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Stop editing"
+msgstr "Terminer la modification"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit the rows in place"
+msgstr "Modifier les lignes sur place"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Back to reading the rows"
+msgstr "Revenir à la lecture des lignes"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Open"
+msgstr "Ouvrir"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Add %(name)s"
+msgstr "Ajouter : %(name)s"
+
+#: generic/static/generic/js/datatables/editable.js
+#: generic/static/generic/js/datatables/outline.js
+msgid "This could not be saved."
+msgstr "L’enregistrement a échoué."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Drag to put in another order"
+msgstr "Glisser pour changer l’ordre"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Edit in a dialog"
+msgstr "Modifier dans une fenêtre"
+
+#: generic/static/generic/js/dialogs.js
+msgid "This page may not be shown in a dialog here."
+msgstr "Cette page ne peut pas s’afficher dans une fenêtre ici."

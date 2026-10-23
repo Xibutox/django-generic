@@ -29,13 +29,15 @@ The example's *Equipment* group is exactly these two lines
 
 | Declaration | From the model |
 | --- | --- |
-| `list_display` | the field that names a row first — `name`, `title`, `label`, `reference`, `code`… or else the first plain text field — then the others in the model's order, at most `max_columns` (7). Left out: long text, JSON, files, UUIDs, anything named like a secret (`password`, `token`, `secret`, `api_key`, `hash`), values nobody writes — except a date the application keeps, such as `created_at` |
+| `list_display` | the field that names a row first — `name`, `title`, `label`, `reference`, `code`… or else the first plain text field — then the others in the model's order, at most `max_columns` (7). Left out: long text, JSON, files, UUIDs, anything named like a secret (`password`, `token`, `secret`, `api_key`, `hash`), values nobody writes — except a date the application keeps, such as `created_at`. The long texts (`TextField`: a comment's body, notes) come last, hidden at first (`list_display_hidden`): the column picker offers them, an [outline](outlines.md) shows them, the grid writes them |
 | `search_fields` | the text fields (the naming one first), then the name of each record a row points at: `supplier__name` |
 | `tag_fields` | every field with choices, drawn as a coloured tag — one colour a choice, in the order they are declared |
 | `fieldsets` | the naming field alone, then the short fields **two a row**, long text and many-to-many fields the whole width underneath |
 | `detail_fieldsets` | the form's rows, plus the dates the application keeps |
 | `icon` | from the words of the model's name — `Equipment` is `devices`, `MaintenanceVisit` is `build`, `Invoice` is `receipt_long`; `table_rows` otherwise |
 | `bulk_edit_fields` | what a selection may be given at once ([Bulk edit](bulk-edit.md)): the form's fields with choices, booleans, relations and dates, never a unique one |
+| `editable_fields` | the cells a grid may write ([Editing in the table](editable.md#an-edit-button-on-the-list)): the list's columns that are the model's own fields on its form — never a file, a key, a read-only or a state field |
+| `list_editable` | `"toggle"` when there are such columns: an **Edit** button in the list's toolbar turns it into their grid, and back |
 | `chart_builder` | the **Chart** button above the list, closed until opened ([Charts](charts.md#drawn-by-the-reader-chart_builder)): grouped by the choices, relations, booleans and dates, the number fields summed and averaged |
 | `related_tables`, `inlines` | from `related` — below |
 
@@ -150,6 +152,21 @@ left worked out.
 
 `site.auto(...)` does the same on a site of your own; `auto(...,
 site=...)` too.
+
+## An outline of the related rows
+
+`related` gives each record a table of its rows on its page. To see
+them from the list - each supplier with an arrow to its equipment,
+each piece of equipment with one to its visits - name the levels:
+
+```python
+auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
+```
+
+The list gets an **Outline** button; every level is drawn with its own
+columns and edited in place, the cells worked out above. The models of
+the levels nobody declared get pages of their own, as `related` ones
+do. See [Outlines](outlines.md).
 
 ## When to use which
 

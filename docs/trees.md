@@ -259,6 +259,8 @@ folds and unfolds. *Collapse all* folds everything; *Refresh* reloads
 every open level, keeping it open. When a record or a link changes -
 here or elsewhere - the open levels reload by themselves (the
 resources' `realtime`).
+Every other row is shaded, as a table's are, counted down the page
+whatever the row's depth.
 
 A tree drawn without a table to follow (`filterTable` left empty in
 its configuration) gets a *Find at any depth* box in its toolbar

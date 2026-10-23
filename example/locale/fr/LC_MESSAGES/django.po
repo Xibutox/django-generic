@@ -2140,3 +2140,6 @@ msgstr "Arrivées"
 #: example/resources.py
 msgid "Each ticket at the hour it was opened."
 msgstr "Chaque ticket à l'heure où il a été ouvert."
+
+msgid "Tickets and time"
+msgstr "Tickets et temps passé"
