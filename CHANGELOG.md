@@ -35,7 +35,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   (`Generic.dialogs.record`, the form's popup in a frame), and records
   kept in an order of their own - an integer field their ordering
   starts with, or `Level(position=...)` - are dragged into another
-  (`POST .../outline/move/`). See docs/outlines.md.
+  (`POST .../outline/move/`). `auto()` lists a model's long texts
+  (`TextField`) last, hidden at first, so an outline shows them and
+  writes them in place with nothing declared. See docs/outlines.md.
 - An *Edit* button on a list: `list_editable = "toggle"` keeps the
   list a list and puts *Edit* in its toolbar, the page coming back as
   the grid of its `editable_fields` (`?edit=1`, filters kept) for

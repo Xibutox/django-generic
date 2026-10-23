@@ -223,6 +223,22 @@ def infer_list_display(
     return tuple(names[:limit]) or ("__str__",)
 
 
+def infer_text_columns(
+    model: Any, exclude: Sequence[str] = ()
+) -> tuple[str, ...]:
+    """The long texts a record is written with - a comment's body, a
+    note - as columns the list starts without."""
+    return tuple(
+        field.name
+        for field in model._meta.fields
+        if isinstance(field, models.TextField)
+        and field.editable
+        and not field.auto_created
+        and not is_private(field)
+        and field.name not in exclude
+    )
+
+
 def infer_search_fields(
     model: Any,
     exclude: Sequence[str] = (),
@@ -488,9 +504,16 @@ class AutoResource(ModelResource):
         worked_out: dict[str, Any] = {}
 
         if "list_display" not in declared:
-            worked_out["list_display"] = infer_list_display(
-                model, self.max_columns, exclude
+            texts = infer_text_columns(model, exclude)
+            worked_out["list_display"] = (
+                *infer_list_display(model, self.max_columns, exclude),
+                *texts,
             )
+
+            # Too long for a column at first: the column picker offers
+            # them, an outline shows them, the grid writes them.
+            if texts and "list_display_hidden" not in declared:
+                worked_out["list_display_hidden"] = texts
 
         if "search_fields" not in declared:
             worked_out["search_fields"] = infer_search_fields(model, exclude)

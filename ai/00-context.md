@@ -1795,7 +1795,11 @@ addUrl ("{parent}" token; FK levels with add permission), editable,
 editableUrl}]` - None (no button) when the reader cannot view below the
 top (`get_levels`: down to the first level without view permission).
 Default columns: visible list columns minus the FK back up, at most
-`max_columns`.
+`max_columns`, then up to `MAX_TEXT_COLUMNS` (2) hidden `TextField`
+columns (`is_text_field`) - `auto` puts a model's long texts at the end
+of `list_display`, hidden (`infer_text_columns`,
+`list_display_hidden`), so they are in `editable_fields` too. Editing:
+the row's end icon becomes *Edit in a dialog* (`drawOpenLink`).
 
 `GET api/<app>/<model>/outline/` (`ResourceViewSet.outline`, a table
 action): `level` (0 = top: the table's `filters`, `search`, `ordering`

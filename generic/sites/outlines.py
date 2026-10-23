@@ -67,6 +67,10 @@ MAX_LEVELS = 5
 #: The most records one request may ask for.
 MAX_LIMIT = 200
 
+#: Long texts a level shows besides its visible columns, when it names
+#: none.
+MAX_TEXT_COLUMNS = 2
+
 #: The annotation carrying how many records of the next level a record
 #: has.
 CHILDREN = "_outline_children"
@@ -336,6 +340,15 @@ def resolve(
     return outline, levels
 
 
+def is_text_field(model: Any, name: Any) -> bool:
+    try:
+        field = model._meta.get_field(name)
+    except (FieldDoesNotExist, TypeError):
+        return False
+
+    return isinstance(field, models.TextField)
+
+
 def is_position_field(model: Any, name: Any) -> bool:
     """Whether ``name`` is a field a record's place can be written in."""
     if not isinstance(name, str) or "__" in name:
@@ -533,6 +546,14 @@ class BoundOutline:
                 for name, column in known.items()
                 if column.get("visible", True) is not False and name != back
             ][: self.outline.max_columns]
+            # A long text the list starts without - a comment's body -
+            # is what an outline of such records is read for.
+            names += [
+                name
+                for name, column in known.items()
+                if column.get("visible", True) is False
+                and is_text_field(level.model, name)
+            ][:MAX_TEXT_COLUMNS]
 
         return [dict(known[name]) for name in names]
 

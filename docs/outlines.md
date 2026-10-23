@@ -80,9 +80,14 @@ written as a [grid](editable.md) writes it:
 *Stop editing* puts the values back. A page opened as the list's grid
 (`?edit=1`, below) opens its outline in edit mode too.
 
-A long text is a textarea in its cell, written when it is left. In edit
-mode, a record's name - and the icon at the end of its row - opens its
-**whole form in a dialog** over the outline, for what its row does not
+A long text is a textarea in its cell, written when it is left. A level
+that names no columns shows its long texts after its visible columns -
+with `auto()`, a model's `TextField`s are in its list, hidden at first,
+so a comment's body is there and written in place with nothing
+declared. In edit mode, the icon at the end of a row turns into a
+pencil, *Edit in a dialog* - as does a record's name when it is not a
+control itself - and opens its **whole form in a dialog** over the
+outline, for what its row does not
 show: a text the list leaves out, its own inlines, its files. Saved
 there, its level is read again; the outline stays where it was. The
 dialog is the form's popup (`?_popup=1`), the one a relation's pencil
@@ -151,7 +156,7 @@ or an `Outline`:
 | `Level(...)` | Default | Means |
 | --- | --- | --- |
 | `name` | | the relation reaching the level from the level above |
-| `columns` | the level's visible list columns, without the one pointing back up | its columns, by their names in the level resource's `list_display`; the first beside the arrow |
+| `columns` | the level's visible list columns, without the one pointing back up, then its long texts hidden in the list | its columns, by their names in the level resource's `list_display`; the first beside the arrow |
 | `title` | the model's plural name | the heading above its records |
 | `editable` | `True` | `False`: this level read only |
 | `position` | the integer field its ordering starts with | the field keeping the records in order among their parent's, dragged in edit mode; `False`: none |

@@ -29,7 +29,7 @@ The example's *Equipment* group is exactly these two lines
 
 | Declaration | From the model |
 | --- | --- |
-| `list_display` | the field that names a row first — `name`, `title`, `label`, `reference`, `code`… or else the first plain text field — then the others in the model's order, at most `max_columns` (7). Left out: long text, JSON, files, UUIDs, anything named like a secret (`password`, `token`, `secret`, `api_key`, `hash`), values nobody writes — except a date the application keeps, such as `created_at` |
+| `list_display` | the field that names a row first — `name`, `title`, `label`, `reference`, `code`… or else the first plain text field — then the others in the model's order, at most `max_columns` (7). Left out: long text, JSON, files, UUIDs, anything named like a secret (`password`, `token`, `secret`, `api_key`, `hash`), values nobody writes — except a date the application keeps, such as `created_at`. The long texts (`TextField`: a comment's body, notes) come last, hidden at first (`list_display_hidden`): the column picker offers them, an [outline](outlines.md) shows them, the grid writes them |
 | `search_fields` | the text fields (the naming one first), then the name of each record a row points at: `supplier__name` |
 | `tag_fields` | every field with choices, drawn as a coloured tag — one colour a choice, in the order they are declared |
 | `fieldsets` | the naming field alone, then the short fields **two a row**, long text and many-to-many fields the whole width underneath |

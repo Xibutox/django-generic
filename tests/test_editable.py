@@ -576,7 +576,10 @@ class TestTheEditButton:
             "website",
             "country",
             "is_preferred",
+            # A long text: a column the list starts without.
+            "notes",
         )
+        assert site.get_resource(Supplier).list_display_hidden == ("notes",)
         # The list's own fields on the form - a relation too.
         assert "supplier" in site.get_resource(Equipment).editable_fields
         assert site.get_resource(Supplier).list_editable == "toggle"

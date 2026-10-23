@@ -324,6 +324,7 @@
     this.root.classList.toggle("is-editing", this.editing);
 
     this.top.items.forEach(function walk(node) {
+      self.drawOpenLink(node);
       node.cells.forEach(function (cell) {
         if (!cell.writable) {
           return;
@@ -621,11 +622,9 @@
       var open = el("a", "icon-button icon-button--sm outline-row__open");
 
       open.href = node.url;
-      open.title = t("Open");
-      open.setAttribute("aria-label", t("Open"));
       open.tabIndex = -1;
-      open.appendChild(icon("open_in_new"));
       tools.appendChild(open);
+      node.openLink = open;
     }
 
     row.appendChild(tools);
@@ -636,6 +635,7 @@
     });
 
     node.element = row;
+    this.drawOpenLink(node);
     node.cells.forEach(function (cell) {
       self.drawCell(cell);
 
@@ -646,6 +646,25 @@
     this.updateRow(node);
 
     return row;
+  };
+
+  /** The icon at the end of a row: the record's page, or - editing -
+   * its form in a dialog. */
+  OutlineView.prototype.drawOpenLink = function (node) {
+    var link = node.openLink;
+
+    if (!link) {
+      return;
+    }
+
+    var dialog = this.opensInDialog(node);
+    var label = dialog ? t("Edit in a dialog") : t("Open");
+
+    link.textContent = "";
+    link.appendChild(icon(dialog ? "edit_square" : "open_in_new"));
+    link.title = label;
+    link.setAttribute("aria-label", label);
+    link.classList.toggle("is-dialog", dialog);
   };
 
   /** A read-only cell; the first one links to the record's page. */

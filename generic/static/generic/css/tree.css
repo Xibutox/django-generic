@@ -393,5 +393,25 @@ div.dt-container.is-outline .dt-edit-toggle {
 
 /* A long text needs room to be read and written in its cell. */
 .outline-table td.grid-cell textarea {
-  min-width: 18rem;
+  min-width: 14rem;
+}
+
+/* Editing: the row's icon opens its whole form in a dialog. */
+.outline-table .outline-row__open.is-dialog {
+  color: var(--color-accent);
+}
+
+/* However wide the rows get - controls take room - the icon opening a
+   record stays in sight, at the right edge. */
+.outline-table td.tree-table__tools,
+.outline-table th.tree-table__tools {
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 1;
+  background: var(--surface-raised);
+  box-shadow: -1px 0 0 var(--border-color);
+}
+
+.outline-table .tree-row:not(.tree-row--foot):hover td.tree-table__tools {
+  background: var(--surface-sunken);
 }

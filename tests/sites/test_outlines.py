@@ -338,6 +338,8 @@ class TestWhoSeesWhat:
             "state",
             "assigned_to",
             "purchased_on",
+            # A long text: hidden in the list, shown and written here.
+            "notes",
         }
         assert (
             equipment["editableUrl"] == "/api/example/equipment/{_pk}/cells/"
@@ -362,6 +364,8 @@ class TestTheConfiguration:
             "website",
             "country",
             "is_preferred",
+            # A long text the list starts without.
+            "notes",
         ]
         # The column pointing back at the supplier says nothing here.
         assert "supplier" not in [
@@ -726,3 +730,21 @@ class TestTheRecordInADialog:
         )
         # A page of its own is left to the site's rule.
         assert admin_client.get(url).get("X-Frame-Options") != "SAMEORIGIN"
+
+
+class TestLongTexts:
+    def test_auto_shows_and_writes_them(self, other_site, rf, admin_user):
+        from example.models import Ticket, TicketComment
+
+        other_site.auto(Ticket, outline=("comments",))
+        other_site.complete_auto()
+        comments = other_site.get_resource(TicketComment)
+
+        # In the list, hidden at first; written by the grid.
+        assert comments.list_display[-1] == "body"
+        assert comments.list_display_hidden == ("body",)
+        assert "body" in comments.editable_fields
+
+        # Their order: the model's.
+        bound = other_site.get_resource(Ticket).get_outline()
+        assert bound.position_of(bound.levels[1]) == "position"

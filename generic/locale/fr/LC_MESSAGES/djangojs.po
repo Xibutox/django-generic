@@ -2419,3 +2419,7 @@ msgstr "L’enregistrement a échoué."
 #: generic/static/generic/js/datatables/outline.js
 msgid "Drag to put in another order"
 msgstr "Glisser pour changer l’ordre"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Edit in a dialog"
+msgstr "Modifier dans une fenêtre"
