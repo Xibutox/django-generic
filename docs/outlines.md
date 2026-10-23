@@ -80,7 +80,10 @@ written as a [grid](editable.md) writes it:
 *Stop editing* puts the values back. A page opened as the list's grid
 (`?edit=1`, below) opens its outline in edit mode too.
 
-A long text is a textarea in its cell, written when it is left. A level
+A long text is a textarea in its cell, written when it is left, and as
+tall as what it holds plus one line to write on: one line when empty,
+two for a line of text, three for two - lines the cell's width wraps
+count too. A level
 that names no columns shows its long texts after its visible columns -
 with `auto()`, a model's `TextField`s are in its list, hidden at first,
 so a comment's body is there and written in place with nothing
@@ -92,7 +95,17 @@ show: a text the list leaves out, its own inlines, its files. Saved
 there, its level is read again; the outline stays where it was. The
 dialog is the form's popup (`?_popup=1`), the one a relation's pencil
 opens, in a frame of the page: offered to readers with the change
-permission on the level's model.
+permission on the level's model. That popup answers
+`X-Frame-Options: SAMEORIGIN`, and `Content-Security-Policy:
+frame-ancestors 'self'` when the site sends no policy of its own - the
+browser reads that one first, so a second `X-Frame-Options` added in
+front of Django (a proxy, a middleware: *conflicting values, falling
+back to deny*) does not refuse it. A frame refused all the same opens
+the form in a window of its own instead, which answers the outline the
+same way.
+
+The rows alternate their colour as a table's do, counted down the
+page whatever their level.
 
 `auto()` works `editable_fields` out (see below), so an `auto` outline
 is editable without a word more. On a hand-declared resource the

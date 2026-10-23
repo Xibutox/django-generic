@@ -37,7 +37,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   starts with, or `Level(position=...)` - are dragged into another
   (`POST .../outline/move/`). `auto()` lists a model's long texts
   (`TextField`) last, hidden at first, so an outline shows them and
-  writes them in place with nothing declared. See docs/outlines.md.
+  writes them in place with nothing declared. A record's popup form
+  also answers `Content-Security-Policy: frame-ancestors 'self'` when
+  the site enforces no policy, so a second `X-Frame-Options` from a
+  proxy does not refuse the dialog; a frame refused anyway opens the
+  form in a window. Outlines' and trees' rows alternate their colour,
+  and an outline's long texts are as tall as their text plus a line.
+  See docs/outlines.md.
 - An *Edit* button on a list: `list_editable = "toggle"` keeps the
   list a list and puts *Edit* in its toolbar, the page coming back as
   the grid of its `editable_fields` (`?edit=1`, filters kept) for

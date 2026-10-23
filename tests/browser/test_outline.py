@@ -233,3 +233,86 @@ def test_comments_are_written_moved_and_opened_in_a_dialog(
     expect(dialog).to_have_count(0)
     expect(author_of(comment_rows(page).first)).to_have_value("Camille R.")
     assert order()[0] == "Camille R."
+
+
+def test_a_long_text_is_as_tall_as_it_needs(page, admin, sign_in, desk):
+    sign_in(admin)
+    page.goto("/example/ticket/?outline=1")
+    unfold(page, 0, "SD-1001")
+    page.locator(".dt-outline-edit").click()
+
+    body = comment_rows(page).first.locator("textarea")
+    expect(body).to_be_visible()
+
+    def lines():
+        return body.evaluate(
+            "(area) => Math.round((area.clientHeight"
+            " - parseFloat(getComputedStyle(area).paddingTop)"
+            " - parseFloat(getComputedStyle(area).paddingBottom))"
+            " / parseFloat(getComputedStyle(area).lineHeight))"
+        )
+
+    # One line written, one more to write on.
+    assert lines() == 2
+
+    body.fill("")
+    assert lines() == 1
+
+    body.fill("First\nSecond")
+    assert lines() == 3
+
+
+def test_the_rows_alternate_their_colour(page, admin, sign_in, desk):
+    sign_in(admin)
+    page.goto("/example/ticket/?outline=1")
+    unfold(page, 0, "SD-1001")
+
+    striped = page.locator("tr.outline-row.is-stripe")
+    expect(striped.first).to_be_attached()
+    stripes = page.evaluate(
+        "() => Array.from(document.querySelectorAll("
+        "'.outline-table tr.tree-row:not(.tree-row--foot)"
+        ":not(.tree-row--head)')).map("
+        "(row) => row.classList.contains('is-stripe'))"
+    )
+    assert stripes[:2] == [False, True]
+    assert all(a != b for a, b in zip(stripes, stripes[1:]))
+
+
+def test_a_refused_frame_opens_a_window(
+    page, admin, sign_in, desk, monkeypatch, console
+):
+    """A server or a proxy refusing to be framed, whatever we say."""
+    from generic.sites.views import ResourceFormView
+
+    dispatch = ResourceFormView.dispatch
+
+    def refusing(self, request, *args, **kwargs):
+        response = dispatch(self, request, *args, **kwargs)
+        response["X-Frame-Options"] = "DENY"
+        response["Content-Security-Policy"] = "frame-ancestors 'none'"
+        return response
+
+    monkeypatch.setattr(ResourceFormView, "dispatch", refusing)
+    sign_in(admin)
+    page.goto("/example/ticket/?outline=1")
+    unfold(page, 0, "SD-1001")
+    page.locator(".dt-outline-edit").click()
+
+    with page.expect_popup() as opened:
+        comment_rows(page).first.locator(".outline-row__open").click()
+
+    window = opened.value
+    expect(page.locator("dialog.dialog--frame")).to_have_count(0)
+    author = window.get_by_role("textbox", name="Author", exact=True)
+    expect(author).to_have_value("Camille Rousseau")
+    author.fill("Camille W.")
+    window.get_by_role("button", name="Save", exact=True).click()
+
+    # The window closes itself and the outline shows the change.
+    expect(author_of(comment_rows(page).first)).to_have_value("Camille W.")
+
+    # The browser's word on the refused frame is the one error expected.
+    console.errors[:] = [
+        error for error in console.errors if "frame-ancestors" not in error
+    ]

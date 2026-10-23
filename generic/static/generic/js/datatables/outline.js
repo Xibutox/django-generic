@@ -59,6 +59,20 @@
     }
   }
 
+  /** Every other record's row shaded, as a table's are: counted down
+   * the page, whatever level each is at. */
+  function stripe(body) {
+    var shaded = false;
+
+    Array.prototype.forEach.call(
+      body.querySelectorAll("tr.tree-row:not(.tree-row--foot):not(.tree-row--head)"),
+      function (row) {
+        row.classList.toggle("is-stripe", shaded);
+        shaded = !shaded;
+      }
+    );
+  }
+
   function focusWithin(node) {
     return Boolean(node && node.contains(document.activeElement));
   }
@@ -905,6 +919,7 @@
     }
 
     this.mountPending();
+    stripe(body);
 
     if (!body.querySelector('tr[tabindex="0"]')) {
       var first = body.querySelector("tr.outline-row");
@@ -1009,7 +1024,36 @@
     }
 
     widget.set(value, helpers.labelsOf(row, cell.name, schema, value));
+    fitText(cell);
   };
+
+  /**
+   * A long text is as tall as what it holds, plus one line to write
+   * on: one line when empty, two for one line, three for two - lines
+   * wrapped by the cell's width count too.
+   */
+  function fitText(cell) {
+    var area = cell.widget && cell.widget.focus;
+
+    if (!area || area.tagName !== "TEXTAREA") {
+      return;
+    }
+
+    var style = window.getComputedStyle(area);
+    var line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4 || 20;
+    var padding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    var border = (parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0);
+    var lines = 0;
+
+    area.rows = 1;
+    area.style.height = "0px";
+
+    if (area.value) {
+      lines = Math.max(1, Math.round((area.scrollHeight - padding) / line));
+    }
+
+    area.style.height = Math.ceil((lines + 1) * line + padding + border) + "px";
+  }
 
   /** Back to the value, drawn as the table draws it. */
   OutlineView.prototype.unmountCell = function (cell) {
@@ -1034,6 +1078,12 @@
       }
     }
 
+    cell.td.addEventListener("input", function () {
+      fitText(cell);
+    });
+    cell.td.addEventListener("focusin", function () {
+      fitText(cell);
+    });
     cell.td.addEventListener("change", changed);
     cell.td.addEventListener("generic:change", changed);
     cell.td.addEventListener("focusout", function () {
@@ -1056,6 +1106,7 @@
         self.commit(cell);
       } else if (event.key === "Escape") {
         cell.widget.set(cell.saved, helpers.labelsOf(cell.node.row, cell.name, cell.schema, cell.saved));
+        fitText(cell);
         self.clearError(cell);
       }
 
@@ -1132,6 +1183,7 @@
 
         if (helpers.sameValue(cell.widget.get(), value)) {
           cell.widget.set(saved, helpers.labelsOf(node.row, cell.name, cell.schema, saved));
+          fitText(cell);
         }
 
         cell.saved = saved;
@@ -1180,6 +1232,7 @@
       if (!helpers.sameValue(cell.saved, value)) {
         cell.saved = value;
         cell.widget.set(value, helpers.labelsOf(node.row, cell.name, cell.schema, value));
+        fitText(cell);
       }
     });
   };

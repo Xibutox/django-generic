@@ -415,3 +415,20 @@ div.dt-container.is-outline .dt-edit-toggle {
 .outline-table .tree-row:not(.tree-row--foot):hover td.tree-table__tools {
   background: var(--surface-sunken);
 }
+
+/* Every other record shaded, as in a table (tree.js, outline.js). */
+.tree-row.is-stripe {
+  background: var(--surface-stripe);
+}
+
+.outline-table tr.is-stripe td.tree-table__tools {
+  background: var(--surface-stripe);
+}
+
+/* Sized to its text by the outline (one line more than it holds), not
+   the form's six rem. */
+.outline-table td.grid-cell textarea {
+  min-height: 0;
+  resize: none;
+  overflow-y: hidden;
+}

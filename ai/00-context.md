@@ -2015,7 +2015,12 @@ button centre on its first line of text (`--message-line`).
   framed dialog, `?_popup=1&_relation_request=`; resolves `{saved, id,
   label}`, `{deleted}` or null; form.js posts `generic:relation-saved` /
   `generic:relation-deleted` to the opener or the framing page;
-  `ResourceFormView` answers `X-Frame-Options: SAMEORIGIN` for popups).
+  `ResourceFormView` answers `X-Frame-Options: SAMEORIGIN` for popups,
+  plus `Content-Security-Policy: frame-ancestors 'self'` when no policy
+  is enforced (`views.framed_by_this_site`); a frame refused anyway
+  falls back to a window, `window.open`, then a button in the dialog
+  when the browser blocks it). Outline and tree rows get `is-stripe`
+  every other row; outline textareas fit their text (`fitText`).
 - `Generic.t(text)`, `Generic.format("%(n)s", {n: 1})`, `Generic.ready(fn)`,
   `Generic.debounce(fn, ms)`, `Generic.isSafeUrl(url)`, `Generic.config()`,
   `Generic.formatSize(bytes)`.

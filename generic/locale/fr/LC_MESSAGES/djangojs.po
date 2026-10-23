@@ -2423,3 +2423,7 @@ msgstr "Glisser pour changer l’ordre"
 #: generic/static/generic/js/datatables/outline.js
 msgid "Edit in a dialog"
 msgstr "Modifier dans une fenêtre"
+
+#: generic/static/generic/js/dialogs.js
+msgid "This page may not be shown in a dialog here."
+msgstr "Cette page ne peut pas s’afficher dans une fenêtre ici."

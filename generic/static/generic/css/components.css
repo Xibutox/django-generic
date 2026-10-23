@@ -1342,6 +1342,15 @@ dialog.dialog--frame .dialog__body {
   background: var(--surface-page);
 }
 
+/* The frame refused and the window blocked: one click opens it. */
+.dialog__refused {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
 dialog.dialog::backdrop {
   background: var(--surface-overlay);
 }

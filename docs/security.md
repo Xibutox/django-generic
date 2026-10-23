@@ -87,7 +87,12 @@ GENERIC = {"CONTENT_SECURITY_POLICY": "recommended"}
 A record's form opened as a popup (`?_popup=1`) answers
 `X-Frame-Options: SAMEORIGIN`, so the site's own pages can show it in a
 dialog (an outline's records, `Generic.dialogs.record`); every other
-page keeps the site's setting (`DENY` with Django's middleware).
+page keeps the site's setting (`DENY` with Django's middleware). With
+no enforced policy (`CONTENT_SECURITY_POLICY` unset, report-only, or
+`CSPMiddleware` not installed) that popup also answers
+`Content-Security-Policy: frame-ancestors 'self'`, which browsers read
+before `X-Frame-Options`: a proxy adding its own `X-Frame-Options:
+DENY` would otherwise make two conflicting values, read as `DENY`.
 
 A dict of your own replaces it; `"'nonce'"` in a list stands for the
 request's nonce:

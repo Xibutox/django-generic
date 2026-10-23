@@ -731,6 +731,38 @@ class TestTheRecordInADialog:
         # A page of its own is left to the site's rule.
         assert admin_client.get(url).get("X-Frame-Options") != "SAMEORIGIN"
 
+    def test_without_a_policy_the_browser_is_told_too(
+        self, admin_client, support_desk, settings
+    ):
+        """``frame-ancestors`` outranks a second, conflicting header."""
+        settings.GENERIC = {
+            **getattr(settings, "GENERIC", {}),
+            "CONTENT_SECURITY_POLICY": None,
+        }
+        url = f"/example/ticketcomment/{support_desk['comment'].pk}/change/"
+
+        popup = admin_client.get(url + "?_popup=1")
+        assert popup["Content-Security-Policy"] == "frame-ancestors 'self'"
+        assert "Content-Security-Policy" not in admin_client.get(url)
+
+    def test_an_enforced_policy_is_left_whole(
+        self, admin_client, support_desk, settings
+    ):
+        settings.MIDDLEWARE = [
+            "generic.middleware.CSPMiddleware",
+            *settings.MIDDLEWARE,
+        ]
+        settings.GENERIC = {
+            **getattr(settings, "GENERIC", {}),
+            "CONTENT_SECURITY_POLICY": "recommended",
+            "CONTENT_SECURITY_POLICY_REPORT_ONLY": False,
+        }
+        url = f"/example/ticketcomment/{support_desk['comment'].pk}/change/"
+
+        policy = admin_client.get(url + "?_popup=1")["Content-Security-Policy"]
+        assert "script-src" in policy
+        assert "frame-ancestors 'self'" in policy
+
 
 class TestLongTexts:
     def test_auto_shows_and_writes_them(self, other_site, rf, admin_user):
