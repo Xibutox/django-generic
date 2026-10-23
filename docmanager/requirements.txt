@@ -9,4 +9,4 @@ pypdf>=4.0
 # The XML inside Office files read safely, whoever uploaded them:
 defusedxml>=0.7
 # Word files previewed as HTML (cleaned with nh3, from the wiki extra):
-mammoth>=1.6
+mammoth>=1.13.0
