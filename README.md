@@ -107,14 +107,14 @@ Build its wheel from this repository, keep it in the project's
 
 ```bash
 git clone https://github.com/Xibutox/django-generic.git
-cd django-generic && git checkout v1.4.0
+cd django-generic && git checkout v1.5.0
 python -m pip wheel --no-deps --wheel-dir dist .
-mkdir -p ../mysite/vendor && cp dist/django_generic-1.4.0-py3-none-any.whl ../mysite/vendor/
+mkdir -p ../mysite/vendor && cp dist/django_generic-1.5.0-py3-none-any.whl ../mysite/vendor/
 ```
 
 ```text
 # mysite/requirements.txt
-./vendor/django_generic-1.4.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+./vendor/django_generic-1.5.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
 ```bash
@@ -233,6 +233,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Duplicating records](docs/duplicate.md) — `duplicate = True` or `Duplicate(...)`: a record's values in a new add form, edited before it is written, its many-to-many values, inline rows and declared relations ticked to come along; wiki pages and wikis too
 - [Labels](docs/labels.md) — `labels = Labels(...)`: stickers with a QR code leading to each record, printed from a selection or a record's page
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
+- [Outlines](docs/outlines.md) — `outline = ("equipment", "maintenances")`: a list unfolding into its related records, level after level, behind an *Outline* button, every level edited in place
 - [Teams](docs/teams.md) — records split between teams: `team_field` narrows every screen, endpoint and form to the reader's teams; team leaders
 - [Numbering](docs/numbering.md) — `allocate("{team}-{year}-{seq:04}", team="LEG")`: numbers from a pattern, each series counting on its own, under a lock
 - [User guide](docs/user-guide/guide-utilisateur.docx) — for the people using an application built on the framework: the everyday actions of every screen, in Word (French) and as a page every wiki starts with ([how](docs/wiki.md#the-user-guide))
@@ -336,6 +337,27 @@ python manage.py runserver
 ```
 
 See [its README](docmanager/README.md).
+
+### The logbook
+
+`logbook/` is a planner merged with a note-taking app and a time
+tracker. Notes are written line by line - headings, bullets, check
+boxes - and a line can be a task: an FNC (a ticket, with its
+criticality), a DM (an evolution) or an AUT (a meeting, support),
+numbered on its own, with its status and a timer beside it, about
+several projects or none. The tasks are on a board, by status or by person; the time logged
+is on a timesheet drawn on the hours, where an entry is moved and
+stretched, a task dropped on a time logs an hour of it, and a lead
+verifies the week:
+
+```bash
+cd logbook
+python manage.py migrate
+python manage.py seed_planner
+python manage.py runserver
+```
+
+See [its README](logbook/README.md).
 
 ### The full example
 

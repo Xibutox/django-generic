@@ -25,7 +25,8 @@ class TimeEntryResource(ModelResource):
 | `Grid(...)` on the resource, shown by `GridView` | any set of rows you choose: many records corrected at once — [below](#any-set-of-records-declared-grids) |
 | `get_table_config(request, editable=True)` | the resource's own rows, on a page of your own |
 | `RelatedTable(..., editable=True)` | a tab on a record's summary |
-| `list_editable = True` on the resource | its own list page. Off by default |
+| `list_editable = True` on the resource | its own list page, for good. Off by default |
+| `list_editable = "toggle"` on the resource | its own list page, behind an *Edit* button in its toolbar (`?edit=1`) — what `auto()` declares ([below](#an-edit-button-on-the-list)) |
 
 Whichever it is, the grid can also **add rows**: see [Adding rows](#adding-rows).
 
@@ -424,3 +425,22 @@ selection, no undo beyond the history tab. Rows are added one draft at
 a time and removed with the *Delete* bulk action; for a handful of
 fields on one record, the record's own form still exists and is one
 click away.
+
+## An Edit button on the list
+
+Between a list that only reads and a list that is a grid for good,
+`list_editable = "toggle"`: the list stays a list, and its toolbar gets
+an **Edit** button. Pressed, the page comes back as the grid -
+`?edit=1` in the address, the filters and the search kept - and the
+button, now *Stop editing*, brings the list back. Readers who may write
+none of the `editable_fields` get no button, and `?edit=1` gives them
+the list.
+
+`auto()` declares it for every list whose editable columns it worked
+out: the list's columns that are the model's own fields on its form,
+never a file, a key, a read-only field or a state field. Declare
+`editable_fields` to choose them, `list_editable=False` for no button.
+
+A list with an [outline](outlines.md) has the same button on the
+outline, editing its levels in place.
+

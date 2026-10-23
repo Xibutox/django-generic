@@ -62,7 +62,9 @@ from generic.sites import (
     Import,
     Kpi,
     Labels,
+    Level,
     ModelResource,
+    Outline,
     RelatedRows,
     RelatedTable,
     ResourcePage,
@@ -489,6 +491,15 @@ class TicketResource(ModelResource):
         ),
         RelatedTable("comments"),
     )
+    # The list's Outline button: each ticket unfolds into its comments,
+    # their text written in place. Comments keep an order of their own
+    # (TicketComment.position, which their ordering starts with): while
+    # editing, they are dragged into another, and a comment's link opens
+    # its whole form in a dialog.
+    outline = Outline(
+        Level("comments", columns=("author", "body", "created_at")),
+        title=_("Conversation"),
+    )
     # A page of each ticket of the project's own: /example/ticket/<pk>/
     # timeline/, a button on the ticket's page and an entry of each row's
     # menu. Written as a view of its own (example/pages.py), which is
@@ -680,6 +691,20 @@ class TicketResource(ModelResource):
             fields=("customer", "status", "assignee"),
             editable=True,
             navigation=True,
+        ),
+        # When the tickets come in, hour by hour: the week and the day
+        # drawn as hours (opened_at is a date and time). Read only -
+        # nobody moves the moment a ticket was opened.
+        Calendar(
+            "arrivals",
+            date="opened_at",
+            title=_("Arrivals"),
+            icon="schedule",
+            description=_("Each ticket at the hour it was opened."),
+            color="priority",
+            fields=("customer", "team"),
+            hours=(7, 20),
+            views=("week", "day", "month"),
         ),
     )
 
@@ -888,6 +913,9 @@ class TicketCommentResource(ModelResource):
     show_in_navigation = False
 
     list_display = ("position", "author", "body", "created_at")
+    # Written in place where the comments are shown as rows: the
+    # tickets' outline.
+    editable_fields = ("author", "body")
     search_fields = ("author", "body")
     ordering = ("ticket", "position")
     fields = ("ticket", "author", "body", "position")
@@ -1057,7 +1085,22 @@ class CustomerResource(ModelResource):
         "hours_logged",
         "average_satisfaction",
     )
+    # The list unfolds: each customer's tickets, each ticket's time
+    # entries - the *Outline* button of the table's toolbar. The cells
+    # the ticket and time entry resources let their reader edit are
+    # edited there (docs/outlines.md).
+    outline = Outline(
+        Level(
+            "tickets",
+            columns=("reference", "title", "assignee", "priority", "due_on"),
+        ),
+        Level("time_entries", columns=("spent_on", "agent", "hours", "note")),
+        title=_("Tickets and time"),
+        columns=("name", "segment", "account_manager", "ticket_count"),
+    )
     related_tables = (
+        # Its Outline button unfolds the tickets into their time
+        # entries: what the outline above has below the tickets.
         RelatedTable(
             "tickets",
             description=_("Every ticket raised for this customer."),
@@ -1231,7 +1274,11 @@ class TeamResource(ModelResource):
 
     detail_stats = ("open_tickets", "agent_total", "hours_logged")
     related_tables = (
-        RelatedTable("tickets", charts=("by_status",)),
+        # Each of the team's tickets unfolds into its time entries: the
+        # tab's Outline button.
+        RelatedTable(
+            "tickets", charts=("by_status",), outline=("time_entries",)
+        ),
         RelatedTable(
             "agents",
             columns=("name", "email", "is_active", "capacity_hours"),
@@ -1365,11 +1412,20 @@ class TagResource(ModelResource):
 # equipment it belongs to.
 # On the supplier's form, each piece of equipment opens its own form in
 # a popup window - where its visits are edited - and its row is read
-# again once saved.
+# again once saved. Each list also has an *Edit* button, turning it
+# into a grid of the columns worked out as editable.
 
 EQUIPMENT = _("Equipment")
 
-auto(Supplier, related=("equipment",), group=EQUIPMENT)
+auto(
+    Supplier,
+    related=("equipment",),
+    group=EQUIPMENT,
+    # The suppliers' list unfolds into their equipment, and each piece
+    # into its visits: the *Outline* button above the table, every
+    # level edited in place (docs/outlines.md).
+    outline=("equipment", "maintenances"),
+)
 auto(
     Equipment,
     related=("maintenances",),

@@ -25,7 +25,7 @@ repos:
         entry: flake8
         language: system
         types: [python]
-        files: ^(generic|tests|example|example_project|minimal|docmanager|scripts)/|^debug\.py$
+        files: ^(generic|tests|example|example_project|minimal|docmanager|logbook|scripts)/|^debug\.py$
         exclude: /migrations/
       - id: message-catalogs
         name: message catalogs compiled

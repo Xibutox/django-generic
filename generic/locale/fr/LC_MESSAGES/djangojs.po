@@ -2370,3 +2370,124 @@ msgstr "Annulé."
 #: generic/static/generic/js/core.js
 msgid "This could not be undone."
 msgstr "L’annulation a échoué."
+
+#: generic/static/generic/js/calendar.js
+msgid "Day"
+msgstr "Jour"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(hours)s h %(minutes)s"
+msgstr "%(hours)s h %(minutes)s"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(hours)s h"
+msgstr "%(hours)s h"
+
+#: generic/static/generic/js/calendar.js
+msgid "Time on this day"
+msgstr "Temps sur ce jour"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag across the hours to add one."
+msgstr "Faites glisser sur les heures pour en ajouter un."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag a record to move it, its lower edge to change its end."
+msgstr "Faites glisser un enregistrement pour le déplacer, son bord inférieur pour changer sa fin."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drop one of the list on a time to plan it."
+msgstr "Déposez un élément de la liste sur une heure pour le planifier."
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag to change its end"
+msgstr "Faites glisser pour changer la fin"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(label)s changed."
+msgstr "%(label)s modifié."
+
+#: generic/static/generic/js/calendar.js
+msgid "Show more"
+msgstr "Afficher plus"
+
+#: generic/static/generic/js/calendar.js
+msgid "Search %(name)s"
+msgstr "Rechercher dans %(name)s"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag one onto the calendar."
+msgstr "Faites-en glisser un sur le calendrier."
+
+#: generic/static/generic/js/calendar.js
+msgid "Nothing to offer."
+msgstr "Rien à proposer."
+
+#: generic/static/generic/js/calendar.js
+msgid "The list could not be loaded."
+msgstr "La liste n’a pas pu être chargée."
+
+#: generic/static/generic/js/calendar.js
+msgid "%(label)s planned."
+msgstr "%(label)s planifié."
+
+#: generic/static/generic/js/calendar.js
+msgid "The record could not be created."
+msgstr "L’enregistrement n’a pas pu être créé."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Outline"
+msgstr "Arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Back to the table"
+msgstr "Revenir au tableau"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Show the rows as an outline"
+msgstr "Afficher les lignes en arborescence"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit"
+msgstr "Modifier"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Stop editing"
+msgstr "Terminer la modification"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Edit the rows in place"
+msgstr "Modifier les lignes sur place"
+
+#: generic/static/generic/js/datatables/outline.js
+#: generic/static/generic/js/datatables/toolbar.js
+msgid "Back to reading the rows"
+msgstr "Revenir à la lecture des lignes"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Open"
+msgstr "Ouvrir"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Add %(name)s"
+msgstr "Ajouter : %(name)s"
+
+#: generic/static/generic/js/datatables/editable.js
+#: generic/static/generic/js/datatables/outline.js
+msgid "This could not be saved."
+msgstr "L’enregistrement a échoué."
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Drag to put in another order"
+msgstr "Glisser pour changer l’ordre"
+
+#: generic/static/generic/js/datatables/outline.js
+msgid "Edit in a dialog"
+msgstr "Modifier dans une fenêtre"
+
+#: generic/static/generic/js/dialogs.js
+msgid "This page may not be shown in a dialog here."
+msgstr "Cette page ne peut pas s’afficher dans une fenêtre ici."

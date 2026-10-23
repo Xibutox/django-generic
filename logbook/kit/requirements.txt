@@ -1,0 +1,8 @@
+# The logbook's libraries. The framework comes as a file in vendor/ (the
+# kit's own copy, made by scripts/logbook_kit.py), with its Excel export
+# and its PostgreSQL driver.
+--find-links vendor
+django-generic[export,postgres]
+gunicorn>=22
+whitenoise>=6.6
+requests>=2.31

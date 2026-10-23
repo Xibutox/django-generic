@@ -56,7 +56,7 @@ pages, charts, filters, exports or permissions.
 | Tests | pytest, pytest-django, factory-boy; Playwright for the opt-in browser tests |
 | Style | black + isort (line length **79**), flake8 |
 
-Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.4.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.4,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
+Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.5.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.5,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
 
 ---
 
@@ -97,7 +97,8 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
-│   │                       RelatedTable, Grid, Tree, Calendar, Kpi, Cards, Chart,
+│   │                       RelatedTable, Grid, Tree, Outline, Level, Calendar, Kpi,
+│   │                       Cards, Chart,
 │   │                       TagStyle, TabularInline,
 │   │                       StackedInline, action, display, chart_payload
 │   ├── site.py             GenericSite: registry, URLs, navigation, search, chrome, add_link,
@@ -118,10 +119,13 @@ generic/
 │   │                       dashboard; GridView (a declared grid's page)
 │   ├── related.py          RelatedTable: tables of related records on a summary page
 │   ├── trees.py            Tree, BoundTree, TreePageView: records holding records
+│   ├── outlines.py         Outline, Level, BoundOutline: a list unfolding into related
+│   │                       records level by level, edited in place (§5.26)
 │   ├── tree_rows.py        FlatTree: a tree laid flat, a table per record (flat=True)
 │   │                       (self FK or link model), a level at a time; no cycles
-│   ├── calendars.py        Calendar, BoundCalendar, CalendarPageView: records on their
-│   │                       days, a page each, moved by dragging (§5.20)
+│   ├── calendars.py        Calendar, Allocate, BoundCalendar, CalendarPageView: records
+│   │                       on their days or hours, a page each, moved by dragging,
+│   │                       related records dropped on a time (§5.20)
 │   ├── boards.py           Board, BoundBoard, BoardPageView: records as cards, a column
 │   │                       per value of a field, moved by dragging (§5.22)
 │   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
@@ -256,7 +260,8 @@ generic/
     ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
     │                       element (tree, cards, calendar); loaded by base.html
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
-    ├── js/calendar.js      Generic.calendar: month, week, list; drag to move (§5.20)
+    ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
+    │                       resize, allocate (§5.20)
     ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
     ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
@@ -266,6 +271,7 @@ generic/
     │                       tree + typed syntax), toolbar, filterbar (chips,
     │                       editor, header funnels), filterrow (search fields
     │                       under the headers), selection, rowactions,
+    │                       editable (grid cells; namespace.cells), outline (§5.26),
     │                       realtime, table (controller holding the filters), init
     ├── js/forms/           form.js (schema form), inlines.js, widgets.js
     └── vendor/             jquery, datatables, select2, alpine, quill, echarts, material-symbols
@@ -372,6 +378,59 @@ role *Quality*), types, a document without a file, three workflows,
 three reviews under way, and Word/PDF/text samples (`samples.py`; a
 `.dotx` holds `{{ documents }}`). Kept working by
 `tests/test_docmanager.py`, run in its own process.
+
+`logbook/` is a fourth, self-contained project (`logsite/settings.py`,
+app `planner`, French and English): notes, tasks and time. `Note`
+(title, project, labels, pinned, author) holds ordered `NoteLine`s
+(kind text/heading/bullet/check/task, indent, done); a *task* line owns
+a `Task` (one-to-one, `line`): `kind` FNC (a ticket), DM (an evolution)
+or AUT (other: meetings, support), `criticality` minor/major/critical
+(FNC only: required by `clean`, emptied for the others by `save`, a
+ticket from a note starting major), `projects` (many-to-many, may be
+empty; a note's task starts with the note's project), `reference`
+numbered per kind by `generic.numbering` (FNC-0001), status
+backlog/todo/doing/review/done (`done_at` kept),
+priority, assignee, due date, estimate. `TimeEntry` (task, user,
+`started_at`, `ended_at` - empty while the timer runs - `hours`
+computed, comment, `verified`/`_by`/`_at`, permission
+`verify_timeentry`). The note's detail page carries a line editor
+(`planner/static/planner/note.js`, template
+`generic/resource/planner/note/detail.html`) that reads and posts the
+whole note to the `@page document` (`planner/documents.py`: lines
+synced in one transaction, a task created by a task line - `add_task`
+- renamed with it, and deleted when its line goes only if untouched).
+`planner/timers.py`: one running entry a person, starting one stops
+the other and moves a backlog/todo task to doing (`@page timer`,
+*Start timer*/*Stop timer* actions). Everything else is the
+framework's: the task board (`Board` on status, editable) and one by
+assignee, a due-date calendar, kpis and cards on the dashboard, charts,
+and the *Timesheet* (`Calendar` with `hours`, `editable`, `Allocate`
+of the tasks under way; `create_editable` fills the user), verified by
+the *Verify* action. `seed_planner` (idempotent) makes groups
+Planners, Leads (verify) and Readers, accounts admin, alice, bob and
+viewer (password `demo`), three projects, five notes, fifteen tasks
+and four weeks of time. Kept working by `tests/test_logbook.py`, run in
+its own process.
+
+The logbook also replaces an older planner (`logbook/migration/`,
+`logbook/kit/`): `Direction`, `Imputation` (a task's accounting code,
+`Task.imputation`), `ImputationShare` (the distribution matrix) and
+`KpiRecord` (COMET/DES usage by month and year, written by `sync_kpi`
+through `planner/tools.py`, every address and secret from the
+environment). `planner/kpi.py` serves the old key figures API at
+`planner/api/kpi/` and `planner/api/kpi/year/` (plain Django views in
+`logsite/urls.py`, JSON byte-for-byte the old one's, open unless
+`LOGBOOK_KPI_TOKEN`). `planner/imputations.py` is the old Excel export
+(8 h to 7.4 h days, largest-remainder shares), reached by the time
+entries' *Export imputations* action through `@page imputation_export`;
+`@page workdays` shows each day of the month at 8 h or not.
+`migration/export_planner.py` runs in the old project and writes one
+JSON file; `import_planner` reads it (idempotent through `legacy_id` on
+`Task` and `TimeEntry`, `--dry-run`) and compares its key figures with
+the old API's answers the file carries. `scripts/logbook_kit.py`
+assembles a standalone folder: the logbook, the framework's wheel in
+`vendor/`, the Dockerfile, compose (PostgreSQL, gunicorn with
+WhiteNoise, a `sync_kpi` loop) and the export script.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -659,9 +718,9 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `search_fields` | `()` | table search, autocomplete, command palette. **Give every resource used as a relation elsewhere some `search_fields`** — its FK filters and form fields then use Select2 autocomplete |
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
-| `editable_fields` | `()` | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
+| `editable_fields` | `()` (`auto`: worked out) | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
 | `field_permissions` | `{}` | `{field: "app.perm" \| (view, change) \| {"view", "change"}}`: who sees, who changes one field (`None`: the record's own permission). Hidden fields leave `get_rows_serializer_class(request)` / `get_form_serializer_for(request)` (`serializers.restricted`), search (`visible_paths`), summary, history, charts (`Chart.get_fields_read`), the chart builder (`get_chart_builder_for`), trees, calendars, cards, board cards, labels (`describe_entry` answers empty), comparisons (no row); a board on a guarded field asks its view permission too (`boards.board_permission`); locked ones are read only and refused by `may_write_column` (every write). No request: all guarded hidden. Per reader, not per record. `docs/field-permissions.md` |
-| `list_editable` | `False` | whether the resource's own list page offers those cells |
+| `list_editable` | `False` (`auto`: `"toggle"`) | whether the resource's own list page offers those cells: `True` for good, `"toggle"` behind an *Edit* button in its toolbar (`?edit=1`, `get_list_table_config`) |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
 | `actions` | `("delete_selected",)` | bulk actions (method names or functions) |
 | `bulk_edit_fields` | `()` (`auto`: worked out) | fields a selection may be given one value of: *Edit the selected …* first in the selection bar, a dialog, a review, the write (§5.21) |
@@ -683,10 +742,11 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
 | `trees` | `()` | `Tree(...)`: records holding records, unfolded a level at a time - a summary tab (and *Where used*), a page of the whole tree (§5.18) |
+| `outline` | `None` | relation names walked down from the model (`("equipment", "maintenances")`) or `Outline(...)`: an *Outline* button on the list, its rows unfolding level by level, edited in place (§5.26) |
 | `tab_order` | `()` | Summary tabs shown first, by name (`<related table>`, `tree-<name>`, `tree-<name>-up`); the others follow as declared |
 | `kpis` | `()` | `Kpi(...)`: key figures on the dashboard - a count or aggregate over the list's rows under a filter tree, the tile opening that list (§5.19) |
 | `cards` | `()` | `Cards(...)`: a few records as cards on the dashboard (§5.19) |
-| `calendars` | `()` | `Calendar(...)`: records on their days, a page each with the list's filters above, drag to move (§5.20) |
+| `calendars` | `()` | `Calendar(...)`: records on their days (or hours), a page each with the list's filters above, drag to move, `Allocate` to drop related records (§5.20) |
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
 | `duplicate` | `False` (`auto`: `True`) | `True` or `Duplicate(exclude=, related=, values=, permission=)`: *Duplicate* on a record's page and row menu, the add form filled with its values and a *Copy with it* box per M2M field, inline and `related` relation (§5.25) |
@@ -855,7 +915,17 @@ bound = site.get_related_table("example.ticket.time_entries")
 bound.get_table_config(request, ticket, editable=True)    # a page of its own
 RelatedTable("time_entries", editable=True)               # a summary tab
 list_editable = True                                      # the list page (off)
+list_editable = "toggle"                                  # behind its Edit button
 ```
+
+`"toggle"` (what `auto` declares): the list page reads, its toolbar has
+*Edit* (`options.editToggle = {active, param: "edit"}`, toolbar.js
+`buildEditToggle`) reloading the page with `?edit=1`, which
+`ResourceListView` - through `resource.get_list_table_config(request)`
+(`offers_edit_toggle`: declared, `editable_fields`, and
+`get_editable_options(request)` not empty) - answers with the grid
+config; otherwise `get_table_config(editable=None)` grids only for
+`list_editable is True`.
 
 **Editing is the table's decision, not the resource's.** Most tables
 are read; the usual home of this is a page about one record whose rows
@@ -934,6 +1004,7 @@ related_tables = (
     RelatedTable("agents", columns=("name", "email"), page_length=25,
                  allow_add=True, description=_("..."), icon="groups",
                  charts=("by_team",)),
+    RelatedTable("tickets", outline=("time_entries",)),       # its Outline button (5.26)
 )
 detail_charts = ("time_spent.hours_by_month",)
 ```
@@ -1090,7 +1161,14 @@ non-editable dates kept, `max_columns`=7), `search_fields` (text fields
 a row, long text/M2M full width), `detail_fieldsets` (+ kept dates),
 `icon` (`ICONS` by word of the class name), `bulk_edit_fields` (the
 form's choices, booleans, relations and dates, never unique; §5.21),
+`editable_fields` (`infer_editable_fields`: the list's columns that
+are the model's own concrete fields on its form - no file, key, M2M,
+read-only, `exclude`d or `transitions` field) and `list_editable =
+"toggle"` when there are any (§5.10),
 `chart_builder = True` (the reader's chart above the list; §5.7).
+`outline=(...)` is passed like any attribute (§5.26); its levels'
+models are in `get_related_models()`, so `complete_auto` registers
+them.
 **`related` is the only
 thing never guessed**: each name (a reverse FK's related name or an
 M2M) gives a `RelatedTable` and, for a reverse FK, a tabular inline in a
@@ -1576,7 +1654,12 @@ calendars = (
              color="priority",                # a tag field: first tag's colour
              fields=("customer", "status"),   # summary-typed values
              editable=True,                   # drag = save_editable; date must be in editable_fields
-             views=("month", "week", "list"), navigation=True, permission=None),
+             views=("month", "week", "list"),  # + "day"
+             hours=None,                      # (7, 20): week/day on the hours (datetime date)
+             step=15,                         # snap minutes: 5 10 15 20 30 60
+             allocate=None,                   # Allocate("task", title, filters, ordering,
+                                              #   fields, color, duration=60, limit=20) or "task"
+             navigation=True, permission=None),
 )
 ```
 
@@ -1589,8 +1672,20 @@ of a range through `get_list_queryset`, a date-and-time placed on its
 local day with its time. Moving goes through `save_editable` (change
 permission, `can_edit_column`, form validation); a datetime keeps its
 time, `end` shifts by as many days. *Add* on a day opens the add form
-with the date filled. `docs/calendars.md`; example: *Support › Due
-dates*.
+with the date filled. With `hours`: week and day as columns of hours
+(`drawHours`), a record as tall as it lasts, side by side when they
+overlap, day totals in the header, a now line; drag moves the start
+(the end follows, `move_in_time`), the foot handle the end, a drag over
+empty hours opens the add form in a popup with both filled
+(`generic:relation-saved` refreshes). `allocate`: a panel of the
+related list (its `get_list_queryset`, `filters` through
+`FilterTreeBuilder`, `q`, pages of `limit` ≤ `MAX_SOURCES`) whose
+records dropped on a time POST `calendars/<name>/` and are created
+through `create_editable(request, {}, {date, end, fk})` (add
+permission, 201). Events carry `startsAt`/`endsAt` (`wall_clock`); the
+browser sends `YYYY-MM-DDTHH:MM` (`parse_moment`). Declarations checked
+by `check_hours`. `docs/calendars.md`; example: *Support › Due dates*,
+*Arrivals* (hourly); `logbook/` *Timesheet* (allocates tasks).
 
 ### 5.21 Bulk edit (`bulk_edit_fields`)
 
@@ -1743,6 +1838,106 @@ while it is on. Wikis: `pages/<id>/duplicate/` and
 `wikis/<id>/duplicate/` (§5.17, wiki). `docs/duplicate.md`; example:
 tickets (`True`), articles (`related=("bom_lines",)`), `auto()`.
 
+### 5.26 Outlines (`outline`)
+
+```python
+auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
+
+class CustomerResource(ModelResource):
+    outline = Outline(
+        Level("tickets", columns=("reference", "title", "assignee"),
+              title=None, editable=True),
+        "time_entries",                      # a plain name is Level(name)
+        title=_("Tickets and time"),         # button label; default "Outline"
+        columns=("name", "segment"),         # the top level's; default visible list columns
+        page_size=25, editable=True, max_columns=6, icon="account_tree")
+```
+
+Each name is a relation of the level above holding rows (reverse FK or
+M2M, either side; `relation_of` resolves the model and `back`, the
+lookup from the level's records to their parent). At most 5 levels;
+`page_size` 1-200. Checked at registration (`resource.get_outline()`,
+`outlines.check`): names, options. Levels' resources and columns are
+resolved at first use (`ImproperlyConfigured`: not registered, unknown
+column). The list page (`get_list_table_config`) puts
+`options.outline = bound.get_config(request)` - `url`, `title`,
+`icon`, `pageSize`, `topics`, `levels: [{name, resource, title, label,
+columns (the level resource's own table columns, editable=False),
+addUrl ("{parent}" token; FK levels with add permission), editable,
+editableUrl}]` - None (no button) when the reader cannot view below the
+top (`get_levels`: down to the first level without view permission).
+Default columns: visible list columns minus the FK back up, at most
+`max_columns`, then up to `MAX_TEXT_COLUMNS` (2) hidden `TextField`
+columns (`is_text_field`) - `auto` puts a model's long texts at the end
+of `list_display`, hidden (`infer_text_columns`,
+`list_display_hidden`), so they are in `editable_fields` too. Editing:
+the row's end icon becomes *Edit in a dialog* (`drawOpenLink`).
+
+`GET api/<app>/<model>/outline/` (`ResourceViewSet.outline`, a table
+action): `level` (0 = top: the table's `filters`, `search`, `ordering`
+applied by its backends; default `get_ordering` + pk), `parent` (a
+record of the level above, in its resource's `get_queryset`, else 404),
+`offset`, `limit` (at most 200) -> `{level, total, offset, limit,
+items: [{id, url, children, row}]}`; `row` is the level resource's
+rows serializer (what its renderers and `cells.valueOf` read),
+`children` an annotation (`count_of`, a Subquery over the next level
+resource's `get_queryset`).
+
+JS `js/datatables/outline.js` (feature `outline`, loaded by
+`generic/datatable.html` with `css/tree.css`): toolbar button
+`.dt-outline-toggle` before the Views menu; `dt-container.is-outline`
+hides the rows, count and pages (and the table's `.dt-edit-toggle`);
+the view (`OutlineView`, tree.css classes, `outline-row`,
+`outline-head` per unfolded level, a foot with *Show more* / *Add ...*)
+follows the table's `xhr.dt`; state in localStorage
+(`generic.outline.<stateKey>`) and `?outline=1`. Its own *Edit*
+(`.dt-outline-edit`, `generic.outline-edit.<stateKey>`, on at start
+with `editToggle.active`) mounts `Generic.forms.widgets` in writable
+cells; a change PATCHes the level's `editableUrl` (filled from the
+row); `namespace.cells` (valueOf, labelsOf, sameValue, flash; from
+editable.js) is shared with grids; live reload of open levels per
+level topic, held while busy, own writes skipped 5 s. Example:
+suppliers (`auto`), customers (`Outline(Level(...))`).
+
+On a summary page: a related table's `RelatedTable(outline=...)`
+(names or `Outline`, from the related model; `False` for none) gives its
+tab the same button. Default (`BoundRelatedTable.bind_outline`): the
+parent's outline below its first level when that level is this relation
+(`outlines.tail`), else the related resource's own `outline`; the
+column back to the record (`prefill`) is left out of the top
+(`resolve(..., top_back)`). Explicit values are checked when the
+related tables are bound. `options.outline` is in the tab's config
+(`get_outline_config(request, obj)`, *Add* back to `<record>#related-
+<name>`); the endpoint is the related resource's `outline/` with the
+tab's `_related`, which narrows the top (`filter_queryset`) and picks
+that table's outline (`ResourceViewSet.outline`); outline.js sends the
+table's `extraParams` at every level and leaves the address alone when
+`syncUrl` is false. Example: a supplier's equipment tab (inherited), a
+team's tickets tab (declared).
+`docs/outlines.md`; tests `tests/sites/test_outlines.py`,
+`tests/browser/test_outline.py`.
+
+Editing also gives, per level (`get_editing`): `changeUrl` (change
+permission; the first column's link and the open icon open the form in
+`Generic.dialogs.record`, the level reloaded once saved) and `movable`.
+A level below the top reached by a foreign key keeps an order of its
+own when `Level(position=...)` names an integer field, or by default
+when the level resource's `ordering` (else `Meta.ordering`), its key
+back up aside, starts with an ascending integer field
+(`position_of`, `is_position_field`; checked in `resolve`; `False` for
+none); `get_ordering` is then `[position, "pk"]`. `may_move`: editable,
+change permission, the field not read only nor locked
+(`may_write_column`). `POST .../outline/move/` (`outline_move`, the
+tab's `_related` in the query) `{level, parent, id, before | after}`
+-> `{level, moved, order}` (`BoundOutline.move`): the parent's visible
+records get back the positions they had, in the new order (1..n when
+some are shared), the changed ones moved out of the way by `update()`
+(unique constraints) then each `save(update_fields=...)`, each asked
+`has_change_permission(request, obj)`. JS: a handle per row
+(`.outline-row__handle`, shown in edit mode), HTML5 drag among a
+parent's rows, Alt+Up/Down; `config.moveUrl`. Example: tickets >
+comments (`TicketComment.position`, `body` a textarea in place).
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -1775,9 +1970,10 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../autocomplete/` | `?q=&page=` or `?ids=1,2` |
 | `GET .../charts/<name>/` | chart payload, `?period=` + table params |
 | `GET .../trees/<name>/` | one level of a tree: `node` (none = roots), `root`, `direction` down/up, `offset`, `limit` (≤ 500), `q`, `path`; `find`, or the table's `filters` / `search`, searches every level (§5.18) |
+| `GET .../outline/` | one page of one level of the list's outline: `level` (0: the table's rows, its `filters`/`search`/`ordering`), `parent`, `offset`, `limit` (at most 200) (§5.26) |
 | `GET .../trees/<name>/flat/` | a tree laid flat (`flat=True`), DataTables protocol + exports, facets: `root` (required), `grouped=1` (§5.18) |
 | `GET .../kpis/<name>/`, `GET .../cards/<name>/` | a declared key figure `{value, display, unit, level, url}` / cards `{items, total, url}`; the declaration's filters only (§5.19) |
-| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` moves one (§5.20) |
+| `GET .../calendars/<name>/?start=&end=` | a calendar's records of `[start, end)` (≤ 62 days, ≤ 2,000, `truncated`) + table params; `PATCH .../<pk>/calendars/<name>/` `{"date"}` or `{"start", "end"}` moves one; `POST .../calendars/<name>/` `{record, start, end?}` allocates; `GET .../calendars/<name>/sources/` the panel (§5.20) |
 | `GET .../boards/<name>/` | a board's columns `{key, label, color, background, count, truncated, cards}` (≤ 100 cards each) + table params; `PATCH .../<pk>/boards/<name>/` `{"column"}` moves one (`null`: *Not set*) (§5.22) |
 | `POST api/<app>/<model>/` + `"_duplicate": {"source", "related"}` | a copy of a record (§5.25) |
 | `GET .../compare/?ids=3,8,12` | 2-6 records side by side `{records, sections: [{title, rows: [{name, label, same, values}]}], missing}` (§5.23) |
@@ -1886,7 +2082,17 @@ button centre on its first line of text (`--message-line`).
   followed until the run ends; anything else a toast.
 - `Generic.toast(message, "success|info|warning|error")`,
   `Generic.flash(message, level)` (after navigation),
-  `Generic.dialogs.confirm({title, message, confirmLabel, variant})`.
+  `Generic.dialogs.confirm({title, message, confirmLabel, variant})`,
+  `Generic.dialogs.record({url, title, icon})` (a record's form in a
+  framed dialog, `?_popup=1&_relation_request=`; resolves `{saved, id,
+  label}`, `{deleted}` or null; form.js posts `generic:relation-saved` /
+  `generic:relation-deleted` to the opener or the framing page;
+  `ResourceFormView` answers `X-Frame-Options: SAMEORIGIN` for popups,
+  plus `Content-Security-Policy: frame-ancestors 'self'` when no policy
+  is enforced (`views.framed_by_this_site`); a frame refused anyway
+  falls back to a window, `window.open`, then a button in the dialog
+  when the browser blocks it). Outline and tree rows get `is-stripe`
+  every other row; outline textareas fit their text (`fitText`).
 - `Generic.t(text)`, `Generic.format("%(n)s", {n: 1})`, `Generic.ready(fn)`,
   `Generic.debounce(fn, ms)`, `Generic.isSafeUrl(url)`, `Generic.config()`,
   `Generic.formatSize(bytes)`.

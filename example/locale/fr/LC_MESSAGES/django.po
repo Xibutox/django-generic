@@ -2132,3 +2132,14 @@ msgstr "Priorités"
 #: example/resources.py
 msgid "Every ticket in the column of its priority."
 msgstr "Chaque ticket dans la colonne de sa priorité."
+
+#: example/resources.py
+msgid "Arrivals"
+msgstr "Arrivées"
+
+#: example/resources.py
+msgid "Each ticket at the hour it was opened."
+msgstr "Chaque ticket à l'heure où il a été ouvert."
+
+msgid "Tickets and time"
+msgstr "Tickets et temps passé"

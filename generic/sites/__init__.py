@@ -70,12 +70,17 @@ and on a board, a column per value of a field
 (``generic.sites.boards``)::
 
     boards = (Board("by-status", field="status", editable=True),)
+
+A list may unfold into its related records, level after level, edited
+where they stand (``generic.sites.outlines``)::
+
+    outline = ("equipment", "maintenances")
 """
 
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
 from generic.sites.boards import Board
-from generic.sites.calendars import Calendar
+from generic.sites.calendars import Allocate, Calendar
 from generic.sites.chart_builder import ChartBuilder
 from generic.sites.charts import Chart, chart_payload
 from generic.sites.dashboard import Cards, Kpi
@@ -86,6 +91,7 @@ from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
 from generic.sites.labels import Labels
+from generic.sites.outlines import Level, Outline
 from generic.sites.pages import ResourcePage, ResourcePageView, page
 from generic.sites.related import RelatedTable
 from generic.sites.resources import ModelResource, ResourceAction
@@ -101,11 +107,13 @@ from generic.sites.sso import SsoProvider
 from generic.sites.trees import Tree
 
 __all__ = [
+    "Allocate",
     "AlreadyRegistered",
     "AutoResource",
     "Board",
     "Calendar",
     "Labels",
+    "Level",
     "Cards",
     "Chart",
     "ChartBuilder",
@@ -117,6 +125,7 @@ __all__ = [
     "InlineResource",
     "Kpi",
     "ModelResource",
+    "Outline",
     "RelatedRows",
     "RelatedTable",
     "ResourceAction",

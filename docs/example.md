@@ -5,7 +5,8 @@ through them rather than read about them. For the opposite - the
 least a project needs, one model and the wiki, plus a small product
 management app (products, dated milestones, documents) - see
 [`minimal/`](../minimal/README.md); for a document manager - teams,
-folders, versioned files - [`docmanager/`](../docmanager/README.md).
+folders, versioned files - [`docmanager/`](../docmanager/README.md);
+for notes, tasks and time tracking - [`logbook/`](../logbook/README.md).
 
 ```bash
 python manage.py migrate
@@ -547,7 +548,10 @@ Type `vpn` in the search box above it, or filter on *Status*: the
 calendar shows what the list would. Drag a ticket to another day: its
 due date is written, as the Triage grid would write it. Hover a day and
 press *+* for a new ticket due that day. As `viewer`, nothing moves.
-`TicketResource.calendars` ([Calendars](calendars.md)).
+*Arrivals*, beside it, puts each ticket at the hour it was opened, on
+the week's and the day's hours (`hours=(7, 20)`); the logbook's
+timesheet shows the rest - moving, stretching, and tasks dropped on a
+time. `TicketResource.calendars` ([Calendars](calendars.md)).
 
 **On the People screens**, as `admin`. The seed makes two groups:
 *Desk agents*, which is what `viewer` belongs to, and *Read only*. Open

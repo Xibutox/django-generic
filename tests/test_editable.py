@@ -557,3 +557,108 @@ class TestReprogrammingIt:
         assert entry.hours == Decimal("1.50")
         # And the table never offered it in the first place.
         assert "hours" not in described
+
+
+class TestTheEditButton:
+    """``list_editable = "toggle"``: a list, and an *Edit* button in its
+    toolbar asking the page for its grid (``?edit=1``). What ``auto()``
+    gives every list whose editable columns it worked out."""
+
+    SUPPLIERS = "/example/supplier/"
+
+    def test_auto_works_out_what_a_cell_may_write(self):
+        from example.models import Equipment, Supplier
+
+        assert site.get_resource(Supplier).editable_fields == (
+            "name",
+            "email",
+            "phone",
+            "website",
+            "country",
+            "is_preferred",
+            # A long text: a column the list starts without.
+            "notes",
+        )
+        assert site.get_resource(Supplier).list_display_hidden == ("notes",)
+        # The list's own fields on the form - a relation too.
+        assert "supplier" in site.get_resource(Equipment).editable_fields
+        assert site.get_resource(Supplier).list_editable == "toggle"
+
+    def test_a_declaration_wins(self, rf):
+        from example.models import Supplier
+        from generic.sites.auto import AutoResource
+        from generic.sites.site import GenericSite
+
+        other = GenericSite(name="toggle_test")
+
+        try:
+            other.auto(Supplier, editable_fields=("name",))
+            resource = other.get_resource(Supplier)
+
+            assert resource.editable_fields == ("name",)
+            assert resource.list_editable == "toggle"
+
+            other.unregister(Supplier)
+            other.register(Supplier, AutoResource, list_editable=False)
+
+            assert other.get_resource(Supplier).list_editable is False
+        finally:
+            for resource in other.get_resources():
+                other.unregister(resource.model)
+
+    def test_nothing_to_write_is_no_button(self):
+        from generic.sites.auto import infer_editable_fields
+        from tests.testapp.models import Document
+
+        # A file is chosen on the form, never in a cell.
+        assert infer_editable_fields(
+            Document, ("title", "file"), ("title", "file")
+        ) == ("title",)
+        # Off the form: not written in a cell either.
+        assert infer_editable_fields(Document, ("title",), ()) == ()
+
+    def test_the_list_reads_and_offers_the_button(self, admin_client):
+        options = options_for(admin_client, self.SUPPLIERS)
+
+        assert options["editToggle"] == {"active": False, "param": "edit"}
+        assert "editable" not in options
+        assert not options.get("grid")
+
+    def test_asked_for_it_the_page_is_the_grid(self, admin_client):
+        options = options_for(admin_client, self.SUPPLIERS + "?edit=1")
+
+        assert options["editToggle"]["active"] is True
+        assert options["grid"] is True
+        assert set(options["editable"]) >= {"name", "country"}
+        assert options["rowActions"] == []
+
+    def test_a_reader_who_may_write_nothing_has_no_button(
+        self, client, django_user_model
+    ):
+        reader = django_user_model.objects.create_user(username="reader")
+        reader.user_permissions.set(permissions("view_supplier"))
+        client.force_login(reader)
+
+        for url in (self.SUPPLIERS, self.SUPPLIERS + "?edit=1"):
+            options = options_for(client, url)
+
+            assert "editToggle" not in options
+            assert not options.get("grid")
+
+    def test_a_list_declared_by_hand_keeps_its_choice(self, admin_client):
+        """The time entries declare editable columns, and no button."""
+        options = options_for(admin_client, "/example/timeentry/?edit=1")
+
+        assert "editToggle" not in options
+        assert not options.get("grid")
+
+    def test_true_is_still_a_grid_for_good(self, admin_user):
+        resource = site.get_resource(TimeEntry)
+        resource.list_editable = True
+
+        try:
+            options = config_for(admin_user)
+        finally:
+            resource.list_editable = False
+
+        assert options["grid"] is True

@@ -9,6 +9,146 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [1.5.0] - 2026-10-23
+
+### Added
+- Calendars on the hours: `Calendar(..., hours=(7, 20))` draws the week
+  and a new **day** view as columns of hours, each record as tall as it
+  lasts, side by side when they overlap, with the day's total in its
+  header and a line at the current time. With `editable=True` a record
+  dragged to another time starts there (its end follows), its foot
+  stretches it, and a drag across empty hours opens the add form with
+  the start and the end filled in; moves snap to `step` minutes. The
+  move endpoint takes `{"start"}` and `{"end"}`. See docs/calendars.md,
+  *On the hours*.
+- `Allocate`: a calendar's panel of related records to drop on a time -
+  tasks on a timesheet, tickets on a planning. Each drop creates a
+  record pointing at the one dropped, through `create_editable`; the
+  panel follows the declared filters, a search and pages
+  (`calendars/<name>/sources/`). See docs/calendars.md, *Dropping
+  records on it*.
+- Outlines: `outline = ("equipment", "maintenances")` on a resource
+  (or `Outline(Level(...), ..., title=, columns=, page_size=,
+  editable=)`) gives its list an *Outline* button in the table's
+  toolbar. The rows make way for a tree drawn like the tree pages: the
+  table's records first - its search, filters and order still apply -
+  each with an arrow to its related records of the next level, which
+  have one to theirs, five levels at most. Each level shows its own
+  resource's columns with its table's renderers and comes from its
+  resource's queryset, a page at a time
+  (`GET api/<app>/<model>/outline/?level=&parent=`); the outline goes
+  as far down as the reader may view. Its *Edit* button turns the
+  cells each level's resource lets the reader write into their
+  controls, written through that resource's `cells/` endpoint and
+  `save_editable`. `auto()` takes `outline=` too, and gives the
+  levels' models pages of their own. A record's tabs of related rows
+  get the button too (`RelatedTable(outline=...)`): by default what the
+  record's outline has below that relation - a supplier's equipment
+  tab unfolds into the visits - else the related resource's outline.
+  In edit mode a record's link opens its whole form in a dialog
+  (`Generic.dialogs.record`, the form's popup in a frame), and records
+  kept in an order of their own - an integer field their ordering
+  starts with, or `Level(position=...)` - are dragged into another
+  (`POST .../outline/move/`). `auto()` lists a model's long texts
+  (`TextField`) last, hidden at first, so an outline shows them and
+  writes them in place with nothing declared. A record's popup form
+  also answers `Content-Security-Policy: frame-ancestors 'self'` when
+  the site enforces no policy, so a second `X-Frame-Options` from a
+  proxy does not refuse the dialog; a frame refused anyway opens the
+  form in a window. Outlines' and trees' rows alternate their colour,
+  and an outline's long texts are as tall as their text plus a line.
+  See docs/outlines.md.
+- An *Edit* button on a list: `list_editable = "toggle"` keeps the
+  list a list and puts *Edit* in its toolbar, the page coming back as
+  the grid of its `editable_fields` (`?edit=1`, filters kept) for
+  readers who may write one of them. `auto()` now works out
+  `editable_fields` - the list's columns that are the model's own
+  fields on its form, no file, key, read-only or state field - and
+  declares `list_editable = "toggle"`: every `auto` list can be
+  corrected in place without a declaration. See docs/editable.md.
+- Records holding records, from the top one's form: each row of an
+  inline gets an icon opening its record's own form in a popup window,
+  as a relation's pencil does - where the rows it holds in turn are
+  edited, a reference's characteristics under an article. The form
+  underneath keeps what is not saved yet, and the row is read again
+  once the window saved it; a row not saved yet offers to save the
+  form first. Offered when the related model has pages on the site
+  (declared, or worked out by `auto`) and the reader may see them:
+  read only without the change permission. Nothing to declare. See
+  docs/auto.md, *Records holding records*.
+- Undo after a delete, a bulk action or a bulk edit: the toast (or the
+  report, or the delete page's message) gets an *Undo* button, and for
+  `GENERIC["UNDO_SECONDS"]` (ten minutes) it puts every record the
+  action touched back as its history had it - deleted records created
+  again with their key, many-to-many values and what the delete took
+  with them, changed ones given their values back, created ones
+  deleted. Refused, with nothing changed, when a record was changed
+  since, the reader lost the permission, or the token is somebody
+  else's; not offered when the history could not bring everything
+  back (a cascade to a model without one, `history_exclude`). Nothing
+  to declare; `undo = False` on a resource, `UNDO_SECONDS = None` for a
+  project. The API's `DELETE` answers its undo with `?undo=1`. See
+  docs/undo.md.
+- Duplicating a record: `duplicate = True`, or `Duplicate(exclude=...,
+  related=..., values=..., permission=...)`, on a resource puts
+  *Duplicate* on each record's page and row menu. It opens the add form
+  filled with the record's values, editable before anything is
+  written, and a *Copy with it* section: a box per many-to-many field
+  and inline (ticked, the form holds the record's values or rows;
+  unticked, empty) and per declared relation (its records copied, each
+  through its own form, once the copy is saved, in the same
+  transaction). Field permissions apply: a field the reader may not
+  see or change is not copied. Unique fields and files never are. On
+  by default for `auto()` resources; the example duplicates tickets
+  and articles, with their bill of materials. See docs/duplicate.md.
+- Duplicating a wiki page, with its subpages if wanted, or a whole
+  wiki with its pages: the copy's title or name is asked first, the
+  text is copied, the history is not, images and files are shared.
+  `wiki_duplicated` tells the project, so a team's wiki copied keeps
+  its readers (docmanager does). See docs/wiki.md, *Duplicating*.
+- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
+  card, the archive button beside its name in the menu: `wiki.json`
+  (the wiki, its pages, their tree and text) and the images and files
+  the pages show. *Import a wiki* on the list of wikis makes a new wiki
+  from one, on this site or any other running the wiki: pages cleaned,
+  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
+  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
+  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
+  `wiki_import`. See docs/wiki.md, *Export and import*.
+- A chart card folds to its title with a chevron beside its tools,
+  remembered per page and chart in the browser; folded, it fetches
+  nothing until opened. See docs/charts.md.
+
+### Changed
+- Laptops at 125% or 150% display scaling draw the interface a tenth
+  smaller: a desktop-width window (1025px to 1800px) at 1.2 to 1.75
+  device pixels per pixel takes a 90% root font size, every rem with
+  it - about what Windows draws at 110%. Phones, retina and 1x screens
+  are unchanged. See docs/ui.md, *Size*.
+- Laptops at 125% or 150% display scaling: under 820px of window height
+  - 1920x1080 at 125% leaves about 730 - the page keeps its type and
+  controls and gives up the air between them: a slimmer top bar, page
+  margins and card gaps a quarter smaller, closer navigation links,
+  slimmer table rows, summary figures and label and value lists - the
+  account page among them - and charts at most 28% of
+  the window tall, so a list shows its rows under its charts. Between
+  1025px and 1400px of width the pinned navigation is 15rem. At 100%
+  on a 1080p screen nothing moves. See docs/ui.md, *Size*.
+- A record's summary puts its state buttons, its actions and its last
+  change on one line, where each took a line of its own.
+- A summary section shows its fields in two columns from a narrower
+  card (10rem a column, was 12rem).
+- A table's search box gives up width before its tools wrap onto a
+  second line.
+
+### Fixed
+- The table under a list's charts touched them: the chart builder
+  between them broke the rule spacing the two.
+- The account page's Appearance card had twice the space under its
+  title that the other cards have.
+- The Appearance card's sample buttons showed a *Save* that saved
+  nothing, next to the card's own *Save*: the sample is an *Add*.
+
 ## [1.4.0] - 2026-10-18
 
 ### Added

@@ -10,9 +10,90 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-23
 
 ### Added
+- Calendars on the hours: `Calendar(..., hours=(7, 20))` draws the week
+  and a new **day** view as columns of hours, each record as tall as it
+  lasts, side by side when they overlap, with the day's total in its
+  header and a line at the current time. With `editable=True` a record
+  dragged to another time starts there (its end follows), its foot
+  stretches it, and a drag across empty hours opens the add form with
+  the start and the end filled in; moves snap to `step` minutes. The
+  move endpoint takes `{"start"}` and `{"end"}`. See docs/calendars.md,
+  *On the hours*.
+- `Allocate`: a calendar's panel of related records to drop on a time -
+  tasks on a timesheet, tickets on a planning. Each drop creates a
+  record pointing at the one dropped, through `create_editable`; the
+  panel follows the declared filters, a search and pages
+  (`calendars/<name>/sources/`). See docs/calendars.md, *Dropping
+  records on it*.
+- A logbook beside the examples, `logbook/`: notes written line by
+  line, where a line can be a task - an FNC (a ticket) or a DM (an
+  evolution) or an AUT (a meeting, support), numbered FNC-0001,
+  DM-0001, AUT-0001 - with its status, a ticket's criticality (minor,
+  major, critical) and a timer beside it, about several projects or
+  none; a board of the tasks by status; a timesheet on the
+  hours where the time is moved, stretched, and tasks dropped on a time
+  to log it, then verified by a lead. See logbook/README.md.
+- The logbook takes over an older planner: imputations and their
+  distribution matrix with the Excel export on 7.4-hour days, a
+  *Workdays* page (8 hours a day or not), the key figures API at its old
+  address, COMET/DES usage read by `sync_kpi`, and a migration kit -
+  `export_planner.py` on the old side, `import_planner` on the new,
+  `scripts/logbook_kit.py` for a standalone Docker folder. See
+  logbook/kit/README.md.
+- *Support › Arrivals*: the tickets at the hour they were opened, on
+  the new hourly week and day views.
+- Outlines: `outline = ("equipment", "maintenances")` on a resource
+  (or `Outline(Level(...), ..., title=, columns=, page_size=,
+  editable=)`) gives its list an *Outline* button in the table's
+  toolbar. The rows make way for a tree drawn like the tree pages: the
+  table's records first - its search, filters and order still apply -
+  each with an arrow to its related records of the next level, which
+  have one to theirs, five levels at most. Each level shows its own
+  resource's columns with its table's renderers and comes from its
+  resource's queryset, a page at a time
+  (`GET api/<app>/<model>/outline/?level=&parent=`); the outline goes
+  as far down as the reader may view. Its *Edit* button turns the
+  cells each level's resource lets the reader write into their
+  controls, written through that resource's `cells/` endpoint and
+  `save_editable`. `auto()` takes `outline=` too, and gives the
+  levels' models pages of their own. A record's tabs of related rows
+  get the button too (`RelatedTable(outline=...)`): by default what the
+  record's outline has below that relation - a supplier's equipment
+  tab unfolds into the visits - else the related resource's outline.
+  In edit mode a record's link opens its whole form in a dialog
+  (`Generic.dialogs.record`, the form's popup in a frame), and records
+  kept in an order of their own - an integer field their ordering
+  starts with, or `Level(position=...)` - are dragged into another
+  (`POST .../outline/move/`). `auto()` lists a model's long texts
+  (`TextField`) last, hidden at first, so an outline shows them and
+  writes them in place with nothing declared. A record's popup form
+  also answers `Content-Security-Policy: frame-ancestors 'self'` when
+  the site enforces no policy, so a second `X-Frame-Options` from a
+  proxy does not refuse the dialog; a frame refused anyway opens the
+  form in a window. Outlines' and trees' rows alternate their colour,
+  and an outline's long texts are as tall as their text plus a line.
+  See docs/outlines.md.
+- An *Edit* button on a list: `list_editable = "toggle"` keeps the
+  list a list and puts *Edit* in its toolbar, the page coming back as
+  the grid of its `editable_fields` (`?edit=1`, filters kept) for
+  readers who may write one of them. `auto()` now works out
+  `editable_fields` - the list's columns that are the model's own
+  fields on its form, no file, key, read-only or state field - and
+  declares `list_editable = "toggle"`: every `auto` list can be
+  corrected in place without a declaration. See docs/editable.md.
+- Suppliers and customers as outlines: the suppliers' list has an
+  *Outline* button unfolding each supplier into its equipment and each
+  piece into its maintenance visits, every level edited in place; the
+  customers' list unfolds into their tickets and the tickets' time
+  entries (*Tickets and time*). The suppliers', equipment's and
+  visits' lists also get an *Edit* button turning them into a grid.
+  On a record's page, the supplier's *Equipment* tab, the customer's
+  and the team's *Tickets* tabs unfold the same way. The tickets' list
+  unfolds into their comments (*Conversation*): their text written in
+  place, dragged into another order, each one opened in a dialog.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are
@@ -53,6 +134,18 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   text is copied, the history is not, images and files are shared.
   `wiki_duplicated` tells the project, so a team's wiki copied keeps
   its readers (docmanager does). See docs/wiki.md, *Duplicating*.
+- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
+  card, the archive button beside its name in the menu: `wiki.json`
+  (the wiki, its pages, their tree and text) and the images and files
+  the pages show. *Import a wiki* on the list of wikis makes a new wiki
+  from one, on this site or any other running the wiki: pages cleaned,
+  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
+  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
+  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
+  `wiki_import`. See docs/wiki.md, *Export and import*.
+- A chart card folds to its title with a chevron beside its tools,
+  remembered per page and chart in the browser; folded, it fetches
+  nothing until opened. See docs/charts.md.
 
 ### Changed
 - Laptops at 125% or 150% display scaling draw the interface a tenth
@@ -75,20 +168,6 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   card (10rem a column, was 12rem).
 - A table's search box gives up width before its tools wrap onto a
   second line.
-
-### Added
-- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
-  card, the archive button beside its name in the menu: `wiki.json`
-  (the wiki, its pages, their tree and text) and the images and files
-  the pages show. *Import a wiki* on the list of wikis makes a new wiki
-  from one, on this site or any other running the wiki: pages cleaned,
-  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
-  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
-  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
-  `wiki_import`. See docs/wiki.md, *Export and import*.
-- A chart card folds to its title with a chevron beside its tools,
-  remembered per page and chart in the browser; folded, it fetches
-  nothing until opened. See docs/charts.md.
 
 ### Fixed
 - The table under a list's charts touched them: the chart builder

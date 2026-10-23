@@ -21,6 +21,20 @@
   var Generic = window.Generic;
   var t = Generic.t;
 
+  /** Every other record's row shaded, as a table's are: counted down
+   * the page, whatever level each is at. */
+  function stripe(body) {
+    var shaded = false;
+
+    Array.prototype.forEach.call(
+      body.querySelectorAll("tr.tree-row:not(.tree-row--foot):not(.tree-row--head)"),
+      function (row) {
+        row.classList.toggle("is-stripe", shaded);
+        shaded = !shaded;
+      }
+    );
+  }
+
   function readJson(id) {
     var element = document.getElementById(id);
 
@@ -826,6 +840,8 @@
     } else {
       body.insertBefore(fragment, parent.row.nextSibling);
     }
+
+    stripe(body);
 
     if (!body.querySelector('tr[tabindex="0"]')) {
       var first = body.querySelector("tr.tree-row:not(.tree-row--foot):not(.tree-row--head)");

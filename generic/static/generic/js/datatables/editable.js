@@ -917,6 +917,15 @@
     return button;
   }
 
+  // What a cell's control opens on, and when it has changed: shared
+  // with the outline (outline.js), whose cells are written the same way.
+  namespace.cells = {
+    valueOf: valueOf,
+    labelsOf: labelsOf,
+    sameValue: sameValue,
+    flash: flash
+  };
+
   core.registerFeature({
     name: "editable",
 

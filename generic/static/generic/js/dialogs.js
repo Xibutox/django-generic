@@ -507,11 +507,145 @@
     });
   }
 
+  /**
+   * A record's form, in a dialog: the page at `url` drawn in a frame, as
+   * a popup (`_popup`). Resolves to `{saved: true, id, label}` once the
+   * form saved it, `{deleted: true}` once it was deleted there, or null
+   * when the dialog was closed first.
+   */
+  /**
+   * Whether a frame was refused its page: a server or a proxy in front
+   * of it saying X-Frame-Options DENY (or two conflicting values, which
+   * the browser reads as DENY) leaves the frame on the browser's own
+   * error page, a document this page may not read.
+   */
+  function refused(frame) {
+    try {
+      var doc = frame.contentDocument;
+
+      return !doc || !doc.body || doc.location.href === "about:blank";
+    } catch (error) {
+      return true;
+    }
+  }
+
+  /**
+   * A record's form in a dialog: its page in a frame, the dialog
+   * closing on the record saved or deleted. A frame the server refuses
+   * gives way to a window of its own, the same form, answering the
+   * same way.
+   */
+  function record(options) {
+    var requestId = "dialog-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    var url = new URL(options.url, window.location.origin);
+    var settle;
+    var done = new Promise(function (resolve) {
+      settle = resolve;
+    });
+    var popup = null;
+    var watch = null;
+    var finished = false;
+
+    url.searchParams.set("_popup", "1");
+    url.searchParams.set("_relation_request", requestId);
+
+    var dialog = open({ title: options.title || "", icon: options.icon || "edit", wide: true });
+    var frame = el("iframe", "dialog__frame");
+
+    frame.src = url.toString();
+    frame.title = options.title || "";
+    dialog.dialog.classList.add("dialog--frame");
+    dialog.body.appendChild(frame);
+    dialog.footer.remove();
+
+    function finish(result) {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      window.removeEventListener("message", listen);
+      window.clearInterval(watch);
+      settle(result || null);
+    }
+
+    function listen(event) {
+      var data = event.data || {};
+
+      if (event.origin !== window.location.origin || data.requestId !== requestId) {
+        return;
+      }
+
+      var result = null;
+
+      if (data.type === "generic:relation-saved") {
+        result = { saved: true, id: data.id, label: data.label || "" };
+      } else if (data.type === "generic:relation-deleted") {
+        result = { deleted: true };
+      } else {
+        return;
+      }
+
+      if (popup) {
+        finish(result);
+      } else {
+        dialog.close(result);
+      }
+    }
+
+    function inWindow() {
+      popup = window.open(url.toString(), requestId, "popup,width=960,height=760");
+
+      if (!popup) {
+        offerWindow();
+        return;
+      }
+
+      dialog.close("window");
+      watch = window.setInterval(function () {
+        if (popup.closed) {
+          finish(null);
+        }
+      }, 500);
+    }
+
+    // The browser blocked a window it was not asked for by a click:
+    // the dialog asks for that click.
+    function offerWindow() {
+      var note = el("div", "dialog__refused");
+      var go = button(t("Open in a window"), "primary");
+
+      note.appendChild(el("p", "", t("This page may not be shown in a dialog here.")));
+      note.appendChild(go);
+      dialog.body.textContent = "";
+      dialog.body.appendChild(note);
+      go.addEventListener("click", inWindow);
+      go.focus();
+    }
+
+    frame.addEventListener("load", function () {
+      if (!finished && !popup && refused(frame)) {
+        inWindow();
+      }
+    });
+
+    window.addEventListener("message", listen);
+
+    dialog.closed.then(function (result) {
+      if (result !== "window") {
+        finish(result);
+      }
+    });
+
+    return done;
+  }
+
   Generic.dialogs = {
     fields: fields,
     confirm: confirm,
     deletion: deletion,
     open: open,
+    record: record,
     prompt: prompt,
     renderTree: renderTree
   };

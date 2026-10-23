@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
@@ -23,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.sites.dashboard import dashboard_entries
 from generic.views.delete import GenericDeleteView
@@ -279,7 +281,9 @@ class ResourceListView(ResourceViewMixin, TemplateView):
         from generic.sites.charts import chart_entries
 
         context = super().get_context_data(**kwargs)
-        context["table_config"] = self.resource.get_table_config(self.request)
+        context["table_config"] = self.resource.get_list_table_config(
+            self.request
+        )
         context["charts"] = chart_entries(
             self.resource.get_list_chart_configs(self.request)
         )
@@ -325,6 +329,35 @@ class ResourceImportView(ResourceViewMixin, TemplateView):
         return context
 
 
+def framed_by_this_site(response: HttpResponse) -> None:
+    """Let this site's own pages, and only them, show ``response`` framed.
+
+    A popup may also be a frame of this site - a record edited in a
+    dialog over an outline. ``X-Frame-Options: SAMEORIGIN`` says so to
+    Django's middleware; ``frame-ancestors 'self'`` says so to the
+    browser, which reads it first and leaves aside a second
+    ``X-Frame-Options`` a proxy or another middleware adds (two values,
+    read as ``DENY``). The framework's policy has that directive when
+    it is enforced; without it, the directive is sent alone.
+    """
+    if not response.has_header("X-Frame-Options"):
+        response["X-Frame-Options"] = "SAMEORIGIN"
+
+    if response.has_header("Content-Security-Policy") or enforces_csp():
+        return
+
+    response["Content-Security-Policy"] = "frame-ancestors 'self'"
+
+
+def enforces_csp() -> bool:
+    """Whether :class:`~generic.middleware.CSPMiddleware` sends a policy."""
+    return (
+        "generic.middleware.CSPMiddleware" in settings.MIDDLEWARE
+        and bool(generic_settings.CONTENT_SECURITY_POLICY)
+        and not generic_settings.CONTENT_SECURITY_POLICY_REPORT_ONLY
+    )
+
+
 class ResourceFormView(ResourceViewMixin, TemplateView):
     """Add or change one record; view it when changing is not allowed."""
 
@@ -339,7 +372,12 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
                 pk=kwargs["pk"],
             )
 
-        return super().dispatch(request, *args, **kwargs)
+        response = super().dispatch(request, *args, **kwargs)
+
+        if self.is_popup():
+            framed_by_this_site(response)
+
+        return response
 
     def has_permission(self) -> bool:
         resource = self.resource

@@ -26,6 +26,8 @@
 
   //: Message a popup posts back to the page that opened it.
   var RELATION_MESSAGE = "generic:relation-saved";
+  //: And the one saying the record was deleted there.
+  var RELATION_DELETED = "generic:relation-deleted";
 
   var instances = 0;
 
@@ -1235,7 +1237,7 @@
         );
 
         if (config.popup) {
-          window.close();
+          self.notifyOpener({ id: config.objectId || "", label: config.objectLabel || "" }, RELATION_DELETED);
           return;
         }
 
@@ -1341,18 +1343,35 @@
     );
   };
 
-  /** In a popup: report the saved record to the opener and close. */
-  SchemaForm.prototype.notifyOpener = function (record) {
-    if (window.opener && this.config.popupRequest) {
-      window.opener.postMessage(
+  /** The page this popup reports to: the window that opened it, or the
+   * page holding it in a dialog's frame. */
+  function popupHost() {
+    if (window.opener) {
+      return window.opener;
+    }
+
+    return window.parent && window.parent !== window ? window.parent : null;
+  }
+
+  /** In a popup: report the saved record to the opener and close. A
+   * frame is closed by the page holding it. */
+  SchemaForm.prototype.notifyOpener = function (record, type) {
+    var host = popupHost();
+
+    if (host && this.config.popupRequest) {
+      host.postMessage(
         {
-          type: RELATION_MESSAGE,
+          type: type || RELATION_MESSAGE,
           requestId: this.config.popupRequest,
           id: record.id,
           label: record.label
         },
         window.location.origin
       );
+    }
+
+    if (!window.opener && window.parent !== window) {
+      return;
     }
 
     window.close();

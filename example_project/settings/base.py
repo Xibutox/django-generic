@@ -429,7 +429,7 @@ SPECTACULAR_SETTINGS = {
         "in with a token from your account page: "
         "`Authorization: Token 3f9c...`."
     ),
-    "VERSION": "1.4.0",
+    "VERSION": "1.5.0",
     # What another server sends to show this one on its Server status
     # page (X-Generic-Status-Token). Unset, only signed-in readers
     # holding generic.view_status read it. Comma-separated: an old and
@@ -512,7 +512,7 @@ GENERIC = {
     ),
     # Shown in the navigation's footer and on the help page. The help
     # page finds LICENSE and CHANGELOG.md by itself.
-    "VERSION": "1.4.0",
+    "VERSION": "1.5.0",
     "HELP_TEXT": (
         "A support desk built on django-generic: tickets, customers, "
         "teams and the time spent on them. Every screen here is "

@@ -37,6 +37,29 @@ the table's own cell writer (``save_editable``): the date must be one
 of the resource's ``editable_fields``, and the change permission, the
 per-row ``can_edit_column`` and the form's validation all apply. A
 date and time keeps its time; an end moves with its start.
+
+A calendar of dates and times may draw its week and its day as hours
+(``hours=(8, 19)``): each record at its time, as tall as it lasts.
+Records are then dragged to another time - snapped to ``step``
+minutes - and their end dragged to make them longer or shorter; a
+stretch of empty time selected opens the add form with the start and
+the end filled in. With ``allocate``, records of a relation are listed
+beside the calendar - the tasks a timesheet's entries point at - and
+one dropped on a time creates a record pointing at it, there::
+
+    @register(TimeEntry)
+    class TimeEntryResource(ModelResource):
+        editable_fields = ("started_at", "ended_at")
+        calendars = (
+            Calendar(
+                "week",
+                date="started_at",
+                end="ended_at",
+                hours=(8, 19),
+                editable=True,
+                allocate=Allocate("task", filters=OPEN_TASKS),
+            ),
+        )
 """
 
 from __future__ import annotations
@@ -67,7 +90,41 @@ MAX_DAYS = 62
 MAX_EVENTS = 2000
 
 #: How a calendar may be looked at.
-VIEWS = ("month", "week", "list")
+VIEWS = ("month", "week", "day", "list")
+
+#: The views of the default: a day is offered when asked for.
+DEFAULT_VIEWS = ("month", "week", "list")
+
+#: The minutes a record of an hourly calendar snaps to.
+STEPS = (5, 10, 15, 20, 30, 60)
+
+#: The most records of a relation the allocation panel lists at once.
+MAX_SOURCES = 50
+
+
+@dataclasses.dataclass(frozen=True)
+class Allocate:
+    """Records of a relation listed beside an hourly calendar, dropped
+    on a time to create a record pointing at them there."""
+
+    #: A foreign key of the calendar's model: the records listed are
+    #: its related model's, through that model's registered resource.
+    field: str
+    #: The panel's heading. Default: the related model's plural.
+    title: Any = None
+    #: A filter tree over the related resource's list columns, as
+    #: ``presets`` write it: which records are offered.
+    filters: Any = None
+    #: Their order; default the related resource's.
+    ordering: Sequence[str] = ()
+    #: Values shown on each, as its summary page shows them.
+    fields: Sequence[str] = ()
+    #: A tag field of the related resource: each takes its colour.
+    color: str | None = None
+    #: Minutes a dropped record lasts, when the calendar has an end.
+    duration: int = 60
+    #: Records listed a page at a time (at most ``MAX_SOURCES``).
+    limit: int = 20
 
 
 @dataclasses.dataclass(frozen=True)
@@ -95,11 +152,21 @@ class Calendar:
     #: Records dragged to another day are written - see the module.
     editable: bool = False
     #: Offered ways of looking, the first one opening.
-    views: Sequence[str] = VIEWS
+    views: Sequence[str] = DEFAULT_VIEWS
     #: An entry of the navigation, in the resource's group.
     navigation: bool = False
     #: Needed besides the resource's view permission (as a page's).
     permission: Any = None
+    #: ``(first, last)`` hours drawn by the week and the day, a record
+    #: at its time and as tall as it lasts: a date-and-time ``date``
+    #: only. None: the week lists each day's records.
+    hours: tuple[int, int] | None = None
+    #: The minutes a record moved or stretched on the hours snaps to.
+    step: int = 15
+    #: ``Allocate(...)`` or a foreign key's name: records of that
+    #: relation listed beside the hours, dropped on a time to create a
+    #: record pointing at them.
+    allocate: Any = None
 
 
 def date_field(resource: Any, name: str, role: str, calendar: str) -> Any:
@@ -127,6 +194,37 @@ def parse_day(value: Any, name: str) -> datetime.date:
         raise ValidationError(
             {name: [gettext("A date is expected (YYYY-MM-DD).")]}
         ) from None
+
+
+def parse_moment(value: Any, name: str) -> datetime.datetime:
+    """A date and time the browser sends - the reader's wall clock,
+    ``YYYY-MM-DDTHH:MM`` - as the database compares it."""
+    try:
+        moment = datetime.datetime.fromisoformat(force_str(value or ""))
+    except ValueError:
+        moment = None
+
+    if moment is None or len(force_str(value)) < 16:
+        raise ValidationError(
+            {name: [gettext("A date and time is expected.")]}
+        )
+
+    if timezone.is_naive(moment) and _uses_tz():
+        moment = timezone.make_aware(moment)
+
+    return moment
+
+
+def wall_clock(value: Any) -> str:
+    """``value`` as the reader's wall clock, to the minute - what the
+    browser places on the hours: ``2026-10-07T09:30``."""
+    if not isinstance(value, datetime.datetime):
+        return ""
+
+    if timezone.is_aware(value):
+        value = timezone.localtime(value)
+
+    return value.strftime("%Y-%m-%dT%H:%M")
 
 
 def start_of(day: datetime.date) -> datetime.datetime:
@@ -170,6 +268,11 @@ class BoundCalendar:
             if definition.end
             else None
         )
+        self.allocation = (
+            Allocate(definition.allocate)
+            if isinstance(definition.allocate, str)
+            else definition.allocate
+        )
 
     @property
     def name(self) -> str:
@@ -178,6 +281,11 @@ class BoundCalendar:
     @property
     def timed(self) -> bool:
         return isinstance(self.date_field, models.DateTimeField)
+
+    @property
+    def hourly(self) -> bool:
+        """The week and the day drawn as hours."""
+        return bool(self.definition.hours) and self.timed
 
     def get_title(self) -> str:
         return force_str(self.definition.title or gettext("Calendar"))
@@ -302,6 +410,9 @@ class BoundCalendar:
             "background": "",
             "cells": [],
             "editable": editable,
+            # The reader's wall clock, placing the record on the hours.
+            "startsAt": wall_clock(begins),
+            "endsAt": wall_clock(ends),
         }
 
         if definition.color:
@@ -348,6 +459,10 @@ class BoundCalendar:
         if not isinstance(data, dict):
             raise ValidationError(gettext("Send the day to move it to."))
 
+        if self.hourly and ("start" in data or "end" in data):
+            self.move_in_time(request, obj, data)
+            return
+
         day = parse_day(data.get("date"), "date")
         definition = self.definition
         begins = getattr(obj, definition.date)
@@ -367,6 +482,213 @@ class BoundCalendar:
                 changes[definition.end] = self.shifted(ends, delta)
 
         self.resource.save_editable(request, obj, changes)
+
+    def move_in_time(self, request: Any, obj: Any, data: dict) -> None:
+        """Another start (the end moving with it, its length kept), or
+        another end (longer or shorter), or both: ``{"start", "end"}``
+        on the reader's wall clock."""
+        definition = self.definition
+        begins = getattr(obj, definition.date)
+        ends = getattr(obj, definition.end) if definition.end else None
+        changes: dict[str, Any] = {}
+        start = begins
+
+        if "start" in data:
+            start = parse_moment(data.get("start"), "start")
+            changes[definition.date] = start.isoformat()
+
+            if (
+                definition.end
+                and ends is not None
+                and begins is not None
+                and "end" not in data
+            ):
+                changes[definition.end] = (ends + (start - begins)).isoformat()
+
+        if "end" in data:
+            if not definition.end:
+                raise ValidationError(
+                    {"end": [gettext("This calendar's records have no end.")]}
+                )
+
+            end = parse_moment(data.get("end"), "end")
+
+            if start is not None and end <= start:
+                raise ValidationError(
+                    {"end": [gettext("The end must come after the start.")]}
+                )
+
+            changes[definition.end] = end.isoformat()
+
+        if changes:
+            self.resource.save_editable(request, obj, changes)
+
+    # -- creating a record on a time -------------------------------------
+
+    def related_resource(self) -> Any:
+        """The registered resource of the allocated relation's model."""
+        field = self.resource.model._meta.get_field(self.allocation.field)
+        related = self.resource.site.get_resource(field.related_model)
+
+        if related is None:
+            raise ImproperlyConfigured(
+                f"{type(self.resource).__name__}.calendars: '{self.name}' "
+                f"allocates {field.related_model.__name__} records, which "
+                f"have no registered resource."
+            )
+
+        return related
+
+    def can_allocate(self, request: Any) -> bool:
+        return bool(
+            self.allocation is not None
+            and self.resource.has_add_permission(request)
+            and self.related_resource().has_view_permission(request)
+        )
+
+    def sources(self, request: Any, params: Any) -> dict[str, Any]:
+        """The related records offered: the declared filters, the
+        reader's search (``q``), a page at a time (``page``)."""
+        from generic.api.filters import apply_search
+        from generic.sites.dashboard import as_tree
+        from generic.sites.summary import describe_entry, record_url
+
+        allocation = self.allocation
+        related = self.related_resource()
+
+        if not related.has_view_permission(request):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied()
+
+        queryset = related.get_list_queryset(request)
+        tree = as_tree(allocation.filters)
+
+        if tree is not None:
+            from generic.api.filters import FilterTreeBuilder
+
+            specs = related.get_table_serializer_class().get_filter_specs()
+            condition = FilterTreeBuilder(specs, related.model).build(tree)
+
+            if condition is not None:
+                queryset = queryset.filter(condition)
+
+        term = force_str(params.get("q") or "").strip()[:200]
+
+        if term:
+            queryset = apply_search(
+                queryset,
+                related.visible_paths(
+                    request, related.get_search_fields(request)
+                ),
+                term,
+            )
+
+        ordering = list(allocation.ordering or related.get_ordering(request))
+
+        if not {"pk", "-pk"} & set(ordering):
+            ordering.append("pk")
+
+        try:
+            page = max(1, int(params.get("page") or 1))
+        except (TypeError, ValueError):
+            page = 1
+
+        size = max(1, min(int(allocation.limit), MAX_SOURCES))
+        offset = (page - 1) * size
+        rows = list(
+            queryset.order_by(*ordering).distinct()[offset : offset + size + 1]
+        )
+        items = []
+
+        for row in rows[:size]:
+            item = {
+                "id": force_str(row.pk),
+                "label": related.get_object_label(row),
+                "url": record_url(related.site, request, row),
+                "color": "",
+                "background": "",
+                "cells": [],
+            }
+
+            if allocation.color:
+                tags = (
+                    describe_entry(
+                        related, request, row, allocation.color
+                    ).get("items")
+                    or []
+                )
+
+                if tags:
+                    item["color"] = force_str(tags[0].get("color") or "")
+                    item["background"] = force_str(
+                        tags[0].get("background") or ""
+                    )
+
+            for name in allocation.fields:
+                entry = describe_entry(related, request, row, name)
+                entry.pop("wide", None)
+                item["cells"].append(entry)
+
+            items.append(item)
+
+        return {"items": items, "more": len(rows) > size, "page": page}
+
+    def allocate(self, request: Any, data: Any) -> Any:
+        """Create a record on a time, pointing at the record dropped:
+        ``{"record", "start", "end"?}``, through the resource's
+        ``create_editable`` - the add form's serializer and
+        ``save_model``."""
+        from rest_framework.exceptions import NotFound, PermissionDenied
+
+        if not self.can_allocate(request):
+            raise PermissionDenied(
+                gettext("Records are not created on this calendar.")
+            )
+
+        if not isinstance(data, dict):
+            raise ValidationError(gettext("Send the record and the time."))
+
+        definition = self.definition
+        related = self.related_resource()
+        key = force_str(data.get("record") or "")
+
+        try:
+            target = related.get_queryset(request).get(pk=key)
+        except (related.model.DoesNotExist, ValueError, TypeError):
+            raise NotFound(gettext("That record cannot be found.")) from None
+        except Exception:  # a key the field cannot read: not one
+            raise NotFound(gettext("That record cannot be found.")) from None
+
+        start: datetime.date
+        end: datetime.date
+
+        if self.timed:
+            start = parse_moment(data.get("start"), "start")
+            end = (
+                parse_moment(data.get("end"), "end")
+                if data.get("end")
+                else start
+                + datetime.timedelta(minutes=int(self.allocation.duration))
+            )
+
+            if end <= start:
+                raise ValidationError(
+                    {"end": [gettext("The end must come after the start.")]}
+                )
+        else:
+            start = parse_day(data.get("start"), "start")
+            end = start
+
+        fixed: dict[str, Any] = {
+            definition.date: start.isoformat(),
+            self.allocation.field: target.pk,
+        }
+
+        if definition.end:
+            fixed[definition.end] = end.isoformat()
+
+        return self.resource.create_editable(request, {}, fixed)
 
     @staticmethod
     def shifted(value: Any, delta: datetime.timedelta) -> str:
@@ -431,8 +753,40 @@ class BoundCalendar:
                 else ""
             ),
             "dateField": self.definition.date,
+            "endField": self.definition.end or "",
             "topics": [resource.topic_name] if resource.realtime else [],
             "resource": resource.label_lower,
+            # Drawn as hours: the week and the day, from the first hour
+            # to the last, snapped to ``step`` minutes.
+            "hours": (
+                list(self.definition.hours or ()) if self.hourly else None
+            ),
+            "step": int(self.definition.step),
+            "timed": self.timed,
+            "now": wall_clock(timezone.now()) if self.timed else "",
+            "allocate": self.get_allocate_config(request),
+        }
+
+    def get_allocate_config(self, request: Any) -> dict[str, Any] | None:
+        """The panel of records to drop on the hours, for a reader who
+        may create them."""
+        if self.allocation is None or not self.can_allocate(request):
+            return None
+
+        related = self.related_resource()
+        url = self.resource._reverse(
+            self.resource.api_url_name("calendar-sources"),
+            calendar=self.name,
+        )
+
+        return {
+            "title": force_str(
+                self.allocation.title or related.get_label_plural()
+            ),
+            "url": url,
+            "createUrl": self.get_api_url(),
+            "duration": int(self.allocation.duration),
+            "field": self.allocation.field,
         }
 
     def get_filter_table_config(self, request: Any) -> dict[str, Any]:
@@ -494,6 +848,8 @@ def bind_calendar(definition: Any, resource: Any) -> BoundCalendar:
             f"tuple of names, not one string."
         )
 
+    check_hours(bound, name)
+
     for entry in (
         *([definition.label] if definition.label else ()),
         *([definition.color] if definition.color else ()),
@@ -517,6 +873,89 @@ def bind_calendar(definition: Any, resource: Any) -> BoundCalendar:
             )
 
     return bound
+
+
+def check_hours(bound: BoundCalendar, name: str) -> None:
+    """``hours``, ``step`` and ``allocate``: what they need."""
+    definition = bound.definition
+    hours = definition.hours
+
+    if hours is not None:
+        if (
+            not isinstance(hours, (tuple, list))
+            or len(hours) != 2
+            or not all(isinstance(hour, int) for hour in hours)
+            or not 0 <= hours[0] < hours[1] <= 24
+        ):
+            raise ImproperlyConfigured(
+                f"{name}.calendars: the hours of '{definition.name}' are "
+                f"(first, last), two whole hours from 0 to 24, the first "
+                f"before the last - not {hours!r}."
+            )
+
+        if not bound.timed:
+            raise ImproperlyConfigured(
+                f"{name}.calendars: '{definition.name}' draws hours, so "
+                f"its date, '{definition.date}', must be a date-and-time "
+                f"field."
+            )
+
+    if definition.step not in STEPS:
+        raise ImproperlyConfigured(
+            f"{name}.calendars: the step of '{definition.name}' is one of "
+            f"{', '.join(str(step) for step in STEPS)} minutes."
+        )
+
+    allocation = bound.allocation
+
+    if allocation is None:
+        return
+
+    if not isinstance(allocation, Allocate):
+        raise ImproperlyConfigured(
+            f"{name}.calendars: the allocate of '{definition.name}' is "
+            f"Allocate(...) or a foreign key's name."
+        )
+
+    try:
+        field = bound.resource.model._meta.get_field(allocation.field)
+    except FieldDoesNotExist:
+        field = None
+
+    if not isinstance(field, models.ForeignKey):
+        raise ImproperlyConfigured(
+            f"{name}.calendars: '{definition.name}' allocates through "
+            f"'{allocation.field}', which is not a foreign key of "
+            f"{bound.resource.model.__name__}."
+        )
+
+    if bound.timed and not bound.hourly:
+        raise ImproperlyConfigured(
+            f"{name}.calendars: '{definition.name}' allocates on a date "
+            f"and time, so it draws hours: give it hours=(first, last)."
+        )
+
+    if isinstance(allocation.fields, str):
+        raise ImproperlyConfigured(
+            f"{name}.calendars: the fields of '{definition.name}''s "
+            f"allocate are a tuple of names, not one string."
+        )
+
+    if not isinstance(allocation.duration, int) or allocation.duration < 1:
+        raise ImproperlyConfigured(
+            f"{name}.calendars: the duration of '{definition.name}''s "
+            f"allocate is a number of minutes."
+        )
+
+    try:
+        from generic.sites.dashboard import as_tree
+
+        as_tree(allocation.filters)
+    except TypeError:
+        raise ImproperlyConfigured(
+            f"{name}.calendars: the filters of '{definition.name}''s "
+            f"allocate are a filter tree (a dict, as presets write it)."
+        ) from None
 
 
 def calendar_page(bound: BoundCalendar) -> ResourcePage:
@@ -548,6 +987,7 @@ class CalendarPageView(ResourcePageView):
 
 
 __all__ = [
+    "Allocate",
     "BoundCalendar",
     "Calendar",
     "CalendarPageView",

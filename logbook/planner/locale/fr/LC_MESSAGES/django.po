@@ -1,0 +1,573 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic logbook\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-20 18:00+0200\n"
+"PO-Revision-Date: 2026-10-20 18:00+0200\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "name"
+msgstr "nom"
+
+msgid "colour"
+msgstr "couleur"
+
+msgid "label"
+msgstr "étiquette"
+
+msgid "labels"
+msgstr "étiquettes"
+
+msgid "description"
+msgstr "description"
+
+msgid "active"
+msgstr "actif"
+
+msgid "project"
+msgstr "projet"
+
+msgid "projects"
+msgstr "projets"
+
+msgid "title"
+msgstr "titre"
+
+msgid "pinned"
+msgstr "épinglée"
+
+msgid "created at"
+msgstr "créé le"
+
+msgid "updated at"
+msgstr "modifié le"
+
+msgid "note"
+msgstr "note"
+
+msgid "notes"
+msgstr "notes"
+
+msgid "reference"
+msgstr "référence"
+
+msgid "kind"
+msgstr "type"
+
+msgid "specification"
+msgstr "spécification"
+
+msgid "status"
+msgstr "statut"
+
+msgid "priority"
+msgstr "priorité"
+
+msgid "due on"
+msgstr "échéance"
+
+msgid "estimate (h)"
+msgstr "estimation (h)"
+
+msgid "done at"
+msgstr "terminée le"
+
+msgid "task"
+msgstr "tâche"
+
+msgid "tasks"
+msgstr "tâches"
+
+msgid "position"
+msgstr "position"
+
+msgid "indent"
+msgstr "retrait"
+
+msgid "text"
+msgstr "texte"
+
+msgid "done"
+msgstr "fait"
+
+msgid "note line"
+msgstr "ligne de note"
+
+msgid "note lines"
+msgstr "lignes de note"
+
+msgid "started at"
+msgstr "début"
+
+msgid "ended at"
+msgstr "fin"
+
+msgid "hours"
+msgstr "heures"
+
+msgid "comment"
+msgstr "commentaire"
+
+msgid "verified"
+msgstr "vérifié"
+
+msgid "verified at"
+msgstr "vérifié le"
+
+msgid "time entry"
+msgstr "saisie de temps"
+
+msgid "time entries"
+msgstr "saisies de temps"
+
+msgid "Pinned notes come first, and on the dashboard."
+msgstr "Les notes épinglées passent en premier, et sur le tableau de bord."
+
+msgid "author"
+msgstr "auteur"
+
+msgid "FNC - ticket"
+msgstr "FNC - ticket"
+
+msgid "DM - evolution"
+msgstr "DM - évolution"
+
+msgid "Backlog"
+msgstr "En attente"
+
+msgctxt "task status"
+msgid "To do"
+msgstr "À faire"
+
+msgid "In progress"
+msgstr "En cours"
+
+msgid "In review"
+msgstr "En revue"
+
+msgctxt "task status"
+msgid "Done"
+msgstr "Terminé"
+
+msgid "Low"
+msgstr "Basse"
+
+msgid "Normal"
+msgstr "Normale"
+
+msgid "High"
+msgstr "Haute"
+
+msgid "Urgent"
+msgstr "Urgente"
+
+msgid "What is expected: the ticket's facts, or the spec."
+msgstr "Ce qui est attendu : les faits du ticket, ou la spécification."
+
+msgid "assignee"
+msgstr "responsable"
+
+msgid "Text"
+msgstr "Texte"
+
+msgid "Heading"
+msgstr "Titre"
+
+msgid "Bullet"
+msgstr "Puce"
+
+msgid "To-do"
+msgstr "Case à cocher"
+
+msgid "Task"
+msgstr "Tâche"
+
+msgid "person"
+msgstr "personne"
+
+msgid "Empty while the timer runs."
+msgstr "Vide tant que le chronomètre tourne."
+
+msgid "verified by"
+msgstr "vérifié par"
+
+msgid "Can verify time entries"
+msgstr "Peut vérifier les saisies de temps"
+
+msgid "Planner"
+msgstr "Planificateur"
+
+msgid "Time"
+msgstr "Temps"
+
+msgid "What the notes and the tasks are about."
+msgstr "Ce dont parlent les notes et les tâches."
+
+msgid "Notes written line by line; task lines become tasks."
+msgstr "Des notes écrites ligne à ligne ; les lignes de tâche deviennent des tâches."
+
+msgid "FNC tickets and DM evolutions, from the notes or not."
+msgstr "Tickets FNC et évolutions DM, issus des notes ou non."
+
+msgid "Time logged on the tasks, then verified."
+msgstr "Le temps passé sur les tâches, puis vérifié."
+
+msgid "Write a note"
+msgstr "Écrire une note"
+
+msgid "The board"
+msgstr "Le tableau"
+
+msgid "The timesheet"
+msgstr "La feuille de temps"
+
+msgid "Pinned"
+msgstr "Épinglées"
+
+msgid "My open tasks"
+msgstr "Tâches ouvertes"
+
+msgid "Tickets (FNC)"
+msgstr "Tickets (FNC)"
+
+msgid "Evolutions (DM)"
+msgstr "Évolutions (DM)"
+
+msgid "To verify"
+msgstr "À vérifier"
+
+msgid "This week"
+msgstr "Cette semaine"
+
+msgid "Lines of text; task lines become tasks."
+msgstr "Des lignes de texte ; les lignes de tâche deviennent des tâches."
+
+msgid "The tasks by status: drag them along."
+msgstr "Les tâches par statut : faites-les avancer."
+
+msgid "This week's time, on the hours, to check."
+msgstr "Le temps de la semaine, sur les heures, à vérifier."
+
+msgid "Notes"
+msgstr "Notes"
+
+msgid "Open tasks"
+msgstr "Tâches ouvertes"
+
+msgid "Hours logged"
+msgstr "Heures saisies"
+
+msgid "Tasks"
+msgstr "Tâches"
+
+msgid "Planning"
+msgstr "Planification"
+
+msgid "Specification"
+msgstr "Spécification"
+
+msgid "Time spent"
+msgstr "Temps passé"
+
+msgid "Remaining (h)"
+msgstr "Reste (h)"
+
+msgid "The timer runs on %(task)s."
+msgstr "Le chronomètre tourne sur %(task)s."
+
+msgid "Start the timer"
+msgstr "Lancer le chronomètre"
+
+msgid "Log time on this task from now; any other timer stops."
+msgstr "Compter le temps sur cette tâche à partir de maintenant ; tout autre chronomètre s'arrête."
+
+msgid "%(hours)s h logged on %(task)s."
+msgstr "%(hours)s h saisies sur %(task)s."
+
+msgid "Stop the timer"
+msgstr "Arrêter le chronomètre"
+
+msgid "End the time entry running now."
+msgstr "Terminer la saisie de temps en cours."
+
+msgid "%(count)s task done."
+msgid_plural "%(count)s tasks done."
+msgstr[0] "%(count)s tâche terminée."
+msgstr[1] "%(count)s tâches terminées."
+
+msgid "Mark as done"
+msgstr "Marquer comme terminée"
+
+msgid "Put the task in the Done column."
+msgstr "Mettre la tâche dans la colonne Terminé."
+
+msgid "Verification"
+msgstr "Vérification"
+
+msgid "Project"
+msgstr "Projet"
+
+msgid "Check"
+msgstr "Contrôle"
+
+msgid "%(count)s entry verified."
+msgid_plural "%(count)s entries verified."
+msgstr[0] "%(count)s saisie vérifiée."
+msgstr[1] "%(count)s saisies vérifiées."
+
+msgid "Verify"
+msgstr "Vérifier"
+
+msgid "The time is right: mark it verified."
+msgstr "Le temps est juste : le marquer comme vérifié."
+
+msgid "%(count)s entry to verify again."
+msgid_plural "%(count)s entries to verify again."
+msgstr[0] "%(count)s saisie à vérifier de nouveau."
+msgstr[1] "%(count)s saisies à vérifier de nouveau."
+
+msgid "Back to verify"
+msgstr "Remettre à vérifier"
+
+msgid "Look at this time again."
+msgstr "Revoir ce temps."
+
+msgid "Pinned notes"
+msgstr "Notes épinglées"
+
+msgid "By status"
+msgstr "Par statut"
+
+msgid "Tickets and evolutions"
+msgstr "Tickets et évolutions"
+
+msgid "Board"
+msgstr "Tableau"
+
+msgid "Every task in the column of its status."
+msgstr "Chaque tâche dans la colonne de son statut."
+
+msgid "Who does what"
+msgstr "Qui fait quoi"
+
+msgid "The tasks still open, by person."
+msgstr "Les tâches encore ouvertes, par personne."
+
+msgid "Due dates"
+msgstr "Échéances"
+
+msgid "Open tickets (FNC)"
+msgstr "Tickets ouverts (FNC)"
+
+msgid "Open evolutions (DM)"
+msgstr "Évolutions ouvertes (DM)"
+
+msgid "Start the timer on one task at a time."
+msgstr "Lancez le chronomètre sur une seule tâche à la fois."
+
+msgid "No timer runs."
+msgstr "Aucun chronomètre ne tourne."
+
+msgid "Timesheet"
+msgstr "Feuille de temps"
+
+msgid "The time logged, placed on the hours: move it, stretch it, drop a task on a time, then verify the week."
+msgstr "Le temps saisi, placé sur les heures : déplacez-le, étirez-le, déposez une tâche sur une heure, puis vérifiez la semaine."
+
+msgid "Hours"
+msgstr "Heures"
+
+msgid "Hours by project"
+msgstr "Heures par projet"
+
+msgid "Hours by person"
+msgstr "Heures par personne"
+
+msgid "Hours this week"
+msgstr "Heures cette semaine"
+
+msgid "Entries to verify"
+msgstr "Saisies à vérifier"
+
+msgid "Timers running"
+msgstr "Chronomètres en cours"
+
+msgid "Running"
+msgstr "En cours"
+
+msgid "Verified"
+msgstr "Vérifié"
+
+msgid "You may not change this note."
+msgstr "Vous ne pouvez pas modifier cette note."
+
+msgid "Tasks under way"
+msgstr "Tâches en cours"
+
+msgid "Untitled task"
+msgstr "Tâche sans titre"
+
+msgid "Send the note's lines."
+msgstr "Envoyez les lignes de la note."
+
+msgid "A note holds at most %(count)s lines."
+msgstr "Une note contient au plus %(count)s lignes."
+
+msgid "You may not create tasks: this line stays text."
+msgstr "Vous ne pouvez pas créer de tâches : cette ligne reste du texte."
+
+msgid "You may not change tasks."
+msgstr "Vous ne pouvez pas modifier les tâches."
+
+msgid "Line %(number)s cannot be read."
+msgstr "La ligne %(number)s est illisible."
+
+msgid "A note needs a title."
+msgstr "Une note a besoin d'un titre."
+
+msgid "Loading the note..."
+msgstr "Chargement de la note..."
+
+msgid "The note"
+msgstr "La note"
+
+msgid "criticality"
+msgstr "criticité"
+
+msgid "AUT - other"
+msgstr "AUT - autre"
+
+msgid "Minor"
+msgstr "Mineure"
+
+msgid "Major"
+msgstr "Majeure"
+
+msgid "Critical"
+msgstr "Critique"
+
+msgid "FNC tickets only: minor, major or critical."
+msgstr "Pour les FNC seulement : mineure, majeure ou critique."
+
+msgid "A ticket (FNC) needs its criticality."
+msgstr "Une FNC doit avoir sa criticité."
+
+msgid "FNC tickets, DM evolutions and AUT others (meetings, support), from the notes or not."
+msgstr "Les FNC, les DM et les autres tâches AUT (réunions, support), venues des notes ou non."
+
+msgid "Others (AUT)"
+msgstr "Autres (AUT)"
+
+msgid "Critical tickets"
+msgstr "FNC critiques"
+
+msgid "Projects"
+msgstr "Projets"
+
+msgid "Tasks by project"
+msgstr "Tâches par projet"
+
+msgid "direction"
+msgstr "direction"
+
+msgid "directions"
+msgstr "directions"
+
+msgid "number"
+msgstr "numéro"
+
+msgid "imputation"
+msgstr "imputation"
+
+msgid "imputations"
+msgstr "imputations"
+
+msgid "percentage"
+msgstr "pourcentage"
+
+msgid "matrix line"
+msgstr "ligne de matrice"
+
+msgid "distribution matrix"
+msgstr "matrice d'imputation"
+
+msgid "Month"
+msgstr "Mois"
+
+msgid "Year"
+msgstr "Année"
+
+msgid "period"
+msgstr "période"
+
+msgid "date"
+msgstr "date"
+
+msgid "The first day of the month or the year."
+msgstr "Le premier jour du mois ou de l'année."
+
+msgid "DES users"
+msgstr "Utilisateurs DES"
+
+msgid "COMET users"
+msgstr "Utilisateurs COMET"
+
+msgid "tool usage"
+msgstr "utilisation des outils"
+
+msgid "Export the imputation split (Excel)"
+msgstr "Exporter la répartition des imputations (Excel)"
+
+msgid "The selected time on 7.4-hour days, spread over the distribution matrix."
+msgstr "Le temps sélectionné, sur des journées de 7,4 heures, réparti selon la matrice d'imputation."
+
+msgid "Imputation split"
+msgstr "Répartition des imputations"
+
+msgid "Workdays"
+msgstr "Journées"
+
+msgid "Each working day of the month: 8 hours logged, or not."
+msgstr "Chaque jour ouvré du mois : 8 heures saisies, ou non."
+
+msgid "The accounting codes a task's time is charged to."
+msgstr "Les codes comptables sur lesquels le temps d'une tâche est imputé."
+
+msgid "How the imputation export spreads the time: the shares add up to 100 %."
+msgstr "Comment l'export des imputations répartit le temps : les parts font 100 % au total."
+
+msgid "How many people used DES and COMET, read by sync_kpi; the key figures API serves them."
+msgstr "Le nombre d'utilisateurs de DES et de COMET, relevé par sync_kpi ; l'API des indicateurs les sert."
+
+msgid "Working days"
+msgstr "Jours ouvrés"
+
+msgid "Months"
+msgstr "Mois"
+
+msgid "Previous month"
+msgstr "Mois précédent"
+
+msgid "This month"
+msgstr "Ce mois-ci"
+
+msgid "Next month"
+msgstr "Mois suivant"
+
+msgid "Exactly 8 h"
+msgstr "8 h tout juste"
+
+msgid "Time, but not 8 h"
+msgstr "Du temps, mais pas 8 h"
+
+msgid "Nothing logged"
+msgstr "Rien de saisi"
+
+msgid "To come"
+msgstr "À venir"

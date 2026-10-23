@@ -1,0 +1,253 @@
+/*
+ * The note editor (static/planner/note.js). Tokens only.
+ */
+
+.note-editor {
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.note-editor__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.note-editor__title {
+  flex: 1 1 20rem;
+  min-width: 0;
+  padding: var(--space-1) 0;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+}
+
+.note-editor__title:focus {
+  border-bottom-color: var(--color-accent);
+  outline: none;
+}
+
+.note-editor__status {
+  font-size: var(--font-size-xs);
+}
+
+.note-editor__status--error {
+  color: var(--color-danger);
+}
+
+.note-editor__lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.note-editor__help {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+/* -- A line --------------------------------------------------------------- */
+
+.note-line {
+  --indent: 0;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-inline-start: calc(var(--indent) * 1.75rem);
+  border-radius: var(--border-radius-sm);
+}
+
+.note-line:focus-within {
+  background: var(--surface-sunken);
+}
+
+.note-line__kind {
+  flex: none;
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+.note-line:hover .note-line__kind,
+.note-line:focus-within .note-line__kind {
+  opacity: 1;
+}
+
+.note-line__check {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.45rem 0.25rem 0 0;
+  accent-color: var(--color-accent);
+}
+
+.note-line__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 1.9rem;
+  padding: 0.3rem 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font: inherit;
+  line-height: 1.4;
+  background: transparent;
+  border: 0;
+  resize: none;
+}
+
+.note-line__text:focus {
+  outline: none;
+}
+
+.note-line__text::placeholder {
+  color: var(--text-muted);
+}
+
+.note-line--heading .note-line__text {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.note-line--bullet .note-line__text {
+  padding-inline-start: 1rem;
+  background: radial-gradient(circle, var(--text-secondary) 0.18rem, transparent 0.2rem) no-repeat 0.2rem 0.6rem / 0.6rem 0.6rem;
+}
+
+.note-line.is-done .note-line__text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* A task line: the line is the task's title, the task beside it. */
+.note-line--task {
+  margin: 1px 0;
+  background: color-mix(in oklch, var(--color-accent) 6%, transparent);
+  border-inline-start: 3px solid var(--color-accent);
+}
+
+.note-line--task:has(.note-line__task-kind--fnc) {
+  border-inline-start-color: oklch(0.58 0.2 27);
+}
+
+.note-line--task:has(.note-line__task-kind--dm) {
+  border-inline-start-color: oklch(0.55 0.2 300);
+}
+
+.note-line--task:has(.note-line__task-kind--aut) {
+  border-inline-start-color: oklch(0.6 0.12 185);
+}
+
+.note-line--task .note-line__text {
+  font-weight: 600;
+}
+
+.note-line__task {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1) var(--space-2);
+  max-width: 55%;
+  padding: 0.2rem var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+.note-line__task:empty {
+  display: none;
+}
+
+.note-line__task-kind {
+  font-weight: 700;
+}
+
+.note-line__task-kind--fnc {
+  --tag-color: oklch(0.58 0.2 27);
+}
+
+.note-line__task-kind--dm {
+  --tag-color: oklch(0.55 0.2 300);
+}
+
+.note-line__task-kind--aut {
+  --tag-color: oklch(0.6 0.12 185);
+}
+
+.note-line__reference {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.note-line__status {
+  width: auto;
+  min-width: 7rem;
+}
+
+.note-line__criticality {
+  width: auto;
+  min-width: 6rem;
+}
+
+.note-line__criticality--critical {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.note-line__hours {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.note-line__timer.is-running {
+  color: var(--color-danger);
+}
+
+.note-line__timer.is-running .icon {
+  animation: note-timer 1.6s ease-in-out infinite;
+}
+
+@keyframes note-timer {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-line__timer.is-running .icon {
+    animation: none;
+  }
+}
+
+.note-line__menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: calc(var(--indent) * 1.75rem);
+  z-index: 20;
+  display: block;
+  min-width: 15rem;
+}
+
+@media (max-width: 40rem) {
+  .note-editor {
+    padding: var(--space-3);
+  }
+
+  .note-line {
+    flex-wrap: wrap;
+  }
+
+  .note-line__task {
+    max-width: none;
+    width: 100%;
+    justify-content: flex-start;
+    padding-inline-start: 2rem;
+  }
+}
