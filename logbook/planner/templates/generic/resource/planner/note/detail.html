@@ -1,0 +1,25 @@
+{% extends "generic/resource/detail.html" %}
+{% load i18n static %}
+
+{# A note's page: the note itself, written line by line, above what     #}
+{# the summary page gives every record - its figures, its tasks and the #}
+{# time spent on them, its history (planner/static/planner/note.js).   #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'planner/note.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'planner/note.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+  <section class="card note-editor"
+           aria-label="{% translate 'The note' %}"
+           data-url="{{ request.path }}document/">
+    <p class="note-editor__loading muted">{% translate "Loading the note..." %}</p>
+  </section>
+  {{ block.super }}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'planner/workdays.css' %}">{% endblock %}
+
+{% block page_content %}
+<section class="card workdays" aria-label="{% translate 'Working days' %}">
+  <header class="workdays__head">
+    <h2 class="workdays__title">{{ month|date:"F Y" }}</h2>
+    <nav class="workdays__nav" aria-label="{% translate 'Months' %}">
+      <a class="button button--sm" href="{{ previous }}">{% translate "Previous month" %}</a>
+      <a class="button button--sm" href="{{ current }}">{% translate "This month" %}</a>
+      <a class="button button--sm" href="{{ next }}">{% translate "Next month" %}</a>
+    </nav>
+  </header>
+
+  <div class="workdays__days">
+    {% for day in days %}
+    <a class="workdays__day workdays__day--{{ day.state }}" href="{{ day.url }}"
+       title="{{ day.date|date:'l d F' }} - {{ day.duration }}">
+      <span class="workdays__date">{{ day.date|date:"D d" }}</span>
+      <span class="workdays__duration">{{ day.duration }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  <p class="workdays__legend muted">
+    <span><i class="workdays__swatch workdays__day--complete"></i>{% translate "Exactly 8 h" %}</span>
+    <span><i class="workdays__swatch workdays__day--incomplete"></i>{% translate "Time, but not 8 h" %}</span>
+    <span><i class="workdays__swatch workdays__day--empty"></i>{% translate "Nothing logged" %}</span>
+    <span><i class="workdays__swatch workdays__day--future"></i>{% translate "To come" %}</span>
+  </p>
+</section>
+{% endblock %}

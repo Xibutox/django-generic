@@ -4525,3 +4525,31 @@ msgstr "Rien n’a été annulé : « %(name)s » n’existe plus."
 #, python-format
 msgid "Nothing was undone: “%(name)s” exists again."
 msgstr "Rien n’a été annulé : « %(name)s » existe de nouveau."
+
+#: generic/sites/calendars.py
+msgid "Records are not created on this calendar."
+msgstr "Ce calendrier ne crée pas d'enregistrements."
+
+#: generic/sites/calendars.py
+msgid "Send the record and the time."
+msgstr "Envoyez l'enregistrement et l'heure."
+
+#: generic/sites/calendars.py
+msgid "A date and time is expected."
+msgstr "Une date et une heure sont attendues."
+
+#: generic/sites/calendars.py
+msgid "That record cannot be found."
+msgstr "Cet enregistrement est introuvable."
+
+#: generic/sites/calendars.py
+msgid "This calendar's records have no end."
+msgstr "Les enregistrements de ce calendrier n'ont pas de fin."
+
+#: generic/sites/calendars.py
+msgid "This calendar allocates nothing."
+msgstr "Ce calendrier ne propose rien à placer."
+
+#: generic/sites/calendars.py
+msgid "There is no such board."
+msgstr "Ce tableau n'existe pas."

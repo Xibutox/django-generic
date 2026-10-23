@@ -5,7 +5,8 @@ admin-like, DRF-driven interface (DataTables, summary pages, schema
 forms, charts, coloured tags, wiki, real-time events) plus a runnable
 example, `example/` + `example_project/`, and a minimal one,
 `minimal/` (the least a project needs: one settings file, one model),
-and a document manager, `docmanager/` (teams, folders, versioned files).
+a document manager, `docmanager/` (teams, folders, versioned files),
+and a logbook, `logbook/` (notes, FNC/DM/AUT tasks, board, timesheet).
 
 Before changing anything, read **`ai/00-context.md`** — the reference for
 the rules, the file map and every declaration. Then the use-case prompt
@@ -48,8 +49,8 @@ pip install -e ".[export,events,tasks,postgres,wiki,dev]"
 python manage.py migrate && python manage.py seed_example && python manage.py runserver
 python debug.py                               # runserver under a debugger (VS Code: F5)
 pytest
-black --check . && isort --check-only . && flake8 generic tests example example_project minimal docmanager scripts debug.py
-bandit -r generic example docmanager minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
+black --check . && isort --check-only . && flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
+bandit -r generic example docmanager logbook minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
 python scripts/mypy_baseline.py              # mypy, failing on an error not in scripts/mypy-baseline.txt
 python scripts/lock.py                       # requirements/constraints.txt, the versions images and CI install (needs uv)

@@ -14,10 +14,16 @@ from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
 from django.test import RequestFactory
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
-from example.models import Ticket
-from generic.sites import Calendar, ModelResource, site
-from generic.sites.calendars import MAX_DAYS, bind_calendar
+from example.models import Ticket, TimeEntry
+from generic.sites import Allocate, Calendar, ModelResource, site
+from generic.sites.calendars import (
+    MAX_DAYS,
+    bind_calendar,
+    parse_moment,
+    wall_clock,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -314,7 +320,7 @@ class TestDeclarations:
             ({"name": "Due", "date": "due_on"}, "lower case"),
             ({"name": "due", "date": "title"}, "not a date"),
             ({"name": "due", "date": "due_on", "end": "nope"}, "not a date"),
-            ({"name": "due", "date": "due_on", "views": ("day",)}, "views"),
+            ({"name": "due", "date": "due_on", "views": ("year",)}, "views"),
             ({"name": "due", "date": "due_on", "fields": "status"}, "tuple"),
             ({"name": "due", "date": "due_on", "color": "nope"}, "'nope'"),
             (
@@ -339,3 +345,280 @@ class TestDeclarations:
 
     def test_the_widest_range(self):
         assert MAX_DAYS >= 42
+
+
+ARRIVALS = "/api/example/ticket/calendars/arrivals/"
+
+
+def at(day: int, hour: int, minute: int = 0) -> datetime.datetime:
+    return timezone.make_aware(datetime.datetime(2026, 10, day, hour, minute))
+
+
+class TestTheHours:
+    """A calendar with ``hours``: records placed on the time of day."""
+
+    def test_an_event_carries_its_wall_clock(self, admin_client, support_desk):
+        Ticket.objects.filter(pk=support_desk["login"].pk).update(
+            opened_at=at(6, 9, 30)
+        )
+        response = admin_client.get(
+            ARRIVALS, {"start": "2026-10-05", "end": "2026-10-12"}
+        )
+
+        assert response.status_code == 200, response.content
+        body = response.json()
+        event = next(
+            event
+            for event in body["events"]
+            if event["id"] == str(support_desk["login"].pk)
+        )
+
+        assert event["startsAt"] == "2026-10-06T09:30"
+        assert event["endsAt"] == ""
+
+    def test_the_page_carries_the_hours(self, admin_client, db):
+        response = admin_client.get("/example/ticket/arrivals/")
+
+        assert response.status_code == 200
+        assert b"&quot;hours&quot;: [7, 20]" in response.content or (
+            b'"hours": [7, 20]' in response.content
+        )
+
+    def test_a_moment_is_read_on_the_wall_clock(self):
+        moment = parse_moment("2026-10-06T09:30", "start")
+
+        assert wall_clock(moment) == "2026-10-06T09:30"
+
+    @pytest.mark.parametrize("value", ["", "2026-10-06", "soon", None])
+    def test_a_moment_without_its_time_is_refused(self, value):
+        with pytest.raises(ValidationError):
+            parse_moment(value, "start")
+
+
+class TestMovingInTime:
+    def bound(self, **options):
+        resource = type(
+            "Probe",
+            (ModelResource,),
+            {
+                "list_display": ("reference", "opened_at", "due_on"),
+                "editable_fields": ("opened_at", "due_on"),
+            },
+        )(Ticket, site)
+
+        return bind_calendar(
+            Calendar("probe", date="opened_at", editable=True, **options),
+            resource,
+        )
+
+    def request(self, admin_user):
+        request = RequestFactory().patch("/")
+        request.user = admin_user
+
+        return request
+
+    def test_another_start(self, admin_user, support_desk):
+        ticket = support_desk["login"]
+        Ticket.objects.filter(pk=ticket.pk).update(opened_at=at(6, 9))
+        ticket.refresh_from_db()
+        self.bound(hours=(7, 20)).move(
+            self.request(admin_user), ticket, {"start": "2026-10-07T14:15"}
+        )
+        ticket.refresh_from_db()
+
+        assert ticket.opened_at == at(7, 14, 15)
+
+    def test_an_end_where_there_is_none(self, admin_user, support_desk):
+        ticket = support_desk["login"]
+
+        with pytest.raises(ValidationError, match="no end"):
+            self.bound(hours=(7, 20)).move(
+                self.request(admin_user),
+                ticket,
+                {"end": "2026-10-07T14:15"},
+            )
+
+    def test_a_day_calendar_moves_by_the_day(self, admin_user, support_desk):
+        ticket = support_desk["login"]
+        Ticket.objects.filter(pk=ticket.pk).update(opened_at=at(6, 9))
+        ticket.refresh_from_db()
+        # No hours: "start" is not read, the day is.
+        self.bound().move(
+            self.request(admin_user), ticket, {"date": "2026-10-08"}
+        )
+        ticket.refresh_from_db()
+
+        assert ticket.opened_at == at(8, 9)
+
+
+class Timesheet(ModelResource):
+    """Time entries laid on days, a ticket dropped on one logging an
+    hour of it."""
+
+    fields = ("ticket", "agent", "spent_on", "hours")
+
+    def create_editable(self, request, values, fixed):
+        from example.models import Agent
+
+        fixed = {
+            **fixed,
+            "agent": Agent.objects.order_by("pk").first().pk,
+            "hours": "1.00",
+        }
+
+        return super().create_editable(request, values, fixed)
+
+
+class TestAllocating:
+    def bound(self, **options):
+        allocate = options.pop(
+            "allocate",
+            Allocate(
+                "ticket",
+                filters={
+                    "match": "all",
+                    "conditions": [
+                        {
+                            "column": "status",
+                            "operator": "any_of",
+                            "value": ["open"],
+                        }
+                    ],
+                },
+                fields=("team",),
+                color="priority",
+            ),
+        )
+
+        return bind_calendar(
+            Calendar("days", date="spent_on", allocate=allocate, **options),
+            Timesheet(TimeEntry, site),
+        )
+
+    def request(self, user, method="get"):
+        request = getattr(RequestFactory(), method)("/")
+        request.user = user
+
+        return request
+
+    def test_the_records_offered_are_the_filtered_ones(
+        self, admin_user, support_desk
+    ):
+        answer = self.bound().sources(self.request(admin_user), {})
+
+        assert [item["label"] for item in answer["items"]] == [
+            str(support_desk["login"])
+        ]
+        item = answer["items"][0]
+        assert item["url"]
+        assert item["color"]
+        assert item["cells"][0]["display"] == "Front office"
+        assert answer["more"] is False
+
+    def test_the_reader_s_search(self, admin_user, support_desk):
+        bound = self.bound(allocate=Allocate("ticket", limit=1))
+        request = self.request(admin_user)
+
+        assert bound.sources(request, {"q": "blank"})["items"][0][
+            "label"
+        ] == str(support_desk["invoice"])
+        # One at a time: more behind.
+        assert bound.sources(request, {})["more"] is True
+        assert len(bound.sources(request, {"page": "2"})["items"]) == 1
+
+    def test_a_record_dropped_creates_one(self, admin_user, support_desk):
+        ticket = support_desk["invoice"]
+        entry = self.bound().allocate(
+            self.request(admin_user, "post"),
+            {"record": str(ticket.pk), "start": "2026-10-07"},
+        )
+
+        assert entry.ticket == ticket
+        assert entry.spent_on == datetime.date(2026, 10, 7)
+
+    def test_a_record_it_cannot_find(self, admin_user, support_desk):
+        from rest_framework.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            self.bound().allocate(
+                self.request(admin_user, "post"),
+                {"record": "nope", "start": "2026-10-07"},
+            )
+
+    def test_refused_without_the_add_permission(
+        self, django_user_model, support_desk
+    ):
+        from rest_framework.exceptions import PermissionDenied
+
+        user = django_user_model.objects.create_user(username="reader")
+        user.user_permissions.set(
+            Permission.objects.filter(
+                codename__in=["view_timeentry", "view_ticket"]
+            )
+        )
+        bound = self.bound()
+
+        assert not bound.can_allocate(self.request(user))
+
+        with pytest.raises(PermissionDenied):
+            bound.allocate(
+                self.request(user, "post"),
+                {
+                    "record": str(support_desk["login"].pk),
+                    "start": "2026-10-07",
+                },
+            )
+
+    def test_the_page_is_told_how(self, admin_user, db):
+        config = self.bound().get_allocate_config(self.request(admin_user))
+
+        assert config["field"] == "ticket"
+        assert config["url"].endswith("sources/")
+
+
+class TestHourDeclarations:
+    def bind(self, model=Ticket, **options):
+        resource = type("Probe", (ModelResource,), {})(model, site)
+
+        return bind_calendar(Calendar("probe", **options), resource)
+
+    @pytest.mark.parametrize(
+        "options, message",
+        [
+            ({"date": "opened_at", "hours": (20, 7)}, "two whole hours"),
+            ({"date": "opened_at", "hours": (7,)}, "two whole hours"),
+            ({"date": "due_on", "hours": (7, 20)}, "date-and-time"),
+            ({"date": "opened_at", "step": 7}, "step"),
+            ({"date": "opened_at", "allocate": 3}, "Allocate"),
+            (
+                {"date": "opened_at", "allocate": "title", "hours": (7, 20)},
+                "not a foreign key",
+            ),
+            ({"date": "opened_at", "allocate": "customer"}, "hours="),
+            (
+                {
+                    "date": "opened_at",
+                    "hours": (7, 20),
+                    "allocate": Allocate("customer", fields="name"),
+                },
+                "tuple",
+            ),
+            (
+                {
+                    "date": "opened_at",
+                    "hours": (7, 20),
+                    "allocate": Allocate("customer", duration=0),
+                },
+                "minutes",
+            ),
+        ],
+    )
+    def test_mistakes_are_refused(self, options, message):
+        with pytest.raises(ImproperlyConfigured, match=message):
+            self.bind(**options)
+
+    def test_a_name_is_an_allocation(self):
+        bound = self.bind(date="opened_at", hours=(7, 20), allocate="customer")
+
+        assert bound.allocation == Allocate("customer")
+        assert bound.hourly

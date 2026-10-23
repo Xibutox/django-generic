@@ -13,6 +13,38 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Calendars on the hours: `Calendar(..., hours=(7, 20))` draws the week
+  and a new **day** view as columns of hours, each record as tall as it
+  lasts, side by side when they overlap, with the day's total in its
+  header and a line at the current time. With `editable=True` a record
+  dragged to another time starts there (its end follows), its foot
+  stretches it, and a drag across empty hours opens the add form with
+  the start and the end filled in; moves snap to `step` minutes. The
+  move endpoint takes `{"start"}` and `{"end"}`. See docs/calendars.md,
+  *On the hours*.
+- `Allocate`: a calendar's panel of related records to drop on a time -
+  tasks on a timesheet, tickets on a planning. Each drop creates a
+  record pointing at the one dropped, through `create_editable`; the
+  panel follows the declared filters, a search and pages
+  (`calendars/<name>/sources/`). See docs/calendars.md, *Dropping
+  records on it*.
+- A logbook beside the examples, `logbook/`: notes written line by
+  line, where a line can be a task - an FNC (a ticket) or a DM (an
+  evolution) or an AUT (a meeting, support), numbered FNC-0001,
+  DM-0001, AUT-0001 - with its status, a ticket's criticality (minor,
+  major, critical) and a timer beside it, about several projects or
+  none; a board of the tasks by status; a timesheet on the
+  hours where the time is moved, stretched, and tasks dropped on a time
+  to log it, then verified by a lead. See logbook/README.md.
+- The logbook takes over an older planner: imputations and their
+  distribution matrix with the Excel export on 7.4-hour days, a
+  *Workdays* page (8 hours a day or not), the key figures API at its old
+  address, COMET/DES usage read by `sync_kpi`, and a migration kit -
+  `export_planner.py` on the old side, `import_planner` on the new,
+  `scripts/logbook_kit.py` for a standalone Docker folder. See
+  logbook/kit/README.md.
+- *Support › Arrivals*: the tickets at the hour they were opened, on
+  the new hourly week and day views.
 - Records holding records, from the top one's form: each row of an
   inline gets an icon opening its record's own form in a popup window,
   as a relation's pencil does - where the rows it holds in turn are

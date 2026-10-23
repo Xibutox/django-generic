@@ -1,0 +1,115 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic logbook\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-20 18:00+0200\n"
+"PO-Revision-Date: 2026-10-20 18:00+0200\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Text"
+msgstr "Texte"
+
+msgid "Heading"
+msgstr "Titre"
+
+msgid "Bullet"
+msgstr "Puce"
+
+msgid "To-do"
+msgstr "Case à cocher"
+
+msgid "FNC task - a ticket"
+msgstr "Tâche FNC - un ticket"
+
+msgid "DM task - an evolution"
+msgstr "Tâche DM - une évolution"
+
+msgid "The note could not be loaded."
+msgstr "La note n’a pas pu être chargée."
+
+msgid "Title"
+msgstr "Titre"
+
+msgid "Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc or /dm for a task. Tab indents."
+msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une case à cocher, /fnc ou /dm pour une tâche. Tab met en retrait."
+
+msgid "Saved"
+msgstr "Enregistrée"
+
+msgid "Done"
+msgstr "Fait"
+
+msgid "Line"
+msgstr "Ligne"
+
+msgid "Kind of line: %(kind)s"
+msgstr "Type de ligne : %(kind)s"
+
+msgid "Write something, or /fnc a task..."
+msgstr "Écrivez quelque chose, ou /fnc une tâche..."
+
+msgid "new task, saved soon"
+msgstr "nouvelle tâche, bientôt enregistrée"
+
+msgid "Open the task"
+msgstr "Ouvrir la tâche"
+
+msgid "Status"
+msgstr "Statut"
+
+msgid "Time spent"
+msgstr "Temps passé"
+
+msgid "Stop the timer"
+msgstr "Arrêter le chronomètre"
+
+msgid "Start the timer"
+msgstr "Lancer le chronomètre"
+
+msgid "Turn %(task)s back into text?"
+msgstr "Refaire de %(task)s une ligne de texte ?"
+
+msgid "The task is kept if time was logged on it or work started; otherwise it is deleted."
+msgstr "La tâche est gardée si du temps y a été saisi ou si le travail a commencé ; sinon elle est supprimée."
+
+msgid "Make it text"
+msgstr "En faire du texte"
+
+msgid "Not saved yet"
+msgstr "Pas encore enregistrée"
+
+msgid "Saving..."
+msgstr "Enregistrement..."
+
+msgid "Saved at %(time)s"
+msgstr "Enregistrée à %(time)s"
+
+msgid "The note could not be saved."
+msgstr "La note n’a pas pu être enregistrée."
+
+msgid "The task could not be changed."
+msgstr "La tâche n’a pas pu être modifiée."
+
+msgid "The timer runs on %(task)s."
+msgstr "Le chronomètre tourne sur %(task)s."
+
+msgid "Time logged on %(task)s."
+msgstr "Temps saisi sur %(task)s."
+
+msgid "The timer could not be changed."
+msgstr "Le chronomètre n’a pas pu être modifié."
+
+msgid "AUT task - a meeting, support"
+msgstr "Tâche AUT - une réunion, du support"
+
+msgid "Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents."
+msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une case à cocher, /fnc, /dm ou /aut pour une tâche. Tab indente."
+
+msgid "Criticality"
+msgstr "Criticité"

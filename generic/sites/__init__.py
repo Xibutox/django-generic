@@ -75,7 +75,7 @@ and on a board, a column per value of a field
 from generic.api.tags import TagStyle
 from generic.sites.auto import AutoResource, auto
 from generic.sites.boards import Board
-from generic.sites.calendars import Calendar
+from generic.sites.calendars import Allocate, Calendar
 from generic.sites.chart_builder import ChartBuilder
 from generic.sites.charts import Chart, chart_payload
 from generic.sites.dashboard import Cards, Kpi
@@ -101,6 +101,7 @@ from generic.sites.sso import SsoProvider
 from generic.sites.trees import Tree
 
 __all__ = [
+    "Allocate",
     "AlreadyRegistered",
     "AutoResource",
     "Board",
