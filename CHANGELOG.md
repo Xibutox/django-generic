@@ -10,7 +10,7 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-23
 
 ### Added
 - Calendars on the hours: `Calendar(..., hours=(7, 20))` draws the week
@@ -134,6 +134,18 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   text is copied, the history is not, images and files are shared.
   `wiki_duplicated` tells the project, so a team's wiki copied keeps
   its readers (docmanager does). See docs/wiki.md, *Duplicating*.
+- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
+  card, the archive button beside its name in the menu: `wiki.json`
+  (the wiki, its pages, their tree and text) and the images and files
+  the pages show. *Import a wiki* on the list of wikis makes a new wiki
+  from one, on this site or any other running the wiki: pages cleaned,
+  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
+  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
+  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
+  `wiki_import`. See docs/wiki.md, *Export and import*.
+- A chart card folds to its title with a chevron beside its tools,
+  remembered per page and chart in the browser; folded, it fetches
+  nothing until opened. See docs/charts.md.
 
 ### Changed
 - Laptops at 125% or 150% display scaling draw the interface a tenth
@@ -156,20 +168,6 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   card (10rem a column, was 12rem).
 - A table's search box gives up width before its tools wrap onto a
   second line.
-
-### Added
-- A wiki exports as a zip, `wiki/<wiki>/export.zip` - *Export* on its
-  card, the archive button beside its name in the menu: `wiki.json`
-  (the wiki, its pages, their tree and text) and the images and files
-  the pages show. *Import a wiki* on the list of wikis makes a new wiki
-  from one, on this site or any other running the wiki: pages cleaned,
-  images told by their bytes, sizes held to `FILE_MAX_SIZE` and the new
-  `WIKI_ARCHIVE_MAX_SIZE` (100 MB), nothing left behind when refused.
-  `POST wiki/api/wikis/import/`, `manage.py wiki_export` and
-  `wiki_import`. See docs/wiki.md, *Export and import*.
-- A chart card folds to its title with a chevron beside its tools,
-  remembered per page and chart in the browser; folded, it fetches
-  nothing until opened. See docs/charts.md.
 
 ### Fixed
 - The table under a list's charts touched them: the chart builder
