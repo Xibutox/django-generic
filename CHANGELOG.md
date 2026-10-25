@@ -26,6 +26,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   personnel files, access reviews that deactivate revoked accounts.
   French included; `seed_iso` fills them with demo data. The example
   project installs them all. See iso/README.md.
+- Custom fields: `custom_fields = True` on a resource (or
+  `auto(..., custom_fields=True)`, or `CustomFields(section=, types=,
+  max_fields=, permission=)`) lets the holders of
+  `<app>.customize_<model>` add fields to the model while the
+  application runs - text, long text, e-mail, web address, whole and
+  decimal numbers, yes/no, date, time, date and time, choice - each
+  with a label and help text per language, a default, limits, a unit
+  and optional permissions to see and change it. They appear in the
+  forms, the summary, the API and as table columns (filtered, sorted,
+  searched, exported), and are versioned with the record: one save is
+  one version, *Undo* puts them back. Settings `CUSTOM_FIELDS`,
+  `CUSTOM_FIELDS_MAX_PER_MODEL`; check `generic.W013`. See
+  docs/custom-fields.md.
 
 ## [1.5.0] - 2026-10-23
 

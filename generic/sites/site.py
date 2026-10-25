@@ -24,6 +24,8 @@ from django.utils.translation import gettext
 from rest_framework.routers import SimpleRouter
 
 from generic.conf import generic_settings
+from generic.customfields import definitions as customfields
+from generic.customfields import signals as customfield_signals
 from generic.history import recording as history
 from generic.i18n import language_menu
 from generic.sites import realtime, trees
@@ -183,9 +185,12 @@ class GenericSite:
             resource.get_labels()
             # And the relations its list unfolds into.
             resource.get_outline()
+            # And whether, and how, it is open to custom fields.
+            customfields.declaration(resource)
             self._registry[model] = resource
             realtime.connect(resource)
             history.connect(resource)
+            customfield_signals.connect(resource)
 
     def auto(self, model_or_iterable: Any, **options: Any) -> None:
         """Register models with pages worked out from each model.
@@ -239,6 +244,7 @@ class GenericSite:
 
             realtime.disconnect(resource)
             history.disconnect(resource)
+            customfield_signals.disconnect(resource)
             trees.forget(resource)
 
     def register_data(self, resource_class: type) -> Any:

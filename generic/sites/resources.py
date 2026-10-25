@@ -361,6 +361,16 @@ class ModelResource(PagesMixin):
     #: history; False offers none.
     undo: bool = True
 
+    # -- custom fields ---------------------------------------------------
+
+    #: Fields people add to the model while the application runs
+    #: (generic.customfields): ``True`` or ``CustomFields(section=,
+    #: types=, max_fields=, permission=)``. Whoever holds
+    #: ``<app>.customize_<model>`` adds them from the list's *Customize
+    #: fields*; each is a form control, a summary line, a table column,
+    #: an API key and a part of the record's history.
+    custom_fields: Any = False
+
     # -- trash and access log --------------------------------------------
 
     #: Delete moves a record to the resource's trash - its *Trash* page,
@@ -812,6 +822,15 @@ class ModelResource(PagesMixin):
         if prefetch:
             queryset = queryset.prefetch_related(*sorted(prefetch))
 
+        # Each custom field is a column of the row: the cell, its filter
+        # and its order read the same annotation.
+        custom = getattr(serializer, "generic_custom_fields", ())
+
+        if custom:
+            from generic.customfields.values import annotate
+
+            queryset = annotate(queryset, custom)
+
         # Paging an unordered queryset can show a row twice and another
         # never.
         if not queryset.ordered:
@@ -1027,9 +1046,24 @@ class ModelResource(PagesMixin):
         if self.trash and in_trash(request):
             serializer = self.get_trash_serializer_class()
         else:
-            serializer = self.get_table_serializer_class()
+            serializer = self.with_custom_columns(
+                request, self.get_table_serializer_class()
+            )
 
         return restricted(serializer, self.get_hidden_fields(request))
+
+    def get_custom_fields(self, request: Any = None) -> list[Any]:
+        """The custom fields this reader may see (generic.customfields),
+        in their order; none when the model is not open to them."""
+        from generic.customfields.definitions import visible
+
+        return visible(self, request)
+
+    def with_custom_columns(self, request: Any, serializer: Any) -> Any:
+        """``serializer`` with a column per custom field."""
+        from generic.customfields.serializers import with_columns
+
+        return with_columns(serializer, self, self.get_custom_fields(request))
 
     def get_table_serializer_class(self) -> Any:
         if self._table_serializer_class is None:
@@ -1211,7 +1245,10 @@ class ModelResource(PagesMixin):
         passes. ``serializer`` draws other columns than the list's.
         """
         serializer = restricted(
-            serializer or self.get_table_serializer_class(),
+            serializer
+            or self.with_custom_columns(
+                request, self.get_table_serializer_class()
+            ),
             self.get_hidden_fields(request),
         )
         declared = getattr(serializer, "_declared_fields", {})
@@ -1768,17 +1805,21 @@ class ModelResource(PagesMixin):
         Without a request - a task, a command - every guarded field is
         hidden: nothing is shown to nobody in particular.
         """
+        from generic.customfields.definitions import hidden_names
+
         user = getattr(request, "user", None)
 
         return frozenset(
             name
             for name, (view, _change) in self.get_field_permissions().items()
             if view and not (user is not None and user.has_perm(view))
-        )
+        ) | hidden_names(self, request)
 
     def get_locked_fields(self, request: Any) -> frozenset[str]:
         """The fields this reader may see but not change - and the
         hidden ones, which they cannot change either."""
+        from generic.customfields.definitions import locked_names
+
         user = getattr(request, "user", None)
         locked = {
             name
@@ -1786,7 +1827,11 @@ class ModelResource(PagesMixin):
             if change and not (user is not None and user.has_perm(change))
         }
 
-        return frozenset(locked) | self.get_hidden_fields(request)
+        return (
+            frozenset(locked)
+            | locked_names(self, request)
+            | self.get_hidden_fields(request)
+        )
 
     def visible_paths(
         self, request: Any, paths: Sequence[str]
@@ -1825,8 +1870,22 @@ class ModelResource(PagesMixin):
         may not see, and the ones they may not change read only
         (``field_permissions``). What every endpoint writes and reads a
         record through; override ``get_form_serializer_class``."""
+        from generic.customfields.definitions import declaration
+        from generic.customfields.serializers import with_form_fields
+
+        serializer = self.get_form_serializer_class()
+        declared = declaration(self)
+
+        if declared is not None:
+            serializer = with_form_fields(
+                serializer,
+                self,
+                self.get_custom_fields(request),
+                declared.section,
+            )
+
         return restricted(
-            self.get_form_serializer_class(),
+            serializer,
             self.get_hidden_fields(request),
             self.get_locked_fields(request),
         )

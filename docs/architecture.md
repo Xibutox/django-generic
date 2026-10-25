@@ -89,6 +89,14 @@ generic/
 ├── middleware.py        UserLanguageMiddleware: the language of a user
 │                        CurrentUserMiddleware: who the history records
 │
+├── customfields/        Fields added to a model at run time
+│   ├── models.py        CustomField (the definition), CustomValue (typed values)
+│   ├── definitions.py   Which fields a resource has, per request and reader
+│   ├── values.py        Annotate a table, load and write a record's values
+│   ├── serializers.py   Columns and form fields worked out of the definitions
+│   ├── display.py       The summary section, the history's fields
+│   └── resources.py     The screen the definitions are managed on
+│
 ├── history/
 │   ├── models.py        HistoryEntry: one version of one record
 │   ├── actor.py         Who is acting, where no request can be passed

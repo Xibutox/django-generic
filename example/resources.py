@@ -1433,6 +1433,10 @@ auto(
     # A label to stick on each device: its serial number, what it is,
     # and a QR code opening its page.
     labels=Labels(fields=("serial_number", "kind", "supplier")),
+    # Whoever holds example.customize_equipment adds fields of their own
+    # to it - a warranty end, a purchase price - from the list's
+    # *Customize fields* (docs/custom-fields.md).
+    custom_fields=True,
 )
 
 

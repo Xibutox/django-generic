@@ -253,6 +253,8 @@ See [History](history.md).
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `TRASH_DAYS` | `30` | How long a record stays in a resource's trash before `empty_trash` (or the *Empty the trash* task) deletes it for good. `None` keeps everything |
+| `CUSTOM_FIELDS` | `True` | `False` turns [custom fields](custom-fields.md) off everywhere; the values written are kept |
+| `CUSTOM_FIELDS_MAX_PER_MODEL` | `50` | The most custom fields a model may have; `CustomFields(max_fields=)` per resource |
 | `ACCESS_LOG_RETENTION_DAYS` | `None` | Keep every entry. A number is what `apply_retention` (command and task) deletes beyond ([Retention](history.md#retention)) |
 
 See [Trash and access log](trash.md).

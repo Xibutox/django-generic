@@ -272,6 +272,15 @@ DEFAULTS: dict[str, Any] = {
     # (generic.history.triggers). None: on PostgreSQL; False: never,
     # and the next migrate removes them.
     "HISTORY_TRIGGERS": None,
+    # --- Custom fields -------------------------------------------------
+    # Fields people add to a model while the application runs, where its
+    # resource says ``custom_fields = True`` (generic.customfields).
+    # False turns them off everywhere: no column, no form control, no
+    # *Customize fields*; the values already written are kept.
+    "CUSTOM_FIELDS": True,
+    # The most fields one model may be given; ``CustomFields(max_fields=)``
+    # on a resource says otherwise for its model.
+    "CUSTOM_FIELDS_MAX_PER_MODEL": 50,
     # --- Undo ----------------------------------------------------------
     # Seconds during which a delete, a bulk action or a bulk edit may be
     # undone from the Undo button of its answer (generic.history.undo).

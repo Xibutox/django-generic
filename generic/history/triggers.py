@@ -261,6 +261,14 @@ def trigger_sql(connection: Any, resource: Any) -> str:
         vals := vals || jsonb_build_object({literal(name)},
             previous.values -> {literal(name)});
     END IF;""" for name in carried)
+    # Custom values (generic.customfields) live in a table of their
+    # own: a write to the record leaves them as they were.
+    carry += """
+    IF previous.values IS NOT NULL THEN
+        vals := vals || coalesce((SELECT jsonb_object_agg(e.key, e.value)
+            FROM jsonb_each(previous.values) AS e
+            WHERE left(e.key, 3) = 'cf:'), '{}'::jsonb);
+    END IF;"""
     entries = quote(connection, "generic_historyentry")
 
     # Names from the models' own metadata, quoted by the backend;
