@@ -26,6 +26,7 @@ from generic.customfields import TYPES
 from generic.customfields.definitions import (
     customizable,
     declaration,
+    enabled_resources,
     forget,
     max_fields,
     may_customize,
@@ -337,8 +338,13 @@ class CustomFieldResource(ModelResource):
         names = dict(languages())
         several = len(codes) > 1
         extra: dict[str, Any] = {
+            # Every model open to custom fields, which the schema lists;
+            # narrowed to the reader's own per request (get_fields).
             "model": serializers.ChoiceField(
-                choices=[],
+                choices=[
+                    model_key(resource)
+                    for resource in enabled_resources(self.site)
+                ],
                 label=_("Model"),
                 help_text=_("The records this field is added to."),
             )
@@ -543,7 +549,9 @@ def build_definition_serializer(super_class: Any) -> Any:
                 if isinstance(instance, CustomField):
                     # Fixed once created: its values are that model's.
                     fields["model"].read_only = True
-                else:
+                elif getattr(getattr(request, "user", None), "pk", None):
+                    # A reader's own; the schema (no one signed in)
+                    # keeps every model open to custom fields.
                     fields["model"].choices = [
                         (
                             model_key(resource),
@@ -826,7 +834,6 @@ def register_screens() -> None:
     """Put the definitions' page on the site, once a resource opened a
     model to custom fields."""
     from generic.conf import generic_settings
-    from generic.customfields.definitions import enabled_resources
 
     if not getattr(generic_settings, "CUSTOM_FIELDS", True):
         return
