@@ -743,6 +743,7 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
     """A record of every framework model installed, by model label."""
     from django.apps import apps
     from django.contrib.auth.models import Group, Permission
+    from django.contrib.contenttypes.models import ContentType
     from django.utils import timezone
 
     from generic.events.models import Message
@@ -843,11 +844,24 @@ def framework_records(user_model: Any, site: Any) -> dict[str, Any]:
             date_done=timezone.now(),
         )
 
+    # A field added to the first model open to custom fields: its
+    # pages, and the column, control and summary line it adds there.
+    from generic.customfields.definitions import enabled_resources
+
+    opened = enabled_resources(site)
+
+    if opened:
+        from generic.customfields.models import CustomField
+
+        records["generic.customfield"] = CustomField.objects.create(
+            content_type=ContentType.objects.get_for_model(opened[0].model),
+            key="page_sweep",
+            labels={"en": "Page sweep"},
+        )
+
     # Written by the saves above, since saving anything records a
     # version of it.
     records["generic.historyentry"] = HistoryEntry.objects.first()
-
-    from django.contrib.contenttypes.models import ContentType
 
     from generic.access.models import AccessEntry
 

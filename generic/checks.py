@@ -23,6 +23,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W010  a model with a file field, and MEDIA_ROOT is empty
     generic.W011  django_celery_results installed, results kept elsewhere
     generic.W012  django_celery_results installed, results not extended
+    generic.W013  custom fields on a model that keeps no history
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -307,6 +308,7 @@ def check_optional_parts(app_configs: Any = None, **kwargs: Any) -> list:
     messages.extend(check_search_rank())
     messages.extend(check_openapi())
     messages.extend(check_media_root())
+    messages.extend(check_custom_fields())
     messages.extend(check_celery_results())
 
     return messages
@@ -472,4 +474,25 @@ def check_search_rank() -> list:
         )
         for resource in site.get_resources()
         if getattr(resource, "search_rank", False)
+    ]
+
+
+def check_custom_fields() -> list:
+    """Custom fields are versioned in the record's history: without
+    one, their changes leave no trace (generic.customfields)."""
+    from generic.conf import generic_settings
+    from generic.customfields.definitions import enabled_resources
+    from generic.sites import site
+
+    return [
+        checks.Warning(
+            f"{type(resource).__name__} opens its model to custom fields, "
+            f"but keeps no history: their changes are not recorded.",
+            hint="Leave history on for this resource, or accept that "
+            "custom values keep no versions (docs/custom-fields.md).",
+            obj=type(resource),
+            id="generic.W013",
+        )
+        for resource in enabled_resources(site)
+        if not (generic_settings.HISTORY and resource.history)
     ]

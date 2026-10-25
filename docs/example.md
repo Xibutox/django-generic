@@ -115,6 +115,14 @@ record.
 
 ## Things worth trying
 
+**Fields of your own.** As `admin`, open *Equipment*: the *Warranty
+ends* column is a custom field, added from ⋯ → *Customize fields*, not
+by a developer. Add one there - a *Weight*, a decimal in `kg` with a
+minimum of 0 - and it is in the equipment's form, summary, history and
+column selector at once. *Colour*, a choice, is in the column selector
+with its coloured tags. As `viewer` the menu offers no *Customize
+fields*.
+
 **A file on a ticket.** Open ticket `SD-1000`: its *Description*
 section links `customer-log.txt`, downloaded through the ticket's own
 endpoint (`/api/example/ticket/<pk>/files/attachment/`), which checks

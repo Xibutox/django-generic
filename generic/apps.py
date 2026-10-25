@@ -29,6 +29,14 @@ class GenericConfig(AppConfig):
             triggers.post_migrate, dispatch_uid="generic.history.triggers"
         )
 
+        # The permission managing each model's custom fields
+        # (generic.customfields), made like Django's own after migrate.
+        from generic.customfields.signals import create_permissions
+
+        post_migrate.connect(
+            create_permissions, dispatch_uid="generic.customfields.permissions"
+        )
+
         # Sign-ins, sign-outs, failures, API tokens: the security log.
         from generic.audit import signals as audit_signals
 
@@ -69,6 +77,9 @@ class GenericConfig(AppConfig):
         from generic.access.resources import register_screens as accesses
         from generic.accounts.resources import register_screens as people
         from generic.audit.resources import register_screens as security
+        from generic.customfields.resources import (
+            register_screens as custom_fields,
+        )
         from generic.events.resources import register_screens as messages
         from generic.grants.resources import register_screens as grants
         from generic.history.resources import register_screens as history
@@ -79,6 +90,7 @@ class GenericConfig(AppConfig):
         tasks()
         mailings()
         history()
+        custom_fields()
         accesses()
         security()
         people()

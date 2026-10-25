@@ -455,6 +455,19 @@ def build_sections(
     return sections
 
 
+def custom_sections(
+    resource: Any,
+    request: Any,
+    obj: Any,
+) -> list[dict[str, Any]]:
+    """The section of the fields people added (generic.customfields)."""
+    from generic.customfields.display import summary_section
+
+    section = summary_section(resource, request, obj)
+
+    return [section] if section is not None else []
+
+
 def build_history_entry(resource: Any, obj: Any) -> dict[str, Any] | None:
     """Where this record's history is, and what it last says.
 
@@ -543,7 +556,8 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
                 request, resource.get_detail_stats(request)
             )
         ],
-        "sections": build_sections(resource, request, obj),
+        "sections": build_sections(resource, request, obj)
+        + custom_sections(resource, request, obj),
         "related": related,
         "history": build_history_entry(resource, obj),
         "topic": resource.topic_name if resource.realtime else "",

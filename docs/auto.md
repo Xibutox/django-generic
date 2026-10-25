@@ -168,6 +168,17 @@ columns and edited in place, the cells worked out above. The models of
 the levels nobody declared get pages of their own, as `related` ones
 do. See [Outlines](outlines.md).
 
+## Fields added at run time
+
+```python
+auto(Equipment, related=("maintenances",), custom_fields=True)
+```
+
+Whoever holds *Can customize equipment* adds typed fields to the
+equipment from the list's ⋯ menu: a column, a form control, a line of
+the summary and a part of the history each. See
+[Custom fields](custom-fields.md).
+
 ## When to use which
 
 | `auto` | `ModelResource` |

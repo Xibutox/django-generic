@@ -383,6 +383,7 @@ class Command(BaseCommand):
         # Last: what came before draws the same numbers as it always did.
         self.create_equipment(agents)
         self.create_manufacturing()
+        self.create_custom_fields()
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -684,6 +685,65 @@ class Command(BaseCommand):
                     cost=Decimal(random.choice([0, 0, 35, 60, 120])),
                     is_done=visit > 0 or state != "repair",
                 )
+
+    def create_custom_fields(self) -> None:
+        """Two fields the desk added to its equipment, and their values.
+
+        What ``example.customize_equipment`` holders add from the list's
+        *Customize fields* (docs/custom-fields.md); found again by key,
+        so a second run changes nothing.
+        """
+        from django.contrib.contenttypes.models import ContentType
+
+        from generic.customfields.models import CustomField
+        from generic.customfields.values import load, write
+        from generic.sites import site
+
+        content_type = ContentType.objects.get_for_model(Equipment)
+        CustomField.objects.get_or_create(
+            content_type=content_type,
+            key="warranty_ends",
+            defaults={
+                "type": CustomField.Type.DATE,
+                "labels": {"en": "Warranty ends", "fr": "Fin de garantie"},
+                "help_texts": {
+                    "en": "The last day the supplier repairs it for free.",
+                    "fr": "Le dernier jour où le fournisseur la répare "
+                    "gratuitement.",
+                },
+                "position": 10,
+            },
+        )
+        CustomField.objects.get_or_create(
+            content_type=content_type,
+            key="colour",
+            defaults={
+                "type": CustomField.Type.CHOICE,
+                "labels": {"en": "Colour", "fr": "Couleur"},
+                "choices": (
+                    "black | Black | fr: Noir | #1f2937\n"
+                    "silver | Silver | fr: Argent | #94a3b8\n"
+                    "white | White | fr: Blanc | #e2e8f0"
+                ),
+                "position": 20,
+                "in_list": False,
+            },
+        )
+        resource = site.get_resource(Equipment)
+        colours = ("black", "silver", "black", "white")
+
+        for index, item in enumerate(Equipment.objects.order_by("pk")):
+            if load(resource, item):
+                continue
+
+            values: dict[str, Any] = {"colour": colours[index % 4]}
+
+            if item.purchased_on and item.kind in ("laptop", "screen"):
+                values["warranty_ends"] = item.purchased_on.replace(
+                    year=item.purchased_on.year + 3, day=1
+                )
+
+            write(resource, item, values)
 
     def create_manufacturing(self) -> None:
         """Article families, articles and their bills of materials.

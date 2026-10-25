@@ -46,6 +46,9 @@ logger = logging.getLogger(__name__)
 #: What a record was called, as an entry keeps it.
 LABEL_LENGTH = 200
 
+#: The names of custom values in a version (generic.customfields).
+CUSTOM_PREFIX = "cf:"
+
 
 def json_safe(value: Any) -> Any:
     """A field's value, in something JSON can hold.
@@ -107,7 +110,14 @@ def snapshot(obj: Any, fields: list[Any], carry: dict[str, Any]) -> dict:
     unchanged, because a save cannot have altered them and reading them
     would cost a query on every write.
     """
-    values: dict[str, Any] = {}
+    # Custom values (``cf:<key>``, generic.customfields) are not the
+    # record's columns: a save cannot have changed them either, and
+    # they are written into the version when they are.
+    values: dict[str, Any] = {
+        name: value
+        for name, value in (carry or {}).items()
+        if name.startswith(CUSTOM_PREFIX)
+    }
 
     for field in fields:
         if field.many_to_many:
