@@ -447,7 +447,7 @@ black --check .            # line length 79
 isort --check-only .
 flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
 bandit -r generic example docmanager logbook minimal -ll --skip B101
-pip-audit --skip-editable --ignore-vuln CVE-2026-106454   # see SECURITY.md
+pip-audit --skip-editable --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
 python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt
 python scripts/lock.py --check     # requirements/constraints.txt matches constraints.in

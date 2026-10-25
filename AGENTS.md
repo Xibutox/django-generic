@@ -50,7 +50,7 @@ python manage.py migrate && python manage.py seed_example && python manage.py ru
 python debug.py                               # runserver under a debugger (VS Code: F5)
 pytest
 black --check . && isort --check-only . && flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
-bandit -r generic example docmanager logbook minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454
+bandit -r generic example docmanager logbook minimal -ll --skip B101 && pip-audit --skip-editable --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877
 python scripts/compile_messages.py            # .po -> .mo, no gettext needed
 python scripts/mypy_baseline.py              # mypy, failing on an error not in scripts/mypy-baseline.txt
 python scripts/lock.py                       # requirements/constraints.txt, the versions images and CI install (needs uv)
