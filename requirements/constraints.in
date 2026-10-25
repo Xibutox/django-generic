@@ -7,7 +7,9 @@
 # Installed with --no-deps (its metadata caps Django below 6.1): the
 # override in overrides.txt lifts that cap for the resolution too.
 django-celery-beat>=2.6
-cron-descriptor>=1.4
+# Below 2: django-celery-beat 2.9 wants the 1.x line (2.x resolves an
+# older beat), as the project template's Dockerfile does.
+cron-descriptor>=1.4,<2
 python-crontab>=3.0
 django-timezone-field>=7.0
 tzdata
