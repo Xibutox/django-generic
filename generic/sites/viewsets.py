@@ -380,11 +380,31 @@ class ResourceViewSet(
         fields = resource.get_search_fields(self.request)
 
         if fields:
-            return list(resource.visible_paths(self.request, fields))
+            # And the text of the fields people added, which the reader
+            # may see: columns of the row like the declared ones.
+            custom = [
+                definition.name
+                for definition in resource.get_custom_fields(self.request)
+                if definition.is_text and definition.type != "choice"
+            ]
+
+            return [*resource.visible_paths(self.request, fields), *custom]
 
         return resource.get_rows_serializer_class(
             self.request
         ).get_search_fields()
+
+    def get_facet_queryset(self, filtered: Any) -> Any:
+        """The rows to count, with the custom fields' annotations back:
+        their values are what a custom column's facets count."""
+        from generic.customfields.values import annotate
+
+        base = super().get_facet_queryset(filtered)
+        custom = getattr(
+            self.get_serializer_class(), "generic_custom_fields", ()
+        )
+
+        return annotate(base, custom) if custom else base
 
     def get_inline_form_definitions(self) -> Any:
         return self.resource.get_inline_definitions(self.request)

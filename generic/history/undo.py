@@ -563,6 +563,7 @@ def restore(step: Step, request: Any) -> None:
         obj.save(update_fields=changed)
 
     set_links(obj, links(step), step.values)
+    set_custom_values(step, obj)
 
 
 def recreate(step: Step, request: Any) -> None:
@@ -597,6 +598,14 @@ def recreate(step: Step, request: Any) -> None:
         model._base_manager.filter(pk=obj.pk).update(**stamped)
 
     set_links(obj, links(step), step.values)
+    set_custom_values(step, obj)
+
+
+def set_custom_values(step: Step, obj: Any) -> None:
+    """The custom fields' values the version held (generic.customfields)."""
+    from generic.customfields.values import restore
+
+    restore(step.resource, obj, step.values)
 
 
 def delete(step: Step, request: Any) -> int:

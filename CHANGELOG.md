@@ -10,6 +10,37 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Added
+- ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
+  hold the records of an information security management system -
+  the ISMS itself (scope, context, interested parties, objectives,
+  policies and their acknowledgements, management reviews), assets,
+  the Statement of Applicability with the 93 Annex A controls
+  preloaded, obligations, risks and their treatment on a 5 x 5 matrix,
+  suppliers, incidents with the GDPR 72-hour deadline and evidence
+  checksums, vulnerabilities with fix-by dates, change requests
+  approved by someone other than their requester, business continuity
+  and restore tests, audits and corrective actions, training and
+  personnel files, access reviews that deactivate revoked accounts.
+  French included; `seed_iso` fills them with demo data. The example
+  project installs them all. Their main records are open to custom
+  fields. See iso/README.md.
+- Custom fields: `custom_fields = True` on a resource (or
+  `auto(..., custom_fields=True)`, or `CustomFields(section=, types=,
+  max_fields=, permission=)`) lets the holders of
+  `<app>.customize_<model>` add fields to the model while the
+  application runs - text, long text, e-mail, web address, whole and
+  decimal numbers, yes/no, date, time, date and time, choice - each
+  with a label and help text per language, a default, limits, a unit
+  and optional permissions to see and change it. They appear in the
+  forms, the summary, the API and as table columns (filtered, sorted,
+  searched, exported), and are versioned with the record: one save is
+  one version, *Undo* puts them back. Settings `CUSTOM_FIELDS`,
+  `CUSTOM_FIELDS_MAX_PER_MODEL`; check `generic.W013`. See
+  docs/custom-fields.md.
+
 ## [1.5.0] - 2026-10-23
 
 ### Added

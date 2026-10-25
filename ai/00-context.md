@@ -183,6 +183,13 @@ generic/
 │                           triggers (PostgreSQL: writes outside the ORM),
 │                           reading (versions -> changes), the Changes page,
 │                           capture (the batches a block wrote in), undo (§13c)
+├── customfields/           fields people add to a model at run time (§5.27):
+│                           CustomFields (the declaration), models (CustomField,
+│                           CustomValue: a typed row per field and record),
+│                           definitions (per-request, permissions), values
+│                           (annotate, load, write -> history), serializers
+│                           (columns, form fields), display (summary, history),
+│                           resources (the definitions screen), signals
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
 ├── retention.py            apply(): history, access log, notifications pruned
@@ -432,6 +439,40 @@ assembles a standalone folder: the logbook, the framework's wheel in
 `vendor/`, the Dockerfile, compose (PostgreSQL, gunicorn with
 WhiteNoise, a `sync_kpi` loop) and the export script.
 
+`iso/` holds twelve reusable apps for an ISO/IEC 27001 ISMS
+(`iso/README.md`), not a project: the example project and
+`tests/settings.py` install them all. `iso` (`iso/common.py`: the
+navigation groups `GROUP_*`, colours, `Severity`, `Classification`,
+`number()` over `generic.numbering`, `next_year`; `iso/demo.py`
+`create_users()` + idempotent `seed()` returning one record per model,
+used by `seed_iso` and by `tests/test_pages.py`; the one French catalog
+`iso/locale`). Apps, label = last part: `isms` (Scope, ContextIssue,
+InterestedParty, Objective + Measurement, Policy + Acknowledgement -
+*Acknowledge* action, view permission - Contact, ManagementReview +
+ReviewAction), `assets` (Asset ASSET-0001 with C/I/A 1-3, Assignment,
+Maintenance, Disposal), `compliance` (Control: the 93 Annex A controls
+of `catalogue.py`, loaded by migration 0002, no add/delete;
+ControlEvidence; Obligation), `risks` (Risk RISK-0001, score =
+likelihood x impact stored with its level, residual, *Accept* needs
+`risks.accept_risk`; TreatmentAction; heatmap chart, board),
+`suppliers` (Supplier, Agreement, Assessment), `incidents` (Incident
+INC-{year}-0001, `notification_due` 72 h for a breach, IncidentUpdate,
+Evidence with SHA-256 and `access_log`), `vulnerabilities`
+(Vulnerability VUL-0001, severity from CVSS, `due_on` from
+`ISO_VULNERABILITY_DAYS`), `changes` (ChangeRequest CHG-0001, actions
+by step, `changes.approve_changerequest`, never one's own; calendar),
+`continuity` (Service with RTO/RPO/MTPD, ContinuityPlan, Exercise with
+`target_met`), `audits` (Audit AUD-{year}-01, Nonconformity NC-0001,
+CorrectiveAction verified by someone other than its owner),
+`people` (Course, TrainingRecord with `expires_on`, PersonnelFile with
+`missing_steps`), `access_reviews` (AccessReview `collect()`,
+AccessReviewItem decisions; *Apply* deactivates, never one's own
+account, a superuser only by a superuser). The main record of each
+app but access reviews has `custom_fields = True` (§5.27; the
+*Security officers* get the `customize_*` permissions; `seed()` adds
+*Warranty ends* on Asset, *Where the data is kept* on Supplier). Kept
+working by `tests/test_iso.py`.
+
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
 helpers `env`, `env_bool`, `env_int`, `env_list`, `env_required`,
@@ -525,7 +566,8 @@ without `MAILERS`, `W007` `search_rank` without `generic.search`,
 `E006`/`W008` `generic.tokens` without knox / its class not in DRF, `E008` OpenAPI pages without
 drf-spectacular, `W010` a model with a file field - or the wiki - and
 no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
-result backend / results not extended, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+result backend / results not extended, `W013` a resource open to custom
+fields without history, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -719,6 +761,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `ordering` | model Meta | default order |
 | `presets` | `{}` | named table layouts: `columns`, `filters` (a filter tree, §6), `order`, `search`, `pageLength`. The **Views** menu offers them beside each user's own saved views (`SavedView`, `api/generic/saved-views/`), which need `generic.urls` mounted. Same attribute, same menu on `DataResource` and `DataTableView` (`saved_view_options(request, presets)` in `generic.views.datatable`) |
 | `editable_fields` | `()` (`auto`: worked out) | columns that *may* be edited in a table; a name may walk single-valued relations (`"customer__name"`), and then the **related** model's change permission decides. Must be in `list_display`; a computed column raises. Turns nothing on by itself. §5.10 |
+| `custom_fields` | `False` (`auto`: the same option) | `True` or `CustomFields(section=, types=, max_fields=, permission=)`: holders of `<app>.customize_<model>` add typed fields to the model at run time (§5.27). `get_custom_fields(request)`, `with_custom_columns(request, serializer)`. `docs/custom-fields.md` |
 | `field_permissions` | `{}` | `{field: "app.perm" \| (view, change) \| {"view", "change"}}`: who sees, who changes one field (`None`: the record's own permission). Hidden fields leave `get_rows_serializer_class(request)` / `get_form_serializer_for(request)` (`serializers.restricted`), search (`visible_paths`), summary, history, charts (`Chart.get_fields_read`), the chart builder (`get_chart_builder_for`), trees, calendars, cards, board cards, labels (`describe_entry` answers empty), comparisons (no row); a board on a guarded field asks its view permission too (`boards.board_permission`); locked ones are read only and refused by `may_write_column` (every write). No request: all guarded hidden. Per reader, not per record. `docs/field-permissions.md` |
 | `list_editable` | `False` (`auto`: `"toggle"`) | whether the resource's own list page offers those cells: `True` for good, `"toggle"` behind an *Edit* button in its toolbar (`?edit=1`, `get_list_table_config`) |
 | `grids` | `()` | `Grid(...)` declarations: sets of rows corrected at once, shown by `GridView` (§5.10) |
@@ -1938,6 +1981,52 @@ some are shared), the changed ones moved out of the way by `update()`
 parent's rows, Alt+Up/Down; `config.moveUrl`. Example: tickets >
 comments (`TicketComment.position`, `body` a textarea in place).
 
+### 5.27 Custom fields (`custom_fields`)
+
+```python
+from generic.customfields import CustomFields
+
+auto(Equipment, related=("maintenances",), custom_fields=True)
+
+class SupplierResource(ModelResource):
+    custom_fields = CustomFields(
+        section=_("Characteristics"),   # form and summary section
+        types=("text", "decimal", "date", "choice"),  # default: every type
+        max_fields=30,                  # default CUSTOM_FIELDS_MAX_PER_MODEL
+        permission=None,                # default <app>.customize_<model>
+    )
+```
+
+People holding `<app>.customize_<model>` (created after `migrate` on
+the model's content type, `signals.create_permissions`) add fields from
+the list's *Customize fields* button (`customize_link`, `placement="bar"`, only for holders), a screen of
+the framework's own (`generic.CustomField`, `/generic/customfield/`,
+narrowed to the models the reader may customize). A field: `key`
+(`cf_<key>` in tables, forms and the API; `cf:<key>` in history),
+`type` (text, textarea, email, url, integer, decimal, boolean, date,
+time, datetime, choice), `labels`/`help_texts` per language
+(`{"en": ..., "fr": ...}`), `required`, `default`, `unit`, limits
+(`min_length`/`max_length`, `minimum`/`maximum` as text,
+`decimal_places`), `choices` (lines `value | label | fr: label |
+#color`), `position`, `in_list`, `view_permission`/`change_permission`
+(`app.codename`, like `field_permissions`), `archived`. Type and key
+are fixed once values exist.
+
+Values: `generic.CustomValue`, one row per field and record
+(`object_id` text, a column per storage type); no row is empty. The
+table queryset is annotated with a subquery per visible field
+(`values.annotate`), which the column, filter, order, facets and
+export read - no query more per page. `values.load(resource, obj)` /
+`values.write(resource, obj, {key: value})` for a record of its own;
+`write` folds into the request's `HistoryEntry` (`record`), a save of
+the record carries `cf:` keys forward (`recording.snapshot`, the
+PostgreSQL trigger too) and `undo` restores them. Definitions are read
+once per request (`definitions.definitions`, `forget(request)`);
+`DatabaseError` reads as none. Form fields land in a last section
+(`serializers.SECTION`); the summary gets a section of its own
+(`display.summary_section`). Not yet: grids, bulk edit, imports,
+compare, chart builder, outlines, the OpenAPI schema.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -2208,7 +2297,8 @@ None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `STATUS_REMOTE_TIMEOUT`, `STATUS_REFRESH_SECONDS` (§13k),
 `ACCESS_ON_REQUEST` (`()`; `"export"`, `"download"`),
 `ACCESS_REQUEST_INTERVAL` (3600), `ACCESS_REQUEST_CHANNELS`,
-`EXPORT_DISCLAIMER`, `DOWNLOAD_DISCLAIMER` (None; §13l).
+`EXPORT_DISCLAIMER`, `DOWNLOAD_DISCLAIMER` (None; §13l),
+`CUSTOM_FIELDS` (True), `CUSTOM_FIELDS_MAX_PER_MODEL` (50; §5.27).
 Read them via `from generic.conf import generic_settings`.
 
 ---

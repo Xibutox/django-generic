@@ -23,6 +23,13 @@ class TestEveryPage(PageSweep):
     expected = {
         # Opens the first page of the menu, when there is one.
         "generic_wiki:index": (200, 302),
+        # The ISO records nobody adds by hand: the Annex A catalogue is
+        # loaded, an acknowledgement is given with its button, a
+        # reviewed account comes from collecting the accounts.
+        "site:compliance_control_add": (403,),
+        "site:compliance_control_delete": (403,),
+        "site:isms_acknowledgement_add": (403,),
+        "site:access_reviews_accessreviewitem_add": (403,),
     }
 
     @pytest.fixture
@@ -59,6 +66,10 @@ class TestEveryPage(PageSweep):
             hours="1.50",
             spent_on=timezone.localdate(),
         )
+
+        from iso import demo
+
+        iso_records = demo.seed()
 
         binder = Binder.objects.create(
             team=Team.objects.create(name="Pooled"), title="Pooled"
@@ -99,6 +110,8 @@ class TestEveryPage(PageSweep):
             "ticket": support_desk["login"],
             "team": support_desk["front"],
             "agent": support_desk["camille"],
+            # The ISO apps, from their demo data.
+            **iso_records,
         }
 
     def test_logging_out_works(self, opener):

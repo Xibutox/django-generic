@@ -265,6 +265,14 @@ class ResourceListView(ResourceViewMixin, TemplateView):
                 )
             )
 
+        # The fields people add to the model (generic.customfields).
+        from generic.customfields.resources import customize_link
+
+        customize = customize_link(resource, self.request)
+
+        if customize is not None:
+            items.append(customize)
+
         if not resource.has_add_permission(self.request):
             return items
 

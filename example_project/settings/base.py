@@ -227,6 +227,20 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     # --- this example ---
     "example",
+    # --- the ISO 27001 apps (iso/README.md) ---
+    "iso",
+    "iso.isms",
+    "iso.assets",
+    "iso.compliance",
+    "iso.risks",
+    "iso.suppliers",
+    "iso.incidents",
+    "iso.vulnerabilities",
+    "iso.changes",
+    "iso.continuity",
+    "iso.audits",
+    "iso.people",
+    "iso.access_reviews",
 ]
 
 # --- optional: schedules, managed from the Tasks group ---
@@ -420,6 +434,8 @@ REST_FRAMEWORK = {
     },
 }
 
+from iso.openapi import ENUM_NAME_OVERRIDES as ISO_ENUMS  # noqa: E402
+
 # The OpenAPI description (generic.openapi, docs/api.md). Its pages are
 # served from drf-spectacular-sidecar's files, never from a CDN.
 SPECTACULAR_SETTINGS = {
@@ -441,9 +457,12 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     # One name per choice set a column carries in several tables.
     "ENUM_NAME_OVERRIDES": {
+        **ISO_ENUMS,
         "TicketStatusEnum": "example.models.Ticket.Status",
         "ArticleKindEnum": "example.models.Article.Kind",
         "EquipmentKindEnum": "example.models.Equipment.Kind",
+        # An access review's scope is another set of choices.
+        "ApiTokenScopeEnum": "generic.tokens.models.ApiToken.Scope",
     },
 }
 

@@ -69,6 +69,10 @@ each with a history where they live.
 | A many-to-many field is added to, removed from or cleared | the field's new state |
 | A record is deleted | `deleted`, holding what it last was |
 
+[Custom fields](custom-fields.md) are kept with the rest, under
+`cf:<key>`: a save changing the title and a custom value is one
+version listing both.
+
 A deletion's entry outlives the record, which is the point: it is the
 one thing nobody can go and look at.
 

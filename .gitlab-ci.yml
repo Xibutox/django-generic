@@ -66,14 +66,14 @@ lint:
   script:
     - black --check .
     - isort --check-only .
-    - flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
+    - flake8 generic tests example example_project minimal docmanager logbook iso scripts debug.py
     # The errors carried today (mostly django-stubs trailing Django)
     # are in scripts/mypy-baseline.txt; a new one fails.
     - python scripts/mypy_baseline.py
     # constraints.in changed without running scripts/lock.py.
     - python scripts/lock.py --check
     # B101 (assert) is noise where asserts are internal invariants.
-    - bandit -r generic example docmanager logbook minimal -ll --skip B101
+    - bandit -r generic example docmanager logbook iso minimal -ll --skip B101
     # Known vulnerabilities in the dependencies; the one skipped is
     # explained in SECURITY.md.
     - pip-audit --skip-editable --ignore-vuln CVE-2026-106454

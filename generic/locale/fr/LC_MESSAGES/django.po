@@ -4577,3 +4577,264 @@ msgstr "Ces enregistrements ne se réordonnent pas ici."
 #: generic/sites/outlines.py
 msgid "Name another record of this level."
 msgstr "Indiquez un autre enregistrement de ce niveau."
+
+# generic/customfields
+
+msgid "Additional fields"
+msgstr "Champs supplémentaires"
+
+msgid "key"
+msgstr "clé"
+
+msgid "type"
+msgstr "type"
+
+msgid "labels"
+msgstr "libellés"
+
+msgid "help texts"
+msgstr "textes d'aide"
+
+msgid "required"
+msgstr "obligatoire"
+
+msgid "default value"
+msgstr "valeur par défaut"
+
+msgid "unit"
+msgstr "unité"
+
+msgid "shortest"
+msgstr "longueur minimale"
+
+msgid "longest"
+msgstr "longueur maximale"
+
+msgid "minimum"
+msgstr "minimum"
+
+msgid "maximum"
+msgstr "maximum"
+
+msgid "decimal places"
+msgstr "décimales"
+
+msgid "choices"
+msgstr "choix"
+
+msgid "shown in the table"
+msgstr "affiché dans le tableau"
+
+msgid "permission to see it"
+msgstr "permission pour le voir"
+
+msgid "permission to change it"
+msgstr "permission pour le modifier"
+
+msgid "archived"
+msgstr "archivé"
+
+msgid "changed"
+msgstr "modifié"
+
+msgid "custom field"
+msgstr "champ personnalisé"
+
+msgid "custom fields"
+msgstr "champs personnalisés"
+
+msgid "text"
+msgstr "texte"
+
+msgid "whole number"
+msgstr "nombre entier"
+
+msgid "decimal number"
+msgstr "nombre décimal"
+
+msgid "yes/no"
+msgstr "oui/non"
+
+msgid "date"
+msgstr "date"
+
+msgid "date and time"
+msgstr "date et heure"
+
+msgid "custom value"
+msgstr "valeur personnalisée"
+
+msgid "custom values"
+msgstr "valeurs personnalisées"
+
+msgid "Text"
+msgstr "Texte"
+
+msgid "Long text"
+msgstr "Texte long"
+
+msgid "E-mail address"
+msgstr "Adresse e-mail"
+
+msgid "Web address"
+msgstr "Adresse web"
+
+msgid "Whole number"
+msgstr "Nombre entier"
+
+msgid "Decimal number"
+msgstr "Nombre décimal"
+
+msgid "Yes/no"
+msgstr "Oui/non"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Time"
+msgstr "Heure"
+
+msgid "Date and time"
+msgstr "Date et heure"
+
+msgid "Choice"
+msgstr "Choix"
+
+msgid "How tables, the API and the history name the field, after cf_. Lowercase letters, digits and _; it cannot be changed later."
+msgstr "Le nom du champ dans les tableaux, l'API et l'historique, après cf_. Lettres minuscules, chiffres et _ ; il ne pourra plus être changé."
+
+msgid "Asked each time a record is saved from its form. Records saved before stay as they are."
+msgstr "Demandé à chaque enregistrement depuis le formulaire. Les enregistrements faits avant restent tels quels."
+
+msgid "What the form of a new record starts with."
+msgstr "Ce que le formulaire d'un nouvel enregistrement propose d'emblée."
+
+msgid "Shown after a number: kg, h, %."
+msgstr "Affichée après un nombre : kg, h, %."
+
+msgid "The smallest number, or the earliest date or time (2026-01-31, 08:30)."
+msgstr "Le plus petit nombre, ou la date ou l'heure la plus tôt (2026-01-31, 08:30)."
+
+msgid "The largest number, or the latest date or time."
+msgstr "Le plus grand nombre, ou la date ou l'heure la plus tardive."
+
+msgid "One choice a line: its value, then its label, the label in other languages and a colour, separated by |. For example: blue | Blue | fr: Bleu | #2563eb"
+msgstr "Un choix par ligne : sa valeur, puis son libellé, le libellé dans les autres langues et une couleur, séparés par |. Par exemple : blue | Blue | fr: Bleu | #2563eb"
+
+msgid "Shown in the table from the start. Otherwise it is offered by the column selector."
+msgstr "Affiché dans le tableau dès le départ. Sinon, il est proposé par le sélecteur de colonnes."
+
+msgid "app.codename: only who holds it sees the field. Empty: whoever may see the record."
+msgstr "app.codename : seuls ceux qui l'ont voient le champ. Vide : quiconque peut voir l'enregistrement."
+
+msgid "app.codename: only who holds it changes the field. Empty: whoever may change the record."
+msgstr "app.codename : seuls ceux qui l'ont modifient le champ. Vide : quiconque peut modifier l'enregistrement."
+
+msgid "Hidden everywhere; its values and their history are kept, and come back when it is restored."
+msgstr "Masqué partout ; ses valeurs et leur historique sont conservés et reviennent quand il est restauré."
+
+msgid "field"
+msgstr "champ"
+
+msgid "Line %(number)s: “%(value)s” is there twice."
+msgstr "Ligne %(number)s : « %(value)s » y est deux fois."
+
+msgid "Line %(number)s: the value is too long."
+msgstr "Ligne %(number)s : la valeur est trop longue."
+
+msgid "Line %(number)s: “%(part)s” is not understood."
+msgstr "Ligne %(number)s : « %(part)s » n'est pas compris."
+
+msgid "Fields added to the application's records, their labels, types and limits."
+msgstr "Les champs ajoutés aux enregistrements de l'application, leurs libellés, types et limites."
+
+msgid "Archive"
+msgstr "Archiver"
+
+msgid "Hide the fields everywhere; their values and history are kept."
+msgstr "Masquer les champs partout ; leurs valeurs et leur historique sont conservés."
+
+msgid "Show the archived fields again, with their values."
+msgstr "Afficher de nouveau les champs archivés, avec leurs valeurs."
+
+msgid "Customize fields"
+msgstr "Personnaliser les champs"
+
+msgid "Limits"
+msgstr "Limites"
+
+msgid "Display and access"
+msgstr "Affichage et accès"
+
+msgid "This type is not offered here."
+msgstr "Ce type n'est pas proposé ici."
+
+msgid "A label is required."
+msgstr "Un libellé est obligatoire."
+
+msgid "Each type uses its own: lengths for texts, a minimum and a maximum for numbers, dates and times, places for decimals, the list for a choice."
+msgstr "Chaque type utilise les siennes : les longueurs pour les textes, un minimum et un maximum pour les nombres, dates et heures, les décimales pour les nombres décimaux, la liste pour un choix."
+
+msgid "The records this field is added to."
+msgstr "Les enregistrements auxquels ce champ est ajouté."
+
+msgid "Lowercase letters, digits and _, starting with a letter; 40 at most."
+msgstr "Lettres minuscules, chiffres et _, en commençant par une lettre ; 40 au plus."
+
+msgid "Records hold values of this field: its type can no longer change. Add a field of the new type instead."
+msgstr "Des enregistrements ont des valeurs dans ce champ : son type ne peut plus changer. Ajoutez plutôt un champ du nouveau type."
+
+msgid "Give at least one choice."
+msgstr "Indiquez au moins un choix."
+
+msgid "No such permission: write app.codename."
+msgstr "Cette permission n'existe pas : écrivez app.codename."
+
+msgid "At most %(count)s."
+msgstr "%(count)s au plus."
+
+msgid "Only numbers, dates and times have one."
+msgstr "Seuls les nombres, les dates et les heures en ont un."
+
+msgid "Above the maximum."
+msgstr "Au-dessus du maximum."
+
+msgid "This model has a field with this key already."
+msgstr "Ce modèle a déjà un champ avec cette clé."
+
+msgid "Not a value of this type."
+msgstr "Ce n'est pas une valeur de ce type."
+
+msgid "Not one of the choices."
+msgstr "Ce n'est pas l'un des choix."
+
+msgid "Longer than the longest."
+msgstr "Plus long que la longueur maximale."
+
+msgid "Help text"
+msgstr "Texte d'aide"
+
+msgid "Choose a model you may customize."
+msgstr "Choisissez un modèle que vous pouvez personnaliser."
+
+msgid "The model has a field or a column of this name."
+msgstr "Le modèle a un champ ou une colonne de ce nom."
+
+msgid "This model has %(count)s custom fields: the most it may have."
+msgstr "Ce modèle a %(count)s champs personnalisés : le maximum qu'il peut avoir."
+
+msgid "Records hold a choice that is no longer listed: %(values)s."
+msgstr "Des enregistrements ont un choix qui n'est plus dans la liste : %(values)s."
+
+msgid "%(count)s field restored."
+msgid_plural "%(count)s fields restored."
+msgstr[0] "%(count)s champ restauré."
+msgstr[1] "%(count)s champs restaurés."
+
+msgid "%(count)s field archived."
+msgid_plural "%(count)s fields archived."
+msgstr[0] "%(count)s champ archivé."
+msgstr[1] "%(count)s champs archivés."
+
+msgid "Help texts"
+msgstr "Textes d'aide"

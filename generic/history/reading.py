@@ -27,6 +27,7 @@ from django.utils.encoding import force_str
 from django.utils.text import capfirst
 from django.utils.translation import gettext
 
+from generic.customfields.display import history_fields
 from generic.history.models import HistoryEntry
 from generic.history.recording import is_recorded, tracked_fields
 
@@ -320,6 +321,8 @@ def build_history(
         for field in tracked_fields(resource)
         if field.name not in hidden
     }
+    # Then the fields people added, which the reader may see.
+    fields.update(history_fields(resource, request))
     order = list(fields)
     labels = resolve_labels(fields, rows)
 
