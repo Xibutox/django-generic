@@ -35,7 +35,7 @@ jobs:
       - name: isort
         run: isort --check-only .
       - name: flake8
-        run: flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
+        run: flake8 generic tests example example_project minimal docmanager logbook iso scripts debug.py
       - name: message catalogs
         # A .po edited without recompiling translates nothing.
         run: python scripts/compile_messages.py --check
@@ -51,7 +51,7 @@ jobs:
       - name: bandit
         # B101 (assert) is noise in a codebase that uses asserts as
         # internal invariants rather than as input validation.
-        run: bandit -r generic example docmanager logbook minimal -ll --skip B101
+        run: bandit -r generic example docmanager logbook iso minimal -ll --skip B101
       - name: Known vulnerabilities in the dependencies
         # The pinned versions - the ones that ship - against the PyPI
         # advisory database. A vulnerability skipped here is listed,

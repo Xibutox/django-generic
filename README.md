@@ -359,6 +359,24 @@ python manage.py runserver
 
 See [its README](logbook/README.md).
 
+### The ISO 27001 apps
+
+`iso/` is twelve apps a project installs one by one to run an ISO/IEC
+27001 information security management system: assets, risks and their
+treatment, the Statement of Applicability with the 93 Annex A controls
+preloaded, suppliers, incidents (with the GDPR 72-hour deadline),
+vulnerabilities, changes, continuity, audits and corrective actions,
+training and personnel files, access reviews, policies and management
+reviews. The example project installs them all:
+
+```bash
+python manage.py migrate
+python manage.py seed_iso
+python manage.py runserver
+```
+
+See [its README](iso/README.md).
+
 ### The full example
 
 The bundled example is a small support desk chosen for coverage: every

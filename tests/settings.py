@@ -44,6 +44,20 @@ INSTALLED_APPS = [
     # Covered by the suite too: the example is a deliverable, and a
     # broken example is a broken promise.
     "example",
+    # --- the ISO 27001 apps (iso/README.md) ---
+    "iso",
+    "iso.isms",
+    "iso.assets",
+    "iso.compliance",
+    "iso.risks",
+    "iso.suppliers",
+    "iso.incidents",
+    "iso.vulnerabilities",
+    "iso.changes",
+    "iso.continuity",
+    "iso.audits",
+    "iso.people",
+    "iso.access_reviews",
 ]
 
 # The scheduler is optional, and the framework has to work either way.

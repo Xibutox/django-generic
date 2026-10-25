@@ -1,0 +1,9 @@
+from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
+
+
+class SuppliersConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "iso.suppliers"
+    label = "suppliers"
+    verbose_name = _("Suppliers")
