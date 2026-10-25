@@ -10,6 +10,23 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Added
+- ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
+  hold the records of an information security management system -
+  the ISMS itself (scope, context, interested parties, objectives,
+  policies and their acknowledgements, management reviews), assets,
+  the Statement of Applicability with the 93 Annex A controls
+  preloaded, obligations, risks and their treatment on a 5 x 5 matrix,
+  suppliers, incidents with the GDPR 72-hour deadline and evidence
+  checksums, vulnerabilities with fix-by dates, change requests
+  approved by someone other than their requester, business continuity
+  and restore tests, audits and corrective actions, training and
+  personnel files, access reviews that deactivate revoked accounts.
+  French included; `seed_iso` fills them with demo data. The example
+  project installs them all. See iso/README.md.
+
 ## [1.5.0] - 2026-10-23
 
 ### Added

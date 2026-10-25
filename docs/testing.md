@@ -445,8 +445,8 @@ the table configuration travels as `json_script`.
 ```bash
 black --check .            # line length 79
 isort --check-only .
-flake8 generic tests example example_project minimal docmanager logbook scripts debug.py
-bandit -r generic example docmanager logbook minimal -ll --skip B101
+flake8 generic tests example example_project minimal docmanager logbook iso scripts debug.py
+bandit -r generic example docmanager logbook iso minimal -ll --skip B101
 pip-audit --skip-editable --ignore-vuln CVE-2026-106454   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
 python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt

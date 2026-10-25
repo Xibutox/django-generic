@@ -1,0 +1,3539 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: django-generic iso\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-25 08:53+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: django-generic\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: access_reviews/apps.py:9
+msgid "Access reviews"
+msgstr "Revues des accès"
+
+#: access_reviews/models.py:24
+msgid "Every active account"
+msgstr "Tous les comptes actifs"
+
+#: access_reviews/models.py:25
+msgid "Privileged accounts only"
+msgstr "Comptes à privilèges uniquement"
+
+#: access_reviews/models.py:26
+msgid "Members of a group"
+msgstr "Membres d'un groupe"
+
+#: access_reviews/models.py:29 changes/models.py:39 continuity/models.py:83
+#: isms/models.py:23 isms/models.py:248
+msgid "Draft"
+msgstr "Brouillon"
+
+#: access_reviews/models.py:30 audits/models.py:34 audits/models.py:183
+#: risks/models.py:204
+msgid "In progress"
+msgstr "En cours"
+
+#: access_reviews/models.py:31 people/resources.py:101
+msgid "Completed"
+msgstr "Terminée"
+
+#: access_reviews/models.py:33 audits/models.py:41 audits/models.py:112
+#: audits/models.py:194 changes/models.py:50 compliance/models.py:34
+#: compliance/models.py:85 compliance/models.py:125 continuity/models.py:87
+#: continuity/models.py:147 incidents/models.py:53 incidents/models.py:197
+#: isms/models.py:27 isms/models.py:86 isms/models.py:161 isms/models.py:253
+#: isms/models.py:371 isms/models.py:424 people/models.py:44
+#: risks/models.py:81 risks/models.py:214 suppliers/models.py:106
+#: vulnerabilities/models.py:67
+msgid "title"
+msgstr "titre"
+
+#: access_reviews/models.py:35 audits/models.py:43 isms/models.py:58
+msgid "scope"
+msgstr "périmètre"
+
+#: access_reviews/models.py:39
+msgid "group"
+msgstr "groupe"
+
+#: access_reviews/models.py:47
+msgid "reviewer"
+msgstr "réviseur"
+
+#: access_reviews/models.py:53 audits/models.py:207 isms/models.py:186
+#: isms/models.py:433 risks/models.py:232
+msgid "due on"
+msgstr "échéance"
+
+#: access_reviews/models.py:55 assets/models.py:75 audits/models.py:69
+#: audits/models.py:151 audits/models.py:209 changes/models.py:89
+#: compliance/models.py:152 continuity/models.py:103 incidents/models.py:65
+#: isms/models.py:30 isms/models.py:188 isms/models.py:256 isms/models.py:374
+#: isms/models.py:435 people/models.py:147 risks/models.py:143
+#: risks/models.py:234 suppliers/models.py:44 vulnerabilities/models.py:117
+msgid "status"
+msgstr "statut"
+
+#: access_reviews/models.py:58
+msgid "started on"
+msgstr "commencée le"
+
+#: access_reviews/models.py:61 people/models.py:85
+msgid "completed on"
+msgstr "terminée le"
+
+#: access_reviews/models.py:63 audits/models.py:71
+msgid "conclusion"
+msgstr "conclusion"
+
+#: access_reviews/models.py:67 access_reviews/models.py:128
+msgid "access review"
+msgstr "revue des accès"
+
+#: access_reviews/models.py:68
+msgid "access reviews"
+msgstr "revues des accès"
+
+#: access_reviews/models.py:121 access_reviews/resources.py:90
+#: access_reviews/resources.py:174
+msgid "To decide"
+msgstr "À décider"
+
+#: access_reviews/models.py:122 access_reviews/resources.py:268
+msgid "Keep"
+msgstr "Conserver"
+
+#: access_reviews/models.py:123 access_reviews/resources.py:277
+msgid "Revoke"
+msgstr "Révoquer"
+
+#: access_reviews/models.py:124
+msgid "Change the rights"
+msgstr "Modifier les droits"
+
+#: access_reviews/models.py:134 people/models.py:132
+msgid "account"
+msgstr "compte"
+
+#: access_reviews/models.py:142
+msgid "account name"
+msgstr "nom du compte"
+
+#: access_reviews/models.py:145
+msgid "superuser"
+msgstr "superutilisateur"
+
+#: access_reviews/models.py:147
+msgid "staff"
+msgstr "équipe"
+
+#: access_reviews/models.py:148
+msgid "groups"
+msgstr "groupes"
+
+#: access_reviews/models.py:150
+msgid "permissions"
+msgstr "permissions"
+
+#: access_reviews/models.py:153
+msgid "last sign-in"
+msgstr "dernière connexion"
+
+#: access_reviews/models.py:156
+msgid "decision"
+msgstr "décision"
+
+#: access_reviews/models.py:161 isms/models.py:225
+msgid "comment"
+msgstr "commentaire"
+
+#: access_reviews/models.py:164 changes/models.py:93
+msgid "decided by"
+msgstr "décidé par"
+
+#: access_reviews/models.py:172 changes/models.py:101
+msgid "decided at"
+msgstr "décidé le"
+
+#: access_reviews/models.py:175
+msgid "applied at"
+msgstr "appliqué le"
+
+#: access_reviews/models.py:180
+msgid "reviewed account"
+msgstr "compte revu"
+
+#: access_reviews/models.py:181
+msgid "reviewed accounts"
+msgstr "comptes revus"
+
+#: access_reviews/resources.py:47
+msgid ""
+"Periodic reviews of who can do what, account by account (A.5.18, A.8.2)."
+msgstr ""
+"Revues périodiques de qui peut faire quoi, compte par compte (A.5.18, "
+"A.8.2)."
+
+#: access_reviews/resources.py:85
+msgid "Accounts"
+msgstr "Comptes"
+
+#: access_reviews/resources.py:97
+msgid "Revoked"
+msgstr "Révoqués"
+
+#: access_reviews/resources.py:105
+msgid "Collect the accounts"
+msgstr "Collecter les comptes"
+
+#: access_reviews/resources.py:109
+msgid ""
+"Lists every account in the review's scope as it is now - groups, "
+"permissions, last sign-in - to decide one by one."
+msgstr ""
+"Liste chaque compte du périmètre de la revue tel qu'il est maintenant - "
+"groupes, permissions, dernière connexion - pour décider un par un."
+
+#: access_reviews/resources.py:118
+#, python-format
+msgid "%(count)s account collected."
+msgid_plural "%(count)s accounts collected."
+msgstr[0] "%(count)s compte collecté."
+msgstr[1] "%(count)s comptes collectés."
+
+#: access_reviews/resources.py:124
+msgid "Complete"
+msgstr "Terminer"
+
+#: access_reviews/resources.py:127
+msgid "Complete the selected reviews?"
+msgstr "Terminer les revues sélectionnées ?"
+
+#: access_reviews/resources.py:128
+msgid "Closes the campaign once every account is decided."
+msgstr "Clôt la campagne une fois chaque compte décidé."
+
+#: access_reviews/resources.py:142
+#, python-format
+msgid "%(count)s review completed."
+msgid_plural "%(count)s reviews completed."
+msgstr[0] "%(count)s revue terminée."
+msgstr[1] "%(count)s revues terminées."
+
+#: access_reviews/resources.py:146
+msgid "A review with accounts still to decide stays open."
+msgstr "Une revue avec des comptes encore à décider reste ouverte."
+
+#: access_reviews/resources.py:191
+msgid "Decisions"
+msgstr "Décisions"
+
+#: access_reviews/resources.py:207
+msgid "Privileged"
+msgstr "À privilèges"
+
+#: access_reviews/resources.py:233
+msgid "This account cannot be decided by you, or any more."
+msgstr "Ce compte ne peut pas être décidé par vous, ou ne peut plus l'être."
+
+#: access_reviews/resources.py:257
+#, python-format
+msgid "%(count)s account decided."
+msgid_plural "%(count)s accounts decided."
+msgstr[0] "%(count)s compte décidé."
+msgstr[1] "%(count)s comptes décidés."
+
+#: access_reviews/resources.py:261
+msgid ""
+"Your own account, and accounts already applied, are left to someone else."
+msgstr ""
+"Votre propre compte, et les comptes déjà appliqués, sont laissés à quelqu'un"
+" d'autre."
+
+#: access_reviews/resources.py:271
+msgid "The account keeps its access."
+msgstr "Le compte garde ses accès."
+
+#: access_reviews/resources.py:280
+msgid "The account is to lose its access when decisions apply."
+msgstr "Le compte perdra ses accès quand les décisions seront appliquées."
+
+#: access_reviews/resources.py:286
+msgid "Apply the decisions"
+msgstr "Appliquer les décisions"
+
+#: access_reviews/resources.py:290
+msgid "Deactivate the accounts decided as revoked?"
+msgstr "Désactiver les comptes décidés comme révoqués ?"
+
+#: access_reviews/resources.py:292
+msgid ""
+"Deactivates every account decided as revoked. Their history stays; they can "
+"no longer sign in."
+msgstr ""
+"Désactive chaque compte décidé comme révoqué. Son historique reste ; il ne "
+"peut plus se connecter."
+
+#: access_reviews/resources.py:319
+#, python-format
+msgid "%(count)s account deactivated."
+msgid_plural "%(count)s accounts deactivated."
+msgstr[0] "%(count)s compte désactivé."
+msgstr[1] "%(count)s comptes désactivés."
+
+#: access_reviews/resources.py:325
+msgid ""
+"Your own account and superusers (unless you are one) are left as they are."
+msgstr ""
+"Votre propre compte et les superutilisateurs (sauf si vous en êtes un) sont "
+"laissés tels quels."
+
+#: apps.py:10
+msgid "ISO 27001"
+msgstr "ISO 27001"
+
+#: assets/apps.py:9 people/resources.py:199
+msgid "Assets"
+msgstr "Actifs"
+
+#: assets/models.py:24
+msgid "1 - Low"
+msgstr "1 - Faible"
+
+#: assets/models.py:24
+msgid "2 - Medium"
+msgstr "2 - Moyen"
+
+#: assets/models.py:24
+msgid "3 - High"
+msgstr "3 - Élevé"
+
+#: assets/models.py:29
+msgid "Information"
+msgstr "Information"
+
+#: assets/models.py:30
+msgid "Software"
+msgstr "Logiciel"
+
+#: assets/models.py:31
+msgid "Hardware"
+msgstr "Matériel"
+
+#: assets/models.py:32
+msgid "Service"
+msgstr "Service"
+
+#: assets/models.py:33 compliance/catalogue.py:95
+msgid "Storage media"
+msgstr "Supports de stockage"
+
+#: assets/models.py:34
+msgid "Site"
+msgstr "Site"
+
+#: assets/models.py:37 audits/models.py:33 audits/models.py:182
+#: compliance/models.py:29 continuity/models.py:142 isms/models.py:151
+#: isms/models.py:368 risks/models.py:203
+msgid "Planned"
+msgstr "Prévu"
+
+#: assets/models.py:38
+msgid "In stock"
+msgstr "En stock"
+
+#: assets/models.py:39
+msgid "In use"
+msgstr "En service"
+
+#: assets/models.py:40
+msgid "Under maintenance"
+msgstr "En maintenance"
+
+#: assets/models.py:41 continuity/models.py:85 isms/models.py:250
+msgid "Retired"
+msgstr "Retiré"
+
+#: assets/models.py:42
+msgid "Disposed"
+msgstr "Éliminé"
+
+#: assets/models.py:45 audits/models.py:39 audits/models.py:110
+#: changes/models.py:48 incidents/models.py:51 risks/models.py:79
+#: vulnerabilities/models.py:65
+msgid "reference"
+msgstr "référence"
+
+#: assets/models.py:47 continuity/models.py:25 isms/models.py:123
+#: isms/models.py:344 suppliers/models.py:35
+msgid "name"
+msgstr "nom"
+
+#: assets/models.py:48 assets/models.py:175 audits/models.py:42
+#: audits/models.py:196 changes/models.py:54 compliance/models.py:126
+#: continuity/models.py:148 incidents/models.py:162 isms/models.py:87
+#: isms/models.py:124 isms/models.py:345 suppliers/models.py:107
+msgid "kind"
+msgstr "type"
+
+#: assets/models.py:49 assets/models.py:177 audits/models.py:113
+#: audits/models.py:198 changes/models.py:51 continuity/models.py:26
+#: incidents/models.py:198 isms/models.py:94 isms/models.py:162
+#: people/models.py:46 risks/models.py:82 risks/models.py:215
+#: vulnerabilities/models.py:77
+msgid "description"
+msgstr "description"
+
+#: assets/models.py:52 audits/models.py:143 audits/models.py:201
+#: compliance/models.py:53 compliance/models.py:139 continuity/models.py:29
+#: continuity/models.py:96 isms/models.py:165 isms/models.py:261
+#: isms/models.py:427 risks/models.py:96 risks/models.py:226
+#: vulnerabilities/models.py:110
+msgid "owner"
+msgstr "propriétaire"
+
+#: assets/models.py:57
+msgid "Answerable for the asset's protection."
+msgstr "Responsable de la protection de l'actif."
+
+#: assets/models.py:60
+msgid "classification"
+msgstr "classification"
+
+#: assets/models.py:66 suppliers/models.py:113
+msgid "confidentiality"
+msgstr "confidentialité"
+
+#: assets/models.py:69
+msgid "integrity"
+msgstr "intégrité"
+
+#: assets/models.py:72
+msgid "availability"
+msgstr "disponibilité"
+
+#: assets/models.py:77
+msgid "location"
+msgstr "emplacement"
+
+#: assets/models.py:79
+msgid "serial number"
+msgstr "numéro de série"
+
+#: assets/models.py:81
+msgid "vendor"
+msgstr "fournisseur"
+
+#: assets/models.py:83
+msgid "holds personal data"
+msgstr "contient des données personnelles"
+
+#: assets/models.py:87
+msgid "part of"
+msgstr "fait partie de"
+
+#: assets/models.py:93
+msgid "acquired on"
+msgstr "acquis le"
+
+#: assets/models.py:94 compliance/models.py:159 isms/models.py:277
+#: risks/models.py:164 suppliers/models.py:78
+msgid "next review on"
+msgstr "prochaine revue le"
+
+#: assets/models.py:98 assets/models.py:121 assets/models.py:168
+#: assets/models.py:205
+msgid "asset"
+msgstr "actif"
+
+#: assets/models.py:99 changes/models.py:61 risks/models.py:90
+msgid "assets"
+msgstr "actifs"
+
+#: assets/models.py:127
+msgid "holder"
+msgstr "détenteur"
+
+#: assets/models.py:132
+msgid "assigned on"
+msgstr "attribué le"
+
+#: assets/models.py:134
+msgid "due back on"
+msgstr "à rendre le"
+
+#: assets/models.py:135
+msgid "returned on"
+msgstr "rendu le"
+
+#: assets/models.py:137
+msgid "condition on return"
+msgstr "état au retour"
+
+#: assets/models.py:140
+msgid "accepted the rules of use"
+msgstr "a accepté les règles d'utilisation"
+
+#: assets/models.py:142
+msgid "The holder accepted the acceptable use rules (A.5.10)."
+msgstr "Le détenteur a accepté les règles d'utilisation acceptable (A.5.10)."
+
+#: assets/models.py:147
+msgid "assignment"
+msgstr "attribution"
+
+#: assets/models.py:148
+msgid "assignments"
+msgstr "attributions"
+
+#: assets/models.py:162
+msgid "Preventive"
+msgstr "Préventive"
+
+#: assets/models.py:163
+msgid "Corrective"
+msgstr "Corrective"
+
+#: assets/models.py:164
+msgid "Update"
+msgstr "Mise à jour"
+
+#: assets/models.py:173 audits/models.py:67
+msgid "performed on"
+msgstr "réalisée le"
+
+#: assets/models.py:176 assets/models.py:221
+msgid "performed by"
+msgstr "réalisée par"
+
+#: assets/models.py:178
+msgid "next due on"
+msgstr "prochaine échéance le"
+
+#: assets/models.py:182
+msgid "maintenance"
+msgstr "maintenance"
+
+#: assets/models.py:183
+msgid "maintenances"
+msgstr "maintenances"
+
+#: assets/models.py:196
+msgid "Secure erase"
+msgstr "Effacement sécurisé"
+
+#: assets/models.py:197
+msgid "Degaussing"
+msgstr "Démagnétisation"
+
+#: assets/models.py:198
+msgid "Physical destruction"
+msgstr "Destruction physique"
+
+#: assets/models.py:199
+msgid "Cryptographic erase"
+msgstr "Effacement cryptographique"
+
+#: assets/models.py:200
+msgid "Returned to the vendor"
+msgstr "Rendu au fournisseur"
+
+#: assets/models.py:201
+msgid "Data deletion"
+msgstr "Suppression des données"
+
+#: assets/models.py:210
+msgid "disposed on"
+msgstr "éliminé le"
+
+#: assets/models.py:213 suppliers/models.py:172
+msgid "method"
+msgstr "méthode"
+
+#: assets/models.py:216
+msgid "standard followed"
+msgstr "norme suivie"
+
+#: assets/models.py:219
+msgid "For example NIST SP 800-88 Purge."
+msgstr "Par exemple NIST SP 800-88 Purge."
+
+#: assets/models.py:224 audits/models.py:214
+msgid "verified by"
+msgstr "vérifié par"
+
+#: assets/models.py:231 people/models.py:94
+msgid "certificate"
+msgstr "certificat"
+
+#: assets/models.py:233 isms/models.py:353 people/models.py:96
+#: people/models.py:181 suppliers/models.py:80
+msgid "notes"
+msgstr "notes"
+
+#: assets/models.py:237
+msgid "disposal"
+msgstr "élimination"
+
+#: assets/models.py:238
+msgid "disposals"
+msgstr "éliminations"
+
+#: assets/resources.py:57
+msgid "Every asset, its owner, classification and holder (A.5.9-5.13)."
+msgstr ""
+"Chaque actif, son propriétaire, sa classification et son détenteur "
+"(A.5.9-5.13)."
+
+#: assets/resources.py:77 incidents/resources.py:99 incidents/resources.py:134
+#: suppliers/models.py:33
+msgid "Personal data"
+msgstr "Données personnelles"
+
+#: assets/resources.py:85
+msgid "Confidential and restricted"
+msgstr "Confidentiel et restreint"
+
+#: assets/resources.py:101
+msgid "Classification"
+msgstr "Classification"
+
+#: assets/resources.py:109
+msgid "How much harm a disclosure, an alteration or a loss would do."
+msgstr "Le tort que ferait une divulgation, une altération ou une perte."
+
+#: assets/resources.py:115
+msgid "Details"
+msgstr "Détails"
+
+#: assets/resources.py:134
+msgid "By kind"
+msgstr "Par type"
+
+#: assets/resources.py:137
+msgid "By classification"
+msgstr "Par classification"
+
+#: assets/resources.py:161
+msgid "Criticality"
+msgstr "Criticité"
+
+#: assets/resources.py:165
+msgid "Held by"
+msgstr "Détenu par"
+
+#: assets/resources.py:178
+msgid "Who holds which asset, and its return (A.5.11)."
+msgstr "Qui détient quel actif, et son retour (A.5.11)."
+
+#: assets/resources.py:189
+msgid "Not returned"
+msgstr "Non rendus"
+
+#: assets/resources.py:204
+msgid "Mark returned"
+msgstr "Marquer rendu"
+
+#: assets/resources.py:207
+msgid "Mark the selected assets returned today?"
+msgstr "Marquer les actifs sélectionnés comme rendus aujourd'hui ?"
+
+#: assets/resources.py:208
+msgid "Records that the asset came back today."
+msgstr "Enregistre que l'actif est revenu aujourd'hui."
+
+#: assets/resources.py:218
+#, python-format
+msgid "%(count)s asset returned."
+msgid_plural "%(count)s assets returned."
+msgstr[0] "%(count)s actif rendu."
+msgstr[1] "%(count)s actifs rendus."
+
+#: assets/resources.py:227
+msgid "Maintenance done on the assets (A.7.13)."
+msgstr "Maintenance réalisée sur les actifs (A.7.13)."
+
+#: assets/resources.py:249
+msgid "How assets and media were disposed of, data destroyed (A.7.14)."
+msgstr ""
+"Comment les actifs et supports ont été éliminés, les données détruites "
+"(A.7.14)."
+
+#: assets/resources.py:263
+msgid "Proof"
+msgstr "Preuve"
+
+#: audits/apps.py:12
+msgid "Audits"
+msgstr "Audits"
+
+#: audits/models.py:25
+msgid "Internal audit"
+msgstr "Audit interne"
+
+#: audits/models.py:26
+msgid "Certification audit"
+msgstr "Audit de certification"
+
+#: audits/models.py:27
+msgid "Surveillance audit"
+msgstr "Audit de surveillance"
+
+#: audits/models.py:28
+msgid "Supplier audit"
+msgstr "Audit fournisseur"
+
+#: audits/models.py:29
+msgid "Independent review"
+msgstr "Revue indépendante"
+
+#: audits/models.py:30
+msgid "Compliance check"
+msgstr "Contrôle de conformité"
+
+#: audits/models.py:35 incidents/models.py:43
+msgid "Reported"
+msgstr "Rapporté"
+
+#: audits/models.py:36 audits/models.py:107 changes/models.py:45
+#: incidents/models.py:47 risks/models.py:76
+msgid "Closed"
+msgstr "Clôturé"
+
+#: audits/models.py:45
+msgid "criteria"
+msgstr "critères"
+
+#: audits/models.py:47
+msgid "What is audited against: clauses, controls, policies."
+msgstr "Ce par rapport à quoi on audite : clauses, mesures, politiques."
+
+#: audits/models.py:51
+msgid "lead auditor"
+msgstr "auditeur principal"
+
+#: audits/models.py:58
+msgid "other auditors"
+msgstr "autres auditeurs"
+
+#: audits/models.py:62
+msgid "controls covered"
+msgstr "mesures couvertes"
+
+#: audits/models.py:66
+msgid "planned on"
+msgstr "prévu le"
+
+#: audits/models.py:72
+msgid "report"
+msgstr "rapport"
+
+#: audits/models.py:76 audits/models.py:119
+msgid "audit"
+msgstr "audit"
+
+#: audits/models.py:77
+msgid "audits"
+msgstr "audits"
+
+#: audits/models.py:90 suppliers/models.py:153 vulnerabilities/models.py:55
+msgid "Audit"
+msgstr "Audit"
+
+#: audits/models.py:91
+msgid "Incident"
+msgstr "Incident"
+
+#: audits/models.py:92
+msgid "Management review"
+msgstr "Revue de direction"
+
+#: audits/models.py:93
+msgid "Monitoring"
+msgstr "Surveillance"
+
+#: audits/models.py:94
+msgid "Complaint"
+msgstr "Réclamation"
+
+#: audits/models.py:95 changes/models.py:31 incidents/models.py:40
+msgid "Other"
+msgstr "Autre"
+
+#: audits/models.py:98
+msgid "Major nonconformity"
+msgstr "Non-conformité majeure"
+
+#: audits/models.py:99
+msgid "Minor nonconformity"
+msgstr "Non-conformité mineure"
+
+#: audits/models.py:100
+msgid "Observation"
+msgstr "Observation"
+
+#: audits/models.py:101
+msgid "Opportunity for improvement"
+msgstr "Piste d'amélioration"
+
+#: audits/models.py:104 audits/resources.py:159 incidents/resources.py:79
+#: isms/models.py:414 vulnerabilities/models.py:58
+#: vulnerabilities/resources.py:75
+msgid "Open"
+msgstr "Ouverte"
+
+#: audits/models.py:105
+msgid "Action planned"
+msgstr "Action planifiée"
+
+#: audits/models.py:106
+msgid "Checking effectiveness"
+msgstr "Vérification de l'efficacité"
+
+#: audits/models.py:115 compliance/models.py:128 vulnerabilities/models.py:75
+msgid "source"
+msgstr "source"
+
+#: audits/models.py:125
+msgid "grade"
+msgstr "gravité"
+
+#: audits/models.py:127
+msgid "requirement"
+msgstr "exigence"
+
+#: audits/models.py:130
+msgid "The clause or control not met: 9.2, A.8.8..."
+msgstr "La clause ou la mesure non satisfaite : 9.2, A.8.8..."
+
+#: audits/models.py:134 compliance/models.py:69 compliance/models.py:81
+#: risks/models.py:218
+msgid "control"
+msgstr "mesure"
+
+#: audits/models.py:140
+msgid "raised on"
+msgstr "relevée le"
+
+#: audits/models.py:149 incidents/models.py:103
+msgid "root cause"
+msgstr "cause racine"
+
+#: audits/models.py:154
+msgid "closed on"
+msgstr "clôturée le"
+
+#: audits/models.py:159 audits/models.py:190
+msgid "nonconformity"
+msgstr "non-conformité"
+
+#: audits/models.py:160
+msgid "nonconformities"
+msgstr "non-conformités"
+
+#: audits/models.py:177
+msgid "Correction"
+msgstr "Correction"
+
+#: audits/models.py:178
+msgid "Corrective action"
+msgstr "Action corrective"
+
+#: audits/models.py:179
+msgid "Preventive action"
+msgstr "Action préventive"
+
+#: audits/models.py:184 isms/models.py:415 risks/models.py:205
+msgid "Done"
+msgstr "Réalisée"
+
+#: audits/models.py:185
+msgid "Effective"
+msgstr "Efficace"
+
+#: audits/models.py:186
+msgid "Not effective"
+msgstr "Non efficace"
+
+#: audits/models.py:211 isms/models.py:437 risks/models.py:236
+msgid "done on"
+msgstr "réalisée le"
+
+#: audits/models.py:222
+msgid "verified on"
+msgstr "vérifiée le"
+
+#: audits/models.py:227
+msgid "corrective action"
+msgstr "action corrective"
+
+#: audits/models.py:228
+msgid "corrective actions"
+msgstr "actions correctives"
+
+#: audits/resources.py:62
+msgid "The audit programme: audits, scope, conclusions (9.2, A.5.35)."
+msgstr "Le programme d'audit : audits, périmètre, conclusions (9.2, A.5.35)."
+
+#: audits/resources.py:86
+msgid "Scope"
+msgstr "Périmètre"
+
+#: audits/resources.py:88
+msgid "Team and result"
+msgstr "Équipe et résultat"
+
+#: audits/resources.py:112
+msgid "Findings"
+msgstr "Constats"
+
+#: audits/resources.py:123 isms/resources.py:437
+msgid "Actions"
+msgstr "Actions"
+
+#: audits/resources.py:132
+msgid ""
+"Nonconformities from audits, incidents and reviews, and their causes (10.2)."
+msgstr ""
+"Non-conformités issues des audits, incidents et revues, et leurs causes "
+"(10.2)."
+
+#: audits/resources.py:175
+msgid "Origin"
+msgstr "Origine"
+
+#: audits/resources.py:179 incidents/resources.py:95
+msgid "Handling"
+msgstr "Traitement"
+
+#: audits/resources.py:189
+msgid "By grade"
+msgstr "Par gravité"
+
+#: audits/resources.py:211
+msgid "Actions not effective yet"
+msgstr "Actions pas encore efficaces"
+
+#: audits/resources.py:224
+msgid "Corrective actions and their effectiveness (10.2)."
+msgstr "Actions correctives et leur efficacité (10.2)."
+
+#: audits/resources.py:238 isms/resources.py:454 risks/resources.py:298
+#: vulnerabilities/resources.py:79 vulnerabilities/resources.py:146
+msgid "Overdue"
+msgstr "En retard"
+
+#: audits/resources.py:288
+#, python-format
+msgid "%(count)s action verified."
+msgid_plural "%(count)s actions verified."
+msgstr[0] "%(count)s action vérifiée."
+msgstr[1] "%(count)s actions vérifiées."
+
+#: audits/resources.py:292
+msgid "The actions you own are left to someone else to verify."
+msgstr ""
+"Les actions dont vous êtes responsable sont laissées à quelqu'un d'autre "
+"pour vérification."
+
+#: audits/resources.py:298
+msgid "Verify: effective"
+msgstr "Vérifier : efficace"
+
+#: audits/resources.py:301
+msgid "Confirm the selected actions removed the cause?"
+msgstr "Confirmer que les actions sélectionnées ont supprimé la cause ?"
+
+#: audits/resources.py:303
+msgid ""
+"Records that the action removed the cause, with your name. The nonconformity"
+" closes once all its actions are effective."
+msgstr ""
+"Enregistre que l'action a supprimé la cause, avec votre nom. La non-"
+"conformité se clôt quand toutes ses actions sont efficaces."
+
+#: audits/resources.py:311
+msgid "Verify: not effective"
+msgstr "Vérifier : non efficace"
+
+#: audits/resources.py:314
+msgid "Record that the selected actions did not work?"
+msgstr "Enregistrer que les actions sélectionnées n'ont pas fonctionné ?"
+
+#: audits/resources.py:315
+msgid "Records that the cause is still there: plan another action."
+msgstr "Enregistre que la cause est toujours là : planifiez une autre action."
+
+#: changes/apps.py:11 changes/resources.py:182
+msgid "Changes"
+msgstr "Changements"
+
+#: changes/models.py:21
+msgid "Standard (pre-approved)"
+msgstr "Standard (pré-approuvé)"
+
+#: changes/models.py:22
+msgid "Normal"
+msgstr "Normal"
+
+#: changes/models.py:23
+msgid "Emergency"
+msgstr "Urgence"
+
+#: changes/models.py:26
+msgid "Application"
+msgstr "Application"
+
+#: changes/models.py:27
+msgid "Infrastructure"
+msgstr "Infrastructure"
+
+#: changes/models.py:28
+msgid "Network"
+msgstr "Réseau"
+
+#: changes/models.py:29
+msgid "Configuration"
+msgstr "Configuration"
+
+#: changes/models.py:30
+msgid "Security"
+msgstr "Sécurité"
+
+#: changes/models.py:34 common.py:42 risks/models.py:39
+msgid "Low"
+msgstr "Faible"
+
+#: changes/models.py:35 common.py:43 risks/models.py:40
+msgid "Medium"
+msgstr "Moyen"
+
+#: changes/models.py:36 common.py:44 risks/models.py:41
+msgid "High"
+msgstr "Élevé"
+
+#: changes/models.py:40
+msgid "Submitted"
+msgstr "Soumise"
+
+#: changes/models.py:41 continuity/models.py:84 isms/models.py:24
+#: isms/models.py:249 suppliers/models.py:158
+msgid "Approved"
+msgstr "Approuvée"
+
+#: changes/models.py:42 suppliers/models.py:160
+msgid "Rejected"
+msgstr "Rejetée"
+
+#: changes/models.py:43 changes/resources.py:283 compliance/models.py:31
+msgid "Implemented"
+msgstr "Mise en œuvre"
+
+#: changes/models.py:44
+msgid "Failed, rolled back"
+msgstr "Échec, retour arrière"
+
+#: changes/models.py:52
+msgid "reason"
+msgstr "motif"
+
+#: changes/models.py:57 incidents/models.py:56 isms/models.py:89
+#: risks/models.py:84
+msgid "category"
+msgstr "catégorie"
+
+#: changes/models.py:66 risks/models.py:169 risks/models.py:210
+msgid "risk"
+msgstr "risque"
+
+#: changes/models.py:68 risks/models.py:106
+msgid "impact"
+msgstr "impact"
+
+#: changes/models.py:69
+msgid "test plan"
+msgstr "plan de test"
+
+#: changes/models.py:70
+msgid "rollback plan"
+msgstr "plan de retour arrière"
+
+#: changes/models.py:73
+msgid "requested by"
+msgstr "demandé par"
+
+#: changes/models.py:82
+msgid "implementer"
+msgstr "réalisateur"
+
+#: changes/models.py:104
+msgid "planned start"
+msgstr "début prévu"
+
+#: changes/models.py:106
+msgid "planned end"
+msgstr "fin prévue"
+
+#: changes/models.py:108
+msgid "implemented at"
+msgstr "mis en œuvre le"
+
+#: changes/models.py:111
+msgid "post-implementation review"
+msgstr "revue post-implémentation"
+
+#: changes/models.py:113
+msgid "Did it work, was security affected, what to learn."
+msgstr ""
+"Cela a-t-il fonctionné, la sécurité a-t-elle été affectée, qu'en apprendre."
+
+#: changes/models.py:118
+msgid "change request"
+msgstr "demande de changement"
+
+#: changes/models.py:119
+msgid "change requests"
+msgstr "demandes de changement"
+
+#: changes/models.py:121
+msgid "Can approve a change request"
+msgstr "Peut approuver une demande de changement"
+
+#: changes/resources.py:68
+msgid "Changes to systems: risk, tests, rollback, approval, review (A.8.32)."
+msgstr ""
+"Changements sur les systèmes : risque, tests, retour arrière, approbation, "
+"revue (A.8.32)."
+
+#: changes/resources.py:89
+msgid "Awaiting approval"
+msgstr "En attente d'approbation"
+
+#: changes/resources.py:115 suppliers/resources.py:126
+msgid "Risk"
+msgstr "Risque"
+
+#: changes/resources.py:119 changes/resources.py:152
+msgid "Plans"
+msgstr "Plans"
+
+#: changes/resources.py:123 changes/resources.py:154
+#: compliance/resources.py:96 compliance/resources.py:133
+msgid "Implementation"
+msgstr "Mise en œuvre"
+
+#: changes/resources.py:172
+msgid "Change calendar"
+msgstr "Calendrier des changements"
+
+#: changes/resources.py:234
+#, python-format
+msgid "%(count)s change request updated."
+msgid_plural "%(count)s change requests updated."
+msgstr[0] "%(count)s demande de changement mise à jour."
+msgstr[1] "%(count)s demandes de changement mises à jour."
+
+#: changes/resources.py:240
+msgid ""
+"Requests at another step, or your own requests for a decision, were left as "
+"they are."
+msgstr ""
+"Les demandes à une autre étape, ou vos propres demandes pour une décision, "
+"ont été laissées telles quelles."
+
+#: changes/resources.py:247
+msgid "Submit"
+msgstr "Soumettre"
+
+#: changes/resources.py:250
+msgid "Sends the request for approval."
+msgstr "Envoie la demande pour approbation."
+
+#: changes/resources.py:256
+msgid "Approve"
+msgstr "Approuver"
+
+#: changes/resources.py:259
+msgid "Approve the selected change requests?"
+msgstr "Approuver les demandes de changement sélectionnées ?"
+
+#: changes/resources.py:261
+msgid ""
+"Approves the change, with your name. Nobody approves their own request."
+msgstr ""
+"Approuve le changement, avec votre nom. Personne n'approuve sa propre "
+"demande."
+
+#: changes/resources.py:271
+msgid "Reject"
+msgstr "Rejeter"
+
+#: changes/resources.py:274
+msgid "Reject the selected change requests?"
+msgstr "Rejeter les demandes de changement sélectionnées ?"
+
+#: changes/resources.py:275
+msgid "Refuses the change, with your name."
+msgstr "Refuse le changement, avec votre nom."
+
+#: changes/resources.py:286
+msgid "Records that the change was made, now."
+msgstr "Enregistre que le changement a été fait, maintenant."
+
+#: changes/resources.py:294
+msgid "Close"
+msgstr "Clôturer"
+
+#: changes/resources.py:297
+msgid "Closes the request once it is reviewed."
+msgstr "Clôt la demande une fois revue."
+
+#: common.py:19 isms/apps.py:9
+msgid "ISMS"
+msgstr "SMSI"
+
+#: common.py:20
+msgid "Assets and suppliers"
+msgstr "Actifs et fournisseurs"
+
+#: common.py:21
+msgid "Risks and controls"
+msgstr "Risques et mesures"
+
+#: common.py:22
+msgid "Security operations"
+msgstr "Opérations de sécurité"
+
+#: common.py:23 continuity/apps.py:12
+msgid "Continuity"
+msgstr "Continuité"
+
+#: common.py:24
+msgid "Audits and improvement"
+msgstr "Audits et amélioration"
+
+#: common.py:25
+msgid "Staff and access"
+msgstr "Personnel et accès"
+
+#: common.py:45 risks/models.py:42
+msgid "Critical"
+msgstr "Critique"
+
+#: common.py:59 isms/models.py:121
+msgid "Public"
+msgstr "Public"
+
+#: common.py:60 isms/models.py:69
+msgid "Internal"
+msgstr "Interne"
+
+#: common.py:61
+msgid "Confidential"
+msgstr "Confidentiel"
+
+#: common.py:62
+msgid "Restricted"
+msgstr "Restreint"
+
+#: compliance/apps.py:9 compliance/resources.py:216
+#: compliance/resources.py:229 risks/models.py:63
+msgid "Compliance"
+msgstr "Conformité"
+
+#: compliance/catalogue.py:17
+msgid "Policies for information security"
+msgstr "Politiques de sécurité de l'information"
+
+#: compliance/catalogue.py:18
+msgid "Information security roles and responsibilities"
+msgstr "Fonctions et responsabilités liées à la sécurité de l'information"
+
+#: compliance/catalogue.py:19
+msgid "Segregation of duties"
+msgstr "Séparation des tâches"
+
+#: compliance/catalogue.py:20
+msgid "Management responsibilities"
+msgstr "Responsabilités de la direction"
+
+#: compliance/catalogue.py:21
+msgid "Contact with authorities"
+msgstr "Contacts avec les autorités"
+
+#: compliance/catalogue.py:22
+msgid "Contact with special interest groups"
+msgstr "Contacts avec des groupes d'intérêt spécifiques"
+
+#: compliance/catalogue.py:23
+msgid "Threat intelligence"
+msgstr "Renseignements sur les menaces"
+
+#: compliance/catalogue.py:24
+msgid "Information security in project management"
+msgstr "Sécurité de l'information dans la gestion de projet"
+
+#: compliance/catalogue.py:25
+msgid "Inventory of information and other associated assets"
+msgstr "Inventaire des informations et autres actifs associés"
+
+#: compliance/catalogue.py:26
+msgid "Acceptable use of information and other associated assets"
+msgstr "Utilisation correcte des informations et autres actifs associés"
+
+#: compliance/catalogue.py:27
+msgid "Return of assets"
+msgstr "Restitution des actifs"
+
+#: compliance/catalogue.py:28
+msgid "Classification of information"
+msgstr "Classification des informations"
+
+#: compliance/catalogue.py:29
+msgid "Labelling of information"
+msgstr "Marquage des informations"
+
+#: compliance/catalogue.py:30
+msgid "Information transfer"
+msgstr "Transfert des informations"
+
+#: compliance/catalogue.py:31
+msgid "Access control"
+msgstr "Contrôle d'accès"
+
+#: compliance/catalogue.py:32
+msgid "Identity management"
+msgstr "Gestion des identités"
+
+#: compliance/catalogue.py:33
+msgid "Authentication information"
+msgstr "Informations d'authentification"
+
+#: compliance/catalogue.py:34
+msgid "Access rights"
+msgstr "Droits d'accès"
+
+#: compliance/catalogue.py:35
+msgid "Information security in supplier relationships"
+msgstr "Sécurité de l'information dans les relations avec les fournisseurs"
+
+#: compliance/catalogue.py:38
+msgid "Addressing information security within supplier agreements"
+msgstr ""
+"La sécurité de l'information dans les accords conclus avec les fournisseurs"
+
+#: compliance/catalogue.py:40
+msgid "Managing information security in the ICT supply chain"
+msgstr ""
+"Gestion de la sécurité de l'information dans la chaîne d'approvisionnement "
+"TIC"
+
+#: compliance/catalogue.py:43
+msgid "Monitoring, review and change management of supplier services"
+msgstr ""
+"Surveillance, revue et gestion des changements des services fournisseurs"
+
+#: compliance/catalogue.py:45
+msgid "Information security for use of cloud services"
+msgstr "Sécurité de l'information dans l'utilisation de services en nuage"
+
+#: compliance/catalogue.py:49
+msgid "Information security incident management planning and preparation"
+msgstr ""
+"Planification et préparation de la gestion des incidents liés à la sécurité "
+"de l'information"
+
+#: compliance/catalogue.py:53
+msgid "Assessment and decision on information security events"
+msgstr ""
+"Évaluation des événements liés à la sécurité de l'information et prise de "
+"décision"
+
+#: compliance/catalogue.py:54
+msgid "Response to information security incidents"
+msgstr "Réponse aux incidents liés à la sécurité de l'information"
+
+#: compliance/catalogue.py:55
+msgid "Learning from information security incidents"
+msgstr ""
+"Tirer des enseignements des incidents liés à la sécurité de l'information"
+
+#: compliance/catalogue.py:56
+msgid "Collection of evidence"
+msgstr "Recueil de preuves"
+
+#: compliance/catalogue.py:57
+msgid "Information security during disruption"
+msgstr "Sécurité de l'information durant une perturbation"
+
+#: compliance/catalogue.py:58
+msgid "ICT readiness for business continuity"
+msgstr "Préparation des TIC pour la continuité d'activité"
+
+#: compliance/catalogue.py:61
+msgid "Legal, statutory, regulatory and contractual requirements"
+msgstr "Exigences légales, statutaires, réglementaires et contractuelles"
+
+#: compliance/catalogue.py:63
+msgid "Intellectual property rights"
+msgstr "Droits de propriété intellectuelle"
+
+#: compliance/catalogue.py:64
+msgid "Protection of records"
+msgstr "Protection des enregistrements"
+
+#: compliance/catalogue.py:65
+msgid "Privacy and protection of PII"
+msgstr ""
+"Protection de la vie privée et des données à caractère personnel (DCP)"
+
+#: compliance/catalogue.py:66
+msgid "Independent review of information security"
+msgstr "Révision indépendante de la sécurité de l'information"
+
+#: compliance/catalogue.py:70
+msgid "Compliance with policies, rules and standards for information security"
+msgstr ""
+"Conformité aux politiques, règles et normes de sécurité de l'information"
+
+#: compliance/catalogue.py:74
+msgid "Documented operating procedures"
+msgstr "Procédures d'exploitation documentées"
+
+#: compliance/catalogue.py:75
+msgid "Screening"
+msgstr "Sélection des candidats"
+
+#: compliance/catalogue.py:76
+msgid "Terms and conditions of employment"
+msgstr "Termes et conditions du contrat de travail"
+
+#: compliance/catalogue.py:77
+msgid "Information security awareness, education and training"
+msgstr ""
+"Sensibilisation, enseignement et formation à la sécurité de l'information"
+
+#: compliance/catalogue.py:78
+msgid "Disciplinary process"
+msgstr "Processus disciplinaire"
+
+#: compliance/catalogue.py:81
+msgid "Responsibilities after termination or change of employment"
+msgstr ""
+"Responsabilités consécutivement à la fin ou à la modification du contrat de "
+"travail"
+
+#: compliance/catalogue.py:83
+msgid "Confidentiality or non-disclosure agreements"
+msgstr "Accords de confidentialité ou de non-divulgation"
+
+#: compliance/catalogue.py:84
+msgid "Remote working"
+msgstr "Travail à distance"
+
+#: compliance/catalogue.py:85
+msgid "Information security event reporting"
+msgstr "Déclaration des événements liés à la sécurité de l'information"
+
+#: compliance/catalogue.py:86
+msgid "Physical security perimeters"
+msgstr "Périmètres de sécurité physique"
+
+#: compliance/catalogue.py:87
+msgid "Physical entry"
+msgstr "Les entrées physiques"
+
+#: compliance/catalogue.py:88
+msgid "Securing offices, rooms and facilities"
+msgstr "Sécurisation des bureaux, des salles et des installations"
+
+#: compliance/catalogue.py:89
+msgid "Physical security monitoring"
+msgstr "Surveillance de la sécurité physique"
+
+#: compliance/catalogue.py:90
+msgid "Protecting against physical and environmental threats"
+msgstr "Protection contre les menaces physiques et environnementales"
+
+#: compliance/catalogue.py:91
+msgid "Working in secure areas"
+msgstr "Travail dans les zones sécurisées"
+
+#: compliance/catalogue.py:92
+msgid "Clear desk and clear screen"
+msgstr "Bureau propre et écran vide"
+
+#: compliance/catalogue.py:93
+msgid "Equipment siting and protection"
+msgstr "Emplacement et protection du matériel"
+
+#: compliance/catalogue.py:94
+msgid "Security of assets off-premises"
+msgstr "Sécurité des actifs hors des locaux"
+
+#: compliance/catalogue.py:96
+msgid "Supporting utilities"
+msgstr "Services supports"
+
+#: compliance/catalogue.py:97
+msgid "Cabling security"
+msgstr "Sécurité du câblage"
+
+#: compliance/catalogue.py:98
+msgid "Equipment maintenance"
+msgstr "Maintenance du matériel"
+
+#: compliance/catalogue.py:99
+msgid "Secure disposal or re-use of equipment"
+msgstr "Élimination ou recyclage sécurisé(e) du matériel"
+
+#: compliance/catalogue.py:100
+msgid "User endpoint devices"
+msgstr "Terminaux utilisateurs"
+
+#: compliance/catalogue.py:101
+msgid "Privileged access rights"
+msgstr "Droits d'accès à privilèges"
+
+#: compliance/catalogue.py:102
+msgid "Information access restriction"
+msgstr "Restriction d'accès aux informations"
+
+#: compliance/catalogue.py:103
+msgid "Access to source code"
+msgstr "Accès au code source"
+
+#: compliance/catalogue.py:104
+msgid "Secure authentication"
+msgstr "Authentification sécurisée"
+
+#: compliance/catalogue.py:105
+msgid "Capacity management"
+msgstr "Dimensionnement"
+
+#: compliance/catalogue.py:106
+msgid "Protection against malware"
+msgstr "Protection contre les programmes malveillants"
+
+#: compliance/catalogue.py:107
+msgid "Management of technical vulnerabilities"
+msgstr "Gestion des vulnérabilités techniques"
+
+#: compliance/catalogue.py:108
+msgid "Configuration management"
+msgstr "Gestion des configurations"
+
+#: compliance/catalogue.py:109
+msgid "Information deletion"
+msgstr "Suppression des informations"
+
+#: compliance/catalogue.py:110
+msgid "Data masking"
+msgstr "Masquage des données"
+
+#: compliance/catalogue.py:111
+msgid "Data leakage prevention"
+msgstr "Prévention de la fuite de données"
+
+#: compliance/catalogue.py:112
+msgid "Information backup"
+msgstr "Sauvegarde des informations"
+
+#: compliance/catalogue.py:113
+msgid "Redundancy of information processing facilities"
+msgstr "Redondance des moyens de traitement de l'information"
+
+#: compliance/catalogue.py:114
+msgid "Logging"
+msgstr "Journalisation"
+
+#: compliance/catalogue.py:115
+msgid "Monitoring activities"
+msgstr "Activités de surveillance"
+
+#: compliance/catalogue.py:116
+msgid "Clock synchronization"
+msgstr "Synchronisation des horloges"
+
+#: compliance/catalogue.py:117
+msgid "Use of privileged utility programs"
+msgstr "Utilisation de programmes utilitaires à privilèges"
+
+#: compliance/catalogue.py:118
+msgid "Installation of software on operational systems"
+msgstr "Installation de logiciels sur des systèmes opérationnels"
+
+#: compliance/catalogue.py:119
+msgid "Networks security"
+msgstr "Sécurité des réseaux"
+
+#: compliance/catalogue.py:120
+msgid "Security of network services"
+msgstr "Sécurité des services réseau"
+
+#: compliance/catalogue.py:121
+msgid "Segregation of networks"
+msgstr "Cloisonnement des réseaux"
+
+#: compliance/catalogue.py:122
+msgid "Web filtering"
+msgstr "Filtrage web"
+
+#: compliance/catalogue.py:123
+msgid "Use of cryptography"
+msgstr "Utilisation de la cryptographie"
+
+#: compliance/catalogue.py:124
+msgid "Secure development life cycle"
+msgstr "Cycle de vie de développement sécurisé"
+
+#: compliance/catalogue.py:125
+msgid "Application security requirements"
+msgstr "Exigences de sécurité des applications"
+
+#: compliance/catalogue.py:126
+msgid "Secure system architecture and engineering principles"
+msgstr "Principes d'ingénierie et d'architecture des systèmes sécurisés"
+
+#: compliance/catalogue.py:127
+msgid "Secure coding"
+msgstr "Codage sécurisé"
+
+#: compliance/catalogue.py:128
+msgid "Security testing in development and acceptance"
+msgstr "Tests de sécurité dans le développement et l'acceptation"
+
+#: compliance/catalogue.py:129
+msgid "Outsourced development"
+msgstr "Développement externalisé"
+
+#: compliance/catalogue.py:132
+msgid "Separation of development, test and production environments"
+msgstr ""
+"Séparation des environnements de développement, de test et de production"
+
+#: compliance/catalogue.py:134
+msgid "Change management"
+msgstr "Gestion des changements"
+
+#: compliance/catalogue.py:135
+msgid "Test information"
+msgstr "Informations de test"
+
+#: compliance/catalogue.py:136
+msgid "Protection of information systems during audit testing"
+msgstr "Protection des systèmes d'information durant les tests d'audit"
+
+#: compliance/models.py:22 isms/models.py:79
+msgid "Organisational"
+msgstr "Organisationnelle"
+
+#: compliance/models.py:23
+msgid "People"
+msgstr "Personnes"
+
+#: compliance/models.py:24 incidents/models.py:39
+msgid "Physical"
+msgstr "Physique"
+
+#: compliance/models.py:25 isms/models.py:76
+msgid "Technological"
+msgstr "Technologique"
+
+#: compliance/models.py:28
+msgid "Not started"
+msgstr "Non commencée"
+
+#: compliance/models.py:30
+msgid "Partly implemented"
+msgstr "Partiellement mise en œuvre"
+
+#: compliance/models.py:33 isms/models.py:252
+msgid "code"
+msgstr "code"
+
+#: compliance/models.py:35
+msgid "theme"
+msgstr "thème"
+
+#: compliance/models.py:37
+msgid "position"
+msgstr "position"
+
+#: compliance/models.py:39
+msgid "applicable"
+msgstr "applicable"
+
+#: compliance/models.py:41
+msgid "justification"
+msgstr "justification"
+
+#: compliance/models.py:43
+msgid "Why it is included, or why it is excluded."
+msgstr "Pourquoi elle est incluse, ou pourquoi elle est exclue."
+
+#: compliance/models.py:46
+msgid "implementation"
+msgstr "mise en œuvre"
+
+#: compliance/models.py:59
+msgid "how it is implemented"
+msgstr "comment elle est mise en œuvre"
+
+#: compliance/models.py:61
+msgid "where the evidence is"
+msgstr "où se trouve la preuve"
+
+#: compliance/models.py:63
+msgid "Records, tools, documents an auditor can read."
+msgstr "Enregistrements, outils, documents qu'un auditeur peut consulter."
+
+#: compliance/models.py:65 isms/models.py:100 isms/models.py:136
+msgid "reviewed on"
+msgstr "revue le"
+
+#: compliance/models.py:70 compliance/models.py:147 risks/models.py:122
+msgid "controls"
+msgstr "mesures"
+
+#: compliance/models.py:86 incidents/models.py:200
+msgid "file"
+msgstr "fichier"
+
+#: compliance/models.py:87 compliance/models.py:161 isms/models.py:287
+#: people/models.py:58
+msgid "link"
+msgstr "lien"
+
+#: compliance/models.py:89
+msgid "collected on"
+msgstr "collectée le"
+
+#: compliance/models.py:93 incidents/models.py:210
+msgid "collected by"
+msgstr "collectée par"
+
+#: compliance/models.py:102 compliance/models.py:103 incidents/models.py:227
+#: incidents/models.py:228
+msgid "evidence"
+msgstr "preuve"
+
+#: compliance/models.py:113
+msgid "Law"
+msgstr "Loi"
+
+#: compliance/models.py:114
+msgid "Regulation"
+msgstr "Règlement"
+
+#: compliance/models.py:115 suppliers/models.py:95
+msgid "Contract"
+msgstr "Contrat"
+
+#: compliance/models.py:116
+msgid "Standard"
+msgstr "Norme"
+
+#: compliance/models.py:117
+msgid "Internal rule"
+msgstr "Règle interne"
+
+#: compliance/models.py:120
+msgid "Not assessed"
+msgstr "Non évaluée"
+
+#: compliance/models.py:121
+msgid "Compliant"
+msgstr "Conforme"
+
+#: compliance/models.py:122
+msgid "Partly compliant"
+msgstr "Partiellement conforme"
+
+#: compliance/models.py:123
+msgid "Not compliant"
+msgstr "Non conforme"
+
+#: compliance/models.py:131
+msgid "The text and article: GDPR art. 32, contract 2024-17."
+msgstr "Le texte et l'article : RGPD art. 32, contrat 2024-17."
+
+#: compliance/models.py:134
+msgid "jurisdiction"
+msgstr "juridiction"
+
+#: compliance/models.py:136
+msgid "what it requires"
+msgstr "ce qu'elle exige"
+
+#: compliance/models.py:157 suppliers/models.py:169
+msgid "assessed on"
+msgstr "évaluée le"
+
+#: compliance/models.py:165
+msgid "obligation"
+msgstr "obligation"
+
+#: compliance/models.py:166
+msgid "obligations"
+msgstr "obligations"
+
+#: compliance/resources.py:42
+msgid "Controls (SoA)"
+msgstr "Mesures (DdA)"
+
+#: compliance/resources.py:44
+msgid ""
+"The 93 Annex A controls: applicability, justification, implementation - the "
+"Statement of Applicability (6.1.3)."
+msgstr ""
+"Les 93 mesures de l'annexe A : applicabilité, justification, mise en œuvre -"
+" la Déclaration d'applicabilité (6.1.3)."
+
+#: compliance/resources.py:63
+msgid "Statement of Applicability"
+msgstr "Déclaration d'applicabilité"
+
+#: compliance/resources.py:75
+msgid "Applicable, not implemented"
+msgstr "Applicables, non mises en œuvre"
+
+#: compliance/resources.py:92
+msgid "Applicability"
+msgstr "Applicabilité"
+
+#: compliance/resources.py:124
+msgid "Implementation by theme"
+msgstr "Mise en œuvre par thème"
+
+#: compliance/resources.py:150 isms/resources.py:398 risks/resources.py:253
+msgid "Mark reviewed"
+msgstr "Marquer revu"
+
+#: compliance/resources.py:153
+msgid "Mark the selected controls reviewed today?"
+msgstr "Marquer les mesures sélectionnées comme revues aujourd'hui ?"
+
+#: compliance/resources.py:154
+msgid "Records today as the date the control was last reviewed."
+msgstr "Enregistre aujourd'hui comme date de dernière revue de la mesure."
+
+#: compliance/resources.py:164
+#, python-format
+msgid "%(count)s control reviewed."
+msgid_plural "%(count)s controls reviewed."
+msgstr[0] "%(count)s mesure revue."
+msgstr[1] "%(count)s mesures revues."
+
+#: compliance/resources.py:190
+msgid "Laws, regulations, contracts and standards to meet (A.5.31)."
+msgstr "Lois, règlements, contrats et normes à respecter (A.5.31)."
+
+#: continuity/models.py:36 suppliers/models.py:38
+msgid "criticality"
+msgstr "criticité"
+
+#: continuity/models.py:43
+msgid "assets it depends on"
+msgstr "actifs dont il dépend"
+
+#: continuity/models.py:48
+msgid "RTO (hours)"
+msgstr "RTO (heures)"
+
+#: continuity/models.py:51
+msgid "Recovery time objective: how long it may be down."
+msgstr ""
+"Durée maximale d'interruption admissible : combien de temps il peut être "
+"arrêté."
+
+#: continuity/models.py:54
+msgid "RPO (hours)"
+msgstr "RPO (heures)"
+
+#: continuity/models.py:57
+msgid "Recovery point objective: how much data may be lost."
+msgstr ""
+"Perte de données maximale admissible : combien de données peuvent être "
+"perdues."
+
+#: continuity/models.py:60
+msgid "MTPD (hours)"
+msgstr "PMIA (heures)"
+
+#: continuity/models.py:63
+msgid "Maximum tolerable period of disruption."
+msgstr "Période maximale d'interruption acceptable."
+
+#: continuity/models.py:66
+msgid "impact of a disruption"
+msgstr "impact d'une interruption"
+
+#: continuity/models.py:68
+msgid "Financial, legal, contractual, reputational."
+msgstr "Financier, juridique, contractuel, réputationnel."
+
+#: continuity/models.py:70
+msgid "analysed on"
+msgstr "analysé le"
+
+#: continuity/models.py:74 continuity/models.py:159
+msgid "service"
+msgstr "service"
+
+#: continuity/models.py:75 continuity/models.py:90
+msgid "services"
+msgstr "services"
+
+#: continuity/models.py:105 isms/models.py:28 isms/models.py:254
+#: isms/models.py:307
+msgid "version"
+msgstr "version"
+
+#: continuity/models.py:107
+msgid "activation"
+msgstr "déclenchement"
+
+#: continuity/models.py:109
+msgid "Who decides to activate the plan, and when."
+msgstr "Qui décide de déclencher le plan, et quand."
+
+#: continuity/models.py:111
+msgid "recovery procedure"
+msgstr "procédure de reprise"
+
+#: continuity/models.py:113
+msgid "security during disruption"
+msgstr "sécurité pendant l'interruption"
+
+#: continuity/models.py:115
+msgid "How security is kept while the plan runs (A.5.29)."
+msgstr ""
+"Comment la sécurité est maintenue pendant l'exécution du plan (A.5.29)."
+
+#: continuity/models.py:118 isms/models.py:285 suppliers/models.py:123
+msgid "document"
+msgstr "document"
+
+#: continuity/models.py:120
+msgid "next test"
+msgstr "prochain test"
+
+#: continuity/models.py:124
+msgid "continuity plan"
+msgstr "plan de continuité"
+
+#: continuity/models.py:125
+msgid "continuity plans"
+msgstr "plans de continuité"
+
+#: continuity/models.py:135
+msgid "Tabletop"
+msgstr "Sur table"
+
+#: continuity/models.py:136
+msgid "Simulation"
+msgstr "Simulation"
+
+#: continuity/models.py:137
+msgid "Backup restore"
+msgstr "Restauration de sauvegarde"
+
+#: continuity/models.py:138
+msgid "Failover"
+msgstr "Bascule"
+
+#: continuity/models.py:139
+msgid "Full interruption"
+msgstr "Interruption complète"
+
+#: continuity/models.py:143
+msgid "Passed"
+msgstr "Réussi"
+
+#: continuity/models.py:144
+msgid "Partly passed"
+msgstr "Partiellement réussi"
+
+#: continuity/models.py:145
+msgid "Failed"
+msgstr "Échoué"
+
+#: continuity/models.py:151
+msgid "plan"
+msgstr "plan"
+
+#: continuity/models.py:165
+msgid "held on"
+msgstr "tenu le"
+
+#: continuity/models.py:168
+msgid "participants"
+msgstr "participants"
+
+#: continuity/models.py:173 suppliers/models.py:186
+msgid "result"
+msgstr "résultat"
+
+#: continuity/models.py:176
+msgid "recovery time achieved (hours)"
+msgstr "durée de reprise obtenue (heures)"
+
+#: continuity/models.py:183
+msgid "data loss achieved (hours)"
+msgstr "perte de données obtenue (heures)"
+
+#: continuity/models.py:189 suppliers/models.py:188
+msgid "findings"
+msgstr "constats"
+
+#: continuity/models.py:193
+msgid "exercise"
+msgstr "exercice"
+
+#: continuity/models.py:194
+msgid "exercises"
+msgstr "exercices"
+
+#: continuity/resources.py:48
+msgid "Business impact analysis: what each service can bear (A.5.30)."
+msgstr ""
+"Bilan d'impact sur l'activité : ce que chaque service peut supporter "
+"(A.5.30)."
+
+#: continuity/resources.py:65
+msgid "Impact analysis"
+msgstr "Bilan d'impact"
+
+#: continuity/resources.py:74
+msgid "Dependencies"
+msgstr "Dépendances"
+
+#: continuity/resources.py:85 suppliers/resources.py:156
+msgid "By criticality"
+msgstr "Par criticité"
+
+#: continuity/resources.py:100
+msgid "Last tested"
+msgstr "Dernier test"
+
+#: continuity/resources.py:114
+msgid "How each service is recovered, and kept secure meanwhile (A.5.29)."
+msgstr ""
+"Comment chaque service est rétabli, et maintenu sécurisé entre-temps "
+"(A.5.29)."
+
+#: continuity/resources.py:124
+msgid "Test due"
+msgstr "Test à faire"
+
+#: continuity/resources.py:142
+msgid "Plan"
+msgstr "Plan"
+
+#: continuity/resources.py:159
+msgid ""
+"Plan exercises and backup restore tests, against the targets (A.5.30, "
+"A.8.13, A.8.14)."
+msgstr ""
+"Exercices des plans et tests de restauration des sauvegardes, par rapport "
+"aux objectifs (A.5.30, A.8.13, A.8.14)."
+
+#: continuity/resources.py:181
+msgid "Result"
+msgstr "Résultat"
+
+#: continuity/resources.py:195
+msgid "Results"
+msgstr "Résultats"
+
+#: continuity/resources.py:209
+msgid "Targets met"
+msgstr "Objectifs atteints"
+
+#: incidents/apps.py:11 incidents/resources.py:169
+msgid "Incidents"
+msgstr "Incidents"
+
+#: incidents/models.py:32
+msgid "Phishing"
+msgstr "Hameçonnage"
+
+#: incidents/models.py:33
+msgid "Malware"
+msgstr "Logiciel malveillant"
+
+#: incidents/models.py:34
+msgid "Unauthorised access"
+msgstr "Accès non autorisé"
+
+#: incidents/models.py:35
+msgid "Data leak"
+msgstr "Fuite de données"
+
+#: incidents/models.py:36
+msgid "Loss or theft"
+msgstr "Perte ou vol"
+
+#: incidents/models.py:37
+msgid "Denial of service"
+msgstr "Déni de service"
+
+#: incidents/models.py:38
+msgid "Misconfiguration"
+msgstr "Mauvaise configuration"
+
+#: incidents/models.py:44
+msgid "Being assessed"
+msgstr "En cours d'évaluation"
+
+#: incidents/models.py:45
+msgid "Contained"
+msgstr "Contenu"
+
+#: incidents/models.py:46
+msgid "Resolved"
+msgstr "Résolu"
+
+#: incidents/models.py:48
+msgid "Not an incident"
+msgstr "Pas un incident"
+
+#: incidents/models.py:54
+msgid "what happened"
+msgstr "ce qui s'est passé"
+
+#: incidents/models.py:59 vulnerabilities/models.py:93
+msgid "severity"
+msgstr "gravité"
+
+#: incidents/models.py:69
+msgid "reported by"
+msgstr "signalé par"
+
+#: incidents/models.py:77
+msgid "reported at"
+msgstr "signalé le"
+
+#: incidents/models.py:79
+msgid "detected at"
+msgstr "détecté le"
+
+#: incidents/models.py:82
+msgid "handler"
+msgstr "responsable du traitement"
+
+#: incidents/models.py:90 vulnerabilities/models.py:80
+msgid "assets affected"
+msgstr "actifs touchés"
+
+#: incidents/models.py:95
+msgid "personal data breach"
+msgstr "violation de données personnelles"
+
+#: incidents/models.py:98
+msgid "authority notified at"
+msgstr "autorité notifiée le"
+
+#: incidents/models.py:101
+msgid "data subjects notified at"
+msgstr "personnes concernées notifiées le"
+
+#: incidents/models.py:104
+msgid "lessons learned"
+msgstr "leçons apprises"
+
+#: incidents/models.py:106
+msgid "closed at"
+msgstr "clôturé le"
+
+#: incidents/models.py:111 incidents/models.py:156 incidents/models.py:193
+msgid "incident"
+msgstr "incident"
+
+#: incidents/models.py:112
+msgid "incidents"
+msgstr "incidents"
+
+#: incidents/models.py:149
+msgid "Note"
+msgstr "Note"
+
+#: incidents/models.py:150
+msgid "Action taken"
+msgstr "Action menée"
+
+#: incidents/models.py:151
+msgid "Decision"
+msgstr "Décision"
+
+#: incidents/models.py:152
+msgid "Communication"
+msgstr "Communication"
+
+#: incidents/models.py:160
+msgid "at"
+msgstr "le"
+
+#: incidents/models.py:164
+msgid "text"
+msgstr "texte"
+
+#: incidents/models.py:167
+msgid "author"
+msgstr "auteur"
+
+#: incidents/models.py:177
+msgid "update"
+msgstr "mise à jour"
+
+#: incidents/models.py:178
+msgid "updates"
+msgstr "mises à jour"
+
+#: incidents/models.py:203
+msgid "SHA-256"
+msgstr "SHA-256"
+
+#: incidents/models.py:206
+msgid "collected at"
+msgstr "collectée le"
+
+#: incidents/models.py:217
+msgid "where it is kept"
+msgstr "lieu de conservation"
+
+#: incidents/models.py:220
+msgid "chain of custody"
+msgstr "chaîne de traçabilité"
+
+#: incidents/models.py:222
+msgid "Who handed it to whom, when, and why."
+msgstr "Qui l'a remis à qui, quand, et pourquoi."
+
+#: incidents/resources.py:59
+msgid ""
+"Security events and incidents, their response and lessons (A.5.24-5.28, "
+"A.6.8)."
+msgstr ""
+"Événements et incidents de sécurité, leur traitement et leurs enseignements "
+"(A.5.24-5.28, A.6.8)."
+
+#: incidents/resources.py:83
+msgid "Personal data breaches"
+msgstr "Violations de données personnelles"
+
+#: incidents/resources.py:106
+msgid ""
+"A breach is notified to the authority within 72 hours of its detection (GDPR"
+" art. 33)."
+msgstr ""
+"Une violation est notifiée à l'autorité dans les 72 heures suivant sa "
+"détection (RGPD art. 33)."
+
+#: incidents/resources.py:112 incidents/resources.py:144
+msgid "Lessons"
+msgstr "Enseignements"
+
+#: incidents/resources.py:157
+msgid "Response board"
+msgstr "Tableau de traitement"
+
+#: incidents/resources.py:159
+msgid "Every incident in the column of its status."
+msgstr "Chaque incident dans la colonne de son statut."
+
+#: incidents/resources.py:179 isms/resources.py:112
+msgid "By category"
+msgstr "Par catégorie"
+
+#: incidents/resources.py:191
+msgid "Notify by"
+msgstr "Notifier avant"
+
+#: incidents/resources.py:202
+msgid "late"
+msgstr "en retard"
+
+#: incidents/resources.py:247
+msgid "Custody"
+msgstr "Traçabilité"
+
+#: isms/models.py:25
+msgid "Superseded"
+msgstr "Remplacé"
+
+#: isms/models.py:33
+msgid "statement"
+msgstr "énoncé"
+
+#: isms/models.py:34
+msgid "What the ISMS covers: activities, sites, systems."
+msgstr "Ce que couvre le SMSI : activités, sites, systèmes."
+
+#: isms/models.py:37
+msgid "exclusions"
+msgstr "exclusions"
+
+#: isms/models.py:39
+msgid "What is left out, and why."
+msgstr "Ce qui est exclu, et pourquoi."
+
+#: isms/models.py:42
+msgid "interfaces and dependencies"
+msgstr "interfaces et dépendances"
+
+#: isms/models.py:44
+msgid "Activities done by others the ISMS depends on."
+msgstr "Activités réalisées par d'autres dont dépend le SMSI."
+
+#: isms/models.py:48 isms/models.py:269
+msgid "approved by"
+msgstr "approuvé par"
+
+#: isms/models.py:54 isms/models.py:275
+msgid "approved on"
+msgstr "approuvé le"
+
+#: isms/models.py:59
+msgid "scopes"
+msgstr "périmètres"
+
+#: isms/models.py:70
+msgid "External"
+msgstr "Externe"
+
+#: isms/models.py:73
+msgid "Political"
+msgstr "Politique"
+
+#: isms/models.py:74
+msgid "Economic"
+msgstr "Économique"
+
+#: isms/models.py:75
+msgid "Social"
+msgstr "Social"
+
+#: isms/models.py:77
+msgid "Legal"
+msgstr "Juridique"
+
+#: isms/models.py:78
+msgid "Environmental and climate"
+msgstr "Environnement et climat"
+
+#: isms/models.py:82
+msgid "Threat"
+msgstr "Menace"
+
+#: isms/models.py:83
+msgid "Opportunity"
+msgstr "Opportunité"
+
+#: isms/models.py:84
+msgid "Both"
+msgstr "Les deux"
+
+#: isms/models.py:92
+msgid "effect"
+msgstr "effet"
+
+#: isms/models.py:96
+msgid "climate related"
+msgstr "lié au climat"
+
+#: isms/models.py:98
+msgid "Climate change is relevant to it (Amd. 1:2024)."
+msgstr "Le changement climatique le concerne (Amd. 1:2024)."
+
+#: isms/models.py:104
+msgid "context issue"
+msgstr "enjeu"
+
+#: isms/models.py:105
+msgid "context issues"
+msgstr "enjeux"
+
+#: isms/models.py:115
+msgid "Customer"
+msgstr "Client"
+
+#: isms/models.py:116 people/models.py:118
+msgid "Employee"
+msgstr "Salarié"
+
+#: isms/models.py:117 isms/models.py:338
+msgid "Regulator"
+msgstr "Régulateur"
+
+#: isms/models.py:118
+msgid "Shareholder"
+msgstr "Actionnaire"
+
+#: isms/models.py:119
+msgid "Supplier"
+msgstr "Fournisseur"
+
+#: isms/models.py:120
+msgid "Partner"
+msgstr "Partenaire"
+
+#: isms/models.py:126
+msgid "requirements"
+msgstr "exigences"
+
+#: isms/models.py:127
+msgid "What they expect: laws, contracts, wishes."
+msgstr "Ce qu'elles attendent : lois, contrats, souhaits."
+
+#: isms/models.py:129
+msgid "addressed by the ISMS"
+msgstr "traitées par le SMSI"
+
+#: isms/models.py:130
+msgid "how it is addressed"
+msgstr "comment elles sont traitées"
+
+#: isms/models.py:132
+msgid "climate requirements"
+msgstr "exigences climatiques"
+
+#: isms/models.py:134
+msgid "They have requirements about climate change."
+msgstr "Elles ont des exigences concernant le changement climatique."
+
+#: isms/models.py:140
+msgid "interested party"
+msgstr "partie intéressée"
+
+#: isms/models.py:141
+msgid "interested parties"
+msgstr "parties intéressées"
+
+#: isms/models.py:152
+msgid "On track"
+msgstr "En bonne voie"
+
+#: isms/models.py:153
+msgid "At risk"
+msgstr "À risque"
+
+#: isms/models.py:154
+msgid "Achieved"
+msgstr "Atteint"
+
+#: isms/models.py:155
+msgid "Abandoned"
+msgstr "Abandonné"
+
+#: isms/models.py:158
+msgid "Higher is better"
+msgstr "Plus c'est haut, mieux c'est"
+
+#: isms/models.py:159
+msgid "Lower is better"
+msgstr "Plus c'est bas, mieux c'est"
+
+#: isms/models.py:172
+msgid "target"
+msgstr "cible"
+
+#: isms/models.py:174
+msgid "unit"
+msgstr "unité"
+
+#: isms/models.py:176
+msgid "direction"
+msgstr "sens"
+
+#: isms/models.py:182
+msgid "how it is measured"
+msgstr "méthode de mesure"
+
+#: isms/models.py:184
+msgid "The source, the formula, how often (clause 9.1)."
+msgstr "La source, la formule, la fréquence (clause 9.1)."
+
+#: isms/models.py:193 isms/models.py:217
+msgid "objective"
+msgstr "objectif"
+
+#: isms/models.py:194
+msgid "objectives"
+msgstr "objectifs"
+
+#: isms/models.py:222
+msgid "measured on"
+msgstr "mesuré le"
+
+#: isms/models.py:224
+msgid "value"
+msgstr "valeur"
+
+#: isms/models.py:228
+msgid "measured by"
+msgstr "mesuré par"
+
+#: isms/models.py:237
+msgid "measurement"
+msgstr "mesure"
+
+#: isms/models.py:238
+msgid "measurements"
+msgstr "mesures"
+
+#: isms/models.py:258
+msgid "summary"
+msgstr "résumé"
+
+#: isms/models.py:280
+msgid "requires acknowledgement"
+msgstr "lecture obligatoire"
+
+#: isms/models.py:282
+msgid "Every user must say they read it (A.5.1, A.5.10)."
+msgstr "Chaque utilisateur doit confirmer l'avoir lue (A.5.1, A.5.10)."
+
+#: isms/models.py:291 isms/models.py:303
+msgid "policy"
+msgstr "politique"
+
+#: isms/models.py:292
+msgid "policies"
+msgstr "politiques"
+
+#: isms/models.py:310
+msgid "user"
+msgstr "utilisateur"
+
+#: isms/models.py:315
+msgid "acknowledged at"
+msgstr "pris en compte le"
+
+#: isms/models.py:320
+msgid "acknowledgement"
+msgstr "prise de connaissance"
+
+#: isms/models.py:321
+msgid "acknowledgements"
+msgstr "prises de connaissance"
+
+#: isms/models.py:337
+msgid "Authority"
+msgstr "Autorité"
+
+#: isms/models.py:339
+msgid "Law enforcement"
+msgstr "Forces de l'ordre"
+
+#: isms/models.py:340
+msgid "CERT / CSIRT"
+msgstr "CERT / CSIRT"
+
+#: isms/models.py:341
+msgid "Special interest group"
+msgstr "Groupe d'intérêt spécialisé"
+
+#: isms/models.py:342
+msgid "Emergency service"
+msgstr "Service d'urgence"
+
+#: isms/models.py:347
+msgid "when to contact"
+msgstr "quand contacter"
+
+#: isms/models.py:348
+msgid "The situations this contact is for."
+msgstr "Les situations pour lesquelles contacter."
+
+#: isms/models.py:350
+msgid "phone"
+msgstr "téléphone"
+
+#: isms/models.py:351
+msgid "e-mail"
+msgstr "e-mail"
+
+#: isms/models.py:352 suppliers/models.py:76
+msgid "website"
+msgstr "site web"
+
+#: isms/models.py:357 suppliers/models.py:74
+msgid "contact"
+msgstr "contact"
+
+#: isms/models.py:358
+msgid "contacts"
+msgstr "contacts"
+
+#: isms/models.py:369
+msgid "Held"
+msgstr "Tenue"
+
+#: isms/models.py:372
+msgid "date"
+msgstr "date"
+
+#: isms/models.py:378
+msgid "chair"
+msgstr "président"
+
+#: isms/models.py:385
+msgid "attendees"
+msgstr "participants"
+
+#: isms/models.py:388
+msgid "inputs"
+msgstr "éléments d'entrée"
+
+#: isms/models.py:391
+msgid ""
+"Previous actions, changes in context, feedback, audit and monitoring "
+"results, risks, opportunities (9.3.2)."
+msgstr ""
+"Actions précédentes, évolutions du contexte, retours, résultats d'audit et "
+"de surveillance, risques, opportunités (9.3.2)."
+
+#: isms/models.py:396
+msgid "decisions"
+msgstr "décisions"
+
+#: isms/models.py:398
+msgid "Improvements and changes to the ISMS (9.3.3)."
+msgstr "Améliorations et changements du SMSI (9.3.3)."
+
+#: isms/models.py:403 isms/models.py:420
+msgid "management review"
+msgstr "revue de direction"
+
+#: isms/models.py:404
+msgid "management reviews"
+msgstr "revues de direction"
+
+#: isms/models.py:416 risks/models.py:206
+msgid "Cancelled"
+msgstr "Annulée"
+
+#: isms/models.py:441
+msgid "review action"
+msgstr "action de revue"
+
+#: isms/models.py:442
+msgid "review actions"
+msgstr "actions de revue"
+
+#: isms/resources.py:66
+msgid "What the ISMS covers, version by version (4.3)."
+msgstr "Ce que couvre le SMSI, version par version (4.3)."
+
+#: isms/resources.py:77
+msgid "Approval"
+msgstr "Approbation"
+
+#: isms/resources.py:86
+msgid "Internal and external issues the ISMS answers (4.1)."
+msgstr "Les enjeux internes et externes auxquels répond le SMSI (4.1)."
+
+#: isms/resources.py:127
+msgid "Who expects something of the ISMS, and what (4.2)."
+msgstr "Qui attend quelque chose du SMSI, et quoi (4.2)."
+
+#: isms/resources.py:133
+msgid "Answer"
+msgstr "Réponse"
+
+#: isms/resources.py:156
+msgid "Readings"
+msgstr "Relevés"
+
+#: isms/resources.py:160
+msgid "Value"
+msgstr "Valeur"
+
+#: isms/resources.py:178
+msgid "Measurements"
+msgstr "Mesures"
+
+#: isms/resources.py:186
+msgid "Measurable objectives and their readings (6.2, 9.1)."
+msgstr "Objectifs mesurables et leurs relevés (6.2, 9.1)."
+
+#: isms/resources.py:211 isms/resources.py:236
+msgid "Target"
+msgstr "Cible"
+
+#: isms/resources.py:221
+msgid "By status"
+msgstr "Par statut"
+
+#: isms/resources.py:242
+msgid "Latest value"
+msgstr "Dernière valeur"
+
+#: isms/resources.py:249
+msgid "Met"
+msgstr "Atteint"
+
+#: isms/resources.py:281
+msgid "Policies, their approval and review, and who read them (A.5.1)."
+msgstr ""
+"Les politiques, leur approbation et leur revue, et qui les a lues (A.5.1)."
+
+#: isms/resources.py:300 isms/resources.py:357 risks/resources.py:110
+#: suppliers/resources.py:97
+msgid "Review due"
+msgstr "Revue due"
+
+#: isms/resources.py:309
+msgid "Approval and review"
+msgstr "Approbation et revue"
+
+#: isms/resources.py:340
+msgid "Acknowledged"
+msgstr "Prises en compte"
+
+#: isms/resources.py:349
+msgid "Coverage"
+msgstr "Couverture"
+
+#: isms/resources.py:375
+msgid "Acknowledge"
+msgstr "Prendre connaissance"
+
+#: isms/resources.py:378
+msgid "Confirm you read and accept the selected policies?"
+msgstr "Confirmer avoir lu et accepté les politiques sélectionnées ?"
+
+#: isms/resources.py:380
+msgid ""
+"Records that you read the current version of the policy and accept it, with "
+"today's date."
+msgstr ""
+"Enregistre que vous avez lu la version actuelle de la politique et que vous "
+"l'acceptez, à la date du jour."
+
+#: isms/resources.py:392
+#, python-format
+msgid "%(count)s policy acknowledged."
+msgid_plural "%(count)s policies acknowledged."
+msgstr[0] "%(count)s politique prise en compte."
+msgstr[1] "%(count)s politiques prises en compte."
+
+#: isms/resources.py:401
+msgid "Mark the selected policies reviewed today?"
+msgstr "Marquer les politiques sélectionnées comme revues aujourd'hui ?"
+
+#: isms/resources.py:402 risks/resources.py:257
+msgid "Records today's review and sets the next one a year away."
+msgstr "Enregistre la revue du jour et fixe la suivante dans un an."
+
+#: isms/resources.py:412
+#, python-format
+msgid "%(count)s policy reviewed."
+msgid_plural "%(count)s policies reviewed."
+msgstr[0] "%(count)s politique revue."
+msgstr[1] "%(count)s politiques revues."
+
+#: isms/resources.py:423
+msgid "Authorities, CERTs and groups to call (A.5.5, A.5.6)."
+msgstr "Autorités, CERT et groupes à contacter (A.5.5, A.5.6)."
+
+#: isms/resources.py:445
+msgid "What management reviews decided, until done (9.3)."
+msgstr "Ce que les revues de direction ont décidé, jusqu'à réalisation (9.3)."
+
+#: isms/resources.py:480
+msgid "Management reviews, their inputs and decisions (9.3)."
+msgstr ""
+"Les revues de direction, leurs éléments d'entrée et leurs décisions (9.3)."
+
+#: isms/resources.py:488
+msgid "Minutes"
+msgstr "Compte rendu"
+
+#: isms/resources.py:507
+msgid "Open actions"
+msgstr "Actions ouvertes"
+
+#: people/apps.py:9
+msgid "People security"
+msgstr "Sécurité du personnel"
+
+#: people/models.py:38
+msgid "Security awareness"
+msgstr "Sensibilisation à la sécurité"
+
+#: people/models.py:39
+msgid "Policies and rules"
+msgstr "Politiques et règles"
+
+#: people/models.py:40
+msgid "Data protection"
+msgstr "Protection des données"
+
+#: people/models.py:41
+msgid "Role-specific"
+msgstr "Spécifique au rôle"
+
+#: people/models.py:42
+msgid "Technical"
+msgstr "Technique"
+
+#: people/models.py:45
+msgid "topic"
+msgstr "thème"
+
+#: people/models.py:48
+msgid "mandatory"
+msgstr "obligatoire"
+
+#: people/models.py:50
+msgid "Every member of staff must follow it."
+msgstr "Chaque membre du personnel doit la suivre."
+
+#: people/models.py:52
+msgid "audience"
+msgstr "public visé"
+
+#: people/models.py:54
+msgid "valid for (months)"
+msgstr "valable (mois)"
+
+#: people/models.py:56
+msgid "0: never expires."
+msgstr "0 : n'expire jamais."
+
+#: people/models.py:62 people/models.py:74
+msgid "course"
+msgstr "formation"
+
+#: people/models.py:63
+msgid "courses"
+msgstr "formations"
+
+#: people/models.py:80
+msgid "person"
+msgstr "personne"
+
+#: people/models.py:88
+msgid "expires on"
+msgstr "expire le"
+
+#: people/models.py:91 suppliers/models.py:183
+msgid "score (%)"
+msgstr "score (%)"
+
+#: people/models.py:100
+msgid "training record"
+msgstr "suivi de formation"
+
+#: people/models.py:101
+msgid "training records"
+msgstr "suivis de formation"
+
+#: people/models.py:119
+msgid "Contractor"
+msgstr "Prestataire"
+
+#: people/models.py:120
+msgid "Intern"
+msgstr "Stagiaire"
+
+#: people/models.py:121
+msgid "Temporary"
+msgstr "Temporaire"
+
+#: people/models.py:124 people/resources.py:167
+msgid "Joining"
+msgstr "Arrivée"
+
+#: people/models.py:125 suppliers/models.py:25
+msgid "Active"
+msgstr "Actif"
+
+#: people/models.py:126 people/resources.py:171
+msgid "Leaving"
+msgstr "Départ"
+
+#: people/models.py:127
+msgid "Left"
+msgstr "Parti"
+
+#: people/models.py:129
+msgid "full name"
+msgstr "nom complet"
+
+#: people/models.py:138
+msgid "job title"
+msgstr "fonction"
+
+#: people/models.py:139
+msgid "department"
+msgstr "service"
+
+#: people/models.py:141
+msgid "employment"
+msgstr "contrat"
+
+#: people/models.py:149 suppliers/models.py:108
+msgid "starts on"
+msgstr "début le"
+
+#: people/models.py:150 suppliers/models.py:109
+msgid "ends on"
+msgstr "fin le"
+
+#: people/models.py:152
+msgid "background checked on"
+msgstr "vérification des antécédents le"
+
+#: people/models.py:155
+msgid "Checks proportionate to the role (A.6.1)."
+msgstr "Vérifications proportionnées au rôle (A.6.1)."
+
+#: people/models.py:158
+msgid "security responsibilities signed on"
+msgstr "responsabilités de sécurité signées le"
+
+#: people/models.py:161
+msgid "In the contract or a charter (A.6.2)."
+msgstr "Dans le contrat ou une charte (A.6.2)."
+
+#: people/models.py:164
+msgid "confidentiality agreement signed on"
+msgstr "accord de confidentialité signé le"
+
+#: people/models.py:167
+msgid "A.6.6."
+msgstr "A.6.6."
+
+#: people/models.py:170
+msgid "access removed on"
+msgstr "accès supprimés le"
+
+#: people/models.py:173
+msgid "assets returned on"
+msgstr "actifs rendus le"
+
+#: people/models.py:176
+msgid "reminded of duties on"
+msgstr "rappel des obligations le"
+
+#: people/models.py:179
+msgid "Duties that last after leaving (A.6.5)."
+msgstr "Obligations qui durent après le départ (A.6.5)."
+
+#: people/models.py:185
+msgid "personnel file"
+msgstr "dossier du personnel"
+
+#: people/models.py:186
+msgid "personnel files"
+msgstr "dossiers du personnel"
+
+#: people/resources.py:45
+msgid "Awareness and training courses (7.2, 7.3, A.6.3)."
+msgstr "Formations de sensibilisation et de compétence (7.2, 7.3, A.6.3)."
+
+#: people/resources.py:62
+msgid "Who followed which course, until when (7.2, A.6.3)."
+msgstr "Qui a suivi quelle formation, jusqu'à quand (7.2, A.6.3)."
+
+#: people/resources.py:73 people/resources.py:118
+msgid "Expired"
+msgstr "Expirés"
+
+#: people/resources.py:85
+msgid "Expiring within 30 days"
+msgstr "Expirant dans les 30 jours"
+
+#: people/resources.py:112
+msgid "State"
+msgstr "État"
+
+#: people/resources.py:115 people/resources.py:121
+msgid "Valid"
+msgstr "Valide"
+
+#: people/resources.py:120
+msgid "Expiring"
+msgstr "Expire bientôt"
+
+#: people/resources.py:130
+msgid ""
+"Screening, signatures and departure of each person (A.6.1, A.6.2, A.6.5, "
+"A.6.6)."
+msgstr ""
+"Vérifications, signatures et départ de chaque personne (A.6.1, A.6.2, A.6.5,"
+" A.6.6)."
+
+#: people/resources.py:190
+msgid "Training"
+msgstr "Formation"
+
+#: people/resources.py:207
+msgid "Still to do"
+msgstr "Reste à faire"
+
+#: risks/apps.py:12
+msgid "Risks"
+msgstr "Risques"
+
+#: risks/models.py:23
+msgid "1 - Rare"
+msgstr "1 - Rare"
+
+#: risks/models.py:24
+msgid "2 - Unlikely"
+msgstr "2 - Peu probable"
+
+#: risks/models.py:25
+msgid "3 - Possible"
+msgstr "3 - Possible"
+
+#: risks/models.py:26
+msgid "4 - Likely"
+msgstr "4 - Probable"
+
+#: risks/models.py:27
+msgid "5 - Almost certain"
+msgstr "5 - Quasi certain"
+
+#: risks/models.py:30
+msgid "1 - Negligible"
+msgstr "1 - Négligeable"
+
+#: risks/models.py:31
+msgid "2 - Minor"
+msgstr "2 - Mineur"
+
+#: risks/models.py:32
+msgid "3 - Moderate"
+msgstr "3 - Modéré"
+
+#: risks/models.py:33
+msgid "4 - Major"
+msgstr "4 - Majeur"
+
+#: risks/models.py:34
+msgid "5 - Severe"
+msgstr "5 - Grave"
+
+#: risks/models.py:60
+msgid "Confidentiality"
+msgstr "Confidentialité"
+
+#: risks/models.py:61
+msgid "Integrity"
+msgstr "Intégrité"
+
+#: risks/models.py:62
+msgid "Availability"
+msgstr "Disponibilité"
+
+#: risks/models.py:66
+msgid "Mitigate"
+msgstr "Réduire"
+
+#: risks/models.py:67
+msgid "Accept"
+msgstr "Accepter"
+
+#: risks/models.py:68
+msgid "Avoid"
+msgstr "Éviter"
+
+#: risks/models.py:69
+msgid "Transfer"
+msgstr "Transférer"
+
+#: risks/models.py:72
+msgid "Identified"
+msgstr "Identifié"
+
+#: risks/models.py:73
+msgid "Assessed"
+msgstr "Évalué"
+
+#: risks/models.py:74
+msgid "Being treated"
+msgstr "En traitement"
+
+#: risks/models.py:75
+msgid "Accepted"
+msgstr "Accepté"
+
+#: risks/models.py:86
+msgid "threat"
+msgstr "menace"
+
+#: risks/models.py:87 vulnerabilities/models.py:124
+msgid "vulnerability"
+msgstr "vulnérabilité"
+
+#: risks/models.py:103
+msgid "likelihood"
+msgstr "vraisemblance"
+
+#: risks/models.py:109
+msgid "score"
+msgstr "score"
+
+#: risks/models.py:112
+msgid "level"
+msgstr "niveau"
+
+#: risks/models.py:115
+msgid "treatment"
+msgstr "traitement"
+
+#: risks/models.py:127
+msgid "residual likelihood"
+msgstr "vraisemblance résiduelle"
+
+#: risks/models.py:130
+msgid "residual impact"
+msgstr "impact résiduel"
+
+#: risks/models.py:133
+msgid "residual score"
+msgstr "score résiduel"
+
+#: risks/models.py:136
+msgid "residual level"
+msgstr "niveau résiduel"
+
+#: risks/models.py:150
+msgid "accepted by"
+msgstr "accepté par"
+
+#: risks/models.py:158
+msgid "accepted on"
+msgstr "accepté le"
+
+#: risks/models.py:161
+msgid "identified on"
+msgstr "identifié le"
+
+#: risks/models.py:170
+msgid "risks"
+msgstr "risques"
+
+#: risks/models.py:171
+msgid "Can accept a residual risk"
+msgstr "Peut accepter un risque résiduel"
+
+#: risks/models.py:240
+msgid "treatment action"
+msgstr "action de traitement"
+
+#: risks/models.py:241
+msgid "treatment actions"
+msgstr "actions de traitement"
+
+#: risks/resources.py:67
+msgid "Treatment plan"
+msgstr "Plan de traitement"
+
+#: risks/resources.py:76
+msgid ""
+"Risks to the assets: rating, owner, treatment, residual risk (6.1.2, 6.1.3, "
+"8.2, 8.3)."
+msgstr ""
+"Les risques sur les actifs : cotation, propriétaire, traitement, risque "
+"résiduel (6.1.2, 6.1.3, 8.2, 8.3)."
+
+#: risks/resources.py:97
+msgid "High and critical"
+msgstr "Élevés et critiques"
+
+#: risks/resources.py:128 risks/resources.py:156
+msgid "Scenario"
+msgstr "Scénario"
+
+#: risks/resources.py:132
+msgid "Assessment"
+msgstr "Évaluation"
+
+#: risks/resources.py:136
+msgid "Before treatment. The score is likelihood times impact."
+msgstr ""
+"Avant traitement. Le score est la vraisemblance multipliée par l'impact."
+
+#: risks/resources.py:141 risks/resources.py:160
+msgid "Treatment"
+msgstr "Traitement"
+
+#: risks/resources.py:183
+msgid "Treatment board"
+msgstr "Tableau de traitement"
+
+#: risks/resources.py:185
+msgid "Every risk in the column of its status."
+msgstr "Chaque risque dans la colonne de son statut."
+
+#: risks/resources.py:195
+msgid "Risk matrix"
+msgstr "Matrice des risques"
+
+#: risks/resources.py:196
+msgid "How many risks for each likelihood and impact."
+msgstr "Combien de risques pour chaque vraisemblance et impact."
+
+#: risks/resources.py:203
+msgid "By level"
+msgstr "Par niveau"
+
+#: risks/resources.py:221
+msgid "Accept the residual risk"
+msgstr "Accepter le risque résiduel"
+
+#: risks/resources.py:224
+msgid "Accept the residual risk of the selected risks?"
+msgstr "Accepter le risque résiduel des risques sélectionnés ?"
+
+#: risks/resources.py:226
+msgid ""
+"Records that you, as risk owner, accept the risk left once its controls work"
+" - with your name and today's date."
+msgstr ""
+"Enregistre que vous, propriétaire du risque, acceptez le risque restant une "
+"fois ses mesures en place - avec votre nom et la date du jour."
+
+#: risks/resources.py:243
+#, python-format
+msgid "%(count)s risk accepted."
+msgid_plural "%(count)s risks accepted."
+msgstr[0] "%(count)s risque accepté."
+msgstr[1] "%(count)s risques acceptés."
+
+#: risks/resources.py:247
+msgid "A risk being treated needs its residual rating first."
+msgstr "Un risque en traitement a d'abord besoin de sa cotation résiduelle."
+
+#: risks/resources.py:256
+msgid "Mark the selected risks reviewed today?"
+msgstr "Marquer les risques sélectionnés comme revus aujourd'hui ?"
+
+#: risks/resources.py:267
+#, python-format
+msgid "%(count)s risk reviewed."
+msgid_plural "%(count)s risks reviewed."
+msgstr[0] "%(count)s risque revu."
+msgstr[1] "%(count)s risques revus."
+
+#: risks/resources.py:276
+msgid "The risk treatment plan, step by step (6.1.3, 8.3)."
+msgstr "Le plan de traitement des risques, étape par étape (6.1.3, 8.3)."
+
+#: suppliers/apps.py:9
+msgid "Suppliers"
+msgstr "Fournisseurs"
+
+#: suppliers/models.py:24
+msgid "Prospect"
+msgstr "Prospect"
+
+#: suppliers/models.py:26
+msgid "Under review"
+msgstr "En revue"
+
+#: suppliers/models.py:27
+msgid "Ended"
+msgstr "Terminé"
+
+#: suppliers/models.py:30
+msgid "None"
+msgstr "Aucune"
+
+#: suppliers/models.py:31
+msgid "Internal data"
+msgstr "Données internes"
+
+#: suppliers/models.py:32
+msgid "Confidential data"
+msgstr "Données confidentielles"
+
+#: suppliers/models.py:36
+msgid "services provided"
+msgstr "services fournis"
+
+#: suppliers/models.py:47
+msgid "data reached"
+msgstr "données accessibles"
+
+#: suppliers/models.py:53
+msgid "cloud service"
+msgstr "service cloud"
+
+#: suppliers/models.py:55
+msgid "They provide a cloud service (A.5.23)."
+msgstr "Il fournit un service cloud (A.5.23)."
+
+#: suppliers/models.py:58
+msgid "certifications"
+msgstr "certifications"
+
+#: suppliers/models.py:61
+msgid "ISO/IEC 27001, SOC 2, HDS..."
+msgstr "ISO/IEC 27001, SOC 2, HDS..."
+
+#: suppliers/models.py:64
+msgid "certificate expires on"
+msgstr "certificat expirant le"
+
+#: suppliers/models.py:68
+msgid "relationship owner"
+msgstr "responsable de la relation"
+
+#: suppliers/models.py:75
+msgid "contact e-mail"
+msgstr "e-mail du contact"
+
+#: suppliers/models.py:84 suppliers/models.py:102 suppliers/models.py:164
+msgid "supplier"
+msgstr "fournisseur"
+
+#: suppliers/models.py:85
+msgid "suppliers"
+msgstr "fournisseurs"
+
+#: suppliers/models.py:96
+msgid "Data processing agreement"
+msgstr "Accord de traitement des données"
+
+#: suppliers/models.py:97
+msgid "Non-disclosure agreement"
+msgstr "Accord de confidentialité"
+
+#: suppliers/models.py:98
+msgid "Service level agreement"
+msgstr "Accord de niveau de service"
+
+#: suppliers/models.py:111
+msgid "security requirements"
+msgstr "exigences de sécurité"
+
+#: suppliers/models.py:115
+msgid "incident notification"
+msgstr "notification des incidents"
+
+#: suppliers/models.py:117
+msgid "right to audit"
+msgstr "droit d'audit"
+
+#: suppliers/models.py:119
+msgid "subcontracting rules"
+msgstr "règles de sous-traitance"
+
+#: suppliers/models.py:121
+msgid "exit and data return"
+msgstr "réversibilité et restitution des données"
+
+#: suppliers/models.py:128
+msgid "agreement"
+msgstr "accord"
+
+#: suppliers/models.py:129
+msgid "agreements"
+msgstr "accords"
+
+#: suppliers/models.py:152
+msgid "Questionnaire"
+msgstr "Questionnaire"
+
+#: suppliers/models.py:154
+msgid "Certificate review"
+msgstr "Revue de certificat"
+
+#: suppliers/models.py:155
+msgid "Service review meeting"
+msgstr "Réunion de revue de service"
+
+#: suppliers/models.py:159
+msgid "Approved with conditions"
+msgstr "Approuvé sous conditions"
+
+#: suppliers/models.py:176
+msgid "assessor"
+msgstr "évaluateur"
+
+#: suppliers/models.py:190
+msgid "next assessment on"
+msgstr "prochaine évaluation le"
+
+#: suppliers/models.py:195
+msgid "assessment"
+msgstr "évaluation"
+
+#: suppliers/models.py:196
+msgid "assessments"
+msgstr "évaluations"
+
+#: suppliers/resources.py:54
+msgid "Agreements"
+msgstr "Accords"
+
+#: suppliers/resources.py:63
+msgid ""
+"Suppliers, the data they reach, their agreements and assessments "
+"(A.5.19-5.23)."
+msgstr ""
+"Les fournisseurs, les données auxquelles ils accèdent, leurs accords et "
+"leurs évaluations (A.5.19-5.23)."
+
+#: suppliers/resources.py:114
+msgid "Cloud services"
+msgstr "Services cloud"
+
+#: suppliers/resources.py:136
+msgid "Relationship"
+msgstr "Relation"
+
+#: suppliers/resources.py:176
+msgid "Last assessment"
+msgstr "Dernière évaluation"
+
+#: suppliers/resources.py:197
+msgid "Supplier agreements and their security clauses (A.5.20)."
+msgstr "Les accords fournisseurs et leurs clauses de sécurité (A.5.20)."
+
+#: suppliers/resources.py:211
+msgid "Security clauses"
+msgstr "Clauses de sécurité"
+
+#: suppliers/resources.py:222
+msgid "Clauses signed"
+msgstr "Clauses signées"
+
+#: suppliers/resources.py:232
+msgid "Supplier assessments and reviews (A.5.21, A.5.22)."
+msgstr "Évaluations et revues des fournisseurs (A.5.21, A.5.22)."
+
+#: vulnerabilities/apps.py:11
+msgid "Vulnerabilities"
+msgstr "Vulnérabilités"
+
+#: vulnerabilities/models.py:51
+msgid "Scanner"
+msgstr "Scanner"
+
+#: vulnerabilities/models.py:52
+msgid "Security advisory"
+msgstr "Bulletin de sécurité"
+
+#: vulnerabilities/models.py:53
+msgid "Penetration test"
+msgstr "Test d'intrusion"
+
+#: vulnerabilities/models.py:54
+msgid "Reported by someone"
+msgstr "Signalée par quelqu'un"
+
+#: vulnerabilities/models.py:59
+msgid "Being fixed"
+msgstr "En correction"
+
+#: vulnerabilities/models.py:60
+msgid "Fixed"
+msgstr "Corrigée"
+
+#: vulnerabilities/models.py:61
+msgid "Risk accepted"
+msgstr "Risque accepté"
+
+#: vulnerabilities/models.py:62
+msgid "False positive"
+msgstr "Faux positif"
+
+#: vulnerabilities/models.py:69
+msgid "identifier"
+msgstr "identifiant"
+
+#: vulnerabilities/models.py:72
+msgid "CVE, GHSA or the scanner's own."
+msgstr "CVE, GHSA ou celui du scanner."
+
+#: vulnerabilities/models.py:85
+msgid "CVSS score"
+msgstr "score CVSS"
+
+#: vulnerabilities/models.py:97
+msgid "Worked out from the CVSS score when left empty."
+msgstr "Déduite du score CVSS si laissée vide."
+
+#: vulnerabilities/models.py:100
+msgid "discovered on"
+msgstr "découverte le"
+
+#: vulnerabilities/models.py:103
+msgid "fix by"
+msgstr "à corriger avant le"
+
+#: vulnerabilities/models.py:106
+msgid "Worked out from the severity when left empty."
+msgstr "Déduite de la gravité si laissée vide."
+
+#: vulnerabilities/models.py:119
+msgid "remediation"
+msgstr "correction"
+
+#: vulnerabilities/models.py:120
+msgid "fixed on"
+msgstr "corrigée le"
+
+#: vulnerabilities/models.py:125
+msgid "vulnerabilities"
+msgstr "vulnérabilités"
+
+#: vulnerabilities/resources.py:48
+msgid "Technical vulnerabilities, their severity and deadline (A.8.8)."
+msgstr "Les vulnérabilités techniques, leur gravité et leur échéance (A.8.8)."
+
+#: vulnerabilities/resources.py:90
+msgid "Severity"
+msgstr "Gravité"
+
+#: vulnerabilities/resources.py:94
+msgid "Remediation"
+msgstr "Correction"
+
+#: vulnerabilities/resources.py:110
+msgid "By severity"
+msgstr "Par gravité"
+
+#: vulnerabilities/resources.py:116
+msgid "Discovered"
+msgstr "Découvertes"
+
+#: vulnerabilities/resources.py:161
+msgid "Mark fixed"
+msgstr "Marquer corrigée"
+
+#: vulnerabilities/resources.py:164
+msgid "Mark the selected vulnerabilities fixed today?"
+msgstr ""
+"Marquer les vulnérabilités sélectionnées comme corrigées aujourd'hui ?"
+
+#: vulnerabilities/resources.py:165
+msgid "Records the fix with today's date."
+msgstr "Enregistre la correction à la date du jour."
+
+#: vulnerabilities/resources.py:174
+#, python-format
+msgid "%(count)s vulnerability fixed."
+msgid_plural "%(count)s vulnerabilities fixed."
+msgstr[0] "%(count)s vulnérabilité corrigée."
+msgstr[1] "%(count)s vulnérabilités corrigées."

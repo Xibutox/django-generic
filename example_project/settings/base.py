@@ -227,6 +227,20 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     # --- this example ---
     "example",
+    # --- the ISO 27001 apps (iso/README.md) ---
+    "iso",
+    "iso.isms",
+    "iso.assets",
+    "iso.compliance",
+    "iso.risks",
+    "iso.suppliers",
+    "iso.incidents",
+    "iso.vulnerabilities",
+    "iso.changes",
+    "iso.continuity",
+    "iso.audits",
+    "iso.people",
+    "iso.access_reviews",
 ]
 
 # --- optional: schedules, managed from the Tasks group ---

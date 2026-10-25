@@ -432,6 +432,37 @@ assembles a standalone folder: the logbook, the framework's wheel in
 `vendor/`, the Dockerfile, compose (PostgreSQL, gunicorn with
 WhiteNoise, a `sync_kpi` loop) and the export script.
 
+`iso/` holds twelve reusable apps for an ISO/IEC 27001 ISMS
+(`iso/README.md`), not a project: the example project and
+`tests/settings.py` install them all. `iso` (`iso/common.py`: the
+navigation groups `GROUP_*`, colours, `Severity`, `Classification`,
+`number()` over `generic.numbering`, `next_year`; `iso/demo.py`
+`create_users()` + idempotent `seed()` returning one record per model,
+used by `seed_iso` and by `tests/test_pages.py`; the one French catalog
+`iso/locale`). Apps, label = last part: `isms` (Scope, ContextIssue,
+InterestedParty, Objective + Measurement, Policy + Acknowledgement -
+*Acknowledge* action, view permission - Contact, ManagementReview +
+ReviewAction), `assets` (Asset ASSET-0001 with C/I/A 1-3, Assignment,
+Maintenance, Disposal), `compliance` (Control: the 93 Annex A controls
+of `catalogue.py`, loaded by migration 0002, no add/delete;
+ControlEvidence; Obligation), `risks` (Risk RISK-0001, score =
+likelihood x impact stored with its level, residual, *Accept* needs
+`risks.accept_risk`; TreatmentAction; heatmap chart, board),
+`suppliers` (Supplier, Agreement, Assessment), `incidents` (Incident
+INC-{year}-0001, `notification_due` 72 h for a breach, IncidentUpdate,
+Evidence with SHA-256 and `access_log`), `vulnerabilities`
+(Vulnerability VUL-0001, severity from CVSS, `due_on` from
+`ISO_VULNERABILITY_DAYS`), `changes` (ChangeRequest CHG-0001, actions
+by step, `changes.approve_changerequest`, never one's own; calendar),
+`continuity` (Service with RTO/RPO/MTPD, ContinuityPlan, Exercise with
+`target_met`), `audits` (Audit AUD-{year}-01, Nonconformity NC-0001,
+CorrectiveAction verified by someone other than its owner),
+`people` (Course, TrainingRecord with `expires_on`, PersonnelFile with
+`missing_steps`), `access_reviews` (AccessReview `collect()`,
+AccessReviewItem decisions; *Apply* deactivates, never one's own
+account, a superuser only by a superuser). Kept working by
+`tests/test_iso.py`.
+
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
 helpers `env`, `env_bool`, `env_int`, `env_list`, `env_required`,

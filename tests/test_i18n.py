@@ -94,7 +94,7 @@ class TestCompiledCatalogs:
 
         return sorted(
             path
-            for directory in ("generic", "example")
+            for directory in ("generic", "example", "iso")
             for path in (repository / directory / "locale").rglob("*.po")
         )
 
