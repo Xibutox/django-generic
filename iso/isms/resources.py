@@ -13,6 +13,7 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db.models import Avg, Count, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
@@ -328,11 +329,14 @@ class PolicyResource(ModelResource):
             super()
             .get_list_queryset(request)
             .annotate(
-                acknowledged_count=Subquery(
-                    current.order_by()
-                    .values("policy")
-                    .annotate(total=Count("pk"))
-                    .values("total")[:1]
+                acknowledged_count=Coalesce(
+                    Subquery(
+                        current.order_by()
+                        .values("policy")
+                        .annotate(total=Count("pk"))
+                        .values("total")[:1]
+                    ),
+                    0,
                 )
             )
         )

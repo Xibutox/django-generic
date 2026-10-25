@@ -92,6 +92,15 @@ everything, record audits and findings).
 ### Settings
 
 ```python
+# One OpenAPI name per choice set, so `check --deploy` stays quiet.
+from iso.openapi import ENUM_NAME_OVERRIDES as ISO_ENUMS
+
+SPECTACULAR_SETTINGS = {
+    # ...
+    "ENUM_NAME_OVERRIDES": {**ISO_ENUMS},
+}
+
+
 # Days to fix a vulnerability, by severity (default 7, 30, 90, 180).
 ISO_VULNERABILITY_DAYS = {"critical": 3, "high": 15}
 ```
