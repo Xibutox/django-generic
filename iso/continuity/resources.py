@@ -44,6 +44,7 @@ class ServiceResource(ModelResource):
     icon = "dns"
     group = GROUP_CONTINUITY
     order = 1
+    custom_fields = True
     description = _(
         "Business impact analysis: what each service can bear " "(A.5.30)."
     )

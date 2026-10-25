@@ -55,6 +55,7 @@ class IncidentResource(ModelResource):
     icon = "crisis_alert"
     group = GROUP_OPERATIONS
     order = 0
+    custom_fields = True
     description = _(
         "Security events and incidents, their response and lessons "
         "(A.5.24-5.28, A.6.8)."

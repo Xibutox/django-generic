@@ -53,6 +53,7 @@ class AssetResource(ModelResource):
     icon = "inventory_2"
     group = GROUP_ASSETS
     order = 0
+    custom_fields = True
     description = _(
         "Every asset, its owner, classification and holder (A.5.9-5.13)."
     )

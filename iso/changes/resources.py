@@ -64,6 +64,7 @@ class ChangeRequestResource(ModelResource):
     icon = "published_with_changes"
     group = GROUP_OPERATIONS
     order = 3
+    custom_fields = True
     description = _(
         "Changes to systems: risk, tests, rollback, approval, review "
         "(A.8.32)."

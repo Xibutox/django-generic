@@ -139,6 +139,21 @@ What an auditor checks was kept, not only written down:
 - **Continuity**: an exercise compares the recovery time and data loss
   achieved with the service's RTO and RPO.
 
+## Custom fields
+
+The main record of each app is open to
+[custom fields](../docs/custom-fields.md) (`custom_fields = True`):
+policies, assets, controls, risks, suppliers, incidents,
+vulnerabilities, change requests, services, nonconformities and
+personnel files. Whoever holds `<app>.customize_<model>` - the
+*Security officers* do - adds fields from the list's *Customize
+fields*, without a migration: a ticket number on a change request, an
+insurance value on an asset, a contract owner on a supplier. Their
+values are versioned with the record, so the audit trail covers them
+too. `seed_iso` adds two: *Warranty ends* on the assets and *Where the
+data is kept* (a choice) on the suppliers. A project turns them off
+with `CUSTOM_FIELDS = False`.
+
 ## What the apps do not do
 
 They hold records and enforce the rules above; the ISMS stays the

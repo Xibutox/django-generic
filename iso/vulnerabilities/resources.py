@@ -44,6 +44,7 @@ class VulnerabilityResource(ModelResource):
     icon = "bug_report"
     group = GROUP_OPERATIONS
     order = 2
+    custom_fields = True
     description = _(
         "Technical vulnerabilities, their severity and deadline (A.8.8)."
     )

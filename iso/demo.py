@@ -120,6 +120,7 @@ def seed(users: dict[str, Any] | None = None) -> dict[str, Any]:
         if installed(app):
             build(users, records, today)
     records.pop("_assets", None)
+    seed_custom_fields()
     return records
 
 
@@ -1316,3 +1317,91 @@ def seed_access_reviews(
             item.save()
     records["access_reviews.accessreview"] = review
     records["access_reviews.accessreviewitem"] = review.items.first()
+
+
+# -- Custom fields -------------------------------------------------------
+
+#: model, key, definition; what a security officer adds from a list's
+#: *Customize fields* (docs/custom-fields.md).
+CUSTOM_FIELDS = (
+    (
+        "assets.asset",
+        "warranty_ends",
+        {
+            "type": "date",
+            "labels": {"en": "Warranty ends", "fr": "Fin de garantie"},
+            "help_texts": {
+                "en": "The last day the vendor repairs it for free.",
+                "fr": "Le dernier jour où le fournisseur le répare "
+                "gratuitement.",
+            },
+            "position": 10,
+        },
+    ),
+    (
+        "suppliers.supplier",
+        "data_location",
+        {
+            "type": "choice",
+            "labels": {
+                "en": "Where the data is kept",
+                "fr": "Lieu des données",
+            },
+            "choices": (
+                "eu | European Union | fr: Union européenne | #2563eb\n"
+                "us | United States | fr: États-Unis | #d97706\n"
+                "other | Elsewhere | fr: Ailleurs | #6b7280"
+            ),
+            "position": 10,
+        },
+    ),
+)
+
+
+def seed_custom_fields() -> None:
+    """Two custom fields and their values: an asset's warranty end and
+    where a supplier keeps the data.
+
+    Only on the models whose resource is open to custom fields and
+    installed; found again by key, so a second run changes nothing.
+    """
+    from django.apps import apps
+    from django.contrib.contenttypes.models import ContentType
+
+    from generic.customfields.definitions import is_enabled
+    from generic.customfields.models import CustomField
+    from generic.customfields.values import load, write
+    from generic.sites import site
+
+    for label, key, defaults in CUSTOM_FIELDS:
+        app_label, model_name = label.split(".")
+
+        if not installed(app_label):
+            continue
+
+        model = apps.get_model(app_label, model_name)
+        resource = site.get_resource(model)
+
+        if resource is None or not is_enabled(resource):
+            continue
+
+        CustomField.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(model),
+            key=key,
+            defaults=defaults,
+        )
+
+        for index, obj in enumerate(model.objects.order_by("pk")):
+            if load(resource, obj).get(key) is not None:
+                continue
+
+            if key == "warranty_ends":
+                if not obj.acquired_on:
+                    continue
+                value: Any = obj.acquired_on.replace(
+                    year=obj.acquired_on.year + 3, day=1
+                )
+            else:
+                value = ("eu", "us", "eu", "other")[index % 4]
+
+            write(resource, obj, {key: value})

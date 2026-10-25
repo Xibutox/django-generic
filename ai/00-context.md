@@ -467,8 +467,11 @@ CorrectiveAction verified by someone other than its owner),
 `people` (Course, TrainingRecord with `expires_on`, PersonnelFile with
 `missing_steps`), `access_reviews` (AccessReview `collect()`,
 AccessReviewItem decisions; *Apply* deactivates, never one's own
-account, a superuser only by a superuser). Kept working by
-`tests/test_iso.py`.
+account, a superuser only by a superuser). The main record of each
+app but access reviews has `custom_fields = True` (§5.27; the
+*Security officers* get the `customize_*` permissions; `seed()` adds
+*Warranty ends* on Asset, *Where the data is kept* on Supplier). Kept
+working by `tests/test_iso.py`.
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env

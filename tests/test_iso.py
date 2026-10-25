@@ -337,6 +337,161 @@ def test_the_demo_data_is_seeded_once():
     assert sorted(records) == sorted(models)
 
 
+# -- Custom fields -------------------------------------------------------
+
+#: The ISO resources open to custom fields (docs/custom-fields.md).
+CUSTOMIZABLE = (
+    "isms.policy",
+    "assets.asset",
+    "compliance.control",
+    "risks.risk",
+    "suppliers.supplier",
+    "incidents.incident",
+    "vulnerabilities.vulnerability",
+    "changes.changerequest",
+    "continuity.service",
+    "audits.nonconformity",
+    "people.personnelfile",
+)
+
+
+def custom_field(model, key: str, kind: str = "text", **options):
+    from django.contrib.contenttypes.models import ContentType
+
+    from generic.customfields.models import CustomField
+
+    options.setdefault("labels", {"en": key.replace("_", " ").title()})
+    return CustomField.objects.create(
+        content_type=ContentType.objects.get_for_model(model),
+        key=key,
+        type=kind,
+        **options,
+    )
+
+
+@pytest.mark.parametrize("label", CUSTOMIZABLE)
+def test_the_main_records_are_open_to_custom_fields(label):
+    from django.apps import apps
+
+    from generic.customfields.definitions import (
+        is_enabled,
+        permission_codename,
+    )
+    from generic.sites import site
+    from iso import demo
+
+    model = apps.get_model(label)
+    resource = site.get_resource(model)
+
+    assert is_enabled(resource)
+    assert resource.history, "custom values are versioned (generic.W013)"
+    codename = permission_codename(model)
+    assert Permission.objects.filter(
+        content_type__app_label=model._meta.app_label, codename=codename
+    ).exists()
+    # The security officers manage the fields, the auditors do not.
+    demo.create_users()
+    app_label = model._meta.app_label
+    assert (
+        get_user_model()
+        .objects.get(username="ciso")
+        .has_perm(f"{app_label}.{codename}")
+    )
+    assert (
+        not get_user_model()
+        .objects.get(username="auditor")
+        .has_perm(f"{app_label}.{codename}")
+    ) or app_label == "audits"
+
+
+def test_a_custom_value_goes_through_save_model():
+    """A resource whose ``save_model`` adds its own values (the
+    requester of a change) still writes the custom ones."""
+    from generic.history.models import HistoryEntry
+    from iso.changes.models import ChangeRequest
+
+    custom_field(ChangeRequest, "ticket", labels={"en": "Ticket"})
+    requester = person("requester", "changes")
+    client = client_for(requester)
+    created = client.post(
+        "/api/changes/changerequest/",
+        json.dumps(
+            {
+                "title": "Upgrade the database",
+                "description": "PostgreSQL 17",
+                "category": "infrastructure",
+                "cf_ticket": "OPS-42",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert created.status_code == 201, created.content
+    change = ChangeRequest.objects.get()
+    assert change.requested_by == requester
+    assert created.json()["cf_ticket"] == "OPS-42"
+
+    changed = client.patch(
+        f"/api/changes/changerequest/{change.pk}/",
+        json.dumps({"cf_ticket": "OPS-43"}),
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.content
+    entry = HistoryEntry.objects.of(change).order_by("-version").first()
+    assert entry.values["cf:ticket"] == "OPS-43"
+
+
+def test_a_risk_list_filters_on_a_custom_field():
+    from generic.customfields.values import write
+    from generic.sites import site
+    from iso.risks.models import Risk
+
+    custom_field(Risk, "exposure", "decimal", decimal_places=2, unit="k€")
+    common = {
+        "category": "availability",
+        "threat": "Ransomware",
+        "vulnerability": "No patching",
+        "likelihood": 3,
+        "impact": 3,
+    }
+    high = Risk.objects.create(title="High", **common)
+    low = Risk.objects.create(title="Low", **common)
+    resource = site.get_resource(Risk)
+    write(resource, high, {"exposure": Decimal("250")})
+    write(resource, low, {"exposure": Decimal("5")})
+
+    client = client_for(person("officer", "risks"))
+    response = client.get(
+        "/api/risks/risk/",
+        {
+            "draw": 1,
+            "length": 100,
+            "advanced_filters": json.dumps(
+                {"cf_exposure": {"operator": "greater_than", "value": 100}}
+            ),
+        },
+    )
+    assert response.status_code == 200, response.content
+    titles = [row["title"] for row in response.json()["data"]]
+    assert titles == ["High"]
+
+
+def test_the_demo_seeds_custom_fields_once():
+    from generic.customfields.models import CustomField, CustomValue
+    from iso import demo
+
+    demo.seed()
+    counts = (CustomField.objects.count(), CustomValue.objects.count())
+    demo.seed()
+
+    assert (
+        CustomField.objects.count(),
+        CustomValue.objects.count(),
+    ) == counts
+    keys = set(CustomField.objects.values_list("key", flat=True))
+    assert {"warranty_ends", "data_location"} <= keys
+    assert counts[1] > 0
+
+
 def test_the_apps_speak_french():
     from django.utils import translation
 

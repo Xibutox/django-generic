@@ -128,6 +128,7 @@ class NonconformityResource(ModelResource):
     icon = "report"
     group = GROUP_AUDITS
     order = 1
+    custom_fields = True
     description = _(
         "Nonconformities from audits, incidents and reviews, and their "
         "causes (10.2)."

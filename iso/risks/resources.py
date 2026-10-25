@@ -72,6 +72,7 @@ class RiskResource(ModelResource):
     icon = "warning"
     group = GROUP_RISKS
     order = 0
+    custom_fields = True
     description = _(
         "Risks to the assets: rating, owner, treatment, residual risk "
         "(6.1.2, 6.1.3, 8.2, 8.3)."

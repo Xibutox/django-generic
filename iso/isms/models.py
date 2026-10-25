@@ -381,7 +381,7 @@ class ManagementReview(models.Model):
         blank=True,
         related_name="+",
     )
-    attendees = models.ManyToManyField(
+    attendees: models.ManyToManyField = models.ManyToManyField(
         USER, verbose_name=_("attendees"), blank=True, related_name="+"
     )
     inputs = models.TextField(

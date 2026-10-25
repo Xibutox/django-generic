@@ -278,6 +278,7 @@ class PolicyResource(ModelResource):
     icon = "policy"
     group = GROUP_ISMS
     order = 4
+    custom_fields = True
     description = _(
         "Policies, their approval and review, and who read them (A.5.1)."
     )

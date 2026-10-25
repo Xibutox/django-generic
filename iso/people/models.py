@@ -197,7 +197,7 @@ class PersonnelFile(models.Model):
 
     def missing(self, steps: tuple[str, ...]) -> list[str]:
         return [
-            str(self._meta.get_field(name).verbose_name)
+            str(getattr(self._meta.get_field(name), "verbose_name", name))
             for name in steps
             if not getattr(self, name)
         ]
@@ -206,7 +206,7 @@ class PersonnelFile(models.Model):
     def missing_steps(self) -> list[str]:
         """What is still to do: the joining steps, and the leaving ones
         once the person is leaving."""
-        steps = self.JOINING_STEPS
+        steps: tuple[str, ...] = self.JOINING_STEPS
         if self.status in (self.Status.LEAVING, self.Status.LEFT):
             steps = steps + self.LEAVING_STEPS
         return self.missing(steps)

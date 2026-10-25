@@ -126,6 +126,7 @@ class PersonnelFileResource(ModelResource):
     icon = "badge"
     group = GROUP_STAFF
     order = 2
+    custom_fields = True
     description = _(
         "Screening, signatures and departure of each person "
         "(A.6.1, A.6.2, A.6.5, A.6.6)."

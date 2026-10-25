@@ -169,3 +169,7 @@ The equipment (`auto(Equipment, ..., custom_fields=True)`) is seeded
 with two fields: *Warranty ends*, a date, and *Colour*, a choice in the
 column selector. Sign in as `admin`, open *Equipment*, then
 *Customize fields*.
+
+The ISO 27001 apps (`iso/README.md`) open the main record of each app
+to custom fields; `seed_iso` adds *Warranty ends* on the assets and
+*Where the data is kept* on the suppliers.

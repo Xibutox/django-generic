@@ -163,7 +163,7 @@ class Exercise(models.Model):
         related_name="exercises",
     )
     held_on = models.DateField(_("held on"), default=timezone.localdate)
-    participants = models.ManyToManyField(
+    participants: models.ManyToManyField = models.ManyToManyField(
         USER,
         verbose_name=_("participants"),
         blank=True,

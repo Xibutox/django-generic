@@ -40,6 +40,7 @@ class ControlResource(ModelResource):
     group = GROUP_RISKS
     order = 2
     label_plural = _("Controls (SoA)")
+    custom_fields = True
     description = _(
         "The 93 Annex A controls: applicability, justification, "
         "implementation - the Statement of Applicability (6.1.3)."

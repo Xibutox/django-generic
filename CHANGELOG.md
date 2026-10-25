@@ -25,7 +25,8 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   and restore tests, audits and corrective actions, training and
   personnel files, access reviews that deactivate revoked accounts.
   French included; `seed_iso` fills them with demo data. The example
-  project installs them all. See iso/README.md.
+  project installs them all. Their main records are open to custom
+  fields. See iso/README.md.
 - Custom fields: `custom_fields = True` on a resource (or
   `auto(..., custom_fields=True)`, or `CustomFields(section=, types=,
   max_fields=, permission=)`) lets the holders of

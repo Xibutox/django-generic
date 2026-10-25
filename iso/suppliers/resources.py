@@ -59,6 +59,7 @@ class SupplierResource(ModelResource):
     icon = "local_shipping"
     group = GROUP_ASSETS
     order = 5
+    custom_fields = True
     description = _(
         "Suppliers, the data they reach, their agreements and "
         "assessments (A.5.19-5.23)."
