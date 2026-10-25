@@ -456,6 +456,22 @@ class TestCustomizing:
 
         assert "Customize fields" in page.content.decode()
 
+    def test_as_a_button_of_the_bar_for_a_holder(self, rf, django_user_model):
+        from generic.customfields.resources import customize_link
+        from generic.sites import site
+
+        request = rf.get("/example/equipment/")
+        request.user = user_with(
+            django_user_model,
+            "designer",
+            "view_equipment",
+            "customize_equipment",
+        )
+        link = customize_link(site.get_resource(Equipment), request)
+
+        assert link.pinned
+        assert link.url.startswith("/generic/customfield/")
+
     def test_not_without_the_permission(self, client, django_user_model):
         client.force_login(
             user_with(django_user_model, "reader", "view_equipment")

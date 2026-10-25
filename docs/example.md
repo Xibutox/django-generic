@@ -116,7 +116,7 @@ record.
 ## Things worth trying
 
 **Fields of your own.** As `admin`, open *Equipment*: the *Warranty
-ends* column is a custom field, added from ⋯ → *Customize fields*, not
+ends* column is a custom field, added from its *Customize fields* button, not
 by a developer. Add one there - a *Weight*, a decimal in `kg` with a
 minimum of 0 - and it is in the equipment's form, summary, history and
 column selector at once. *Colour*, a choice, is in the column selector

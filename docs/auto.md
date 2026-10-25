@@ -175,7 +175,7 @@ auto(Equipment, related=("maintenances",), custom_fields=True)
 ```
 
 Whoever holds *Can customize equipment* adds typed fields to the
-equipment from the list's ⋯ menu: a column, a form control, a line of
+equipment from the list's *Customize fields* button: a column, a form control, a line of
 the summary and a part of the history each. See
 [Custom fields](custom-fields.md).
 

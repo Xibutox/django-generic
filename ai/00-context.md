@@ -1965,7 +1965,7 @@ class SupplierResource(ModelResource):
 
 People holding `<app>.customize_<model>` (created after `migrate` on
 the model's content type, `signals.create_permissions`) add fields from
-the list's ⋯ menu *Customize fields* (`customize_link`), a screen of
+the list's *Customize fields* button (`customize_link`, `placement="bar"`, only for holders), a screen of
 the framework's own (`generic.CustomField`, `/generic/customfield/`,
 narrowed to the models the reader may customize). A field: `key`
 (`cf_<key>` in tables, forms and the API; `cf:<key>` in history),

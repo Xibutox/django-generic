@@ -66,7 +66,8 @@ not change is read only, and refused by every write.
 
 ## The fields
 
-*Customize fields* (in the ⋯ menu of the model's list) opens the list
+*Customize fields*, a button of the model's list shown only to whoever
+holds its *customize* permission, opens the list
 of its fields: `/generic/customfield/`, filtered on the model, with the
 filters, exports and history of any list. Its form asks:
 
@@ -166,5 +167,5 @@ everywhere, UUID keys on PostgreSQL.
 
 The equipment (`auto(Equipment, ..., custom_fields=True)`) is seeded
 with two fields: *Warranty ends*, a date, and *Colour*, a choice in the
-column selector. Sign in as `admin`, open *Equipment*, then ⋯ →
+column selector. Sign in as `admin`, open *Equipment*, then
 *Customize fields*.

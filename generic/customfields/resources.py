@@ -825,8 +825,10 @@ def customize_link(resource: Any, request: Any) -> Any:
         url=url,
         label=gettext("Customize fields"),
         icon="dynamic_form",
-        variant="ghost",
-        placement="menu",
+        # A button of the bar, never folded into the menu: only the
+        # holders of the permission are given it at all.
+        variant="default",
+        placement="bar",
     )
 
 
