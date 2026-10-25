@@ -133,6 +133,34 @@ class TestTheDeclaration:
             codename="customize_equipment",
         ).exists()
 
+    def test_making_it_again_saves_nothing_and_sends_nothing(self):
+        # A flush between browser tests runs it under an event loop: a
+        # post_save there would publish an event and fail.
+        from django.apps import apps
+        from django.db.models.signals import post_save
+
+        from generic.customfields.signals import create_permissions
+
+        Permission.objects.filter(codename="customize_equipment").delete()
+        sent = []
+
+        def heard(sender, **kwargs):
+            sent.append(sender)
+
+        post_save.connect(heard, sender=Permission)
+
+        try:
+            for _again in range(2):
+                create_permissions(apps.get_app_config("generic"))
+        finally:
+            post_save.disconnect(heard, sender=Permission)
+
+        assert sent == []
+        assert (
+            Permission.objects.filter(codename="customize_equipment").count()
+            == 1
+        )
+
 
 class TestTheDefinition:
     def test_labels_follow_the_language(self, warranty):

@@ -66,29 +66,46 @@ def create_permissions(
 
     from generic.sites import site
 
+    wanted = []
+
     for resource in enabled_resources(site):
         declared = declaration(resource)
 
         if declared is None or declared.permission:
             continue
 
-        model = resource.model
+        wanted.append(resource.model)
 
-        try:
-            content_type = ContentType.objects.db_manager(using).get_for_model(
-                model, for_concrete_model=False
-            )
-            Permission.objects.db_manager(using).get_or_create(
-                content_type=content_type,
-                codename=permission_codename(model),
-                defaults={
-                    "name": (f"Can customize {model._meta.verbose_name_raw}")[
-                        :255
-                    ]
-                },
-            )
-        except DatabaseError:  # pragma: no cover - tables not there yet
-            return
+    if not wanted:
+        return
+
+    manager = Permission.objects.db_manager(using)
+
+    try:
+        types = ContentType.objects.db_manager(using).get_for_models(
+            *wanted, for_concrete_models=False
+        )
+        held = set(
+            manager.filter(
+                content_type__in=types.values(),
+                codename__startswith="customize_",
+            ).values_list("content_type", "codename")
+        )
+        # bulk_create, like Django's own: no post_save, so nothing is
+        # published from a migrate or a test's flush.
+        manager.bulk_create(
+            [
+                Permission(
+                    content_type=types[model],
+                    codename=permission_codename(model),
+                    name=f"Can customize {model._meta.verbose_name_raw}"[:255],
+                )
+                for model in wanted
+                if (types[model].pk, permission_codename(model)) not in held
+            ]
+        )
+    except DatabaseError:  # pragma: no cover - tables not there yet
+        return
 
 
 __all__ = ["connect", "create_permissions", "disconnect"]
