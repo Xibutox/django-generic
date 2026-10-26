@@ -102,11 +102,32 @@ jobs:
           if [ -n "${{ matrix.django }}" ]; then uv pip install "Django==${{ matrix.django }}"; fi
           if [ -n "${{ matrix.drf }}" ]; then uv pip install "djangorestframework==${{ matrix.drf }}"; fi
           python -c "import django, rest_framework; print('Django', django.get_version(), 'DRF', rest_framework.VERSION)"
-      - run: pytest --cov=generic --cov-report=xml --cov-fail-under=80 --junitxml=junit.xml
+      - run: pytest --cov=generic --cov-report=xml --cov-report=html --cov-fail-under=80 --junitxml=junit.xml
       - name: Failures as annotations
         # Readable on the run's page by anyone, without opening the log.
         if: failure()
         run: python scripts/ci_annotations.py junit.xml
+      - name: Test statistics and coverage, in the job's summary
+        if: ${{ !cancelled() }}
+        run: >-
+          python scripts/ci_report.py
+          --title "Tests, Python ${{ matrix.python-version }}, Django ${{ matrix.django || 'newest' }}"
+          --junit "Python ${{ matrix.python-version }}=junit.xml"
+          --coverage coverage.xml --json test-report.json
+          >> "$GITHUB_STEP_SUMMARY"
+      - name: Coverage and test reports, to download
+        # htmlcov/index.html: the coverage, file by file, line by line.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-python-${{ matrix.python-version }}
+          path: |
+            junit.xml
+            coverage.xml
+            htmlcov/
+            test-report.json
+          retention-days: 30
+          if-no-files-found: ignore
 
   integration:
     name: Tests against Postgres ${{ matrix.postgres }} and Redis
@@ -154,6 +175,21 @@ jobs:
       - name: Failures as annotations
         if: failure()
         run: python scripts/ci_annotations.py junit.xml
+      - name: Test statistics, in the job's summary
+        if: ${{ !cancelled() }}
+        run: >-
+          python scripts/ci_report.py
+          --title "Tests against Postgres ${{ matrix.postgres }} and Redis"
+          --junit "Postgres ${{ matrix.postgres }}=junit.xml"
+          >> "$GITHUB_STEP_SUMMARY"
+      - name: Test report, to download
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-postgres-${{ matrix.postgres }}
+          path: junit.xml
+          retention-days: 30
+          if-no-files-found: ignore
 
   browser:
     name: Browser tests
@@ -171,13 +207,61 @@ jobs:
         run: python -m playwright install --with-deps chromium
       - name: The example, driven through Chromium
         # Opt-in: a plain pytest deselects them (-m "not browser").
-        run: pytest tests/browser -m browser --no-cov -p no:cacheprovider --screenshot only-on-failure --output test-results/browser
+        run: pytest tests/browser -m browser --no-cov -p no:cacheprovider --screenshot only-on-failure --output test-results/browser --junitxml=junit.xml
+      - name: Test statistics, in the job's summary
+        if: ${{ !cancelled() }}
+        run: >-
+          python scripts/ci_report.py --title "Browser tests"
+          --junit "Browser=junit.xml" >> "$GITHUB_STEP_SUMMARY"
+      - name: Test report, to download
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-browser
+          path: junit.xml
+          retention-days: 30
+          if-no-files-found: ignore
       - name: Screenshots of what failed
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: browser-test-results
           path: test-results/
+
+  test-report:
+    name: Test report, every run together
+    # One table for the whole pipeline: each run's counts and time, the
+    # suite's areas, the slowest tests, the coverage of the newest
+    # Python. Also after a failure: that is when it is read.
+    needs: [test, integration, browser]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: test-results-*
+          path: results
+      - name: The report, in the run's summary
+        run: |
+          args=()
+          for report in results/test-results-*/junit.xml; do
+            [ -e "$report" ] || continue
+            run="$(basename "$(dirname "$report")")"
+            args+=(--junit "${run#test-results-}=$report")
+          done
+          python scripts/ci_report.py --title "Test report" "${args[@]}" \
+            --coverage results/test-results-python-3.13/coverage.xml \
+            --json test-report.json | tee test-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: |
+            test-report.md
+            test-report.json
 
   package:
     name: Package, installed as a user installs it
