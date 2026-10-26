@@ -13,6 +13,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Document versions in the minimal example's products: a document keeps
+  every file it has had, numbered 1, 2, 3..., on a *Versions* tab with
+  a change note each; its download gives the latest. See
+  minimal/README.md.
 - ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
   hold the records of an information security management system -
   the ISMS itself (scope, context, interested parties, objectives,
