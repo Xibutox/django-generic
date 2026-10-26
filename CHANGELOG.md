@@ -13,6 +13,18 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- ISO apps: six policies and procedures in English and French,
+  `iso/documents/` - access control and user access management (how
+  accounts, groups and permissions really work in django-generic),
+  backup and restore, logging and monitoring, change management,
+  incident management, vulnerability management - written from the
+  code, with what the organisation fills in left in brackets.
+  `seed_iso` attaches them to the demo policies (`--language fr` for
+  the French ones); a test checks that every permission they name
+  exists.
+- ISO change requests: *Failed, rolled back*, the step that records a
+  change undone after approval or implementation; the status had no
+  button reaching it.
 - ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
   hold the records of an information security management system -
   the ISMS itself (scope, context, interested parties, objectives,

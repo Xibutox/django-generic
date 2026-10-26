@@ -3537,3 +3537,15 @@ msgid "%(count)s vulnerability fixed."
 msgid_plural "%(count)s vulnerabilities fixed."
 msgstr[0] "%(count)s vulnérabilité corrigée."
 msgstr[1] "%(count)s vulnérabilités corrigées."
+
+#: changes/resources.py
+msgid "Record that the selected changes failed and were undone?"
+msgstr "Enregistrer que les changements sélectionnés ont échoué et ont été annulés ?"
+
+#: changes/resources.py
+msgid ""
+"Records that the change failed and was rolled back; say what happened in "
+"the review."
+msgstr ""
+"Enregistre que le changement a échoué et a été annulé ; dites ce qui s'est "
+"passé dans la revue."
