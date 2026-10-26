@@ -18,7 +18,9 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   per area of the suite, the slowest tests, coverage in total, per
   package and for the least covered files - and keeps its JUnit and
   coverage reports (HTML included) as artifacts; a *Test report* job
-  gathers every run in one table. `scripts/ci_report.py` writes it,
+  gathers every run in one table, with the coverage of SQLite and
+  Postgres combined (the history triggers and full-text search run on
+  Postgres only). `scripts/ci_report.py` writes it,
   on GitLab too. See docs/testing.md.
 - ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
   hold the records of an information security management system -

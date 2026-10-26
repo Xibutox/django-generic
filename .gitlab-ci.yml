@@ -185,11 +185,17 @@ integration:
     DATABASE_URL: "postgres://generic:generic@postgres:5432/generic"
     REDIS_URL: "redis://redis:6379/0"
   script:
-    - pytest -q --no-cov --junitxml=report.xml
+    # Measured here too: the history triggers and the full-text search
+    # run on Postgres only. GitLab merges it with the matrix's coverage
+    # in the merge request's diff.
+    - pytest -q --cov=generic --cov-report=xml --junitxml=report.xml
   artifacts:
     when: always
     reports:
       junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 # -- package ------------------------------------------------------------
 

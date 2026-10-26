@@ -103,6 +103,9 @@ jobs:
           if [ -n "${{ matrix.drf }}" ]; then uv pip install "djangorestframework==${{ matrix.drf }}"; fi
           python -c "import django, rest_framework; print('Django', django.get_version(), 'DRF', rest_framework.VERSION)"
       - run: pytest --cov=generic --cov-report=xml --cov-report=html --cov-fail-under=80 --junitxml=junit.xml
+        env:
+          # The raw data too, for the Test report job to combine.
+          COVERAGE_FILE: coverage.data
       - name: Failures as annotations
         # Readable on the run's page by anyone, without opening the log.
         if: failure()
@@ -124,6 +127,7 @@ jobs:
           path: |
             junit.xml
             coverage.xml
+            coverage.data
             htmlcov/
             test-report.json
           retention-days: 30
@@ -171,23 +175,31 @@ jobs:
         with:
           enable-cache: true
       - run: uv pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,dev]"
-      - run: pytest -q --no-cov --junitxml=junit.xml
+      - run: pytest -q --cov=generic --cov-report=xml --junitxml=junit.xml
+        env:
+          # Measured here too: the history triggers and the full-text
+          # search run on Postgres only, never in the SQLite matrix.
+          COVERAGE_FILE: coverage.data
       - name: Failures as annotations
         if: failure()
         run: python scripts/ci_annotations.py junit.xml
-      - name: Test statistics, in the job's summary
+      - name: Test statistics and coverage, in the job's summary
         if: ${{ !cancelled() }}
         run: >-
           python scripts/ci_report.py
           --title "Tests against Postgres ${{ matrix.postgres }} and Redis"
           --junit "Postgres ${{ matrix.postgres }}=junit.xml"
+          --coverage coverage.xml
           >> "$GITHUB_STEP_SUMMARY"
-      - name: Test report, to download
+      - name: Test and coverage reports, to download
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: test-results-postgres-${{ matrix.postgres }}
-          path: junit.xml
+          path: |
+            junit.xml
+            coverage.xml
+            coverage.data
           retention-days: 30
           if-no-files-found: ignore
 
@@ -231,8 +243,9 @@ jobs:
   test-report:
     name: Test report, every run together
     # One table for the whole pipeline: each run's counts and time, the
-    # suite's areas, the slowest tests, the coverage of the newest
-    # Python. Also after a failure: that is when it is read.
+    # suite's areas, the slowest tests, and the coverage of SQLite
+    # (Python 3.13) and Postgres combined - some code runs on one
+    # database only. Also after a failure: that is when it is read.
     needs: [test, integration, browser]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -245,6 +258,20 @@ jobs:
         with:
           pattern: test-results-*
           path: results
+      - name: Coverage of every database, combined
+        # Same checkout path on every runner: the data combine as is.
+        run: |
+          pip install -c requirements/constraints.txt coverage
+          files=()
+          for data in results/test-results-python-3.13/coverage.data \
+                      results/test-results-postgres-*/coverage.data; do
+            if [ -e "$data" ]; then files+=("$data"); fi
+          done
+          if [ "${#files[@]}" -gt 0 ]; then
+            coverage combine --keep "${files[@]}"
+            coverage xml -o coverage.xml
+            coverage html -d htmlcov
+          fi
       - name: The report, in the run's summary
         run: |
           args=()
@@ -254,7 +281,7 @@ jobs:
             args+=(--junit "${run#test-results-}=$report")
           done
           python scripts/ci_report.py --title "Test report" "${args[@]}" \
-            --coverage results/test-results-python-3.13/coverage.xml \
+            --coverage coverage.xml \
             --json test-report.json | tee test-report.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
@@ -262,6 +289,8 @@ jobs:
           path: |
             test-report.md
             test-report.json
+            coverage.xml
+            htmlcov/
 
   package:
     name: Package, installed as a user installs it
