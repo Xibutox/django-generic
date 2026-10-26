@@ -115,6 +115,16 @@ record.
 
 ## Things worth trying
 
+**Forgetting someone (GDPR).** `python manage.py personal_data
+inventory` lists where personal data lives: the fields declared, the
+ones that look personal and are not (the suppliers' phone), every row
+pointing at an account. `personal_data export --user viewer` prints
+everything kept about Camille Rousseau - the account, and the agent
+sharing that address. `personal_data anonymize --user viewer --dry-run`
+says what would go; without `--dry-run`, open the agent's *History*
+tab afterwards: the name is gone from every version. As `admin`, the
+*Agents* list's selection offers *Anonymize*; as `viewer` it does not.
+
 **Fields of your own.** As `admin`, open *Equipment*: the *Warranty
 ends* column is a custom field, added from its *Customize fields* button, not
 by a developer. Add one there - a *Weight*, a decimal in `kg` with a

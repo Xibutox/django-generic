@@ -14,7 +14,9 @@ class Command(BaseCommand):
     help = (
         "Delete the history, access log and notifications older than "
         "GENERIC's HISTORY_RETENTION_DAYS, ACCESS_LOG_RETENTION_DAYS "
-        "and EVENTS_RETENTION_DAYS. None keeps everything."
+        "and EVENTS_RETENTION_DAYS (None keeps everything), and "
+        "anonymize or delete the personal data past its declared "
+        "retention (generic.privacy)."
     )
 
     def handle(self, *args: Any, **options: Any) -> None:
@@ -25,5 +27,7 @@ class Command(BaseCommand):
             f"{deleted['history']} history entr(y/ies), "
             f"{deleted['access_log']} access log entr(y/ies), "
             f"{deleted['notifications']} notification(s), "
-            f"{deleted['security_log']} security event(s) deleted."
+            f"{deleted['security_log']} security event(s) deleted, "
+            f"{deleted['personal_data']} record(s) past their personal "
+            f"data retention anonymized or deleted."
         )

@@ -51,6 +51,7 @@ from generic.api import (
     IntegerColumn,
     TagsColumn,
 )
+from generic.privacy import PersonalData, Retention
 from generic.sites import (
     Board,
     Calendar,
@@ -920,6 +921,14 @@ class TicketCommentResource(ModelResource):
     ordering = ("ticket", "position")
     fields = ("ticket", "author", "body", "position")
 
+    # Who wrote a comment is personal data, kept three years: the
+    # nightly apply_retention then writes a pseudonym over the name,
+    # in the history too (docs/privacy.md).
+    personal_data = PersonalData(
+        fields={"author": "pseudonym"},
+        retention=Retention(days=3 * 365, after="created_at"),
+    )
+
 
 @register(TimeEntry)
 class TimeEntryResource(ModelResource):
@@ -1332,6 +1341,15 @@ class AgentResource(ModelResource):
     )
     search_fields = ("name", "email")
     ordering = ("name",)
+
+    # An agent is a person: the list's bulk action *Anonymize*, and
+    # `manage.py personal_data export|anonymize --email ...`, find
+    # them by their address (docs/privacy.md).
+    personal_data = PersonalData(
+        fields={"name": "pseudonym", "email": "email"},
+        email=("email",),
+        export=("hired_on", "team"),
+    )
 
     detail_stats = ("open_assigned", "hours_this_month", "capacity_hours")
     related_tables = (

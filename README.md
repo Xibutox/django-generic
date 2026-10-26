@@ -261,6 +261,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Single sign-on](docs/sso.md) — declaring a provider, the sign-in page, forbidding local passwords, locking out guessers
 - [Rights given on request](docs/access-requests.md) — exports and downloads people ask for and administrators grant, and a privacy reminder before them
 - [Trash and access log](docs/trash.md) — deleted records kept to be restored, who opened what and downloaded which file
+- [Personal data (GDPR)](docs/privacy.md) — `personal_data` on a resource: where personal data lives, one person's export, their anonymization (history included), retention periods
 - [Tasks](docs/tasks.md) — declaring one, the four steps, the runs, Celery Beat schedules
 - [Operations and reports](docs/operations.md) — the work behind a button, in the request or the background, answered with a tree of messages that fold
 - [Planned restarts](docs/maintenance.md) — announcing one, the three warnings, restarting the server

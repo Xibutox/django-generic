@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 
+from generic.privacy import PersonalData
 from generic.sites import (
     Chart,
     ModelResource,
@@ -428,6 +429,12 @@ class ContactResource(ModelResource):
     description = _("Authorities, CERTs and groups to call (A.5.5, A.5.6).")
     list_display = ("name", "kind", "phone", "email", "purpose")
     search_fields = ("name", "purpose", "email")
+    # An authority's number is often a person's own line.
+    personal_data = PersonalData(
+        fields={"phone": "blank", "email": "blank"},
+        email=("email",),
+        action=False,
+    )
     fieldsets = (
         (None, {"fields": (("name", "kind"), "purpose")}),
         (None, {"fields": (("phone", "email"), "url", "notes")}),

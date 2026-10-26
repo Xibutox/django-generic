@@ -1189,7 +1189,11 @@ class ResourceViewSet(
             return result
 
         payload = self.describe_result(result, count, entry)
-        offered = self.offer_undo(request, captured, payload, result)
+        offered = (
+            self.offer_undo(request, captured, payload, result)
+            if entry.undo
+            else None
+        )
 
         if offered is not None:
             payload["undo"] = offered
