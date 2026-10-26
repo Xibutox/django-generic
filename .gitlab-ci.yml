@@ -154,7 +154,11 @@ integration:
       - POSTGRES_VERSION: ["16", "17"]
   before_script:
     - pip install --upgrade pip
-    - pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,dev]"
+    # The scheduler and the results too, as the images ship them: the
+    # schedule tests run here. django-celery-beat with --no-deps, as in
+    # docker/Dockerfile (its metadata caps Django below 6.1).
+    - pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,results,dev]" cron-descriptor python-crontab django-timezone-field tzdata
+    - pip install --no-deps -c requirements/constraints.txt django-celery-beat
   services:
     - name: postgres:$POSTGRES_VERSION
       alias: postgres

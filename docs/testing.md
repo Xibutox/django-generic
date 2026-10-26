@@ -459,7 +459,10 @@ commit, with the versions already installed (`.pre-commit-config.yaml`).
 
 CI runs the linters once, the suite on Python 3.10 to 3.14 - the oldest
 Django and DRF accepted included, and the previous Django - against
-SQLite, once more against Postgres 16 and 17 and Redis, the browser tests, and the package job above. Coverage must stay at or
+SQLite, once more against Postgres 16 and 17 and Redis - with
+django-celery-beat and django-celery-results installed as the images
+ship them, so the schedule and Celery results tests run there - the
+browser tests, and the package job above. Coverage must stay at or
 above 80%; it sits at 93%. mypy fails the build on a new error
 only: the ones carried today - django-stubs trails the Django versions
 the framework runs on, and most of what it says is that - are listed in
