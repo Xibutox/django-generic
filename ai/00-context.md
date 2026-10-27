@@ -319,7 +319,9 @@ The **reference implementation** is `example/` (a support desk) with
 `settings.py` (no Channels, `EVENTS_WEBSOCKET_URL: None`), `urls.py`,
 one model with `auto(Book)`, a `products` app declared by hand
 (`Product`, its `Milestone`s - dated steps, edited as an inline - and
-its `Document`s - a `FileField`, a related table; computed columns
+its `Document`s - a `FileField`, a related table; each document's
+`DocumentVersion`s, numbered in `save()`, the document's `file` always
+the latest, a *Versions* related table, out of the navigation; computed columns
 *next step*, *progress*, *late* annotated in `get_list_queryset`,
 presets, `detail_stats`, a computed horizontal timeline (time axis
 through `options`, today marked) in `detail_charts`, two dashboard shortcuts; `seed_products`),
@@ -2353,7 +2355,12 @@ Read them via `from generic.conf import generic_settings`.
 - Build explicit, named fixture data (not random) so assertions name rows.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
-  `pytest` (coverage ≥ 80%).
+  `pytest` (coverage ≥ 80%). CI summarises each test job - counts,
+  time, areas, slowest tests, coverage per package - with
+  `scripts/ci_report.py` (JUnit + coverage XML -> Markdown/JSON) and
+  keeps `junit.xml`, `coverage.xml` and `htmlcov/` as artifacts;
+  coverage is also measured on Postgres and combined with SQLite's
+  (docs/testing.md, *Test statistics and coverage reports*).
 - **Browser tests** (`tests/browser/`, docs/testing.md): the example
   driven through a real Chromium - Python Playwright via
   pytest-playwright, against pytest-django's `live_server`; no Node.

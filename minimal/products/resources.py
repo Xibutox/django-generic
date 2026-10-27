@@ -1,5 +1,6 @@
 """Product management, declared by hand: a list of products, each with
-its milestones - the dated steps it goes through - and its documents.
+its milestones - the dated steps it goes through - and its documents,
+each kept in every version sent.
 
 ``library/resources.py`` lets ``auto`` work a model's screens out; here
 a ``ModelResource`` says them, for the few columns ``auto`` cannot
@@ -19,7 +20,7 @@ from generic.sites import (
     register,
     site,
 )
-from products.models import Document, Milestone, Product
+from products.models import Document, DocumentVersion, Milestone, Product
 
 STATUS_COLORS = {
     "planned": "#64748b",
@@ -348,14 +349,52 @@ class DocumentResource(ModelResource):
     order = 2
     description = "The files attached to the products."
 
-    list_display = ("title", "kind", "product", "file", "added_at")
+    list_display = ("title", "kind", "product", "file", "version", "added_at")
     search_fields = ("title", "product__reference", "product__name")
     tag_fields = {"kind": TagStyle()}
     fields = ("product", ("title", "kind"), "file")
-    readonly_fields = ("added_at",)
+    readonly_fields = ("version", "added_at")
+    detail_stats = ("version",)
     detail_fieldsets = (
         (None, {"fields": ("product", "title", "kind", "file", "added_at")}),
     )
+    # Every file the document has had, newest first; its *Add* sends the
+    # next version, the document filled in.
+    related_tables = (RelatedTable("versions", icon="history"),)
+
+    def get_download_name(self, request, obj, field):
+        # The latest version, under the name it was sent with.
+        return obj.file_name
+
+
+@register(DocumentVersion)
+class DocumentVersionResource(ModelResource):
+    """The versions are read on their document's tab, not in the
+    navigation."""
+
+    icon = "history"
+    group = "Products"
+    order = 3
+    show_in_navigation = False
+    label_plural = "versions"
+
+    list_display = ("number", "document", "file", "note", "added_at")
+    search_fields = ("note", "file_name", "document__title")
+    fields = ("document", "file", "note")
+    readonly_fields = ("number", "added_at")
+    detail_fieldsets = (
+        (None, {"fields": ("document", "number", "file", "note")}),
+        (None, {"fields": ("added_at",)}),
+    )
+    # A version is what was sent: its own row says it all.
+    history = False
+
+    def has_change_permission(self, request, obj=None):
+        # Never rewritten: a correction is the next version.
+        return False
+
+    def get_download_name(self, request, obj, field):
+        return obj.file_name
 
 
 def late_milestone_count(request):

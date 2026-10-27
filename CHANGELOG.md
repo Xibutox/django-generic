@@ -25,6 +25,19 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - ISO change requests: *Failed, rolled back*, the step that records a
   change undone after approval or implementation; the status had no
   button reaching it.
+- Document versions in the minimal example's products: a document keeps
+  every file it has had, numbered 1, 2, 3..., on a *Versions* tab with
+  a change note each; its download gives the latest. See
+  minimal/README.md.
+- CI test statistics and coverage: every test job adds a report to
+  its run's summary - tests passed, failed, errored and skipped, time,
+  per area of the suite, the slowest tests, coverage in total, per
+  package and for the least covered files - and keeps its JUnit and
+  coverage reports (HTML included) as artifacts; a *Test report* job
+  gathers every run in one table, with the coverage of SQLite and
+  Postgres combined (the history triggers and full-text search run on
+  Postgres only). `scripts/ci_report.py` writes it,
+  on GitLab too. See docs/testing.md.
 - ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
   hold the records of an information security management system -
   the ISMS itself (scope, context, interested parties, objectives,
@@ -52,6 +65,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   one version, *Undo* puts them back. Settings `CUSTOM_FIELDS`,
   `CUSTOM_FIELDS_MAX_PER_MODEL`; check `generic.W013`. See
   docs/custom-fields.md.
+
+### Fixed
+- The Schedules list (django-celery-beat) read each row's interval,
+  crontab, solar or clocked schedule with a query of its own: one
+  query per row. They are joined now.
 
 ## [1.5.0] - 2026-10-23
 

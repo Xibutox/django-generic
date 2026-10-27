@@ -917,3 +917,226 @@ def permission(codename: str, app_label: str = "generic"):
         codename=codename,
         content_type__app_label=app_label,
     )
+
+
+class TestRunAgainExplains:
+    """What run again cannot start, it names rather than drops."""
+
+    @pytest.fixture
+    def runner(self, auth_client, user):
+        user.user_permissions.add(permission("view_taskrun"))
+        user.user_permissions.add(permission("run_task"))
+
+        return auth_client
+
+    def run_again(self, client, *runs):
+        response = client.post(
+            reverse("site:api_generic_taskrun-actions"),
+            {"action": "run_again", "ids": [run.pk for run in runs]},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+
+        return response.json()["message"]
+
+    def test_a_task_no_longer_declared_is_named(self, runner, user):
+        @managed_task(name="tests.withdrawn")
+        def withdrawn(run):
+            return "done"
+
+        run = launch("tests.withdrawn", user=user)
+        registry.unregister("tests.withdrawn")
+
+        message = self.run_again(runner, run)
+
+        assert "tests.withdrawn" in message
+        assert TaskRun.objects.of("tests.withdrawn").count() == 1
+
+    def test_an_operation_is_sent_back_to_its_page(
+        self, runner, user, declared
+    ):
+        @declared(name="tests.operation", label="Merge", catalogue=False)
+        def merge(run):
+            return "merged"
+
+        run = launch("tests.operation", user=user)
+
+        message = self.run_again(runner, run)
+
+        assert "Merge" in message
+        assert TaskRun.objects.of("tests.operation").count() == 1
+
+
+class TestSendingToCelery:
+    """A task nobody declared, handed to Celery as beat would."""
+
+    @pytest.fixture
+    def eager(self, monkeypatch):
+        from celery import current_app
+
+        monkeypatch.setitem(current_app.conf, "task_always_eager", True)
+        sent = []
+
+        @current_app.task(name="tests.sent", bind=True)
+        def sent_task(self, *args, **kwargs):
+            sent.append((args, kwargs, self.request.delivery_info))
+            return "ok"
+
+        yield sent
+
+        current_app.tasks.pop("tests.sent", None)
+
+    def test_a_known_task_runs_with_its_arguments(self, eager):
+        from generic.tasks.resources import send_to_celery
+
+        task_id = send_to_celery(
+            "tests.sent", args=(1, 2), kwargs={"dry_run": True}
+        )
+
+        assert task_id
+        assert [call[:2] for call in eager] == [((1, 2), {"dry_run": True})]
+
+    def test_a_task_only_the_worker_knows_goes_by_name(self, monkeypatch):
+        from celery import current_app
+
+        from generic.tasks.resources import send_to_celery
+
+        monkeypatch.setitem(current_app.conf, "task_always_eager", True)
+        calls = []
+
+        class Result:
+            id = "abc"
+
+        def send_task(name, **options):
+            calls.append((name, options))
+            return Result()
+
+        monkeypatch.setattr(current_app, "send_task", send_task)
+
+        task_id = send_to_celery(
+            "worker.only",
+            args=[3],
+            queue="slow",
+            schedule="Nightly",
+        )
+
+        assert task_id == "abc"
+        assert calls == [
+            (
+                "worker.only",
+                {
+                    "args": [3],
+                    "kwargs": {},
+                    "queue": "slow",
+                    "headers": {"periodic_task_name": "Nightly"},
+                },
+            )
+        ]
+
+    def test_what_a_schedule_may_run(self, declared, eager):
+        from generic.tasks.resources import schedulable_tasks
+
+        @declared(name="tests.labelled", label="Weekly digest")
+        def labelled(run):  # pragma: no cover - not run here
+            pass
+
+        @declared(name="tests.page_only", catalogue=False)
+        def page_only(run):  # pragma: no cover - not run here
+            pass
+
+        choices = dict(schedulable_tasks())
+
+        assert choices["tests.labelled"] == "Weekly digest (tests.labelled)"
+        # A plain Celery task, under its name.
+        assert choices["tests.sent"] == "tests.sent"
+        # An operation runs on what its page chose: never scheduled.
+        assert "tests.page_only" not in choices
+
+    def test_the_undeclared_tasks_are_the_celery_ones_left(
+        self, digest, eager
+    ):
+        from generic.tasks.resources import undeclared_tasks
+
+        names = undeclared_tasks()
+
+        assert "tests.sent" in names
+        assert "tests.digest" not in names
+
+
+@beat_only
+class TestScheduleActions:
+    """Turning schedules on and off, and what they would be called with."""
+
+    @pytest.fixture
+    def schedules(self, user):
+        crontab = apps.get_model("django_celery_beat", "CrontabSchedule")
+        periodic = apps.get_model("django_celery_beat", "PeriodicTask")
+        every_morning = crontab.objects.create(minute="0", hour="7")
+
+        for codename in ("view_periodictask", "change_periodictask"):
+            user.user_permissions.add(
+                permission(codename, app_label="django_celery_beat")
+            )
+
+        return [
+            periodic.objects.create(
+                name=name, task="tests.digest", crontab=every_morning
+            )
+            for name in ("Morning digest", "Evening digest")
+        ]
+
+    def act(self, client, action, schedules):
+        response = client.post(
+            reverse("site:api_django_celery_beat_periodictask-actions"),
+            {"action": action, "ids": [s.pk for s in schedules]},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+
+        return response.json()["message"]
+
+    def test_disable_then_enable(self, auth_client, schedules):
+        message = self.act(auth_client, "disable", schedules)
+
+        assert "2" in message
+
+        for schedule in schedules:
+            schedule.refresh_from_db()
+            assert schedule.enabled is False
+
+        self.act(auth_client, "enable", schedules[:1])
+
+        schedules[0].refresh_from_db()
+        schedules[1].refresh_from_db()
+        assert (schedules[0].enabled, schedules[1].enabled) == (True, False)
+
+    def test_the_list_says_when_each_runs(self, schedules):
+        from generic.sites import site
+
+        resource = site.get_resource(type(schedules[0]))
+
+        assert resource.schedule_display(schedules[0]) == str(
+            schedules[0].schedule
+        )
+
+    @pytest.mark.parametrize(
+        ("args", "kwargs", "positional", "keywords"),
+        [
+            ("[1, 2]", '{"team": "Front"}', [1, 2], {"team": "Front"}),
+            ("not json", "not json", [], {}),
+            ('{"a": 1}', "[1]", [], {}),
+            ("", "", [], {}),
+        ],
+    )
+    def test_arguments_beat_would_pass(
+        self, schedules, args, kwargs, positional, keywords
+    ):
+        from generic.tasks.resources import PeriodicTaskResource
+
+        schedule = schedules[0]
+        schedule.args, schedule.kwargs = args, kwargs
+
+        assert PeriodicTaskResource.positional_of(schedule) == positional
+        assert PeriodicTaskResource.arguments_of(schedule) == keywords
