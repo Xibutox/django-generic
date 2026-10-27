@@ -193,8 +193,13 @@ generic/
 ├── trash.py                Trashable (deleted_at, deleted_by), move_to_trash,
 │                           restore, empty: a resource's trash (§13j)
 ├── retention.py            apply(): history, access log, notifications pruned
-│                           per *_RETENTION_DAYS; task generic.apply_retention,
+│                           per *_RETENTION_DAYS, personal data past its
+│                           Retention; task generic.apply_retention,
 │                           command apply_retention
+├── privacy/                personal data (GDPR): PersonalData, Retention
+│                           (declarations.py), find/export/anonymize/scrub/
+│                           apply_retention (engine.py), inventory.py;
+│                           command personal_data (§13m)
 ├── audit/                  SecurityEvent: signed_in, sign_in_failed, locked_out,
 │                           signed_out, password_changed, token_*, access_*,
 │                           exported - to logger generic.security and History ›
@@ -815,6 +820,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `undo` | True | a delete, bulk action or bulk edit answers an *Undo* (needs `history`; §13c) |
 | `trash` | False | delete moves records to a trash (the model inherits `generic.trash.Trashable`): a *Trash* page lists them to who may delete, *Restore* puts them back, *Delete for good* deletes; `empty_trash` deletes what is older than `TRASH_DAYS` (§13j) |
 | `access_log` | False | record who opens a record's summary page and who downloads its files; an *Access log* link on the summary page (§13j) |
+| `personal_data` | None | a `generic.privacy.PersonalData`: the personal fields and their anonymization, how to find a person's rows, a `Retention`; adds the bulk action *Anonymize* for delete-permission holders (§13m) |
 | `team_field` | None | path to the record's `generic_teams.Team` (`"team"`, `"folder__team"`, `"teams"`): every screen and endpoint narrowed to the reader's teams (§13h) |
 | `scope_relations` | None (= `team_field` set) | forms of other models offer and accept only this resource's `get_queryset(request)` rows |
 | `viewset_class` | `ResourceViewSet` | base viewset for the endpoint |
@@ -2889,6 +2895,61 @@ class ContractResource(ModelResource):
   lists them, behind `generic.view_accessentry`;
   `generic.access.prune()` applies `ACCESS_LOG_RETENTION_DAYS`.
 - See `docs/trash.md`.
+
+## 13m. Personal data (`generic.privacy`)
+
+```python
+from generic.privacy import PersonalData, Retention
+
+class PersonnelFileResource(ModelResource):
+    personal_data = PersonalData(
+        fields={"full_name": "pseudonym", "job_title": "blank"},
+        subject="user",                 # path to the user the row is about
+        email=(),                       # fields matched (iexact) to an address
+        export=("starts_on",),          # more fields an export carries
+        retention=Retention(days=5 * 365, after="ends_on",
+                            action="anonymize", filter={"status": "left"}),
+        marker=None,                    # nullable DateTimeField set when done
+        action=True,                    # bulk action *Anonymize*
+    )
+```
+
+- Strategies: `"blank"` (`""` for text - a file deleted from storage on
+  commit - else None), `"null"`, `"pseudonym"` (`anonymous-<pk>`),
+  `"email"` (`anonymous-<pk>@anonymized.invalid`), or a callable
+  `(obj, name) -> value` (idempotent). `PersonalData.check(model,
+  owner)` runs in `ModelResource.__init__`: unknown field, strategy the
+  field cannot take, subject not ending at the user model, retention
+  date not a date, filter not applying -> `ImproperlyConfigured`.
+- `privacy.declarations(site)`: `account_declaration()` for the user
+  model (login pseudonym, names/address blank), then resources'
+  `personal_data`, then `privacy.register(Model, decl)` (override;
+  `unregister`). `Subject(user=, email=)`; `rows_of` uses
+  `_base_manager` (trashed rows too); `find(subject)`.
+- `anonymize(obj, decl=None, user=None)`: no-op (False) when nothing
+  would change (`needs_anonymizing`); else fields set, `save(update_fields)`
+  under `acting_as(user, source="Anonymization")`, then `scrub(model, pk,
+  values, label)` rewrites those keys in every `HistoryEntry.values` and
+  the entries' and `AccessEntry` labels; an account also gets
+  `set_unusable_password`, `is_active=False` and `forget_account`
+  (history/access `user_label`, security `username`, addresses and
+  user agents dropped, `ACCOUNT_DATA` rows deleted, access request
+  messages emptied). `delete(obj, decl)` for a retention: deletes, then
+  scrubs with label `anonymous-<pk>`; protected rows kept (warning).
+- `export(subject)` -> `{subject, exported_at, records, references}`;
+  references = every reverse relation of the user model (<= 1000 rows
+  per model). `apply_retention(dry_run=)` -> `{label: count}`;
+  `generic.retention.apply()` adds `personal_data`.
+- `manage.py personal_data inventory [--json] | export --user/--email
+  [--output] | anonymize --user/--email [--dry-run] [--no-input] |
+  retention [--dry-run]`. Inventory kinds: declared, retention,
+  suspected (EmailField, GenericIPAddressField, `SUSPECT_NAMES`),
+  account (FK to the user model), framework (`FRAMEWORK` notes).
+- The bulk action (`privacy.ACTION_NAME`, `anonymize_action`) needs the
+  delete permission and sets `ResourceAction(undo=False)`: the action
+  endpoint offers no Undo for it. Free text, custom field values and
+  backups are not touched. See `docs/privacy.md`; tests
+  `tests/test_privacy.py`.
 
 ## 13l. Rights given on request (`generic.grants`)
 

@@ -85,6 +85,10 @@ generic/
 │   ├── models.py        AccessRequest; the export_rows, download_files, validate permissions
 │   ├── api.py           access-requests/: where one stands, asking, reminding
 │   └── resources.py     The People › Access requests screen, Grant and Refuse
+├── privacy/             Personal data (GDPR), declared on a resource
+│   ├── declarations.py  PersonalData, Retention: the fields, strategies, checks
+│   ├── engine.py        find, export, anonymize (the history too), retention
+│   └── inventory.py     Where personal data lives: declared, suspected, accounts
 ├── i18n.py              The languages a project offers, and the menu
 ├── middleware.py        UserLanguageMiddleware: the language of a user
 │                        CurrentUserMiddleware: who the history records

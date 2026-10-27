@@ -13,6 +13,7 @@ from typing import Any
 from django.db.models import OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 
+from generic.privacy import PersonalData
 from generic.sites import (
     Chart,
     ModelResource,
@@ -63,6 +64,13 @@ class SupplierResource(ModelResource):
     description = _(
         "Suppliers, the data they reach, their agreements and "
         "assessments (A.5.19-5.23)."
+    )
+    # The supplier is a company; the person to call there is personal
+    # data (docs/privacy.md).
+    personal_data = PersonalData(
+        fields={"contact_name": "blank", "contact_email": "blank"},
+        email=("contact_email",),
+        action=False,
     )
     list_display = (
         "name",

@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+from generic.privacy import PersonalData, Retention
 from generic.sites import (
     Chart,
     ModelResource,
@@ -142,6 +143,18 @@ class PersonnelFileResource(ModelResource):
         "to_do",
     )
     search_fields = ("full_name", "job_title", "department")
+    # A personnel file is about one person (GDPR): found through their
+    # account, exported and anonymized by `manage.py personal_data`;
+    # five years after they left, the name goes and the dates stay -
+    # the evidence an audit asks for, about nobody (docs/privacy.md).
+    personal_data = PersonalData(
+        fields={"full_name": "pseudonym", "job_title": "blank"},
+        subject="user",
+        export=("department", "employment", "starts_on", "ends_on"),
+        retention=Retention(
+            days=5 * 365, after="ends_on", filter={"status": "left"}
+        ),
+    )
     tag_fields = {
         "status": TagStyle(
             colors={

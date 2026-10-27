@@ -83,6 +83,9 @@ class ResourceAction:
     variant: str = "default"
     #: What it does, in a sentence: the tip of its button.
     help: str = ""
+    #: Whether what it wrote may be undone: False for what must not
+    #: come back - an anonymization (generic.privacy).
+    undo: bool = True
 
     def as_client(self) -> dict[str, Any]:
         return {
@@ -383,6 +386,16 @@ class ModelResource(PagesMixin):
     #: record's page for whoever may read it.
     access_log: bool = False
 
+    # -- personal data (generic.privacy) -----------------------------------
+
+    #: What the model holds about people (GDPR): a
+    #: ``generic.privacy.PersonalData`` naming the personal fields and
+    #: what each becomes when anonymized, how to find a person's rows
+    #: and how long they are kept. ``manage.py personal_data`` exports,
+    #: anonymizes and applies the retention; the list offers the bulk
+    #: action *Anonymize* to whoever may delete. None: nothing declared.
+    personal_data: Any = None
+
     # -- teams (generic.teams) ---------------------------------------------
 
     #: The path from this model to the team a record belongs to -
@@ -421,6 +434,18 @@ class ModelResource(PagesMixin):
                     f"field on {model._meta.label}: inherit "
                     f"generic.trash.Trashable."
                 )
+
+        if self.personal_data is not None:
+            from generic.privacy import PersonalData
+
+            owner = f"{type(self).__name__}.personal_data"
+
+            if not isinstance(self.personal_data, PersonalData):
+                raise ImproperlyConfigured(
+                    f"{owner} must be a generic.privacy.PersonalData."
+                )
+
+            self.personal_data.check(model, owner)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} for {self.opts.label}>"
@@ -2022,7 +2047,51 @@ class ModelResource(PagesMixin):
         if self.labels and not trashing:
             actions.update(self.get_label_actions(request))
 
+        if not trashing:
+            actions.update(self.get_personal_data_actions(request))
+
         return actions
+
+    def get_personal_data_actions(
+        self, request: Any
+    ) -> dict[str, ResourceAction]:
+        """*Anonymize*, for whoever may delete, when ``personal_data``
+        is declared with its ``action``."""
+        declared = self.personal_data
+
+        if (
+            declared is None
+            or not declared.action
+            or not self.has_action_permission(request, "delete")
+        ):
+            return {}
+
+        from generic import privacy
+
+        return {
+            privacy.ACTION_NAME: ResourceAction(
+                name=privacy.ACTION_NAME,
+                function=privacy.anonymize_action(self),
+                description=gettext("Anonymize"),
+                icon="person_off",
+                confirm=self._describe(
+                    gettext(
+                        "Anonymize the selected %(verbose_name_plural)s? "
+                        "Their personal data is erased, from their "
+                        "history too. This cannot be undone."
+                    )
+                ),
+                variant="danger",
+                help=self._describe(
+                    gettext(
+                        "Erase the personal data of the selected "
+                        "%(verbose_name_plural)s (GDPR), keeping the "
+                        "records themselves."
+                    )
+                ),
+                undo=False,
+            )
+        }
 
     # -- labels -------------------------------------------------------------
 

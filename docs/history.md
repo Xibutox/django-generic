@@ -236,6 +236,7 @@ where the setting is `None`:
 | `ACCESS_LOG_RETENTION_DAYS` | `None` | Who opened which record, downloaded which file |
 | `EVENTS_RETENTION_DAYS` | `90` | The notifications |
 | `SECURITY_LOG_RETENTION_DAYS` | `None` | The [security events](security-log.md) |
+| `PersonalData(retention=...)` | none | The rows a resource declares personal, anonymized or deleted past it ([Personal data](privacy.md)) |
 
 It runs once a day from a schedule on the managed task
 `generic.apply_retention` ([Tasks](tasks.md)), or from cron:

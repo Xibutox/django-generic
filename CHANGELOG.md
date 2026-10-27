@@ -13,6 +13,25 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Personal data (GDPR), `generic.privacy`: `personal_data =
+  PersonalData(fields={"name": "pseudonym", "email": "email"},
+  subject="user", email=("email",), retention=Retention(days=,
+  after=, action="anonymize"|"delete", filter=))` on a resource (or
+  `generic.privacy.register(Model, ...)`), the user model declared
+  without a line. `manage.py personal_data inventory` lists where
+  personal data lives (declared, suspected by type or name, relations
+  to accounts, the framework's stores); `export --user|--email` writes
+  everything kept about one person as JSON; `anonymize` erases them -
+  declared fields, the same fields in every history version, the
+  record's name in the access log, and for an account its password,
+  its activity, its name and addresses in the history, access log and
+  security events, its notifications, watches, views and tokens;
+  `retention` anonymizes or deletes what is past its period, and runs
+  nightly inside `apply_retention` (`personal_data` in its count). A
+  declaring list offers the bulk action *Anonymize* to whoever may
+  delete, without Undo. The example declares its agents and ticket
+  comments, the ISO apps their personnel files, supplier and ISMS
+  contacts. See docs/privacy.md.
 - ISO apps: six policies and procedures in English and French,
   `iso/documents/` - access control and user access management (how
   accounts, groups and permissions really work in django-generic),
