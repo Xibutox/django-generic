@@ -200,7 +200,61 @@ PAGES = textwrap.dedent("""
         },
     )
     assert response.status_code == 201, response.content
-    assert Document.objects.get(product=kettle).file.read() == b"Boils water."
+    spec = Document.objects.get(product=kettle)
+    assert spec.file.read() == b"Boils water."
+    assert spec.version == 1, spec.version
+
+    # Versions: the next one sent from the document's Versions tab, or
+    # with its form; its download is always the latest.
+    assert set(Document.objects.values_list("version", flat=True)) == {1}
+    response = client.post(
+        "/api/products/documentversion/",
+        {
+            "_payload": json.dumps({"document": spec.pk, "note": "Faster."}),
+            "file": SimpleUploadedFile("spec-v2.txt", b"Boils fast."),
+        },
+    )
+    assert response.status_code == 201, response.content
+    spec.refresh_from_db()
+    assert spec.version == 2, spec.version
+    download = client.get(f"/api/products/document/{spec.pk}/files/file/")
+    assert b"".join(download) == b"Boils fast.", download
+    assert "spec-v2.txt" in download["Content-Disposition"], download
+    first = spec.versions.get(number=1)
+    download = client.get(
+        f"/api/products/documentversion/{first.pk}/files/file/"
+    )
+    assert b"".join(download) == b"Boils water.", download
+    assert "spec.txt" in download["Content-Disposition"], download
+
+    from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
+
+    response = client.generic(
+        "PATCH",
+        f"/api/products/document/{spec.pk}/",
+        encode_multipart(
+            BOUNDARY,
+            {
+                "_payload": json.dumps({"title": "Specification"}),
+                "file": SimpleUploadedFile("spec-v3.txt", b"Boils faster."),
+            },
+        ),
+        content_type=MULTIPART_CONTENT,
+    )
+    assert response.status_code == 200, response.content
+    spec.refresh_from_db()
+    assert spec.version == 3, spec.version
+    assert spec.versions.get(number=3).file_name == "spec-v3.txt"
+    download = client.get(f"/api/products/document/{spec.pk}/files/file/")
+    assert b"".join(download) == b"Boils faster.", download
+
+    for url in (
+        "/products/documentversion/",
+        f"/products/documentversion/{first.pk}/",
+        "/products/documentversion/add/",
+    ):
+        status = client.get(url).status_code
+        assert status == 200, f"{url}: {status}"
     print("ok")
     """)
 

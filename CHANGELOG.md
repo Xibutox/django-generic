@@ -13,6 +13,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Document versions in the minimal example's products: a document keeps
+  every file it has had, numbered 1, 2, 3..., on a *Versions* tab with
+  a change note each; its download gives the latest. See
+  minimal/README.md.
 - CI test statistics and coverage: every test job adds a report to
   its run's summary - tests passed, failed, errored and skipped, time,
   per area of the suite, the slowest tests, coverage in total, per
