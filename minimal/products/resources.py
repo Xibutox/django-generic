@@ -33,6 +33,13 @@ STATES = {
     "late": ("Late", "#dc2626"),
     "upcoming": ("Upcoming", "#2563eb"),
 }
+# The same, as design tokens: the chart resolves them for the theme in
+# force, so its dots, line and text read on a dark page too.
+STATE_TOKENS = {
+    "done": "var(--color-success)",
+    "late": "var(--color-danger)",
+    "upcoming": "var(--color-info)",
+}
 
 
 def late_milestones():
@@ -206,12 +213,12 @@ def milestone_timeline(chart, request, queryset, period):
     milestones = list(queryset.order_by("due_on", "pk"))
 
     def point(index, milestone):
-        label, color = STATES[milestone.state]
+        label = STATES[milestone.state][0]
         day = formats.date_format(milestone.due_on, "SHORT_DATE_FORMAT")
         return {
             "name": f"{milestone.step} - {day} ({label.lower()})",
             "value": [milestone.due_on.isoformat(), 0],
-            "itemStyle": {"color": color},
+            "itemStyle": {"color": STATE_TOKENS[milestone.state]},
             # Above and below in turn, so close steps keep their names.
             "label": {
                 "formatter": milestone.step,
@@ -243,17 +250,20 @@ def milestone_timeline(chart, request, queryset, period):
                     "data": line,
                     "symbol": "none",
                     "silent": True,
-                    "lineStyle": {"width": 6, "color": "#cbd5e1"},
+                    "lineStyle": {"width": 6, "color": "var(--border-strong)"},
                     "markLine": {
                         "silent": True,
                         "symbol": "none",
                         "data": [{"xAxis": today.isoformat()}],
                         "lineStyle": {
-                            "color": "#dc2626",
+                            "color": "var(--color-danger)",
                             "type": "dashed",
                             "width": 2,
                         },
-                        "label": {"formatter": "Today", "color": "#dc2626"},
+                        "label": {
+                            "formatter": "Today",
+                            "color": "var(--color-danger)",
+                        },
                     },
                 },
                 {

@@ -144,7 +144,7 @@ PAGES = textwrap.dedent("""
         "Validation",
         "Launch",
     ], points
-    assert points["data"][2]["itemStyle"]["color"] == "#dc2626"  # late
+    assert points["data"][2]["itemStyle"]["color"] == "var(--color-danger)"
     from django.utils import timezone
 
     today = line["markLine"]["data"][0]["xAxis"]

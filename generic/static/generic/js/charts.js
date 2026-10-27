@@ -271,6 +271,107 @@
     return base;
   }
 
+  var TOKEN = /var\(--[\w-]+\)/;
+
+  /**
+   * `options` with every colour written as a design token -
+   * "var(--border-color)" - resolved for the scheme in force: a
+   * server's options can then follow the theme too. A copy: the
+   * payload is drawn again when the theme changes.
+   */
+  function resolveTokens(value) {
+    if (typeof value === "string") {
+      return TOKEN.test(value) ? Generic.colors.resolve(value) : value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(resolveTokens);
+    }
+
+    if (isObject(value)) {
+      var copy = {};
+
+      Object.keys(value).forEach(function (key) {
+        copy[key] = resolveTokens(value[key]);
+      });
+
+      return copy;
+    }
+
+    return value;
+  }
+
+  //: Series whose labels sit beside the mark, not on it, by default.
+  var OUTSIDE_LABELS = ["line", "scatter", "effectScatter"];
+  var OUTSIDE_POSITIONS = ["top", "bottom", "left", "right", "outside"];
+
+  /**
+   * Text ECharts draws beside a mark - a scatter's names, a mark line's
+   * caption - in the theme's colour, without the white halo ECharts
+   * puts around it: unthemed, it is black on a dark page. A colour the
+   * options give is kept; a label on its mark keeps ECharts' contrast.
+   */
+  function themeLabels(option, theme) {
+    function paint(label, outside) {
+      if (!isObject(label)) {
+        return label;
+      }
+
+      var position = label.position;
+      var beside =
+        typeof position === "string"
+          ? OUTSIDE_POSITIONS.indexOf(position) !== -1
+          : outside;
+
+      if (!beside) {
+        return label;
+      }
+
+      var themed = Object.assign({}, label);
+
+      if (themed.color === undefined) {
+        themed.color = theme.secondary;
+      }
+
+      if (themed.textBorderWidth === undefined) {
+        themed.textBorderWidth = 0;
+      }
+
+      return themed;
+    }
+
+    [].concat(option.series || []).forEach(function (series) {
+      if (!isObject(series)) {
+        return;
+      }
+
+      var outside = OUTSIDE_LABELS.indexOf(series.type) !== -1;
+
+      series.label = paint(series.label || {}, outside);
+      series.endLabel = paint(series.endLabel, true);
+
+      ["markLine", "markPoint", "markArea"].forEach(function (key) {
+        if (isObject(series[key])) {
+          series[key] = Object.assign({}, series[key], {
+            label: paint(series[key].label || {}, key === "markLine")
+          });
+        }
+      });
+
+      if (Array.isArray(series.data)) {
+        series.data = series.data.map(function (item) {
+          if (!isObject(item) || !isObject(item.label)) {
+            return item;
+          }
+
+          return Object.assign({}, item, {
+            label: paint(item.label, outside)
+          });
+        });
+      }
+    });
+  }
+
   function categoryColor(payload, index) {
     var colors = payload.colors || [];
 
@@ -674,7 +775,8 @@
     }
 
     merge(option, specific);
-    merge(option, payload.options || {});
+    merge(option, resolveTokens(payload.options || {}));
+    themeLabels(option, theme);
 
     [].concat(customizers["*"] || [], customizers[payload.name] || []).forEach(
       function (callback) {

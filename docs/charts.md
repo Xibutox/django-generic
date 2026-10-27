@@ -460,6 +460,15 @@ change; reloads when a record of its model changes anywhere (the
 `resource.changed` event); and, when linked to a table, reloads when the
 table's filters change for any reason.
 
+A colour in `options` may be a design token — `"var(--border-strong)"`,
+`"var(--color-danger)"` — resolved for the scheme in force at each
+redraw, so a hand-styled line or mark follows the theme, *System* on a
+dark operating system included; a hex colour stays as it is in every
+theme. Text ECharts draws beside a mark — a line's or a scatter's
+labels, a mark line's caption — is drawn in the theme's text colour
+without ECharts' white halo, unless the options give it a colour;
+labels on a bar or a slice keep ECharts' contrast.
+
 What JSON cannot carry — a formatter function, say — a customiser adds:
 
 ```javascript
