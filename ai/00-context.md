@@ -462,7 +462,8 @@ INC-{year}-0001, `notification_due` 72 h for a breach, IncidentUpdate,
 Evidence with SHA-256 and `access_log`), `vulnerabilities`
 (Vulnerability VUL-0001, severity from CVSS, `due_on` from
 `ISO_VULNERABILITY_DAYS`), `changes` (ChangeRequest CHG-0001, actions
-by step, `changes.approve_changerequest`, never one's own; calendar),
+by step - *Failed, rolled back* from approved or implemented -
+`changes.approve_changerequest`, never one's own; calendar),
 `continuity` (Service with RTO/RPO/MTPD, ContinuityPlan, Exercise with
 `target_met`), `audits` (Audit AUD-{year}-01, Nonconformity NC-0001,
 CorrectiveAction verified by someone other than its owner),
@@ -472,8 +473,14 @@ AccessReviewItem decisions; *Apply* deactivates, never one's own
 account, a superuser only by a superuser). The main record of each
 app but access reviews has `custom_fields = True` (§5.27; the
 *Security officers* get the `customize_*` permissions; `seed()` adds
-*Warranty ends* on Asset, *Where the data is kept* on Supplier). Kept
-working by `tests/test_iso.py`.
+*Warranty ends* on Asset, *Where the data is kept* on Supplier).
+`iso/documents/{en,fr}/` holds six policies and procedures (POL-03
+access control, 04 backup, 06 logging, 07 changes, 08 incidents, 09
+vulnerabilities) describing the framework's real behaviour; `seed()`
+attaches them to their Policy in the active language (`seed_iso
+--language`), and a change to a setting, permission or screen they
+quote updates them. Kept working by `tests/test_iso.py` (it checks
+every permission they name exists).
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env

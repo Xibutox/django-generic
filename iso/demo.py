@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
-from django.utils import timezone
+from django.core.files import File
+from django.utils import timezone, translation
 
 from iso.common import is_installed
 
@@ -47,6 +49,11 @@ STAFF = (
     ("dev", "Lucas", "Perrin", "Developer", "Engineering", ""),
     ("sales", "Emma", "Roux", "Account manager", "Sales", ""),
 )
+
+
+#: The policies and procedures shipped with the apps, one Markdown file
+#: per language in ``iso/documents/<language>/`` (README.md there).
+DOCUMENTS = Path(__file__).resolve().parent / "documents"
 
 
 def installed(app: str) -> bool:
@@ -122,6 +129,46 @@ def seed(users: dict[str, Any] | None = None) -> dict[str, Any]:
     records.pop("_assets", None)
     seed_custom_fields()
     return records
+
+
+def document_language() -> str:
+    """The language of the documents to attach: the active one when
+    they exist in it (``seed_iso --language fr``), English otherwise."""
+    language = (translation.get_language() or "en").split("-")[0]
+    return language if (DOCUMENTS / language).is_dir() else "en"
+
+
+def document_title(path: Path) -> str:
+    """A document's first heading, without its code."""
+    heading = path.read_text(encoding="utf-8").splitlines()[0]
+    return heading.lstrip("# ").split(" ", 1)[1].strip()[:200]
+
+
+def document_summary(path: Path) -> str:
+    """The first paragraph of a document's purpose (section 1)."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("## 1"))
+    paragraph: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.strip():
+            paragraph.append(line.strip())
+        elif paragraph:
+            break
+    return " ".join(paragraph)
+
+
+def attach_document(policy: Any, path: Path, language: str) -> None:
+    """Store the shipped document as the policy's file, and its purpose
+    as the summary when there is none."""
+    with path.open("rb") as handle:
+        policy.document.save(
+            f"{policy.code}-{path.stem}.{language}.md",
+            File(handle),
+            save=False,
+        )
+    if not policy.summary:
+        policy.summary = document_summary(path)
+    policy.save()
 
 
 def days(count: int) -> datetime.timedelta:
@@ -282,19 +329,41 @@ def seed_isms(users: dict, records: dict, today: datetime.date) -> None:
                 )
     records["isms.measurement"] = Measurement.objects.first()
 
+    # code, title, acknowledged by everyone, document shipped with it.
     policies = (
-        ("POL-01", "Information security policy", True),
-        ("POL-02", "Acceptable use policy", True),
-        ("POL-03", "Access control policy", False),
-        ("POL-04", "Backup policy", False),
-        ("POL-05", "Supplier security policy", False),
+        ("POL-01", "Information security policy", True, ""),
+        ("POL-02", "Acceptable use policy", True, ""),
+        ("POL-03", "Access control policy", False, "access-control"),
+        ("POL-04", "Backup policy", False, "backup"),
+        ("POL-05", "Supplier security policy", False, ""),
+        (
+            "POL-06",
+            "Logging and monitoring policy",
+            False,
+            "logging-and-monitoring",
+        ),
+        ("POL-07", "Change management procedure", False, "change-management"),
+        (
+            "POL-08",
+            "Incident management procedure",
+            False,
+            "incident-management",
+        ),
+        (
+            "POL-09",
+            "Vulnerability management procedure",
+            False,
+            "vulnerability-management",
+        ),
     )
-    for code, title, acknowledge in policies:
+    language = document_language()
+    for code, title, acknowledge, name in policies:
+        path = DOCUMENTS / language / f"{name}.md" if name else None
         policy = Policy.objects.get_or_create(
             code=code,
             defaults={
-                "title": title,
-                "version": "1.2",
+                "title": document_title(path) if path else title,
+                "version": "1.0" if path else "1.2",
                 "status": "approved",
                 "owner": ciso,
                 "approved_by": ciso,
@@ -303,6 +372,8 @@ def seed_isms(users: dict, records: dict, today: datetime.date) -> None:
                 "requires_acknowledgement": acknowledge,
             },
         )[0]
+        if path and not policy.document:
+            attach_document(policy, path, language)
         records.setdefault("isms.policy", policy)
     policy = records["isms.policy"]
     for user in users.values():

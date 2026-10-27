@@ -14,6 +14,7 @@ can be tried.
 ```bash
 python manage.py migrate
 python manage.py seed_iso        # demo data; accounts ciso, it, auditor, dev, sales (password demo)
+python manage.py seed_iso --language fr   # the same, the policies' documents in French
 python manage.py runserver
 ```
 
@@ -153,6 +154,27 @@ values are versioned with the record, so the audit trail covers them
 too. `seed_iso` adds two: *Warranty ends* on the assets and *Where the
 data is kept* (a choice) on the suppliers. A project turns them off
 with `CUSTOM_FIELDS = False`.
+
+## Policies and procedures
+
+ISO 27001 asks for documented policies and procedures, and the ones
+that touch the software must say what the software does.
+[`documents/`](documents/README.md) holds six, in English and French,
+written from the code of django-generic and of these apps - templates
+whose bracketed parts the organisation fills in:
+
+| Code | Document | Annex A |
+| --- | --- | --- |
+| POL-03 | Access control policy and user access management procedure: accounts, groups, permissions, the rule that nobody grants what they do not hold, tokens, sign-in, joiners, movers, leavers, access reviews | 5.15 - 5.18, 8.2, 8.3, 8.5 |
+| POL-04 | Backup and restore policy | 8.13, 8.14 |
+| POL-06 | Logging and monitoring policy: history, security events, access log, retention, and what a superuser can still delete | 8.15 - 8.17, 8.10 |
+| POL-07 | Change management procedure | 8.32, 5.3 |
+| POL-08 | Incident management procedure, with what the logs tell an investigator | 5.24 - 5.28, 6.8 |
+| POL-09 | Technical vulnerability management procedure | 8.8 |
+
+`seed_iso` attaches each to its policy in *Policies* (in English;
+`seed_iso --language fr` in French), so the demo shows a policy with
+its document, ready to acknowledge and review.
 
 ## What the apps do not do
 
