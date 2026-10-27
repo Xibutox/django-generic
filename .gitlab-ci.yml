@@ -110,11 +110,23 @@ test:
       --cov=generic
       --cov-report=term
       --cov-report=xml
+      --cov-report=html
       --cov-fail-under=80
       --junitxml=report.xml
+  after_script:
+    # The counts, areas, slowest tests and coverage, in the log and as
+    # a file (scripts/ci_report.py); htmlcov/index.html, line by line.
+    - >-
+      python scripts/ci_report.py --junit "Python $PYTHON_VERSION=report.xml"
+      --coverage coverage.xml --json test-report.json | tee test-report.md
   coverage: '/^TOTAL\s+\d+\s+\d+\s+(\d+%)$/'
   artifacts:
     when: always
+    expire_in: 30 days
+    paths:
+      - htmlcov/
+      - test-report.md
+      - test-report.json
     reports:
       junit: report.xml
       coverage_report:
@@ -137,10 +149,13 @@ browser:
       -p no:cacheprovider
       --screenshot only-on-failure
       --output test-results/browser
+      --junitxml=report.xml
   artifacts:
-    when: on_failure
+    when: always
     paths:
       - test-results/
+    reports:
+      junit: report.xml
 
 # -- integration --------------------------------------------------------
 
@@ -170,7 +185,17 @@ integration:
     DATABASE_URL: "postgres://generic:generic@postgres:5432/generic"
     REDIS_URL: "redis://redis:6379/0"
   script:
-    - pytest -q --no-cov
+    # Measured here too: the history triggers and the full-text search
+    # run on Postgres only. GitLab merges it with the matrix's coverage
+    # in the merge request's diff.
+    - pytest -q --cov=generic --cov-report=xml --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 # -- package ------------------------------------------------------------
 

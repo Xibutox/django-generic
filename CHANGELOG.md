@@ -13,6 +13,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- CI test statistics and coverage: every test job adds a report to
+  its run's summary - tests passed, failed, errored and skipped, time,
+  per area of the suite, the slowest tests, coverage in total, per
+  package and for the least covered files - and keeps its JUnit and
+  coverage reports (HTML included) as artifacts; a *Test report* job
+  gathers every run in one table, with the coverage of SQLite and
+  Postgres combined (the history triggers and full-text search run on
+  Postgres only). `scripts/ci_report.py` writes it,
+  on GitLab too. See docs/testing.md.
 - ISO 27001 apps, `iso/`: twelve apps a project installs one by one to
   hold the records of an information security management system -
   the ISMS itself (scope, context, interested parties, objectives,
