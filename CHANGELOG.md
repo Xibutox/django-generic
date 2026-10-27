@@ -86,6 +86,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   docs/custom-fields.md.
 
 ### Fixed
+- The "System" theme on a dark system drew the tables' sort arrows
+  near-black, where an explicit dark choice draws them light grey:
+  DataTables darkens them only for `data-theme="dark"`, which "System"
+  never sets. Its colours now follow the scheme in force.
 - The Schedules list (django-celery-beat) read each row's interval,
   crontab, solar or clocked schedule with a query of its own: one
   query per row. They are joined now.

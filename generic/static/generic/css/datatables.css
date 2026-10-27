@@ -11,6 +11,39 @@
   padding: var(--space-4);
 }
 
+/*
+ * DataTables' own colours (sort arrows, header hover, child-row
+ * toggle) for the scheme in force. The library darkens them only for
+ * an explicit [data-theme="dark"], so "system" on a dark system kept
+ * the light ones: near-black arrows on a dark header. light-dark()
+ * follows color-scheme, which tokens.css sets for all three choices.
+ * Same values as the library's; a browser without light-dark() keeps
+ * the library's light ones (tokens.css falls back to light too).
+ */
+@supports (color: light-dark(#fff, #000)) {
+  :root {
+    --dt-order-arrow_color: light-dark(rgb(51, 51, 51), rgb(229, 233, 238));
+    --dt-order-arrow_color-current: var(--dt-order-arrow_color);
+    --dt-order-header_outline-hover: 2px solid
+      light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
+  }
+
+  table.dataTable tbody td.dt-control:before {
+    border-left-color: light-dark(
+      rgba(0, 0, 0, 0.5),
+      rgba(255, 255, 255, 0.5)
+    );
+  }
+
+  table.dataTable tbody tr.dt-hasChild td.dt-control:before {
+    border-top-color: light-dark(
+      rgba(0, 0, 0, 0.5),
+      rgba(255, 255, 255, 0.5)
+    );
+    border-left-color: transparent;
+  }
+}
+
 /* -- Container ---------------------------------------------------------- */
 
 .dt-container {
