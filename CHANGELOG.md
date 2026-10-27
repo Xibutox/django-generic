@@ -50,6 +50,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   `CUSTOM_FIELDS_MAX_PER_MODEL`; check `generic.W013`. See
   docs/custom-fields.md.
 
+### Fixed
+- The Schedules list (django-celery-beat) read each row's interval,
+  crontab, solar or clocked schedule with a query of its own: one
+  query per row. They are joined now.
+
 ## [1.5.0] - 2026-10-23
 
 ### Added

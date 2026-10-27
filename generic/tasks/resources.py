@@ -386,6 +386,9 @@ class PeriodicTaskResource(ModelResource):
     )
     search_fields = ("name", "task", "description")
     ordering = ("name",)
+    # The When column reads whichever of the four a schedule uses: one
+    # query per row without them.
+    list_select_related = ("interval", "crontab", "solar", "clocked")
     fieldsets = (
         (None, {"fields": ("name", "task", "description")}),
         (

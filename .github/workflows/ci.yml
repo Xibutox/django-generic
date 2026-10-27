@@ -174,7 +174,14 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - run: uv pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,dev]"
+      - name: Install, with the scheduler and the results as the images ship them
+        # The schedule and Celery results tests run here: the matrix has
+        # neither. django-celery-beat goes in with --no-deps, as in
+        # docker/Dockerfile (its metadata caps Django below 6.1).
+        run: |
+          uv pip install -c requirements/constraints.txt -e ".[export,events,tasks,postgres,wiki,results,dev]" \
+            cron-descriptor python-crontab django-timezone-field tzdata
+          uv pip install --no-deps -c requirements/constraints.txt django-celery-beat
       - run: pytest -q --cov=generic --cov-report=xml --junitxml=junit.xml
         env:
           # Measured here too: the history triggers and the full-text
