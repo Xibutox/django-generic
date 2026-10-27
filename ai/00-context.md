@@ -324,7 +324,9 @@ The **reference implementation** is `example/` (a support desk) with
 `settings.py` (no Channels, `EVENTS_WEBSOCKET_URL: None`), `urls.py`,
 one model with `auto(Book)`, a `products` app declared by hand
 (`Product`, its `Milestone`s - dated steps, edited as an inline - and
-its `Document`s - a `FileField`, a related table; computed columns
+its `Document`s - a `FileField`, a related table; each document's
+`DocumentVersion`s, numbered in `save()`, the document's `file` always
+the latest, a *Versions* related table, out of the navigation; computed columns
 *next step*, *progress*, *late* annotated in `get_list_queryset`,
 presets, `detail_stats`, a computed horizontal timeline (time axis
 through `options`, today marked) in `detail_charts`, two dashboard shortcuts; `seed_products`),
@@ -465,7 +467,8 @@ INC-{year}-0001, `notification_due` 72 h for a breach, IncidentUpdate,
 Evidence with SHA-256 and `access_log`), `vulnerabilities`
 (Vulnerability VUL-0001, severity from CVSS, `due_on` from
 `ISO_VULNERABILITY_DAYS`), `changes` (ChangeRequest CHG-0001, actions
-by step, `changes.approve_changerequest`, never one's own; calendar),
+by step - *Failed, rolled back* from approved or implemented -
+`changes.approve_changerequest`, never one's own; calendar),
 `continuity` (Service with RTO/RPO/MTPD, ContinuityPlan, Exercise with
 `target_met`), `audits` (Audit AUD-{year}-01, Nonconformity NC-0001,
 CorrectiveAction verified by someone other than its owner),
@@ -475,8 +478,14 @@ AccessReviewItem decisions; *Apply* deactivates, never one's own
 account, a superuser only by a superuser). The main record of each
 app but access reviews has `custom_fields = True` (§5.27; the
 *Security officers* get the `customize_*` permissions; `seed()` adds
-*Warranty ends* on Asset, *Where the data is kept* on Supplier). Kept
-working by `tests/test_iso.py`.
+*Warranty ends* on Asset, *Where the data is kept* on Supplier).
+`iso/documents/{en,fr}/` holds six policies and procedures (POL-03
+access control, 04 backup, 06 logging, 07 changes, 08 incidents, 09
+vulnerabilities) describing the framework's real behaviour; `seed()`
+attaches them to their Policy in the active language (`seed_iso
+--language`), and a change to a setting, permission or screen they
+quote updates them. Kept working by `tests/test_iso.py` (it checks
+every permission they name exists).
 
 **Two modes** (`docs/deployment.md`): `example_project/settings/` is
 `base.py` (apps, middleware, templates, i18n, `GENERIC`, and the env
@@ -2352,7 +2361,12 @@ Read them via `from generic.conf import generic_settings`.
 - Build explicit, named fixture data (not random) so assertions name rows.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
-  `pytest` (coverage ≥ 80%).
+  `pytest` (coverage ≥ 80%). CI summarises each test job - counts,
+  time, areas, slowest tests, coverage per package - with
+  `scripts/ci_report.py` (JUnit + coverage XML -> Markdown/JSON) and
+  keeps `junit.xml`, `coverage.xml` and `htmlcov/` as artifacts;
+  coverage is also measured on Postgres and combined with SQLite's
+  (docs/testing.md, *Test statistics and coverage reports*).
 - **Browser tests** (`tests/browser/`, docs/testing.md): the example
   driven through a real Chromium - Python Playwright via
   pytest-playwright, against pytest-django's `live_server`; no Node.

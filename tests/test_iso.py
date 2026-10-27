@@ -183,6 +183,14 @@ def test_nobody_approves_their_own_change():
     change.refresh_from_db()
     assert change.status == "approved" and change.approved_by == approver
 
+    # Implemented, it failed: rolled back, then reviewed and closed.
+    assert run(client, "changes/changerequest", "mark_failed", [change.pk])
+    change.refresh_from_db()
+    assert change.status == "failed"
+    assert run(client, "changes/changerequest", "close", [change.pk]).ok
+    change.refresh_from_db()
+    assert change.status == "closed"
+
 
 def test_a_vulnerability_gets_its_deadline_from_its_severity(settings):
     from iso.vulnerabilities.models import Vulnerability
@@ -506,3 +514,100 @@ def test_the_apps_speak_french():
         assert str(translation.gettext("Statement of Applicability")) == (
             "Déclaration d'applicabilité"
         )
+
+
+# -- The documents shipped with the apps ---------------------------------
+
+
+def documents_of(language: str) -> dict[str, str]:
+    from iso.demo import DOCUMENTS
+
+    return {
+        path.name: path.read_text(encoding="utf-8")
+        for path in sorted((DOCUMENTS / language).glob("*.md"))
+    }
+
+
+def test_the_documents_exist_in_english_and_in_french():
+    english, french = documents_of("en"), documents_of("fr")
+
+    assert set(english) == set(french)
+    assert "access-control.md" in english
+    for name, text in english.items():
+        code = text.split()[1]
+        # The same policy, its code first, its purpose in section 1.
+        assert code.startswith("POL-"), name
+        assert french[name].split()[1] == code, name
+        assert "\n## 1. " in text and "\n## 1. " in french[name], name
+
+
+def test_every_permission_the_documents_name_exists():
+    """A document quoting a permission that is not there misleads the
+    auditor: each one named must be a real permission."""
+    import re
+
+    from django.apps import apps
+
+    named = set()
+    for language in ("en", "fr"):
+        for text in documents_of(language).values():
+            named.update(re.findall(r"`([a-z_]+)\.([a-z_]+)`", text))
+    labels = {config.label for config in apps.get_app_configs()}
+    checked = 0
+    for app_label, codename in sorted(named):
+        prefix = codename.split("_")[0]
+        if app_label not in labels or prefix not in PERMISSION_VERBS:
+            continue  # a module, a setting, a file - not a permission
+        assert Permission.objects.filter(
+            content_type__app_label=app_label, codename=codename
+        ).exists(), f"{app_label}.{codename}"
+        checked += 1
+    assert checked >= 20
+
+
+PERMISSION_VERBS = {
+    "view",
+    "add",
+    "change",
+    "delete",
+    "accept",
+    "approve",
+    "validate",
+    "export",
+    "download",
+    "see",
+}
+
+
+def test_the_seed_attaches_the_documents_to_the_policies(settings, tmp_path):
+    from django.utils import translation
+
+    from iso import demo
+    from iso.isms.models import Policy
+
+    settings.MEDIA_ROOT = str(tmp_path)
+    demo.seed()
+    policy = Policy.objects.get(code="POL-03")
+    assert policy.title.startswith("Access control policy")
+    assert policy.document.name.endswith("POL-03-access-control.en.md")
+    assert "least privilege" in policy.document.read().decode()
+    assert policy.summary.startswith("Give each person the access")
+    assert not Policy.objects.get(code="POL-01").document
+    assert Policy.objects.filter(code__in=PROCEDURES).count() == 4
+
+    # Seeded again, a policy keeps the document it has.
+    name = policy.document.name
+    demo.seed()
+    policy.refresh_from_db()
+    assert policy.document.name == name
+
+    # In French, from the start.
+    Policy.objects.all().delete()
+    with translation.override("fr"):
+        demo.seed()
+    policy = Policy.objects.get(code="POL-03")
+    assert policy.title.startswith("Politique de contrôle d'accès")
+    assert policy.document.name.endswith("POL-03-access-control.fr.md")
+
+
+PROCEDURES = ("POL-06", "POL-07", "POL-08", "POL-09")

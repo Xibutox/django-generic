@@ -459,13 +459,47 @@ commit, with the versions already installed (`.pre-commit-config.yaml`).
 
 CI runs the linters once, the suite on Python 3.10 to 3.14 - the oldest
 Django and DRF accepted included, and the previous Django - against
-SQLite, once more against Postgres 16 and 17 and Redis, the browser tests, and the package job above. Coverage must stay at or
+SQLite, once more against Postgres 16 and 17 and Redis - with
+django-celery-beat and django-celery-results installed as the images
+ship them, so the schedule and Celery results tests run there - the
+browser tests, and the package job above. Coverage must stay at or
 above 80%; it sits at 93%. mypy fails the build on a new error
 only: the ones carried today - django-stubs trails the Django versions
 the framework runs on, and most of what it says is that - are listed in
 `scripts/mypy-baseline.txt`, by file and message, not by line. Fixing
 one is welcome; `python scripts/mypy_baseline.py --update` then shrinks
 the list.
+
+### Test statistics and coverage reports
+
+Every test job writes pytest's JUnit report; the version matrix and
+the Postgres jobs coverage.py's reports too. Coverage is measured on
+Postgres as well because some code runs there only - the history
+triggers, the full-text search - and would read as untested from the
+SQLite runs alone. `scripts/ci_report.py` turns
+them into Markdown: how many tests passed, failed, errored and were
+skipped, and in how long, per run and per area of the suite
+(`tests/api`, `tests/test_access.py`...); the ten slowest tests; the
+coverage in total, per package and for the least covered files.
+
+```bash
+pytest --junitxml=junit.xml --cov-report=xml --cov-report=html
+python scripts/ci_report.py --junit junit.xml --coverage coverage.xml
+python scripts/ci_report.py --junit "SQLite=a/junit.xml" --junit "Postgres=b/junit.xml" --json report.json
+```
+
+On GitHub, each test job adds its report to the job's summary, on the
+run's page, and keeps its files as an artifact for 30 days
+(`test-results-python-3.13`, `test-results-postgres-16`,
+`test-results-browser`...; `htmlcov/index.html` inside is the coverage
+line by line). The *Test report* job then puts every run in one table,
+combines the coverage of Python 3.13 (SQLite) with the Postgres runs'
+(`coverage combine`), and keeps it all as `test-report`: Markdown and
+JSON, for a script or a trend to read, and the combined `coverage.xml`
+and `htmlcov/`. Both run after a
+failure too. On GitLab, the merge request shows the JUnit results and
+the coverage of each line in its diff, the Postgres runs' included; the matrix jobs print the same
+report in their log and keep it with `htmlcov/`.
 
 Every job but the version matrix installs the versions pinned in
 `requirements/constraints.txt` - the ones the Docker images ship -

@@ -23,7 +23,8 @@ minimal/
 │   └── migrations/
 └── products/
     ├── models.py       Product, its Milestones (dated steps), its Documents
-    ├── resources.py    the three ModelResources, two dashboard cards
+    │                   and each one's DocumentVersions
+    ├── resources.py    the four ModelResources, two dashboard cards
     ├── management/commands/seed_products.py
     └── migrations/
 ```
@@ -161,6 +162,17 @@ steps - its milestones - with its files attached. Where `library` lets
   see the document. A document is added from the product's
   *Documents* tab - a form of its own, since a file cannot ride in the
   milestones' rows.
+- **Versions** - a document keeps every file it has had, numbered 1,
+  2, 3... (`DocumentVersion`). A new one is sent from the document's
+  *Versions* tab, with a change note, or by replacing the file in the
+  document's form; either way the document's `file` becomes it, so its
+  download is always the latest, under the name it was sent with
+  (`get_download_name`). An older one downloads from its row on the
+  tab. A version is never changed - a correction is the next one - and
+  the versions stay out of the navigation (`show_in_navigation =
+  False`). Both rules live in the models' `save()`, so `seed_products`
+  and the shell number versions too. For approvals, drafts and
+  restoring an old version, see the document manager, `docmanager/`.
 - **The dashboard** - two cards, *Late milestones* with their count and
   *Due in 30 days*, each opening the milestones list already filtered
   (`site.add_shortcut`).

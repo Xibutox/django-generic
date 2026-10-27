@@ -55,6 +55,7 @@ NEXT_STEPS = {
     "approve": (Status.SUBMITTED,),
     "reject": (Status.SUBMITTED,),
     "mark_implemented": (Status.APPROVED,),
+    "mark_failed": (Status.APPROVED, Status.IMPLEMENTED),
     "close": (Status.IMPLEMENTED, Status.FAILED, Status.REJECTED),
 }
 
@@ -189,7 +190,14 @@ class ChangeRequestResource(ModelResource):
         ),
     )
     list_charts = ("by_month",)
-    actions = ("submit", "approve", "reject", "mark_implemented", "close")
+    actions = (
+        "submit",
+        "approve",
+        "reject",
+        "mark_implemented",
+        "mark_failed",
+        "close",
+    )
 
     def save_model(self, request: Any, serializer: Any, change: bool) -> Any:
         if change:
@@ -290,6 +298,20 @@ class ChangeRequestResource(ModelResource):
         return self.move(
             request, queryset, "mark_implemented", Status.IMPLEMENTED
         )
+
+    @action(
+        description=_("Failed, rolled back"),
+        icon="undo",
+        permissions=("change",),
+        variant="danger",
+        confirm=_("Record that the selected changes failed and were undone?"),
+        help=_(
+            "Records that the change failed and was rolled back; say what "
+            "happened in the review."
+        ),
+    )
+    def mark_failed(self, request: Any, queryset: Any) -> dict:
+        return self.move(request, queryset, "mark_failed", Status.FAILED)
 
     @action(
         description=_("Close"),
