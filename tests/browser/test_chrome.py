@@ -7,6 +7,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from generic.accounts.models import UserPreferences
+
 LIST = "/example/ticket/"
 
 
@@ -151,3 +153,44 @@ def test_a_closed_navigation_group_stays_closed(signed_in):
     page.reload()
 
     expect(group).to_have_attribute("open", "")
+
+
+def sort_arrow_colour(page):
+    """The colour of the first orderable header's up arrow."""
+    return page.evaluate("""() => getComputedStyle(
+            document.querySelector(
+                "#datatable thead th.dt-orderable-asc .dt-column-order"
+            ),
+            "::before"
+        ).borderBottomColor""")
+
+
+@pytest.mark.parametrize(
+    "system, choice, expected",
+    [
+        ("dark", "dark", "rgb(229, 233, 238)"),
+        ("dark", "system", "rgb(229, 233, 238)"),
+        ("light", "system", "rgb(51, 51, 51)"),
+        ("light", "light", "rgb(51, 51, 51)"),
+        ("dark", "light", "rgb(51, 51, 51)"),
+        ("light", "dark", "rgb(229, 233, 238)"),
+    ],
+)
+def test_the_sort_arrows_follow_the_scheme_whatever_the_choice(
+    signed_in, admin, system, choice, expected
+):
+    """'System' on a dark system draws the arrows as explicit dark does.
+
+    DataTables lightens them only for [data-theme="dark"]; the system
+    choice sets no attribute, which left near-black arrows on a dark
+    header.
+    """
+    page = signed_in
+    preferences = UserPreferences.for_user(admin)
+    preferences.theme = choice
+    preferences.save()
+
+    page.emulate_media(color_scheme=system)
+    open_list(page)
+
+    assert sort_arrow_colour(page) == expected

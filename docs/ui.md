@@ -473,6 +473,13 @@ applied to `<html>` inline in `base.html` before first paint, so the
 page never flashes the wrong theme — the same trick keeps a collapsed
 sidebar from flashing open.
 
+"System" sets no `data-theme` at all: every colour goes through
+`light-dark()`, which follows `color-scheme`. A vendor stylesheet that
+darkens only for `[data-theme="dark"]` (DataTables' sort arrows) is
+given the same values through `light-dark()` in our own skin
+(`datatables.css`), so a dark system looks exactly like an explicit
+dark choice.
+
 **One control height.** `--control-height` is what a button, a select,
 a Select2 field and a text input all measure. A text input used to be
 the exception — its padding made it 39px against everyone else's 36 —

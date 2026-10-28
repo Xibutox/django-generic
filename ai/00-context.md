@@ -3188,6 +3188,12 @@ def payments():                                # quick: runs on every refresh
 - `QuerySet.update()` fires no signal: `announce(resource, "bulk")`
   for the live tables (the history records it by itself).
 - After changing JS/CSS, browsers cache static files: hard reload.
+- **"System" theme sets no `data-theme`**: a colour keyed on
+  `[data-theme="dark"]` alone stays light on a dark system. Use
+  `light-dark()` (it follows `color-scheme`, set for all three choices);
+  a vendor stylesheet that keys on the attribute gets its values
+  re-declared with `light-dark()` in our skin (`datatables.css` does it
+  for DataTables' sort arrows).
 - Seeding users with passwords invalidates open sessions.
 - Never `reverse()` at the top level of a `resources.py`: it is
   imported while the site is still being built, and the URLconf it
