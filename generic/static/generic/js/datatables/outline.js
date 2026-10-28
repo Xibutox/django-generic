@@ -32,6 +32,11 @@
   var OWN_WRITE_MS = 5000;
   //: The address parameter opening the list as its outline.
   var URL_PARAM = "outline";
+  //: The records one request unfolds at once (outlines.MAX_PARENTS).
+  var PARENTS_AT_ONCE = 25;
+  //: The records one press of *Expand next level* unfolds: a level
+  //: holding more takes another press.
+  var UNFOLD_AT_ONCE = 50;
 
   function generic() {
     return window.Generic;
@@ -225,8 +230,15 @@
     var root = el("div", "generic-tree dt-outline");
     var toolbar = el("div", "tree__toolbar");
     var status = el("span", "tree__status muted");
+    var expand = el("button", "button button--sm button--ghost dt-outline-expand");
     var collapse = el("button", "button button--sm button--ghost");
     var refresh = el("button", "button button--sm button--ghost");
+
+    expand.type = "button";
+    expand.addEventListener("click", function () {
+      self.expandLevel();
+    });
+    this.expandButton = expand;
 
     collapse.type = "button";
     collapse.append(icon("unfold_less"), el("span", "", t("Collapse all")));
@@ -262,7 +274,7 @@
       this.drawEditButton();
     }
 
-    toolbar.append(collapse, refresh);
+    toolbar.append(expand, collapse, refresh);
 
     var scroller = el("div", "tree__scroll");
     var table = el("table", "tree-table outline-table");
@@ -310,6 +322,7 @@
 
     this.root = root;
     this.status = status;
+    this.drawExpandButton();
   };
 
   OutlineView.prototype.drawEditButton = function () {
@@ -928,6 +941,8 @@
         first.tabIndex = 0;
       }
     }
+
+    this.drawExpandButton();
   };
 
   OutlineView.prototype.toggle = function (node, open) {
@@ -943,6 +958,175 @@
     }
 
     this.redraw(node);
+  };
+
+  /* -- Unfolding a level at once ---------------------------------------- */
+
+  /** The records *Expand next level* unfolds: those of the shallowest
+   * level shown holding records and still folded, in the order they
+   * are drawn - the rows on screen first. */
+  OutlineView.prototype.nextLevel = function () {
+    var depth = Infinity;
+    var nodes = [];
+
+    (function walk(parent) {
+      parent.items.forEach(function (node) {
+        if (node.count > 0 && !node.expanded && !node.loading) {
+          if (node.depth < depth) {
+            depth = node.depth;
+            nodes = [];
+          }
+
+          if (node.depth === depth) {
+            nodes.push(node);
+          }
+        } else if (node.expanded && node.depth < depth) {
+          walk(node);
+        }
+      });
+    })(this.top);
+
+    return { depth: nodes.length ? depth : -1, nodes: nodes };
+  };
+
+  OutlineView.prototype.drawExpandButton = function () {
+    var button = this.expandButton;
+
+    if (!button) {
+      return;
+    }
+
+    var next = this.nextLevel();
+    var level = next.nodes.length ? this.levels[next.depth + 1] : null;
+    var working = Boolean(this.expanding);
+    // The first press unfolds the first level; once a record is open,
+    // the next one - greyed out when nothing is left.
+    var deeper = next.nodes.length
+      ? next.depth > 0
+      : this.top.items.some(function (node) {
+          return node.expanded;
+        });
+
+    button.textContent = "";
+    button.append(
+      icon(working ? "progress_activity" : "unfold_more", working ? "tree-row__spin" : ""),
+      el("span", "", deeper ? t("Expand next level") : t("Expand first level"))
+    );
+    button.disabled = working || !level;
+    button.title = level
+      ? core.format(t("Show the %(name)s of the rows shown"), { name: (level.title || level.label).toLowerCase() })
+      : t("Every row shown is unfolded");
+  };
+
+  /** Unfold the next level of every row shown, a few requests for all
+   * of them: each record named gets its first page. */
+  OutlineView.prototype.expandLevel = function () {
+    var self = this;
+    var nodes = this.nextLevel().nodes.slice(0, UNFOLD_AT_ONCE);
+    var waiting = [];
+    var chunks = [];
+
+    if (this.expanding || !nodes.length) {
+      return Promise.resolve();
+    }
+
+    nodes.forEach(function (node) {
+      node.expanded = true;
+
+      if (!node.loaded) {
+        node.asking = {};
+        node.loading = true;
+        node.failed = false;
+        waiting.push(node);
+      }
+
+      self.redraw(node);
+    });
+
+    for (var index = 0; index < waiting.length; index += PARENTS_AT_ONCE) {
+      chunks.push(waiting.slice(index, index + PARENTS_AT_ONCE));
+    }
+
+    this.expanding = true;
+    this.drawExpandButton();
+
+    return chunks
+      .reduce(function (chain, chunk) {
+        return chain.then(function () {
+          return self.loadMany(chunk);
+        });
+      }, Promise.resolve())
+      .catch(function (error) {
+        waiting.forEach(function (node) {
+          if (node.loading) {
+            node.loading = false;
+            node.failed = true;
+            self.redraw(node);
+          }
+        });
+        generic().toast((error && error.message) || t("This level could not be loaded."), "error");
+      })
+      .then(function () {
+        self.expanding = false;
+        self.drawExpandButton();
+      });
+  };
+
+  /** The first page below each of `nodes`, records of one level, in one
+   * request. */
+  OutlineView.prototype.loadMany = function (nodes) {
+    var self = this;
+    var asked = nodes.map(function (node) {
+      return { node: node, asking: node.asking };
+    });
+    var params = Object.assign(
+      {},
+      core.resolveExtraParams(this.controller.options, this.controller.table),
+      {
+        level: nodes[0].depth + 1,
+        limit: this.pageSize,
+        parents: nodes
+          .map(function (node) {
+            return node.id;
+          })
+          .join(",")
+      }
+    );
+
+    return generic()
+      .api.get(this.config.url, params)
+      .then(function (answer) {
+        var groups = {};
+
+        (answer.groups || []).forEach(function (group) {
+          groups[String(group.parent)] = group;
+        });
+
+        asked.forEach(function (entry) {
+          var node = entry.node;
+          var group = groups[String(node.id)];
+
+          // Folded, unfolded again or gone since: its own answer counts.
+          if (node.asking !== entry.asking) {
+            return;
+          }
+
+          node.loading = false;
+
+          if (!group) {
+            // Out of this reader's sight now: folded again.
+            node.expanded = false;
+          } else {
+            node.items = (group.items || []).map(function (data) {
+              return self.adopt(node, data, null);
+            });
+            node.total = group.total || 0;
+            node.loaded = true;
+          }
+
+          self.redraw(node);
+        });
+      });
   };
 
   OutlineView.prototype.collapseAll = function () {

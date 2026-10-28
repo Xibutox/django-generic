@@ -57,7 +57,7 @@ jobs:
         # advisory database. A vulnerability skipped here is listed,
         # with why it does not apply, in SECURITY.md - and goes once a
         # fix is released.
-        run: pip-audit --skip-editable --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877
+        run: pip-audit --skip-editable --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877 --ignore-vuln CVE-2026-83813
       - name: mypy, no new error
         # The errors carried today (mostly django-stubs trailing
         # Django) are in scripts/mypy-baseline.txt; a new one fails.

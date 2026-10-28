@@ -4865,3 +4865,7 @@ msgstr[1] "%(count)s champs archivés."
 
 msgid "Help texts"
 msgstr "Textes d'aide"
+
+#, python-format
+msgid "At most %(count)d records at once."
+msgstr "Au plus %(count)d enregistrements à la fois."
