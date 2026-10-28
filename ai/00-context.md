@@ -1117,6 +1117,11 @@ Chart(
   with `data=` (joins multiply). A `data` callable returns
   `{"categories": [...], "series": [{"name", "data": [...], "type"?, "color"?, "stack"?}],
   "value": {"label", "format", "unit", "decimals"}, "dimension"?, "keys"?}`.
+- Colours in `options` may be tokens, `"var(--color-danger)"`, resolved
+  by `charts.js` (`resolveTokens`) for the scheme at each redraw; hex
+  stays fixed. Labels beside a mark (line/scatter, `markLine`,
+  `endLabel`, an explicit outside `position`) get `theme.secondary`
+  and no halo unless coloured (`themeLabels`).
 - Any DRF view can return `chart_payload(categories=..., series=..., type=...)`
   and be drawn by including `generic/charts/chart.html` with
   `chart={"config_id": "...", "config": {"title", "url", "height", "periods": [], "extraParams": {}}}`.

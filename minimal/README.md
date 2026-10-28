@@ -150,7 +150,9 @@ steps - its milestones - with its files attached. Where `library` lets
   one horizontal line with each milestone at its date - green done,
   red late, blue upcoming - and a dashed line at today
   (`Chart(data=...)` on the milestones, drawn on a time axis through
-  its `options`, shown by `detail_charts`). Then two tabs: its
+  its `options`, its colours given as tokens - `"var(--color-danger)"`
+  - so it follows the dark theme, shown by `detail_charts`). Then two
+  tabs: its
   milestones and its documents (`related_tables`), each with an *Add*
   button filling the product in.
 - **Milestones** - every product's steps in one list, by date, each
