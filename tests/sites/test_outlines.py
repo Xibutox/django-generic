@@ -288,6 +288,86 @@ class TestTheEndpoint:
         get(admin_client, "/api/example/equipment/outline/", status=404)
 
 
+class TestALevelAtOnce:
+    """*Expand next level*: the first page below several records of a
+    level, in one request."""
+
+    def test_each_record_named_gets_its_first_page(self, admin_client, stock):
+        acme, bolt = stock["acme"].pk, stock["bolt"].pk
+        answer = get(admin_client, level=1, parents=f"{acme},{bolt}")
+
+        assert answer["level"] == 1
+        groups = {group["parent"]: group for group in answer["groups"]}
+        assert [group["parent"] for group in answer["groups"]] == [
+            str(acme),
+            str(bolt),
+        ]
+        assert names(groups[str(acme)]) == ["Laptop", "Screen"]
+        assert groups[str(acme)]["total"] == 2
+        assert [i["children"] for i in groups[str(acme)]["items"]] == [2, 0]
+        assert names(groups[str(bolt)]) == ["Phone"]
+
+    def test_the_page_is_the_limit(self, admin_client, stock):
+        answer = get(admin_client, level=1, parents=stock["acme"].pk, limit=1)
+
+        (group,) = answer["groups"]
+        assert names(group) == ["Laptop"]
+        assert group["total"] == 2
+
+    def test_the_last_level_too(self, admin_client, stock):
+        laptop, phone = stock["laptop"].pk, stock["phone"].pk
+        answer = get(admin_client, level=2, parents=f"{laptop},{phone}")
+
+        assert [len(group["items"]) for group in answer["groups"]] == [2, 1]
+
+    def test_what_names_nothing_is_left_out(self, admin_client, stock):
+        answer = get(
+            admin_client,
+            level=1,
+            parents=f"nope,999999,{stock['acme'].pk},{stock['acme'].pk}",
+        )
+
+        assert [group["parent"] for group in answer["groups"]] == [
+            str(stock["acme"].pk)
+        ]
+
+    def test_a_bounded_number_at_once(self, admin_client, stock):
+        from generic.sites.outlines import MAX_PARENTS
+
+        keys = ",".join(str(key) for key in range(1, MAX_PARENTS + 2))
+
+        get(admin_client, status=400, level=1, parents=keys)
+
+    def test_a_record_the_reader_may_not_see_is_left_out(
+        self, client, django_user_model, stock
+    ):
+        resource = site.get_resource(Supplier)
+        before = resource.get_queryset
+
+        def only_acme(request):
+            return before(request).filter(name="Acme")
+
+        resource.get_queryset = only_acme
+
+        try:
+            answer = get(
+                client_with(
+                    client,
+                    django_user_model,
+                    "view_supplier",
+                    "view_equipment",
+                ),
+                level=1,
+                parents=f"{stock['acme'].pk},{stock['bolt'].pk}",
+            )
+        finally:
+            del resource.get_queryset
+
+        assert [group["parent"] for group in answer["groups"]] == [
+            str(stock["acme"].pk)
+        ]
+
+
 class TestWhoSeesWhat:
     def test_a_reader_goes_down_as_far_as_they_may_view(
         self, client, django_user_model, stock

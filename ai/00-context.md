@@ -1936,7 +1936,11 @@ action): `level` (0 = top: the table's `filters`, `search`, `ordering`
 applied by its backends; default `get_ordering` + pk), `parent` (a
 record of the level above, in its resource's `get_queryset`, else 404),
 `offset`, `limit` (at most 200) -> `{level, total, offset, limit,
-items: [{id, url, children, row}]}`; `row` is the level resource's
+items: [{id, url, children, row}]}`; `parents` (keys, comma-separated,
+at most `MAX_PARENTS` = 25, level >= 1) in place of `parent` ->
+`{level, limit, groups: [{parent, total, offset, items}]}`, the first
+page below each (`answer_many`; keys not found or not visible left
+out); `row` is the level resource's
 rows serializer (what its renderers and `cells.valueOf` read),
 `children` an annotation (`count_of`, a Subquery over the next level
 resource's `get_queryset`).
@@ -1946,7 +1950,12 @@ JS `js/datatables/outline.js` (feature `outline`, loaded by
 `.dt-outline-toggle` before the Views menu; `dt-container.is-outline`
 hides the rows, count and pages (and the table's `.dt-edit-toggle`);
 the view (`OutlineView`, tree.css classes, `outline-row`,
-`outline-head` per unfolded level, a foot with *Show more* / *Add ...*)
+`outline-head` per unfolded level, a foot with *Show more* / *Add ...*;
+toolbar `.dt-outline-expand`: *Expand first level* / *Expand next
+level*, `nextLevel()` = the folded records with children at the
+shallowest depth shown, in drawn order, at most `UNFOLD_AT_ONCE` (50)
+a press, `loadMany` in chunks of `PARENTS_AT_ONCE` (25), disabled when
+none)
 follows the table's `xhr.dt`; state in localStorage
 (`generic.outline.<stateKey>`) and `?outline=1`. Its own *Edit*
 (`.dt-outline-edit`, `generic.outline-edit.<stateKey>`, on at start

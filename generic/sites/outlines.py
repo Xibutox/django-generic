@@ -67,6 +67,10 @@ MAX_LEVELS = 5
 #: The most records one request may ask for.
 MAX_LIMIT = 200
 
+#: The most records of a level one request may unfold at once
+#: (``parents``): each gets its first page.
+MAX_PARENTS = 25
+
 #: Long texts a level shows besides its visible columns, when it names
 #: none.
 MAX_TEXT_COLUMNS = 2
@@ -744,7 +748,8 @@ class BoundOutline:
 
         ``level`` is the level's number (0: the top); ``parent`` the key
         of the record unfolded, from the level above; ``offset``,
-        ``limit``.
+        ``limit``. ``parents`` in place of ``parent``: several records
+        unfolded at once (``answer_many``).
         """
         from generic.sites.summary import record_url
 
@@ -762,44 +767,143 @@ class BoundOutline:
         level = levels[number]
         resource = self.resource_of(level)
 
+        if number > 0 and params.get("parents") not in (None, ""):
+            return self.answer_many(
+                request, levels, number, params.get("parents"), limit, context
+            )
+
         if number == 0:
             rows = top
+
+            if len(levels) > 1:
+                rows = rows.annotate(
+                    **{CHILDREN: self.count_of(request, levels[1])}
+                )
         else:
             parent = self.find_parent(
                 request, levels[number - 1], params.get("parent")
             )
-            rows = (
-                resource.get_list_queryset(request)
-                .filter(**{level.back: parent.pk})
-                .order_by(*self.get_ordering(request, level))
-            )
+            rows = self.children_of(request, levels, number, parent)
 
         total = rows.count()
-        below = levels[number + 1] if number + 1 < len(levels) else None
-
-        if below is not None:
-            rows = rows.annotate(**{CHILDREN: self.count_of(request, below)})
-
-        page = list(rows[offset : offset + limit])
-        serializer = resource.get_rows_serializer_class(request)(
-            page, many=True, context=context
-        )
 
         return {
             "level": number,
             "total": total,
             "offset": offset,
             "limit": limit,
-            "items": [
-                {
-                    "id": force_str(obj.pk),
-                    "url": record_url(self.site, request, obj),
-                    "children": getattr(obj, CHILDREN, 0) or 0,
-                    "row": data,
-                }
-                for obj, data in zip(page, serializer.data)
-            ],
+            "items": self.items_of(
+                request,
+                resource,
+                rows[offset : offset + limit],
+                context,
+                record_url,
+            ),
         }
+
+    def children_of(
+        self,
+        request: Any,
+        levels: list[OutlineLevel],
+        number: int,
+        parent: Any,
+    ) -> Any:
+        """The records of level ``number`` below ``parent``, in their
+        order, each with how many it holds of the next level."""
+        level = levels[number]
+        rows = (
+            self.resource_of(level)
+            .get_list_queryset(request)
+            .filter(**{level.back: parent.pk})
+            .order_by(*self.get_ordering(request, level))
+        )
+
+        if number + 1 < len(levels):
+            rows = rows.annotate(
+                **{CHILDREN: self.count_of(request, levels[number + 1])}
+            )
+
+        return rows
+
+    def items_of(
+        self,
+        request: Any,
+        resource: Any,
+        rows: Any,
+        context: dict[str, Any],
+        record_url: Any,
+    ) -> list[dict[str, Any]]:
+        page = list(rows)
+        serializer = resource.get_rows_serializer_class(request)(
+            page, many=True, context=context
+        )
+
+        return [
+            {
+                "id": force_str(obj.pk),
+                "url": record_url(self.site, request, obj),
+                "children": getattr(obj, CHILDREN, 0) or 0,
+                "row": data,
+            }
+            for obj, data in zip(page, serializer.data)
+        ]
+
+    def answer_many(
+        self,
+        request: Any,
+        levels: list[OutlineLevel],
+        number: int,
+        value: Any,
+        limit: int,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        """The first page below each of several records of the level
+        above (``parents``, their keys separated by commas, at most
+        ``MAX_PARENTS``): a level unfolded at once, in one request.
+
+        A key this reader may not see, or that names nothing, is left
+        out of the answer rather than refused: the others still come.
+        """
+        from generic.sites.summary import record_url
+
+        keys = [key.strip() for key in str(value).split(",") if key.strip()]
+
+        if len(keys) > MAX_PARENTS:
+            raise ValidationError(
+                {
+                    "parents": [
+                        gettext("At most %(count)d records at once.")
+                        % {"count": MAX_PARENTS}
+                    ]
+                }
+            )
+
+        above = levels[number - 1]
+        found = {}
+
+        for key in dict.fromkeys(keys):
+            try:
+                found[key] = self.find_parent(request, above, key)
+            except NotFound:
+                continue
+
+        resource = self.resource_of(levels[number])
+        groups = []
+
+        for key, parent in found.items():
+            rows = self.children_of(request, levels, number, parent)
+            groups.append(
+                {
+                    "parent": key,
+                    "total": rows.count(),
+                    "offset": 0,
+                    "items": self.items_of(
+                        request, resource, rows[:limit], context, record_url
+                    ),
+                }
+            )
+
+        return {"level": number, "limit": limit, "groups": groups}
 
     def move(self, request: Any, data: Any) -> dict[str, Any]:
         """Put one record of a level before another of the same parent

@@ -75,6 +75,48 @@ def test_the_list_unfolds_level_after_level(page, admin, sign_in, stock):
     expect(page.locator("#datatable")).to_be_visible()
 
 
+def test_a_level_unfolds_at_once(page, admin, sign_in, stock):
+    """*Expand first level*, then *Expand next level*: one request a
+    level, whatever the number of rows unfolded."""
+    bolt = Supplier.objects.get(name="Bolt")
+    Equipment.objects.create(name="Phone", serial_number="P-1", supplier=bolt)
+    sign_in(admin)
+    page.goto(LIST)
+    page.locator(".dt-outline-toggle").click()
+    expect(rows(page, 0)).to_have_count(2)
+
+    asked = []
+    page.on(
+        "request",
+        lambda request: "/outline/" in request.url
+        and asked.append(request.url),
+    )
+    expand = page.locator(".dt-outline-expand")
+    expect(expand).to_contain_text("Expand first level")
+
+    expand.click()
+    expect(rows(page, 1)).to_have_count(3)
+    expect(expand).to_contain_text("Expand next level")
+    assert len(asked) == 1 and "parents=" in asked[0]
+
+    # Only the laptop holds visits: the screen and the phone stay leaves.
+    expand.click()
+    expect(rows(page, 2)).to_contain_text("Battery")
+    expect(expand).to_be_disabled()
+    expect(expand).to_contain_text("Expand next level")
+    assert len(asked) == 2
+
+    page.get_by_role("button", name="Collapse all").click()
+    expect(rows(page, 1)).to_have_count(0)
+    expect(expand).to_contain_text("Expand first level")
+    expect(expand).to_be_enabled()
+
+    # Unfolded before: shown again without asking.
+    expand.click()
+    expect(rows(page, 1)).to_have_count(3)
+    assert len(asked) == 2
+
+
 def test_a_cell_is_written_where_it_stands(
     page, admin, sign_in, stock, console
 ):

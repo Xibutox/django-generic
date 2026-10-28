@@ -59,6 +59,15 @@ class CustomerResource(ModelResource):
   all* folds everything, *Refresh* reads every open level again; a
   record changed elsewhere refreshes the levels open on screen (live
   updates), unless the reader is in the middle of typing.
+- **A level at once.** *Expand first level* unfolds every record of
+  the first level shown; the button then reads *Expand next level*, and
+  each press unfolds the next level of every row shown, until nothing
+  is left (it is then greyed out). The records are asked for together -
+  one request for up to 25 of them (`parents=`), in the order they are
+  drawn, so the rows on screen come first - each with its first
+  `page_size` records and *Show more* for the rest. One press unfolds
+  at most 50 records; a level holding more takes another press. A
+  record unfolded before and folded again comes back without a request.
 - **The keyboard** walks it as it walks a tree: up and down, right to
   unfold, left to fold or go up, Enter to open the record.
 
