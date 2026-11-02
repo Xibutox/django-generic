@@ -233,6 +233,34 @@ SCENARIO = textwrap.dedent("""
          "taskId": target.pk},
     ]})
     assert again.status_code == 400, again.content
+    # A task line's own task replaced by one of another note: that note
+    # keeps its title as text, the task replaced (untouched) goes.
+    lines = bob.get(DOCUMENT).json()["lines"]
+    current = [
+        {k: line[k] for k in ("id", "kind", "indent", "text", "done")}
+        for line in lines
+    ]
+    fresh = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": "Fresh DM", "taskKind": "DM"},
+    ]}).json()["lines"][-1]
+    elsewhere = Note.objects.create(title="Supplier call")
+    moved = Task.objects.create(kind="DM", title="Ask for the quote")
+    NoteLine.objects.create(
+        note=elsewhere, kind="task", text=moved.title, task=moved
+    )
+    swapped = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"id": fresh["id"], "kind": "task", "text": moved.title,
+         "taskKind": "DM", "taskId": moved.pk},
+    ]})
+    assert swapped.status_code == 200, swapped.content
+    assert swapped.json()["lines"][-1]["task"]["id"] == moved.pk
+    assert not Task.objects.filter(pk=fresh["task"]["id"]).exists()
+    moved.refresh_from_db()
+    assert moved.note == note and moved.line.pk == fresh["id"]
+    left = elsewhere.lines.get()
+    assert (left.kind, left.text, left.task) == (
+        "text", "Ask for the quote", None
+    )
     for body in (
         {"task": target.pk, "text": "   "},
         {"task": "1", "text": "x"},

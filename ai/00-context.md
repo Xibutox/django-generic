@@ -422,7 +422,10 @@ then plain text with its markers; written back as HTML lists carrying
 `data-line-kind`/`data-line-indent`, and text). `@page attach` lists
 tasks to attach to (`?q=`, the note's own first) and, posted `{task,
 text}`, appends the text to that task's specification under the note's
-title and the date (`change` on the task).
+title and the date (`change` on the task). A task line posted with
+`taskId` shows that existing task (`link`): a new line, or in place of
+the line's task (released); a line of another note showing it turns
+to text, its title; one of this note is a 400.
 `planner/timers.py`: one running entry a person, starting one stops
 the other and moves a backlog/todo task to doing (`@page timer`,
 *Start timer*/*Stop timer* actions). Everything else is the

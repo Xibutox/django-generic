@@ -10,6 +10,10 @@ removed, lets its task go: the task is kept once it is more than that
 line - time logged on it, a specification written, work started - and
 deleted otherwise.
 
+A task line can also show a task that exists: a new line, or one whose
+task is replaced (``link``); a task taken from another note leaves its
+title there, as text.
+
 ``attach`` is the other way round: text from a note - lines the editor
 selected - added to the specification of a task that already exists,
 under the note's title and the day.
@@ -211,8 +215,20 @@ def write(note: Note, request: Any, payload: Any, site: Any = None) -> None:
             line.text = item["text"]
             line.done = item["done"] if item["kind"] == "check" else False
 
-            if line.kind == NoteLine.Kind.TASK and line.task is None:
+            # An existing task asked for: put on a new task line, or in
+            # place of the line's own task, which is let go.
+            asked = item["task_id"]
+
+            if (
+                line.kind == NoteLine.Kind.TASK
+                and asked is not None
+                and asked != line.task_id
+            ):
+                former = line.task
                 line.task = link(note, item, tasks, may_change)
+
+                if former is not None:
+                    release(former)
 
             if line.kind == NoteLine.Kind.TASK:
                 line.task = sync_task(
@@ -241,34 +257,47 @@ def write(note: Note, request: Any, payload: Any, site: Any = None) -> None:
 def link(
     note: Note, item: dict[str, Any], tasks: Any, may_change: bool
 ) -> Task | None:
-    """An existing task put in the note by a new task line: one that no
-    line shows yet. It moves to the note; None when none is asked."""
+    """An existing task put in the note by a task line. It moves to the
+    note; a line of another note that showed it stays there as text,
+    its title. None when none is asked."""
     if item["task_id"] is None:
         return None
 
     if not may_change:
         raise PermissionDenied(gettext("You may not change tasks."))
 
-    # Locked alone (the visible tasks may be annotated), then checked
-    # free: no line of any note shows it.
+    # Locked alone (the visible tasks may be annotated), then checked:
+    # visible, and no line of this note shows it already.
     task = (
         Task.objects.select_for_update(of=("self",))
         .filter(pk=item["task_id"])
         .first()
     )
+    shown = (
+        NoteLine.objects.select_for_update().filter(task=task).first()
+        if task is not None
+        else None
+    )
     free = (
         task is not None
         and tasks.filter(pk=task.pk).exists()
-        and not NoteLine.objects.filter(task=task).exists()
+        and (shown is None or shown.note_id != note.pk)
     )
 
     if task is None or not free:
         raise ValidationError(
             gettext(
-                "This task is already in a note, or cannot be found: "
+                "This task is already in this note, or cannot be found: "
                 "reload the page."
             )
         )
+
+    if shown is not None:
+        # The other note keeps the words, not the task.
+        shown.kind = NoteLine.Kind.TEXT
+        shown.text = task.title
+        shown.task = None
+        shown.save(update_fields=["kind", "text", "task"])
 
     if task.note_id != note.pk:
         task.note = note

@@ -291,8 +291,17 @@ msgstr[1] "Texte à ajouter : %(count)s lignes"
 msgid "%(task)s is already in this note."
 msgstr "%(task)s est déjà dans cette note."
 
-msgid "%(task)s is a line of the note \"%(note)s\": it can take text, and stays there."
-msgstr "%(task)s est une ligne de la note « %(note)s » : elle peut recevoir du texte, et y reste."
+msgid "%(task)s moves here from the note \"%(note)s\", where its title stays as text."
+msgstr "%(task)s vient ici depuis la note « %(note)s », où son titre reste en texte."
+
+msgid "Put it in place of %(task)s"
+msgstr "La mettre à la place de %(task)s"
+
+msgid "Put it on this line"
+msgstr "La mettre sur cette ligne"
+
+msgid "%(task)s in place of %(former)s."
+msgstr "%(task)s à la place de %(former)s."
 
 msgid "in this note"
 msgstr "dans cette note"

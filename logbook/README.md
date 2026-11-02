@@ -28,7 +28,10 @@ WSGI, SQLite.
 - **Attach to a task**: selected lines (or the current one) added to
   the specification of a task that already exists, under the note's
   title and the day - the task picked in a dialog, searched by
-  reference or title.
+  reference or title. The same dialog **puts an existing task in the
+  note**: on a new line, or, from a task line, in place of its task
+  (the one replaced is deleted if untouched). A task taken from
+  another note leaves its title there, as text.
 - A task is about **several projects, or none**: one written in a note
   starts with the note's project.
 - **Tasks** on a **board**, a column per status (*Backlog*, *To do*,

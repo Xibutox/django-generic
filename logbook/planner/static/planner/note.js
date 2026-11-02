@@ -1832,7 +1832,9 @@
           text: line.input ? line.input.value : line.text,
           done: line.done,
           task: line.task,
-          taskKind: line.taskKind
+          taskKind: line.taskKind,
+          linkTask: line.linkTask || null,
+          linkReference: line.linkReference || null
         };
       })
     });
@@ -1857,12 +1859,20 @@
     this.lines = state.lines.map(function (kept) {
       var line = kept.line;
 
+      // A task linked since, and saved: the line stays it, its text the
+      // task's title (else the task would be renamed back).
+      if (line.task && line.kind === "task" && (kept.task ? kept.task.id : null) !== line.task.id) {
+        return line;
+      }
+
       line.kind = kept.kind;
       line.indent = kept.indent;
       line.text = kept.text;
       line.done = kept.done;
       line.taskKind = kept.taskKind;
       line.task = line.task || kept.task;
+      line.linkTask = line.task ? null : kept.linkTask;
+      line.linkReference = kept.linkReference;
       line.input.value = kept.text;
 
       return line;
@@ -1972,7 +1982,14 @@
     var options = [];
     var cancel = el("button", "button button--ghost", t("Cancel"));
     var addText = el("button", "button", t("Add the text to its specification"));
-    var accept = el("button", "button button--primary", t("Put the task in the note"));
+    // One task line given: the task picked takes its place.
+    var target = lines && lines.length === 1 && lines[0].kind === "task" ? lines[0] : null;
+    var former = target ? (target.task ? target.task.reference : target.linkReference) : null;
+    var accept = el(
+      "button",
+      "button button--primary",
+      former ? Generic.format(t("Put it in place of %(task)s"), { task: former }) : target ? t("Put it on this line") : t("Put the task in the note")
+    );
     var waiting = null;
 
     dialog.body.appendChild(el("p", "muted", t("Put the task you pick in this note, as a task line - or add the selected lines to its specification.")));
@@ -2028,15 +2045,15 @@
         other.node.setAttribute("aria-selected", other === option ? "true" : "false");
       });
       addText.disabled = !chosen;
-      accept.disabled = !chosen || !!chosen.inNote || self.lines.some(function (line) {
-        return line.linkTask === chosen.id;
+      accept.disabled = !chosen || !!chosen.here || self.lines.some(function (line) {
+        return line.linkTask === chosen.id || (line.task && line.task.id === chosen.id);
       });
       why.hidden = !chosen || !chosen.inNote;
       why.textContent = !chosen || !chosen.inNote
         ? ""
         : chosen.here
           ? Generic.format(t("%(task)s is already in this note."), { task: chosen.reference })
-          : Generic.format(t("%(task)s is a line of the note \"%(note)s\": it can take text, and stays there."), { task: chosen.reference, note: chosen.inNote });
+          : Generic.format(t("%(task)s moves here from the note \"%(note)s\", where its title stays as text."), { task: chosen.reference, note: chosen.inNote });
 
       if (option) {
         option.node.scrollIntoView({ block: "nearest" });
@@ -2190,17 +2207,21 @@
     load();
   };
 
-  /** An existing task as a task line: the current line when it is
-   * empty, a new one under the lines given otherwise. The save links it
-   * (planner/documents.py, link). */
+  /** An existing task as a task line, its title as the text: in place
+   * of the task of the one task line given, on the current line when it
+   * is empty, on a new one under the lines given otherwise. The save
+   * links it (planner/documents.py, link); the task replaced is let go. */
   NoteEditor.prototype.linkTask = function (task, lines) {
     var after = lines && lines.length ? lines[lines.length - 1] : this.current || this.lines[this.lines.length - 1];
     var line;
+    var replaced = lines && lines.length === 1 && after.kind === "task" ? after.task || null : null;
 
     this.remember();
     this.clearSelection();
 
-    if (after && !after.input.value && !after.task && !after.linkTask) {
+    if (lines && lines.length === 1 && after.kind === "task") {
+      line = after;
+    } else if (after && !after.input.value && !after.task && !after.linkTask) {
       line = after;
       line.kind = "task";
     } else {
@@ -2208,6 +2229,8 @@
       this.insert(line, after ? this.lines.indexOf(after) + 1 : this.lines.length);
     }
 
+    // Shown as the task to come until saved; undo brings the former back.
+    line.task = null;
     line.taskKind = task.kind;
     line.linkTask = task.id;
     line.linkReference = task.reference;
@@ -2219,7 +2242,11 @@
     this.focus(line, null);
     this.changed();
     this.undoReady = true;
-    this.offerUndo(Generic.format(t("%(task)s put in the note."), { task: task.reference }));
+    this.offerUndo(
+      replaced
+        ? Generic.format(t("%(task)s in place of %(former)s."), { task: task.reference, former: replaced.reference })
+        : Generic.format(t("%(task)s put in the note."), { task: task.reference })
+    );
   };
 
   /* -- Saving -------------------------------------------------------------- */
@@ -2269,7 +2296,7 @@
           text: line.text,
           done: line.done,
           taskKind: line.taskKind,
-          taskId: line.kind === "task" && !line.task && line.linkTask ? line.linkTask : null
+          taskId: line.kind === "task" && line.linkTask ? line.linkTask : null
         };
       })
     };
