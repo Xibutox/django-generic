@@ -29,6 +29,7 @@ from django.utils import formats, timezone
 from django.utils.translation import gettext
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+from generic.search import text_lookup
 from planner.models import Note, NoteLine, Task, TimeEntry
 
 #: The most lines one note keeps.
@@ -373,7 +374,8 @@ def attach_choices(
 
     for word in term.split():
         queryset = queryset.filter(
-            Q(reference__icontains=word) | Q(title__icontains=word)
+            Q(**{text_lookup("reference"): word})
+            | Q(**{text_lookup("title"): word})
         )
 
     queryset = queryset.annotate(

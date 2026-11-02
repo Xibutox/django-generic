@@ -296,6 +296,18 @@ SCENARIO = textwrap.dedent("""
         Task.objects.get(pk=item["id"]).status in ("todo", "doing", "review")
         for item in offered
     )
+    # Searched without the accents: "deploiement" finds "Déploiement".
+    accented = Task.objects.create(
+        kind="DM", title="Déploiement du réseau", status="doing"
+    )
+    found = bob.get(SHEET + "sources/", {"q": "deploiement reseau"})
+    assert [item["id"] for item in found.json()["items"]] == [
+        str(accented.pk)
+    ], found.json()
+    assert [
+        task["id"]
+        for task in bob.get(ATTACH, {"q": "DEPLOIEMENT"}).json()["tasks"]
+    ] == [accented.pk]
     dropped = send(
         bob,
         "post",

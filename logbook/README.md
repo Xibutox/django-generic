@@ -32,6 +32,9 @@ WSGI, SQLite.
   note**: on a new line, or, from a task line, in place of its task
   (the one replaced is deleted if untouched). A task taken from
   another note leaves its title there, as text.
+- **Searches ignore accents**: `deploiement` finds *Déploiement* - the
+  tables, the timesheet's tasks, the note's task picker
+  (`generic.search`, see `docs/search.md`).
 - A task line whose task is **done** is struck through, like a ticked
   to-do.
 - A task is about **several projects, or none**: one written in a note
