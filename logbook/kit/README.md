@@ -1,5 +1,17 @@
 # The logbook, to replace the old planner
 
+> These files run from the **assembled kit**, not from this folder of
+> the repository: the Dockerfile copies `vendor/` (the framework's
+> wheel) and `logbook/`, which only the kit has. Make it first, from
+> the repository's root:
+>
+>     python scripts/logbook_kit.py ../logbook-kit
+>
+> then run everything below in `../logbook-kit`. The same stack runs
+> from the repository too, without the kit: `docker compose -f
+> logbook/compose.yaml up --build -d`, settings in `logbook/.env`
+> (../README.md).
+
 Everything the logbook needs to run on its own machine, and the two
 scripts that move the old planner's data into it:
 
@@ -38,6 +50,11 @@ cp .env.example .env      # then fill it in: secret key, passwords, COMET/DES
 docker compose up --build -d
 ```
 
+Behind a proxy, set `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` in
+`.env` first: the build installs the libraries through it, `sync_kpi`
+reads COMET and DES through it. Docker pulls its images through its own
+setting (Docker Desktop: *Settings > Resources > Proxies*).
+
 The site is on http://localhost:4243 (`LOGBOOK_PORT`). The first start
 creates the tables and the administrator named in `.env`.
 
@@ -59,7 +76,9 @@ imported before is updated, not doubled.
 
 The choices it makes, and how to change them:
 
-- an activity becomes a **project**; a task keeps its opening and
+- an activity becomes the task's **activity type** (*Tasks > Activity
+  types*): the kind of work, not a project. The projects are set by
+  hand afterwards, and an import run again keeps them; a task keeps its opening and
   closing dates, so the figures stay what they were;
 - a non-conformity becomes an **FNC** with its criticality (Mineure,
   Majeure, Bloquant -> minor, major, critical); any other task a **DM**

@@ -53,6 +53,7 @@ from generic.sites import (
 from generic.sites.realtime import announce
 from planner import documents, imputations, timers
 from planner.models import (
+    Activity,
     Direction,
     Imputation,
     ImputationShare,
@@ -406,6 +407,7 @@ class TaskResource(ModelResource):
         "status",
         "priority",
         "projects",
+        "activity",
         "assignee",
         "due_on",
         "time_spent",
@@ -423,6 +425,7 @@ class TaskResource(ModelResource):
         "priority": TagStyle(colors=PRIORITY_COLORS),
         "criticality": TagStyle(colors=CRITICALITY_COLORS),
         "projects": TagStyle(color="color"),
+        "activity": TagStyle(color="color"),
         "labels": TagStyle(color="color"),
     }
     fieldsets = (
@@ -436,7 +439,8 @@ class TaskResource(ModelResource):
                 "fields": (
                     ("status", "priority"),
                     ("projects", "assignee"),
-                    ("imputation", "labels"),
+                    ("activity", "imputation"),
+                    "labels",
                     ("due_on", "estimate"),
                     "note",
                 )
@@ -455,6 +459,7 @@ class TaskResource(ModelResource):
                     "status",
                     "priority",
                     "projects",
+                    "activity",
                     "imputation",
                     "labels",
                     "assignee",
@@ -479,6 +484,7 @@ class TaskResource(ModelResource):
         "priority",
         "criticality",
         "projects",
+        "activity",
         "imputation",
         "labels",
         "assignee",
@@ -1192,6 +1198,21 @@ class TimeEntryResource(ModelResource):
             return obj.verified
 
         return super().has_record_action(request, obj, name)
+
+
+@register(Activity)
+class ActivityResource(ModelResource):
+    icon = "category"
+    group = GROUP
+    order = 6
+    description = _(
+        "The kinds of work a task is: development, support, a meeting."
+    )
+    list_display = ("name", "color")
+    search_fields = ("name",)
+    fields = (("name", "color"),)
+    tag_fields = {"name": TagStyle(color="color")}
+    related_tables = (RelatedTable("tasks"),)
 
 
 @register(Direction)

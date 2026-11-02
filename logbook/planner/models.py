@@ -68,6 +68,22 @@ class Project(models.Model):
         return self.name
 
 
+class Activity(models.Model):
+    """The kind of work a task is: development, support, a meeting -
+    the old planner's activity."""
+
+    name = models.CharField(_("name"), max_length=120, unique=True)
+    color = models.CharField(_("colour"), max_length=30, blank=True)
+
+    class Meta:
+        ordering = ("name",)
+        verbose_name = _("activity type")
+        verbose_name_plural = _("activity types")
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Direction(models.Model):
     """A department the time is charged to."""
 
@@ -210,6 +226,14 @@ class Task(models.Model):
     projects = models.ManyToManyField(
         Project,
         verbose_name=_("projects"),
+        blank=True,
+        related_name="tasks",
+    )
+    activity = models.ForeignKey(
+        Activity,
+        verbose_name=_("activity type"),
+        on_delete=models.PROTECT,
+        null=True,
         blank=True,
         related_name="tasks",
     )

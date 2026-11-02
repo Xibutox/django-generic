@@ -86,6 +86,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   docs/custom-fields.md.
 
 ### Fixed
+- The logbook in Docker: `logbook/kit/`'s files only build in the kit
+  `scripts/logbook_kit.py` assembles (they copy its `vendor/` and
+  `logbook/`), so run from the repository they failed on a missing
+  path. The kit's README says so, and the kit's stack (gunicorn,
+  PostgreSQL, the COMET/DES scheduler) now builds from the checkout
+  too: `docker compose -f logbook/compose.yaml up --build -d`, settings
+  in `logbook/.env`. Both read `HTTP_PROXY`, `HTTPS_PROXY` and
+  `NO_PROXY` from `.env`, for the build's pip and for `sync_kpi`.
+- The logbook's import made the old planner's activities projects:
+  they are the kind of work, not projects. A task now has an
+  **activity type** (`Task.activity`, *Tasks > Activity types*, in
+  its form, page, list and bulk edit), which the import fills; the
+  projects are left to set by hand, and an import run again keeps
+  them.
 - The "System" theme on a dark system drew the tables' sort arrows
   near-black, where an explicit dark choice draws them light grey:
   DataTables darkens them only for `data-theme="dark"`, which "System"

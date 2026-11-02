@@ -43,6 +43,25 @@ python manage.py runserver
 Sign in as `admin`, `alice` (a lead: verifies), `bob` (a planner) or
 `viewer` (reads), password `demo`.
 
+In Docker, from the repository's root (Docker Desktop on Windows):
+the kit's stack - gunicorn, PostgreSQL 18, the COMET/DES scheduler -
+built from this checkout, on http://localhost:4243 (`LOGBOOK_PORT`).
+The first start creates the tables and the administrator named in
+`.env` (no demo); the import and the switch-over are as in
+[kit/README.md](kit/README.md), with the export in `logbook/import/`.
+
+```bash
+cp logbook/kit/env.example logbook/.env    # then fill it in
+docker compose -f logbook/compose.yaml up --build -d
+docker compose -f logbook/compose.yaml run --rm web python manage.py import_planner /import/planner_export.json --user admin --dry-run
+```
+
+Behind a proxy, set `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` in
+`.env`: the build installs the libraries through it, and `sync_kpi`
+reads COMET and DES through it. Docker pulls the `python` and
+`postgres` images through its own setting (Docker Desktop: *Settings >
+Resources > Proxies*).
+
 ```
 logbook/
 ├── manage.py
@@ -52,7 +71,8 @@ logbook/
 │   └── wsgi.py
 └── planner/
     ├── models.py       Label, Project, Note, NoteLine, Task, TimeEntry,
-    │                   Direction, Imputation, ImputationShare, KpiRecord
+    │                   Activity, Direction, Imputation, ImputationShare,
+    │                   KpiRecord
     ├── kpi.py          the old planner's key figures API, same JSON
     ├── imputations.py  the imputation export (Excel, 7.4-hour days)
     ├── tools.py        COMET and DES, read by sync_kpi
@@ -65,6 +85,7 @@ logbook/
     └── management/commands/
         seed_planner.py, import_planner.py, sync_kpi.py
 migration/export_planner.py   run in the old planner: its data as JSON
+Dockerfile, compose.yaml      the kit's Docker stack, built from this checkout
 kit/                          Docker files for a standalone install
 ```
 
@@ -99,3 +120,4 @@ figures against the old API's month by month.
 `python scripts/logbook_kit.py <folder>` (from the repository's root)
 makes a standalone folder of it all - the logbook, the framework as a
 wheel, Docker and PostgreSQL - explained in [kit/README.md](kit/README.md).
+The kit's Docker files run in that folder, not in `kit/`.

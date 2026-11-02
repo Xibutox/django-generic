@@ -4,8 +4,32 @@
 # this file (copy .env.example).
 #
 #   docker compose up --build -d
+#
+# Run in the kit scripts/logbook_kit.py assembles, not in the
+# repository: vendor/ and logbook/ are the kit's (README.md).
 
 name: logbook
+
+# Behind a proxy: HTTP_PROXY, HTTPS_PROXY and NO_PROXY in .env, for the
+# build (pip) and for sync_kpi.
+x-build: &build
+  context: .
+  args:
+    HTTP_PROXY: ${HTTP_PROXY:-}
+    HTTPS_PROXY: ${HTTPS_PROXY:-}
+    NO_PROXY: ${NO_PROXY:-}
+    http_proxy: ${HTTP_PROXY:-}
+    https_proxy: ${HTTPS_PROXY:-}
+    no_proxy: ${NO_PROXY:-}
+
+x-proxy: &proxy
+  HTTP_PROXY: ${HTTP_PROXY:-}
+  HTTPS_PROXY: ${HTTPS_PROXY:-}
+  # The database is never reached through the proxy.
+  NO_PROXY: db,localhost,127.0.0.1${NO_PROXY:+,}${NO_PROXY:-}
+  http_proxy: ${HTTP_PROXY:-}
+  https_proxy: ${HTTPS_PROXY:-}
+  no_proxy: db,localhost,127.0.0.1${NO_PROXY:+,}${NO_PROXY:-}
 
 services:
   db:
@@ -24,10 +48,11 @@ services:
       retries: 10
 
   web:
-    build: .
+    build: *build
     restart: unless-stopped
     env_file: .env
     environment:
+      <<: *proxy
       POSTGRES_HOST: db
       POSTGRES_DB: logbook
       POSTGRES_USER: logbook
@@ -41,10 +66,11 @@ services:
         condition: service_healthy
 
   scheduler:
-    build: .
+    build: *build
     restart: unless-stopped
     env_file: .env
     environment:
+      <<: *proxy
       POSTGRES_HOST: db
       POSTGRES_DB: logbook
       POSTGRES_USER: logbook
