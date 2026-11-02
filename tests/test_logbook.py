@@ -315,7 +315,7 @@ LEGACY = textwrap.dedent("""
     owner = get_user_model().objects.create_superuser("bastien", "", "x")
 
     from planner.models import (
-        ImputationShare, KpiRecord, Project, Task, TimeEntry,
+        Activity, ImputationShare, KpiRecord, Project, Task, TimeEntry,
     )
 
     EXPORT = "migration/sample_export.json"
@@ -331,16 +331,31 @@ LEGACY = textwrap.dedent("""
     assert not Task.objects.exists()
 
     # Twice: nothing doubled, and the key figures as the old API said.
-    for _ in range(2):
+    # Between the two, a project set by hand: the import keeps it.
+    for run in range(2):
         out = io.StringIO()
         call_command("import_planner", EXPORT, "--user", "bastien", stdout=out)
         report = out.getvalue()
         assert "differ" not in report, report
         assert "periods identical to the old API" in report, report
+        if not run:
+            by_hand = Project.objects.create(name="Set by hand")
+            Task.objects.first().projects.add(by_hand)
 
     assert Task.objects.count() == len(data["taches"])
     assert TimeEntry.objects.count() == len(data["emargements"])
-    assert Project.objects.count() == len(data["activites"])
+    # The activities are activity types; the only project, by hand.
+    assert list(Project.objects.values_list("name", flat=True)) == [
+        "Set by hand"
+    ]
+    assert Task.objects.first().projects.get() == by_hand
+    activities = {row["id"]: row["nom"] for row in data["activites"]}
+    assert Activity.objects.count() == len(activities)
+    for row in data["taches"]:
+        task = Task.objects.get(legacy_id=row["id"])
+        assert (task.activity and task.activity.name) == activities.get(
+            row["activite"]
+        ), row
     assert ImputationShare.objects.count() == len(data["matrice"])
     assert KpiRecord.objects.count() == (
         len(data["kpi_mois"]) + len(data["kpi_annee"])

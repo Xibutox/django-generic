@@ -7,8 +7,10 @@ its old id and updated, nothing is doubled.
 
 What goes where:
 
-- Activite -> Project; Direction, Imputation -> the same; Etiquette ->
-  Label; MatriceImputation -> the distribution matrix (replaced);
+- Activite -> Activity, the task's activity type: the kind of work,
+  not a project. The projects are left to set by hand, and kept when
+  the import runs again. Direction, Imputation -> the same; Etiquette
+  -> Label; MatriceImputation -> the distribution matrix (replaced);
   KPIHistory / KPIYearHistory -> tool usage.
 - Tache -> Task: a non-conformity is an FNC with its criticality
   (Mineure, Majeure, Bloquant -> minor, major, critical), any other a
@@ -41,12 +43,12 @@ from django.utils import timezone
 
 from planner import kpi
 from planner.models import (
+    Activity,
     Direction,
     Imputation,
     ImputationShare,
     KpiRecord,
     Label,
-    Project,
     Task,
     TimeEntry,
 )
@@ -142,8 +144,9 @@ class Command(BaseCommand):
     # -- the import -------------------------------------------------------
 
     def run(self, data: dict[str, Any]) -> None:
-        projects = {
-            row["id"]: Project.objects.get_or_create(name=row["nom"])[0]
+        # The old activity is the kind of work: the activity type.
+        activities = {
+            row["id"]: Activity.objects.get_or_create(name=row["nom"])[0]
             for row in data.get("activites", [])
         }
         directions = {
@@ -191,13 +194,13 @@ class Command(BaseCommand):
                     },
                 )
 
-        tasks = self.tasks(data, projects, imputations, labels)
+        tasks = self.tasks(data, activities, imputations, labels)
         self.time(data, tasks)
 
     def tasks(
         self,
         data: dict[str, Any],
-        projects: dict[int, Project],
+        activities: dict[int, Activity],
         imputations: dict[int, Imputation],
         labels: dict[int, Label],
     ) -> dict[int, Task]:
@@ -233,16 +236,14 @@ class Command(BaseCommand):
                 else None
             )
             task.imputation = imputations.get(row["imputation"])
+            task.activity = activities.get(row["activite"])
 
             if task.assignee_id is None:
                 task.assignee = self.user
 
             task.save()
-            task.projects.set(
-                [projects[row["activite"]]]
-                if row["activite"] in projects
-                else []
-            )
+            # The projects are not the old planner's: whatever was set
+            # by hand since the last import stays.
             task.labels.set(
                 [labels[key] for key in row["etiquettes"] if key in labels]
             )

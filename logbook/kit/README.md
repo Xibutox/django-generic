@@ -76,7 +76,9 @@ imported before is updated, not doubled.
 
 The choices it makes, and how to change them:
 
-- an activity becomes a **project**; a task keeps its opening and
+- an activity becomes the task's **activity type** (*Tasks > Activity
+  types*): the kind of work, not a project. The projects are set by
+  hand afterwards, and an import run again keeps them; a task keeps its opening and
   closing dates, so the figures stay what they were;
 - a non-conformity becomes an **FNC** with its criticality (Mineure,
   Majeure, Bloquant -> minor, major, critical); any other task a **DM**

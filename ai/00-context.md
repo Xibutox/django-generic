@@ -427,8 +427,10 @@ and four weeks of time. Kept working by `tests/test_logbook.py`, run in
 its own process.
 
 The logbook also replaces an older planner (`logbook/migration/`,
-`logbook/kit/`): `Direction`, `Imputation` (a task's accounting code,
-`Task.imputation`), `ImputationShare` (the distribution matrix) and
+`logbook/kit/`): `Activity` (a task's activity type, the old
+planner's activity, `Task.activity`; the import sets it and leaves
+`Task.projects` to the users), `Direction`, `Imputation` (a task's
+accounting code, `Task.imputation`), `ImputationShare` (the distribution matrix) and
 `KpiRecord` (COMET/DES usage by month and year, written by `sync_kpi`
 through `planner/tools.py`, every address and secret from the
 environment). `planner/kpi.py` serves the old key figures API at

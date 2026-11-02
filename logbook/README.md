@@ -71,7 +71,8 @@ logbook/
 │   └── wsgi.py
 └── planner/
     ├── models.py       Label, Project, Note, NoteLine, Task, TimeEntry,
-    │                   Direction, Imputation, ImputationShare, KpiRecord
+    │                   Activity, Direction, Imputation, ImputationShare,
+    │                   KpiRecord
     ├── kpi.py          the old planner's key figures API, same JSON
     ├── imputations.py  the imputation export (Excel, 7.4-hour days)
     ├── tools.py        COMET and DES, read by sync_kpi
