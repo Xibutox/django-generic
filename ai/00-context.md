@@ -271,6 +271,9 @@ generic/
     ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
     ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
     │                       element (tree, cards, calendar); loaded by base.html
+    ├── js/table_frame.js   Generic.tableFrame: a data table's, tree's or outline's
+    │                       rows scroll in a frame sized so its card fits the
+    │                       window; header sticky; data-table-frame="false" opts out
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
     │                       resize, allocate (§5.20)
@@ -3204,6 +3207,14 @@ def payments():                                # quick: runs on every refresh
 - `QuerySet.update()` fires no signal: `announce(resource, "bulk")`
   for the live tables (the history records it by itself).
 - After changing JS/CSS, browsers cache static files: hard reload.
+- **A sticky header and collapsed borders**: with `border-collapse:
+  collapse` a border is the table's, not the cell's - it stays behind
+  when the header sticks and the rows show through it. Under a sticky
+  header draw lines as `box-shadow: inset 0 -1px 0` on the cells
+  (`datatables.css`, `tree.css`), and stick it at `top: -1px` so a
+  fractional scale leaves no seam above it. A box with `overflow-x:
+  auto` scrolls both ways: a sticky header sticks to it, not the page -
+  hence the frame (`table_frame.js`).
 - **"System" theme sets no `data-theme`**: a colour keyed on
   `[data-theme="dark"]` alone stays light on a dark system. Use
   `light-dark()` (it follows `color-scheme`, set for all three choices);

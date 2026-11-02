@@ -13,6 +13,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Long tables scroll in a frame of the window's height: a data table's,
+  a tree's or an outline's rows scroll inside their own box, the column
+  titles and search row pinned at its top, sized so that the toolbar,
+  the headers, the rows and the paging are in sight together
+  (`table_frame.js`, loaded by `base.html`). A short table keeps its
+  height, a table in a dialog is left alone, `data-table-frame="false"`
+  on the frame opts out (docs/ui.md, The frame).
 - Personal data (GDPR), `generic.privacy`: `personal_data =
   PersonalData(fields={"name": "pseudonym", "email": "email"},
   subject="user", email=("email",), retention=Retention(days=,

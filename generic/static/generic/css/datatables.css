@@ -68,6 +68,41 @@
   padding: 0;
 }
 
+/* A long table scrolls down inside the same box, framed to the window
+   by table_frame.js, and its header stays at the top of it: the
+   toolbar, the titles and the paging in sight together. */
+.dt-container .dt-layout-table > .dt-layout-cell {
+  overflow-y: auto;
+}
+
+/* A pixel above the box's top: at a fractional scale the edge is
+   rounded apart from the header's, and a line of the rows showed
+   through between them. */
+table.dataTable > thead {
+  position: sticky;
+  top: -1px;
+  z-index: 3;
+  background: var(--surface-sunken);
+}
+
+/* A collapsed border is the table's, not the cell's: it stays where
+   the rows scroll by, and the rows show through it. Under the header
+   the lines are drawn by its cells instead, so they travel with them. */
+table.dataTable > thead > tr > th,
+table.dataTable > thead > tr > td {
+  border-bottom-width: 0 !important;
+  box-shadow: inset 0 -1px 0 var(--border-color);
+}
+
+/* At a fractional scale the seam between two header rows is drawn
+   half-covered, and a row scrolling under it shows through: the upper
+   row's colour reaches over it. */
+table.dataTable > thead > tr:not(:last-child) > * {
+  box-shadow:
+    inset 0 -1px 0 var(--border-color),
+    0 1px 0 var(--surface-sunken);
+}
+
 .dt-container .dt-length,
 .dt-container .dt-info,
 .dt-container .dt-paging {
