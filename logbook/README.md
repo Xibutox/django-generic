@@ -40,6 +40,13 @@ python manage.py seed_planner
 python manage.py runserver
 ```
 
+Or in Docker, from the repository's root (Docker Desktop on Windows):
+SQLite in a volume, the demo, http://localhost:8000/.
+
+```bash
+docker compose -f logbook/compose.yaml up --build
+```
+
 Sign in as `admin`, `alice` (a lead: verifies), `bob` (a planner) or
 `viewer` (reads), password `demo`.
 
@@ -65,6 +72,7 @@ logbook/
     └── management/commands/
         seed_planner.py, import_planner.py, sync_kpi.py
 migration/export_planner.py   run in the old planner: its data as JSON
+Dockerfile, compose.yaml      the demo in Docker, from this checkout
 kit/                          Docker files for a standalone install
 ```
 
@@ -99,3 +107,4 @@ figures against the old API's month by month.
 `python scripts/logbook_kit.py <folder>` (from the repository's root)
 makes a standalone folder of it all - the logbook, the framework as a
 wheel, Docker and PostgreSQL - explained in [kit/README.md](kit/README.md).
+The kit's Docker files run in that folder, not in `kit/`.

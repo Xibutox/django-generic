@@ -4,6 +4,9 @@
 # this file (copy .env.example).
 #
 #   docker compose up --build -d
+#
+# Run in the kit scripts/logbook_kit.py assembles, not in the
+# repository: vendor/ and logbook/ are the kit's (README.md).
 
 name: logbook
 

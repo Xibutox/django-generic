@@ -19,7 +19,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LOGBOOK = ROOT / "logbook"
 SKIPPED = shutil.ignore_patterns(
-    "db.sqlite3", "staticfiles", "__pycache__", "*.pyc", "kit", "migration"
+    "db.sqlite3",
+    "staticfiles",
+    "__pycache__",
+    "*.pyc",
+    "kit",
+    "migration",
+    # The checkout's own Docker files (compose.yaml): the kit has its own.
+    "Dockerfile",
+    "compose.yaml",
 )
 RENAMED = {"env.example": ".env.example"}
 

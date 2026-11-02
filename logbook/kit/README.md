@@ -1,5 +1,16 @@
 # The logbook, to replace the old planner
 
+> These files run from the **assembled kit**, not from this folder of
+> the repository: the Dockerfile copies `vendor/` (the framework's
+> wheel) and `logbook/`, which only the kit has. Make it first, from
+> the repository's root:
+>
+>     python scripts/logbook_kit.py ../logbook-kit
+>
+> then run everything below in `../logbook-kit`. To try the logbook
+> from the repository instead: `docker compose -f logbook/compose.yaml
+> up --build` (SQLite and the demo, see ../README.md).
+
 Everything the logbook needs to run on its own machine, and the two
 scripts that move the old planner's data into it:
 

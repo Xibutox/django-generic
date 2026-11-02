@@ -1,0 +1,26 @@
+# The logbook from this checkout, one service, SQLite and its demo:
+#
+#   docker compose -f logbook/compose.yaml up --build
+#
+# then http://localhost:8000/ (LOGBOOK_PORT for another port), signed in
+# as admin, alice, bob or viewer, password demo. For trying it on this
+# machine: the secret key and the passwords are known to everyone.
+#
+# The standalone install - PostgreSQL, gunicorn, the KPI scheduler -
+# is kit/, run from the kit that scripts/logbook_kit.py assembles, not
+# from here (kit/README.md).
+
+name: logbook-demo
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: logbook/Dockerfile
+    ports:
+      - "${LOGBOOK_PORT:-8000}:8000"
+    volumes:
+      - logbook-data:/data
+
+volumes:
+  logbook-data:
