@@ -314,3 +314,21 @@ msgstr "Une tâche existante : la mettre dans la note, ou lui ajouter les lignes
 
 msgid "An existing task..."
 msgstr "Une tâche existante..."
+
+msgid "Due date"
+msgstr "Échéance"
+
+msgid "Late: due %(date)s - change"
+msgstr "En retard : échéance le %(date)s - modifier"
+
+msgid "Due %(date)s - change"
+msgstr "Échéance le %(date)s - modifier"
+
+msgid "Set a due date"
+msgstr "Fixer une échéance"
+
+msgid "Assignee"
+msgstr "Responsable"
+
+msgid "Assignee: %(name)s"
+msgstr "Responsable : %(name)s"

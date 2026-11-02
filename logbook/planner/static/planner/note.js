@@ -228,6 +228,7 @@
     this.statuses = answer.statuses || [];
     this.criticalities = answer.criticalities || [];
     this.title = answer.title || "";
+    this.today = answer.today || "";
     this.lines = (answer.lines || []).map(function (line) {
       return {
         key: key(),
@@ -609,6 +610,25 @@
       box.appendChild(criticality);
     }
 
+    box.appendChild(this.dueDate(line));
+
+    // Who does it, as initials; the name on hover.
+    if (task.assignee) {
+      var initials = task.assignee
+        .split(/[\s._-]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(function (part) {
+          return part.charAt(0).toUpperCase();
+        })
+        .join("");
+      var who = el("span", "note-line__assignee", initials);
+
+      who.title = Generic.format(t("Assignee: %(name)s"), { name: task.assignee });
+      who.setAttribute("aria-label", who.title);
+      box.appendChild(who);
+    }
+
     var spent = el("span", "note-line__hours", hours(task.hours));
 
     spent.title = t("Time spent");
@@ -627,6 +647,63 @@
       });
       box.appendChild(timer);
     }
+  };
+
+  /** A task's due date: a chip opening the browser's date picker; the
+   * date picked is saved at once, Clear empties it. Late in red. */
+  NoteEditor.prototype.dueDate = function (line) {
+    var self = this;
+    var task = line.task;
+    var due = task.dueOn || "";
+    var late = due && this.today && due < this.today && task.status !== "done";
+    var wrap = el("span", "note-line__due" + (due ? "" : " is-empty") + (late ? " is-late" : ""));
+    var chip = el("button", "button button--sm button--ghost note-line__due-button");
+    var input = el("input", "note-line__due-input");
+    var label;
+
+    if (due) {
+      var parts = due.split("-");
+      var date = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+
+      label = date.toLocaleDateString(document.documentElement.lang || undefined, {
+        day: "numeric",
+        month: "short",
+        year: parts[0] === this.today.slice(0, 4) ? undefined : "numeric"
+      });
+    }
+
+    chip.type = "button";
+    chip.disabled = !this.canEdit;
+    chip.appendChild(icon(late ? "event_busy" : "event"));
+    if (label) {
+      chip.appendChild(el("span", "", label));
+    }
+    chip.title = due ? Generic.format(late ? t("Late: due %(date)s - change") : t("Due %(date)s - change"), { date: label }) : t("Set a due date");
+    chip.setAttribute("aria-label", chip.title);
+
+    input.type = "date";
+    input.value = due;
+    input.tabIndex = -1;
+    input.setAttribute("aria-hidden", "true");
+    input.addEventListener("change", function () {
+      self.setTaskField(line, "due_on", input.value || null, "dueOn");
+    });
+    chip.addEventListener("click", function () {
+      try {
+        input.showPicker();
+      } catch (error) {
+        // No picker to show (an old browser): the field itself, typed in.
+        input.classList.add("is-shown");
+        input.removeAttribute("aria-hidden");
+        input.tabIndex = 0;
+        input.focus();
+      }
+    });
+
+    wrap.appendChild(chip);
+    wrap.appendChild(input);
+
+    return wrap;
   };
 
   NoteEditor.prototype.grow = function (line) {
@@ -2300,7 +2377,7 @@
     this.setTaskField(line, "status", status);
   };
 
-  NoteEditor.prototype.setTaskField = function (line, name, value) {
+  NoteEditor.prototype.setTaskField = function (line, name, value, key) {
     var self = this;
     var task = line.task;
     var body = {};
@@ -2313,7 +2390,7 @@
     Generic.api
       .patch(task.api, body)
       .then(function () {
-        task[name] = value;
+        task[key || name] = value;
         self.paintTask(line);
       })
       .catch(function (error) {

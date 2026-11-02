@@ -46,7 +46,7 @@ ATTACH_CHOICES = 20
 def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
     """The note, its lines and their tasks, for the editor."""
     user = request.user
-    lines = list(note.lines.select_related("task"))
+    lines = list(note.lines.select_related("task__assignee"))
     tasks = [line.task for line in lines if line.task_id]
     hours = dict(
         TimeEntry.objects.filter(task__in=tasks)
@@ -80,11 +80,19 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
             "timerUrl": task_resource.get_page_url("timer", task),
             "hours": str(hours.get(task.pk) or "0.00"),
             "running": running == task.pk,
+            "dueOn": task.due_on.isoformat() if task.due_on else None,
+            "assignee": (
+                (task.assignee.get_full_name() or task.assignee.get_username())
+                if task.assignee
+                else None
+            ),
         }
 
     return {
         "id": note.pk,
         "title": note.title,
+        # Past it, an open task's due date is late.
+        "today": timezone.localdate().isoformat(),
         "statuses": [
             {"value": value, "label": str(label)}
             for value, label in Task.Status.choices

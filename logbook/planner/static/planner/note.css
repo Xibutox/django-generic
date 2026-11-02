@@ -162,7 +162,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-1) var(--space-2);
-  max-width: 55%;
+  max-width: 65%;
   padding: calc((var(--line-box) - var(--control-height-sm)) / 2) var(--space-1) 0 0;
   font-size: var(--font-size-xs);
 }
@@ -487,4 +487,54 @@
   margin-bottom: var(--space-2);
   color: var(--text-secondary);
   cursor: pointer;
+}
+
+/* A task line's due date: a chip that opens the date picker. */
+.note-line__due {
+  position: relative;
+  display: inline-flex;
+}
+
+.note-line__due-button {
+  gap: 0.25rem;
+  padding-inline: var(--space-1);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.note-line__due.is-empty .note-line__due-button {
+  color: var(--text-muted);
+}
+
+.note-line__due.is-late .note-line__due-button {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* Under the chip: only its picker shows. */
+.note-line__due-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.note-line__due-input.is-shown {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.note-line__assignee {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
 }

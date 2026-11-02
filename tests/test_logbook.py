@@ -107,6 +107,8 @@ SCENARIO = textwrap.dedent("""
     kinds = [line["kind"] for line in read["lines"]]
     assert kinds.count("task") == 4, kinds
     first_task = next(line for line in read["lines"] if line["task"])
+    assert read["today"] and "dueOn" in first_task["task"]
+    assert first_task["task"]["assignee"], first_task
     assert first_task["task"]["reference"].startswith("FNC-")
 
     # A line typed as a task makes a task, numbered by its kind; a task
