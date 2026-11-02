@@ -206,6 +206,31 @@ SCENARIO = textwrap.dedent("""
     assert target.description.endswith(
         "- Ask the bank\\n  - about 3-D Secure"
     ), target.description
+    # An existing task no line shows is put in the note by a task line
+    # naming it; one a line already shows is refused.
+    loose = Task.objects.create(kind="AUT", title="Imported, in no note")
+    choices = bob.get(ATTACH, {"q": "imported"}).json()["tasks"]
+    assert [(c["id"], c["inNote"]) for c in choices] == [(loose.pk, None)]
+    shown = bob.get(ATTACH, {"q": "checkout one-page"}).json()["tasks"][0]
+    assert shown["inNote"] == note.title and shown["here"] is True
+    current = [
+        {k: line[k] for k in ("id", "kind", "indent", "text", "done")}
+        for line in bob.get(DOCUMENT).json()["lines"]
+    ]
+    linked = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": loose.title, "taskKind": "AUT",
+         "taskId": loose.pk},
+    ]})
+    assert linked.status_code == 200, linked.content
+    assert linked.json()["lines"][-1]["task"]["id"] == loose.pk
+    loose.refresh_from_db()
+    assert loose.note == note and loose.line.note == note
+    assert Task.objects.filter(title=loose.title).count() == 1
+    again = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": "x", "taskKind": "DM",
+         "taskId": target.pk},
+    ]})
+    assert again.status_code == 400, again.content
     for body in (
         {"task": target.pk, "text": "   "},
         {"task": "1", "text": "x"},

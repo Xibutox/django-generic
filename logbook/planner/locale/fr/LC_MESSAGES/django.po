@@ -601,3 +601,6 @@ msgstr "Vous ne pouvez pas modifier cette tâche."
 
 msgid "From the note \"%(note)s\", %(date)s:"
 msgstr "De la note « %(note)s », %(date)s :"
+
+msgid "This task is already in a note, or cannot be found: reload the page."
+msgstr "Cette tâche est déjà dans une note, ou introuvable : rechargez la page."

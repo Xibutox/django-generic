@@ -338,7 +338,7 @@ class NoteResource(ModelResource):
                 )
 
             try:
-                documents.write(note, request, read_json(request))
+                documents.write(note, request, read_json(request), self.site)
             except APIException as error:
                 return JsonResponse(
                     error_body(error.detail), status=error.status_code

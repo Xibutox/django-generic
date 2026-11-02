@@ -270,3 +270,47 @@ msgstr "La réponse du serveur n'a pas pu être lue : rechargez la page, ou reco
 
 msgid "The server's answer could not be read: the note is kept here and sent again in a moment."
 msgstr "La réponse du serveur n'a pas pu être lue : la note est gardée ici et renvoyée dans un instant."
+
+msgid "An existing task"
+msgstr "Une tâche existante"
+
+msgid "Add the text to its specification"
+msgstr "Ajouter le texte à sa spécification"
+
+msgid "Put the task in the note"
+msgstr "Mettre la tâche dans la note"
+
+msgid "Put the task you pick in this note, as a task line - or add the selected lines to its specification."
+msgstr "Mettez la tâche choisie dans cette note, comme une ligne de tâche - ou ajoutez les lignes sélectionnées à sa spécification."
+
+msgid "Text to add: %(count)s line"
+msgid_plural "Text to add: %(count)s lines"
+msgstr[0] "Texte à ajouter : %(count)s ligne"
+msgstr[1] "Texte à ajouter : %(count)s lignes"
+
+msgid "%(task)s is already in this note."
+msgstr "%(task)s est déjà dans cette note."
+
+msgid "%(task)s is a line of the note \"%(note)s\": it can take text, and stays there."
+msgstr "%(task)s est une ligne de la note « %(note)s » : elle peut recevoir du texte, et y reste."
+
+msgid "in this note"
+msgstr "dans cette note"
+
+msgid "in %(note)s"
+msgstr "dans %(note)s"
+
+msgid "The server's answer could not be read: the text may not have been added."
+msgstr "La réponse du serveur n'a pas pu être lue : le texte n'a peut-être pas été ajouté."
+
+msgid "%(task)s put in the note."
+msgstr "%(task)s mise dans la note."
+
+msgid "%(task)s, in the note once saved"
+msgstr "%(task)s, dans la note une fois enregistrée"
+
+msgid "An existing task: put it in the note, or add the selected lines to it"
+msgstr "Une tâche existante : la mettre dans la note, ou lui ajouter les lignes sélectionnées"
+
+msgid "An existing task..."
+msgstr "Une tâche existante..."

@@ -372,7 +372,7 @@
     actions.appendChild(copy);
 
     if (this.canAttach) {
-      var attach = iconButton("attach_file", t("Attach the selected lines, or the current one, to a task"));
+      var attach = iconButton("add_link", t("An existing task: put it in the note, or add the selected lines to it"));
 
       attach.addEventListener("mousedown", function (event) {
         event.preventDefault();
@@ -554,7 +554,13 @@
     box.appendChild(kind);
 
     if (!task) {
-      box.appendChild(el("span", "note-line__new muted", t("new task, saved soon")));
+      box.appendChild(
+        el(
+          "span",
+          "note-line__new muted",
+          line.linkTask ? Generic.format(t("%(task)s, in the note once saved"), { task: line.linkReference }) : t("new task, saved soon")
+        )
+      );
       return;
     }
 
@@ -733,7 +739,7 @@
     });
 
     if (this.canAttach) {
-      item("attach_file", t("Attach to a task..."), function () {
+      item("add_link", t("An existing task..."), function () {
         self.attach([line]);
       });
     }
@@ -1867,49 +1873,32 @@
 
   /* -- Attaching lines to a task ------------------------------------------- */
 
-  /** The lines' text added to a task's specification - a task picked in
-   * a dialog, searched by reference or title. */
+  /** An existing task, picked in a dialog (searched by reference or
+   * title): put in the note as a task line, or given the lines' text at
+   * the end of its specification. */
   NoteEditor.prototype.attach = function (lines) {
     var self = this;
     var written = this.plain(lines).filter(function (line) {
-      return line.text.trim();
+      return line.text.trim() && !line.reference;
     });
 
     if (!this.canAttach) {
       return;
     }
 
-    if (!written.length) {
-      Generic.toast(t("Nothing to attach: write or select the lines first."), "warning");
-      return;
-    }
-
-    var text = clipboard.toText(written, { indent: "  " });
-    var dialog = Generic.dialogs.open({ title: t("Attach to a task"), icon: "attach_file", wide: true });
-    var preview = el("pre", "note-attach__preview", text);
+    var text = written.length ? clipboard.toText(written, { indent: "  " }) : "";
+    var dialog = Generic.dialogs.open({ title: t("An existing task"), icon: "add_link", wide: true });
     var search = el("input", "input");
     var results = el("div", "note-attach__results");
+    var why = el("p", "muted note-attach__why");
     var chosen = null;
     var options = [];
     var cancel = el("button", "button button--ghost", t("Cancel"));
-    var accept = el("button", "button button--primary", t("Attach"));
+    var addText = el("button", "button", t("Add the text to its specification"));
+    var accept = el("button", "button button--primary", t("Put the task in the note"));
     var waiting = null;
 
-    dialog.body.appendChild(
-      el(
-        "p",
-        "muted",
-        Generic.format(
-          Generic.nt(
-            "This line is added to the specification of the task you pick, with the note's title and today's date.",
-            "These %(count)s lines are added to the specification of the task you pick, with the note's title and today's date.",
-            written.length
-          ),
-          { count: written.length }
-        )
-      )
-    );
-    dialog.body.appendChild(preview);
+    dialog.body.appendChild(el("p", "muted", t("Put the task you pick in this note, as a task line - or add the selected lines to its specification.")));
 
     var field = el("label", "sf-field note-attach__search");
 
@@ -1924,15 +1913,36 @@
     results.setAttribute("role", "listbox");
     results.setAttribute("aria-label", t("Tasks"));
     dialog.body.appendChild(results);
+    why.hidden = true;
+    dialog.body.appendChild(why);
+
+    if (text) {
+      var details = el("details", "note-attach__text");
+
+      details.appendChild(
+        el(
+          "summary",
+          "",
+          Generic.format(Generic.nt("Text to add: %(count)s line", "Text to add: %(count)s lines", written.length), { count: written.length })
+        )
+      );
+      details.appendChild(el("pre", "note-attach__preview", text));
+      dialog.body.appendChild(details);
+    }
 
     cancel.type = "button";
     accept.type = "button";
+    addText.type = "button";
     accept.disabled = true;
+    addText.disabled = true;
+    addText.hidden = !text;
     cancel.addEventListener("click", function () {
       dialog.close(null);
     });
-    accept.addEventListener("click", send);
+    accept.addEventListener("click", put);
+    addText.addEventListener("click", send);
     dialog.footer.appendChild(cancel);
+    dialog.footer.appendChild(addText);
     dialog.footer.appendChild(accept);
 
     function pick(option) {
@@ -1940,7 +1950,16 @@
       options.forEach(function (other) {
         other.node.setAttribute("aria-selected", other === option ? "true" : "false");
       });
-      accept.disabled = !chosen;
+      addText.disabled = !chosen;
+      accept.disabled = !chosen || !!chosen.inNote || self.lines.some(function (line) {
+        return line.linkTask === chosen.id;
+      });
+      why.hidden = !chosen || !chosen.inNote;
+      why.textContent = !chosen || !chosen.inNote
+        ? ""
+        : chosen.here
+          ? Generic.format(t("%(task)s is already in this note."), { task: chosen.reference })
+          : Generic.format(t("%(task)s is a line of the note \"%(note)s\": it can take text, and stays there."), { task: chosen.reference, note: chosen.inNote });
 
       if (option) {
         option.node.scrollIntoView({ block: "nearest" });
@@ -1965,19 +1984,27 @@
         node.setAttribute("role", "option");
         node.appendChild(el("span", "tag note-line__task-kind note-line__task-kind--" + String(task.kind).toLowerCase(), task.reference));
         node.appendChild(el("span", "note-attach__title", task.title));
+
+        if (task.inNote) {
+          node.appendChild(el("span", "muted note-attach__status", task.here ? t("in this note") : Generic.format(t("in %(note)s"), { note: task.inNote })));
+        }
+
         node.appendChild(el("span", "muted note-attach__status", task.statusLabel));
         node.addEventListener("click", function () {
           pick(option);
         });
         node.addEventListener("dblclick", function () {
           pick(option);
-          send();
+
+          if (!accept.disabled) {
+            put();
+          }
         });
         results.appendChild(node);
         options.push(option);
       });
 
-      // A search typed: its best match is picked, Enter attaches.
+      // A search typed: its best match is picked, Enter puts it in.
       pick(search.value.trim() ? options[0] : null);
     }
 
@@ -1988,7 +2015,7 @@
         .get(self.attachUrl, { q: asked })
         .then(function (answer) {
           if (search.value.trim() === asked) {
-            draw(answer.tasks || []);
+            draw((answer && answer.tasks) || []);
           }
         })
         .catch(function (error) {
@@ -1997,17 +2024,30 @@
         });
     }
 
+    function put() {
+      if (!chosen || accept.disabled) {
+        return;
+      }
+
+      dialog.close(true);
+      self.linkTask(chosen, lines);
+    }
+
     function send() {
-      if (!chosen) {
+      if (!chosen || !text) {
         return;
       }
 
       var task = chosen;
 
-      accept.disabled = true;
+      addText.disabled = true;
       Generic.api
         .post(self.attachUrl, { task: task.id, text: text })
         .then(function (answer) {
+          if (!answer || !answer.id) {
+            throw new Error(t("The server's answer could not be read: the text may not have been added."));
+          }
+
           dialog.close(true);
           Generic.toast(
             Generic.format(t("Added to the specification of %(task)s."), { task: answer.reference || task.reference }),
@@ -2026,7 +2066,7 @@
           );
         })
         .catch(function (error) {
-          accept.disabled = false;
+          addText.disabled = false;
           Generic.toast((error && error.message) || t("The text could not be attached."), "error");
         });
     }
@@ -2052,7 +2092,12 @@
         pick(options[Math.max(at - 1, 0)]);
       } else if (event.key === "Enter") {
         event.preventDefault();
-        send();
+
+        if (!accept.disabled) {
+          put();
+        } else {
+          send();
+        }
       }
     });
 
@@ -2066,6 +2111,38 @@
 
     search.focus();
     load();
+  };
+
+  /** An existing task as a task line: the current line when it is
+   * empty, a new one under the lines given otherwise. The save links it
+   * (planner/documents.py, link). */
+  NoteEditor.prototype.linkTask = function (task, lines) {
+    var after = lines && lines.length ? lines[lines.length - 1] : this.current || this.lines[this.lines.length - 1];
+    var line;
+
+    this.remember();
+    this.clearSelection();
+
+    if (after && !after.input.value && !after.task && !after.linkTask) {
+      line = after;
+      line.kind = "task";
+    } else {
+      line = this.blank("task", after ? after.indent : 0, task.kind);
+      this.insert(line, after ? this.lines.indexOf(after) + 1 : this.lines.length);
+    }
+
+    line.taskKind = task.kind;
+    line.linkTask = task.id;
+    line.linkReference = task.reference;
+    line.text = task.title;
+    line.input.value = task.title;
+    line.done = false;
+    this.paint(line);
+    this.grow(line);
+    this.focus(line, null);
+    this.changed();
+    this.undoReady = true;
+    this.offerUndo(Generic.format(t("%(task)s put in the note."), { task: task.reference }));
   };
 
   /* -- Saving -------------------------------------------------------------- */
@@ -2114,7 +2191,8 @@
           indent: line.indent,
           text: line.text,
           done: line.done,
-          taskKind: line.taskKind
+          taskKind: line.taskKind,
+          taskId: line.kind === "task" && !line.task && line.linkTask ? line.linkTask : null
         };
       })
     };
@@ -2149,6 +2227,10 @@
             var before = line.task ? line.task.id : null;
 
             line.task = stored.task;
+
+            if (stored.task) {
+              line.linkTask = null;
+            }
 
             if (stored.task && before !== stored.task.id) {
               tasksMoved = true;

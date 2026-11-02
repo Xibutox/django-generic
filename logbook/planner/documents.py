@@ -147,6 +147,7 @@ def clean_lines(payload: Any) -> tuple[str | None, list[dict[str, Any]]]:
             indent = 0
 
         line_id = item.get("id")
+        task_id = item.get("taskId")
 
         lines.append(
             {
@@ -155,6 +156,12 @@ def clean_lines(payload: Any) -> tuple[str | None, list[dict[str, Any]]]:
                 "indent": indent,
                 "text": str(item.get("text") or "")[:MAX_TEXT],
                 "done": bool(item.get("done")),
+                # An existing task the line is to show (attach_choices).
+                "task_id": (
+                    task_id
+                    if isinstance(task_id, int) and item["kind"] == "task"
+                    else None
+                ),
                 "task_kind": (
                     item.get("taskKind")
                     if item.get("taskKind") in task_kinds
@@ -172,9 +179,14 @@ def task_title(text: str) -> str:
     return title or gettext("Untitled task")
 
 
-def write(note: Note, request: Any, payload: Any) -> None:
+def write(note: Note, request: Any, payload: Any, site: Any = None) -> None:
     """Make the note's lines what the editor sent."""
     user = request.user
+    tasks = (
+        site.get_resource(Task).get_queryset(request)
+        if site is not None
+        else Task.objects.all()
+    )
     title, lines = clean_lines(payload)
     may_add = user.has_perm("planner.add_task")
     may_change = user.has_perm("planner.change_task")
@@ -190,6 +202,9 @@ def write(note: Note, request: Any, payload: Any) -> None:
             line.indent = item["indent"]
             line.text = item["text"]
             line.done = item["done"] if item["kind"] == "check" else False
+
+            if line.kind == NoteLine.Kind.TASK and line.task is None:
+                line.task = link(note, item, tasks, may_change)
 
             if line.kind == NoteLine.Kind.TASK:
                 line.task = sync_task(
@@ -213,6 +228,45 @@ def write(note: Note, request: Any, payload: Any) -> None:
 
         # Saved either way: "updated at" says when it was last written.
         note.save()
+
+
+def link(
+    note: Note, item: dict[str, Any], tasks: Any, may_change: bool
+) -> Task | None:
+    """An existing task put in the note by a new task line: one that no
+    line shows yet. It moves to the note; None when none is asked."""
+    if item["task_id"] is None:
+        return None
+
+    if not may_change:
+        raise PermissionDenied(gettext("You may not change tasks."))
+
+    # Locked alone (the visible tasks may be annotated), then checked
+    # free: no line of any note shows it.
+    task = (
+        Task.objects.select_for_update(of=("self",))
+        .filter(pk=item["task_id"])
+        .first()
+    )
+    free = (
+        task is not None
+        and tasks.filter(pk=task.pk).exists()
+        and not NoteLine.objects.filter(task=task).exists()
+    )
+
+    if task is None or not free:
+        raise ValidationError(
+            gettext(
+                "This task is already in a note, or cannot be found: "
+                "reload the page."
+            )
+        )
+
+    if task.note_id != note.pk:
+        task.note = note
+        task.save(update_fields=["note"])
+
+    return task
 
 
 def sync_task(
@@ -277,7 +331,7 @@ def attach_choices(
     """The tasks text may be attached to, searched by reference or
     title: the note's own first, then the open ones, the newest first."""
     resource = site.get_resource(Task)
-    queryset = resource.get_queryset(request)
+    queryset = resource.get_queryset(request).select_related("line__note")
     term = " ".join(str(term or "").split())[:100]
 
     for word in term.split():
@@ -306,9 +360,32 @@ def attach_choices(
             "title": task.title,
             "status": task.status,
             "statusLabel": str(task.get_status_display()),
+            # The note whose line shows it, if any: such a task can take
+            # text, not be put in this note too.
+            "inNote": line_note(task),
+            "here": line_note_id(task) == note.pk,
         }
         for task in queryset[:ATTACH_CHOICES]
     ]
+
+
+def task_line(task: Task) -> NoteLine | None:
+    try:
+        return task.line
+    except NoteLine.DoesNotExist:
+        return None
+
+
+def line_note(task: Task) -> str | None:
+    line = task_line(task)
+
+    return line.note.title if line is not None else None
+
+
+def line_note_id(task: Task) -> int | None:
+    line = task_line(task)
+
+    return line.note_id if line is not None else None
 
 
 def attach(

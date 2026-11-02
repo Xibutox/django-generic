@@ -472,3 +472,19 @@
   outline: none;
   box-shadow: none;
 }
+
+.note-attach__why {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+.note-attach__text {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.note-attach__text summary {
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
