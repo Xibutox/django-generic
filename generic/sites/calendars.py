@@ -90,7 +90,7 @@ MAX_DAYS = 62
 MAX_EVENTS = 2000
 
 #: How a calendar may be looked at.
-VIEWS = ("month", "week", "day", "list")
+VIEWS = ("month", "week", "workweek", "day", "list")
 
 #: The views of the default: a day is offered when asked for.
 DEFAULT_VIEWS = ("month", "week", "list")

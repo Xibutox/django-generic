@@ -333,6 +333,13 @@ class TestDeclarations:
         with pytest.raises(ImproperlyConfigured, match=message):
             self.bind(**options)
 
+    def test_a_work_week_is_a_view(self):
+        bound = self.bind(
+            name="due", date="due_on", views=("workweek", "week")
+        )
+
+        assert bound.definition.views == ("workweek", "week")
+
     def test_editable_with_the_date_among_the_editable_fields(self):
         bound = self.bind(
             name="due",

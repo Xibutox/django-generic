@@ -1744,7 +1744,8 @@ calendars = (
 A page `<model>/<name>/` (button on the list; `navigation` adds a
 sidebar entry) with the resource's table above it, rows hidden (as a
 tree's page), whose `filters`/`search` the calendar follows (`calendar`
-is a table action). Month (6 weeks), week, list of days; the week
+is a table action). Month (6 weeks), week, work week (`workweek`, Monday
+to Friday), day, list of days; the week
 starts on `FIRST_DAY_OF_WEEK`; `?view=&date=` in the address. Records
 of a range through `get_list_queryset`, a date-and-time placed on its
 local day with its time. Moving goes through `save_editable` (change

@@ -35,8 +35,13 @@
   var DAY = 86400000;
   var SHOWN_PER_DAY = 4;
   var MINUTE = 60000;
-  var VIEW_ICONS = { month: "calendar_view_month", week: "calendar_view_week", day: "calendar_view_day", list: "view_agenda" };
-  var VIEW_LABELS = { month: t("Month"), week: t("Week"), day: t("Day"), list: t("List") };
+  var VIEW_ICONS = { month: "calendar_view_month", week: "calendar_view_week", workweek: "view_week", day: "calendar_view_day", list: "view_agenda" };
+  var VIEW_LABELS = { month: t("Month"), week: t("Week"), workweek: t("Work week"), day: t("Day"), list: t("List") };
+
+  /** A week of seven days, or of five (Monday to Friday). */
+  function weekly(view) {
+    return view === "week" || view === "workweek";
+  }
   //: What the add form's window posts back once it saved (forms/form.js).
   var SAVED_MESSAGE = "generic:relation-saved";
 
@@ -240,7 +245,7 @@
 
   /** An hourly calendar is drawn as hours in the week and the day. */
   CalendarView.prototype.hourly = function () {
-    return !!(this.config.hours && (this.view === "week" || this.view === "day"));
+    return !!(this.config.hours && (weekly(this.view) || this.view === "day"));
   };
 
   /** The days shown: [start, end), and the heading saying which. */
@@ -252,6 +257,18 @@
         start: this.anchor,
         end: addDays(this.anchor, 1),
         title: format(this.anchor, { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      };
+    }
+
+    if (this.view === "workweek") {
+      // Monday to Friday, whatever day the language's week starts on.
+      var start = addDays(this.anchor, -((this.anchor.getUTCDay() + 6) % 7));
+      var friday = addDays(start, 4);
+
+      return {
+        start: start,
+        end: addDays(start, 5),
+        title: format(start, { day: "numeric", month: "short" }) + " \u2013 " + format(friday, { day: "numeric", month: "short", year: "numeric" })
       };
     }
 
@@ -275,13 +292,13 @@
     }
 
     var lead = (month.getUTCDay() - first + 7) % 7;
-    var start = addDays(month, -lead);
+    var shown = addDays(month, -lead);
 
-    return { start: start, end: addDays(start, 42), title: title, month: month };
+    return { start: shown, end: addDays(shown, 42), title: title, month: month };
   };
 
   CalendarView.prototype.go = function (step) {
-    if (this.view === "week") {
+    if (weekly(this.view)) {
       this.anchor = addDays(this.anchor, 7 * step);
     } else if (this.view === "day") {
       this.anchor = addDays(this.anchor, step);
@@ -576,9 +593,11 @@
     var self = this;
     var shown = this.shown;
     var days = this.byDay();
-    var week = this.view === "week" || this.view === "day";
-    var columns = this.view === "day" ? 1 : 7;
+    var week = weekly(this.view) || this.view === "day";
+    var columns = this.view === "day" ? 1 : this.view === "workweek" ? 5 : 7;
     var grid = el("div", "calendar-grid" + (week ? " calendar-grid--week" : "") + (columns === 1 ? " calendar-grid--day" : ""));
+
+    grid.style.setProperty("--calendar-columns", String(columns));
     var head = el("div", "calendar-grid__head");
 
     for (var index = 0; index < columns; index += 1) {

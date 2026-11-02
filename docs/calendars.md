@@ -90,7 +90,7 @@ class TimeEntryResource(ModelResource):
 | `color` | `None` | a field (or a `@display(tags=...)` method) the resource draws as coloured tags (`tag_fields`): the event takes its first tag's colour |
 | `fields` | `()` | values shown with the event - in the week and the list, and in its tooltip - typed as on a summary page |
 | `editable` | `False` | records may be dragged to another day (below) |
-| `views` | `("month", "week", "list")` | the ways of looking offered, the first one opening: `month`, `week`, `day`, `list` |
+| `views` | `("month", "week", "list")` | the ways of looking offered, the first one opening: `month`, `week`, `workweek` (Monday to Friday), `day`, `list` |
 | `hours` | `None` | `(first, last)`, whole hours from 0 to 24: the week and the day drawn on these hours, a record as tall as it lasts (below). Needs a date-and-time `date` |
 | `step` | `15` | minutes a drag snaps to on the hours: 5, 10, 15, 20, 30 or 60 |
 | `allocate` | `None` | `Allocate(...)` or a foreign key's name: related records to drop on the calendar (below) |

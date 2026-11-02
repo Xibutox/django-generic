@@ -2554,3 +2554,7 @@ msgstr "Copier"
 #: generic/static/generic/js/calendar.js
 msgid "Clear"
 msgstr "Effacer"
+
+#: generic/static/generic/js/calendar.js
+msgid "Work week"
+msgstr "Semaine de travail"

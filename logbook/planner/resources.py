@@ -901,7 +901,7 @@ class TimeEntryResource(ModelResource):
             navigation=True,
             hours=(7, 20),
             step=15,
-            views=("week", "day", "month", "list"),
+            views=("week", "workweek", "day", "month", "list"),
             allocate=Allocate(
                 "task",
                 title=_("Tasks under way"),
