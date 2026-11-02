@@ -70,7 +70,7 @@
 .note-line__kind {
   flex: none;
   color: var(--text-muted);
-  opacity: 0.35;
+  opacity: 0.6;
 }
 
 .note-line:hover .note-line__kind,
@@ -240,6 +240,10 @@
     padding: var(--space-3);
   }
 
+  .note-editor__add span:not(.icon) {
+    display: none;
+  }
+
   .note-line {
     flex-wrap: wrap;
   }
@@ -250,4 +254,213 @@
     justify-content: flex-start;
     padding-inline-start: 2rem;
   }
+}
+
+/* -- The toolbar: lines to add, the note's tools ------------------------- */
+
+.note-editor__toolbar {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 calc(var(--space-2) * -1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.note-editor__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.note-editor__tools--end {
+  margin-inline-start: auto;
+}
+
+.note-editor__tools-label {
+  margin-inline-end: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.note-editor__add {
+  gap: 0.25rem;
+}
+
+.note-editor__add--fnc .icon {
+  color: oklch(0.58 0.2 27);
+}
+
+.note-editor__add--dm .icon {
+  color: oklch(0.55 0.2 300);
+}
+
+.note-editor__add--aut .icon {
+  color: oklch(0.6 0.12 185);
+}
+
+.note-editor__keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius);
+}
+
+.note-editor__keys[hidden] {
+  display: none;
+}
+
+.note-editor__keys dt,
+.note-editor__keys dd {
+  margin: 0;
+}
+
+/* -- Handles, selection, dragging ----------------------------------------- */
+
+/* Room on the left for each line's handle and + button. */
+.note-editor__lines {
+  padding-inline-start: 3.25rem;
+  outline: none;
+}
+
+.note-line__handle,
+.note-line__add {
+  position: absolute;
+  top: 0.15rem;
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.note-line__handle {
+  inset-inline-start: calc(var(--indent) * 1.75rem - 3.25rem);
+  cursor: grab;
+}
+
+.note-line__add {
+  inset-inline-start: calc(var(--indent) * 1.75rem - 1.75rem);
+}
+
+.note-line:hover .note-line__handle,
+.note-line:hover .note-line__add,
+.note-line:focus-within .note-line__handle,
+.note-line:focus-within .note-line__add,
+.note-line.is-selected .note-line__handle {
+  opacity: 1;
+}
+
+/* Touch screens have no hover: the handles stay in sight. */
+@media (hover: none) {
+  .note-line__handle,
+  .note-line__add {
+    opacity: 0.6;
+  }
+}
+
+.note-line.is-selected {
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+}
+
+.note-editor__lines:focus .note-line.is-selected {
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.note-line.is-dragging {
+  opacity: 0.45;
+}
+
+.note-line.is-drop-before {
+  box-shadow: 0 -2px 0 var(--color-accent);
+}
+
+.note-line.is-drop-after {
+  box-shadow: 0 2px 0 var(--color-accent);
+}
+
+/* -- Attaching to a task ------------------------------------------------------ */
+
+.note-attach__preview {
+  max-height: 8rem;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  overflow: auto;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.note-attach__search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.note-attach__results {
+  display: flex;
+  flex-direction: column;
+  max-height: 16rem;
+  margin-top: var(--space-2);
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.note-attach__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.note-attach__option:last-child {
+  border-bottom: 0;
+}
+
+.note-attach__option:hover {
+  background: var(--surface-sunken);
+}
+
+.note-attach__option[aria-selected="true"] {
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.note-attach__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.note-attach__status {
+  flex: none;
+  font-size: var(--font-size-xs);
+}
+
+.note-attach__empty {
+  margin: 0;
+  padding: var(--space-3);
+}
+
+/* The selected lines say where the focus is; the list needs no ring. */
+.note-editor__lines:focus,
+.note-editor__lines:focus-visible {
+  outline: none;
+  box-shadow: none;
 }

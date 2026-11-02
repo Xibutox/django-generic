@@ -9,6 +9,10 @@ line's text is the task's title. A task line turned back into text, or
 removed, lets its task go: the task is kept once it is more than that
 line - time logged on it, a specification written, work started - and
 deleted otherwise.
+
+``attach`` is the other way round: text from a note - lines the editor
+selected - added to the specification of a task that already exists,
+under the note's title and the day.
 """
 
 from __future__ import annotations
@@ -16,7 +20,8 @@ from __future__ import annotations
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
+from django.utils import formats, timezone
 from django.utils.translation import gettext
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -30,6 +35,12 @@ MAX_INDENT = 4
 
 #: The longest text a line holds.
 MAX_TEXT = 5000
+
+#: The most text attached to a task at once.
+MAX_ATTACHED = 20000
+
+#: The tasks offered to attach to, at most.
+ATTACH_CHOICES = 20
 
 
 def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
@@ -258,3 +269,98 @@ def release(task: Task) -> None:
 
     if untouched:
         task.delete()
+
+
+def attach_choices(
+    note: Note, request: Any, site: Any, term: str
+) -> list[dict[str, Any]]:
+    """The tasks text may be attached to, searched by reference or
+    title: the note's own first, then the open ones, the newest first."""
+    resource = site.get_resource(Task)
+    queryset = resource.get_queryset(request)
+    term = " ".join(str(term or "").split())[:100]
+
+    for word in term.split():
+        queryset = queryset.filter(
+            Q(reference__icontains=word) | Q(title__icontains=word)
+        )
+
+    queryset = queryset.annotate(
+        here=Case(
+            When(note=note, then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        closed=Case(
+            When(status=Task.Status.DONE, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+    ).order_by("here", "closed", "-created_at", "-pk")
+
+    return [
+        {
+            "id": task.pk,
+            "reference": task.reference,
+            "kind": task.kind,
+            "title": task.title,
+            "status": task.status,
+            "statusLabel": str(task.get_status_display()),
+        }
+        for task in queryset[:ATTACH_CHOICES]
+    ]
+
+
+def attach(
+    note: Note, request: Any, site: Any, payload: Any
+) -> dict[str, Any]:
+    """Text from the note added to an existing task's specification,
+    under the note's title and today's date."""
+    if not isinstance(payload, dict):
+        raise ValidationError(gettext("Send the task and the text."))
+
+    text = str(payload.get("text") or "").strip()
+    task_id = payload.get("task")
+
+    if not text:
+        raise ValidationError({"text": [gettext("There is no text.")]})
+
+    if len(text) > MAX_ATTACHED:
+        raise ValidationError(
+            {
+                "text": [
+                    gettext("Attach at most %(count)s characters at once.")
+                    % {"count": MAX_ATTACHED}
+                ]
+            }
+        )
+
+    if not isinstance(task_id, int):
+        raise ValidationError({"task": [gettext("Pick a task.")]})
+
+    resource = site.get_resource(Task)
+    task = resource.get_queryset(request).filter(pk=task_id).first()
+
+    if task is None:
+        raise ValidationError(
+            {"task": [gettext("This task cannot be found.")]}
+        )
+
+    if not resource.has_change_permission(request, task):
+        raise PermissionDenied(gettext("You may not change this task."))
+
+    heading = gettext('From the note "%(note)s", %(date)s:') % {
+        "note": note.title,
+        "date": formats.date_format(timezone.localdate(), "DATE_FORMAT"),
+    }
+    added = f"{heading}\n{text}"
+    current = task.description.rstrip()
+    task.description = f"{current}\n\n{added}" if current else added
+    # A save of its own: the task's history says who added what.
+    task.save()
+
+    return {
+        "id": task.pk,
+        "reference": task.reference,
+        "url": resource.get_object_url(task.pk),
+    }

@@ -350,6 +350,32 @@ class NoteResource(ModelResource):
         answer["canEdit"] = self.has_change_permission(request, note)
         answer["canAddTasks"] = request.user.has_perm("planner.add_task")
         answer["canTime"] = request.user.has_perm("planner.add_timeentry")
+        answer["canAttach"] = request.user.has_perm("planner.change_task")
+
+        return JsonResponse(answer)
+
+    @page(detail=True, button=False, methods=("get", "post"))
+    def attach(self, request: Any, note: Note) -> JsonResponse:
+        """The tasks the note's text may be attached to (``?q=``);
+        posted ``{task, text}``, the text added to that task's
+        specification (planner/documents.py)."""
+        if request.method == "GET":
+            return JsonResponse(
+                {
+                    "tasks": documents.attach_choices(
+                        note, request, self.site, request.GET.get("q", "")
+                    )
+                }
+            )
+
+        try:
+            answer = documents.attach(
+                note, request, self.site, read_json(request)
+            )
+        except APIException as error:
+            return JsonResponse(
+                error_body(error.detail), status=error.status_code
+            )
 
         return JsonResponse(answer)
 

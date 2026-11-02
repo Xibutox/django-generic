@@ -413,6 +413,16 @@ computed, comment, `verified`/`_by`/`_at`, permission
 whole note to the `@page document` (`planner/documents.py`: lines
 synced in one transaction, a task created by a task line - `add_task`
 - renamed with it, and deleted when its line goes only if untouched).
+The editor moves lines (drag handle, Alt+Shift+Up/Down, a line with
+the lines indented under it), selects whole lines (copy, cut, delete,
+indent, move), undoes a paste, move or removal, and reads and writes
+the clipboard through `planner/static/planner/note-clipboard.js`
+(HTML first - OneNote/Word lists and depth, headings, to-dos, tables -
+then plain text with its markers; written back as HTML lists carrying
+`data-line-kind`/`data-line-indent`, and text). `@page attach` lists
+tasks to attach to (`?q=`, the note's own first) and, posted `{task,
+text}`, appends the text to that task's specification under the note's
+title and the date (`change` on the task).
 `planner/timers.py`: one running entry a person, starting one stops
 the other and moves a backlog/todo task to doing (`@page timer`,
 *Start timer*/*Stop timer* actions). Everything else is the

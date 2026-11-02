@@ -580,3 +580,24 @@ msgstr "types d'activité"
 
 msgid "The kinds of work a task is: development, support, a meeting."
 msgstr "Les types de travail d'une tâche : développement, support, réunion."
+
+msgid "Send the task and the text."
+msgstr "Envoyez la tâche et le texte."
+
+msgid "There is no text."
+msgstr "Il n'y a pas de texte."
+
+msgid "Attach at most %(count)s characters at once."
+msgstr "Joignez au plus %(count)s caractères à la fois."
+
+msgid "Pick a task."
+msgstr "Choisissez une tâche."
+
+msgid "This task cannot be found."
+msgstr "Cette tâche est introuvable."
+
+msgid "You may not change this task."
+msgstr "Vous ne pouvez pas modifier cette tâche."
+
+msgid "From the note \"%(note)s\", %(date)s:"
+msgstr "De la note « %(note)s », %(date)s :"

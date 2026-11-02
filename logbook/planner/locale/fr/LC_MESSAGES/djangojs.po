@@ -113,3 +113,154 @@ msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une ca
 
 msgid "Criticality"
 msgstr "Criticité"
+
+msgid "A new line; Shift+Enter breaks the line inside it"
+msgstr "Une nouvelle ligne ; Maj+Entrée revient à la ligne dans la même"
+
+msgid "Indent, outdent"
+msgstr "Décaler à droite, à gauche"
+
+msgid "Move the line, with the lines indented under it (Ctrl+Shift+↑ / ↓ too)"
+msgstr "Déplacer la ligne, avec les lignes décalées sous elle (Ctrl+Maj+↑ / ↓ aussi)"
+
+msgid "At the start or end of a line: select whole lines"
+msgstr "Au début ou à la fin d'une ligne : sélectionner des lignes entières"
+
+msgid "Twice: select every line"
+msgstr "Deux fois : sélectionner toutes les lignes"
+
+msgid "Copy, cut, paste lines - from OneNote, Word, Outlook too"
+msgstr "Copier, couper, coller des lignes - depuis OneNote, Word, Outlook aussi"
+
+msgid "Remove the selected lines"
+msgstr "Retirer les lignes sélectionnées"
+
+msgid "Undo a paste, a move, a removal"
+msgstr "Annuler un collage, un déplacement, un retrait"
+
+msgid "Tick or untick a to-do"
+msgstr "Cocher ou décocher une case"
+
+msgid "Save now"
+msgstr "Enregistrer tout de suite"
+
+msgid "Let go of the selection"
+msgstr "Abandonner la sélection"
+
+msgid "Lines"
+msgstr "Lignes"
+
+msgid "Note tools"
+msgstr "Outils de la note"
+
+msgid "Add a line: %(kind)s"
+msgstr "Ajouter une ligne : %(kind)s"
+
+msgid "Copy the selected lines, or the whole note"
+msgstr "Copier les lignes sélectionnées, ou toute la note"
+
+msgid "Attach the selected lines, or the current one, to a task"
+msgstr "Joindre les lignes sélectionnées, ou la ligne en cours, à une tâche"
+
+msgid "Keyboard shortcuts"
+msgstr "Raccourcis clavier"
+
+msgid "Drag to move; click to select"
+msgstr "Glisser pour déplacer ; cliquer pour sélectionner"
+
+msgid "Click to select"
+msgstr "Cliquer pour sélectionner"
+
+msgid "Add a line below"
+msgstr "Ajouter une ligne en dessous"
+
+msgid "Move up"
+msgstr "Monter"
+
+msgid "Move down"
+msgstr "Descendre"
+
+msgid "Select the line"
+msgstr "Sélectionner la ligne"
+
+msgid "Attach to a task..."
+msgstr "Joindre à une tâche..."
+
+msgid "Remove the line"
+msgstr "Retirer la ligne"
+
+msgid "The lines could not be copied: select them and press Ctrl+C."
+msgstr "Les lignes n'ont pas pu être copiées : sélectionnez-les et appuyez sur Ctrl+C."
+
+msgid "With them go the lines of %(tasks)s: each task is kept if time was logged on it or work started; otherwise it is deleted."
+msgstr "Avec elles partent les lignes de %(tasks)s : chaque tâche est gardée si du temps y a été saisi ou si le travail a commencé ; sinon elle est supprimée."
+
+msgid "Nothing to attach: write or select the lines first."
+msgstr "Rien à joindre : écrivez ou sélectionnez d'abord les lignes."
+
+msgid "Attach to a task"
+msgstr "Joindre à une tâche"
+
+msgid "Attach"
+msgstr "Joindre"
+
+msgid "Task"
+msgstr "Tâche"
+
+msgid "Search by reference or title"
+msgstr "Chercher par référence ou par titre"
+
+msgid "Tasks"
+msgstr "Tâches"
+
+msgid "No task found."
+msgstr "Aucune tâche trouvée."
+
+msgid "The tasks could not be loaded."
+msgstr "Les tâches n'ont pas pu être chargées."
+
+msgid "Added to the specification of %(task)s."
+msgstr "Ajouté à la spécification de %(task)s."
+
+msgid "The text could not be attached."
+msgstr "Le texte n'a pas pu être joint."
+
+msgid "%(count)s line pasted."
+msgid_plural "%(count)s lines pasted."
+msgstr[0] "%(count)s ligne collée."
+msgstr[1] "%(count)s lignes collées."
+
+msgid "%(count)s line copied."
+msgid_plural "%(count)s lines copied."
+msgstr[0] "%(count)s ligne copiée."
+msgstr[1] "%(count)s lignes copiées."
+
+msgid "%(count)s line selected"
+msgid_plural "%(count)s lines selected"
+msgstr[0] "%(count)s ligne sélectionnée"
+msgstr[1] "%(count)s lignes sélectionnées"
+
+msgid "%(count)s line cut."
+msgid_plural "%(count)s lines cut."
+msgstr[0] "%(count)s ligne coupée."
+msgstr[1] "%(count)s lignes coupées."
+
+msgid "%(count)s line removed."
+msgid_plural "%(count)s lines removed."
+msgstr[0] "%(count)s ligne retirée."
+msgstr[1] "%(count)s lignes retirées."
+
+msgid "Remove %(count)s line?"
+msgid_plural "Remove %(count)s lines?"
+msgstr[0] "Retirer %(count)s ligne ?"
+msgstr[1] "Retirer %(count)s lignes ?"
+
+msgid "%(count)s line moved."
+msgid_plural "%(count)s lines moved."
+msgstr[0] "%(count)s ligne déplacée."
+msgstr[1] "%(count)s lignes déplacées."
+
+msgid "This line is added to the specification of the task you pick, with the note's title and today's date."
+msgid_plural "These %(count)s lines are added to the specification of the task you pick, with the note's title and today's date."
+msgstr[0] "Cette ligne est ajoutée à la spécification de la tâche choisie, avec le titre de la note et la date du jour."
+msgstr[1] "Ces %(count)s lignes sont ajoutées à la spécification de la tâche choisie, avec le titre de la note et la date du jour."

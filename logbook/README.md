@@ -15,6 +15,20 @@ WSGI, SQLite.
   someone), each numbered on its own - FNC-0001, DM-0001, AUT-0001. The
   line is the task's title; its status, a ticket's criticality and a
   timer sit beside it. The note saves itself as you type.
+- **Writing a note**: the buttons above the lines add a line of any
+  kind, the + beside a line adds one under it. A line moves by its
+  handle (drag it) or with Alt+Shift+Up/Down, taking the lines indented
+  under it along. Shift+Up/Down past a line's edge, a click on a handle
+  or Ctrl+A twice select whole lines: copy, cut, delete, indent or move
+  them together. Copied lines paste as real lists and headings into
+  OneNote, Word or Outlook; a paste from them - lists and their depth,
+  headings, to-dos, tables, the bullets of plain text - comes in as
+  lines of the note. A paste, a move or a removal is undone from its
+  toast, or with Ctrl+Z right after. The keyboard button lists the keys.
+- **Attach to a task**: selected lines (or the current one) added to
+  the specification of a task that already exists, under the note's
+  title and the day - the task picked in a dialog, searched by
+  reference or title.
 - A task is about **several projects, or none**: one written in a note
   starts with the note's project.
 - **Tasks** on a **board**, a column per status (*Backlog*, *To do*,
@@ -79,7 +93,8 @@ logbook/
     ├── resources.py    the screens: boards, calendars, key figures, actions
     ├── documents.py    a note as the editor reads and writes it
     ├── timers.py       one timer a person; starting one stops the other
-    ├── static/planner/ note.js, note.css: the line editor
+    ├── static/planner/ note.js, note.css: the line editor;
+    │                   note-clipboard.js: what it copies and pastes
     ├── templates/      the note's page: the editor above its tables
     ├── locale/fr/      the French
     └── management/commands/
@@ -99,12 +114,14 @@ the dashboard's key figures and cards, the charts, the numbering
 (`generic.numbering`), the actions and the permissions.
 
 The app's own are the note editor - a page (`@page document`) the
-editor reads and posts the note to, and its script - and the timer.
+editor reads and posts the note to, one (`@page attach`) that adds a
+note's text to a task, and its scripts - and the timer.
 
 ## Kept working
 
 `tests/test_logbook.py` runs it in a process of its own: seeded twice,
-every page opened, a note written with new tasks, the timer, a task
+every page opened, a note written with new tasks, text attached to a
+task, the timer, a task
 dropped on the timesheet, moved and stretched, and the verification.
 
 ## Coming from the old planner

@@ -179,6 +179,45 @@ SCENARIO = textwrap.dedent("""
     ).status_code == 403
     assert send(bob, "post", DOCUMENT, {"lines": "nope"}).status_code == 400
 
+    # Text from the note attached to a task that already exists: the
+    # note's own tasks are offered first, a search narrows them, and the
+    # text lands at the end of the task's specification.
+    ATTACH = f"/planner/note/{note.pk}/attach/"
+    assert bob.get(DOCUMENT).json()["canAttach"] is True
+    assert viewer.get(DOCUMENT).json()["canAttach"] is False
+    offered = bob.get(ATTACH).json()["tasks"]
+    own = set(note.tasks.values_list("pk", flat=True))
+    assert offered and offered[0]["id"] in own, offered[:3]
+    found = bob.get(ATTACH, {"q": "checkout one-page"}).json()["tasks"]
+    assert [item["title"] for item in found] == ["One-page checkout"], found
+    target = Task.objects.get(title="One-page checkout")
+    before = target.description
+    attached = send(
+        bob,
+        "post",
+        ATTACH,
+        {"task": target.pk, "text": "- Ask the bank\\n  - about 3-D Secure"},
+    )
+    assert attached.status_code == 200, attached.content
+    assert attached.json()["reference"] == target.reference
+    target.refresh_from_db()
+    assert target.description.startswith(before.rstrip())
+    assert f'From the note "{note.title}"' in target.description
+    assert target.description.endswith(
+        "- Ask the bank\\n  - about 3-D Secure"
+    ), target.description
+    for body in (
+        {"task": target.pk, "text": "   "},
+        {"task": "1", "text": "x"},
+        {"task": 999999, "text": "x"},
+        {"task": target.pk, "text": "x" * 20001},
+        ["nope"],
+    ):
+        assert send(bob, "post", ATTACH, body).status_code == 400, body
+    assert send(
+        viewer, "post", ATTACH, {"task": target.pk, "text": "x"}
+    ).status_code == 403
+
     # The timer: one running at a time, the task moving along.
     todo = Task.objects.get(title="Address autocomplete")
     assert todo.status == "todo"
