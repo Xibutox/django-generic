@@ -428,6 +428,15 @@ class TestMovingInTime:
 
         assert ticket.opened_at == at(7, 14, 15)
 
+    def test_an_event_without_allocate_names_no_record(
+        self, admin_user, support_desk
+    ):
+        event = self.bound(hours=(7, 20)).describe(
+            self.request(admin_user), support_desk["login"], True
+        )
+
+        assert "record" not in event
+
     def test_an_end_where_there_is_none(self, admin_user, support_desk):
         ticket = support_desk["login"]
 
@@ -535,6 +544,19 @@ class TestAllocating:
 
         assert entry.ticket == ticket
         assert entry.spent_on == datetime.date(2026, 10, 7)
+
+    def test_an_event_names_the_record_it_points_at(
+        self, admin_user, support_desk
+    ):
+        # What a copy (Shift+click, then drag) plans again.
+        bound = self.bound()
+        request = self.request(admin_user, "post")
+        ticket = support_desk["invoice"]
+        entry = bound.allocate(
+            request, {"record": str(ticket.pk), "start": "2026-10-07"}
+        )
+
+        assert bound.describe(request, entry, True)["record"] == str(ticket.pk)
 
     def test_a_record_it_cannot_find(self, admin_user, support_desk):
         from rest_framework.exceptions import NotFound

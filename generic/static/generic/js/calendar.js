@@ -140,6 +140,9 @@
     this.tableFilters = { filters: "", search: "" };
     this.events = [];
     this.asking = null;
+    // Records picked with Shift (or Ctrl) and a click, by id: copied
+    // together to another day or time.
+    this.picked = {};
     this.build();
   }
 
@@ -214,6 +217,10 @@
     this.body = el("div", "calendar__body");
     this.element.textContent = "";
     this.element.appendChild(toolbar);
+
+    if (this.config.allocate) {
+      this.element.appendChild(this.buildPicking());
+    }
 
     if (this.config.allocate) {
       var layout = el("div", "calendar__layout");
@@ -460,16 +467,20 @@
       chip.appendChild(cells);
     }
 
+    this.pickable(chip, event);
+
     if (event.editable && this.config.moveUrl) {
       chip.draggable = true;
       chip.addEventListener("dragstart", function (dragEvent) {
-        dragEvent.dataTransfer.effectAllowed = "move";
+        self.copying = !!self.picked[event.id];
+        dragEvent.dataTransfer.effectAllowed = self.copying ? "copy" : "move";
         dragEvent.dataTransfer.setData("text/plain", event.id);
         self.dragging = event;
         self.element.classList.add("is-dragging");
       });
       chip.addEventListener("dragend", function () {
         self.dragging = null;
+        self.copying = false;
         self.element.classList.remove("is-dragging");
       });
     }
@@ -509,7 +520,9 @@
 
       event.preventDefault();
 
-      if (self.dragging) {
+      if (self.dragging && self.copying) {
+        self.copyPicked(Math.round((parseDay(key) - parseDay(self.dragging.start)) / DAY) * 1440);
+      } else if (self.dragging) {
         self.move(self.dragging, key);
       } else {
         self.allocate(self.allocating, key, null);
@@ -857,11 +870,12 @@
     }
 
     if (this.config.moveUrl) {
-      parts.push(t("Drag a record to move it, its lower edge to change its end."));
+      parts.push(t("Drag a record to move it, its upper or lower edge to change its start or end."));
     }
 
     if (this.config.allocate) {
       parts.push(t("Drop one of the list on a time to plan it."));
+      parts.push(t("Shift+click records to pick several, then drag one of them to copy them all."));
     }
 
     return parts.join(" ");
@@ -968,6 +982,8 @@
       block.appendChild(cells);
     }
 
+    this.pickable(block, event);
+
     if (!event.editable || !this.config.moveUrl) {
       return block;
     }
@@ -980,7 +996,9 @@
       var column = block.parentNode.getBoundingClientRect();
       var span = self.window.last - self.window.first;
 
-      dragEvent.dataTransfer.effectAllowed = "move";
+      // A picked record dragged: the picked ones are copied there.
+      self.copying = !!self.picked[event.id];
+      dragEvent.dataTransfer.effectAllowed = self.copying ? "copy" : "move";
       dragEvent.dataTransfer.setData("text/plain", event.id);
       self.dragging = event;
       self.grab = {
@@ -992,6 +1010,7 @@
     });
     block.addEventListener("dragend", function () {
       self.dragging = null;
+      self.copying = false;
       self.grab = null;
       self.element.classList.remove("is-dragging");
       self.clearGhost();
@@ -1003,7 +1022,16 @@
       handle.title = t("Drag to change its end");
       handle.setAttribute("aria-hidden", "true");
       block.appendChild(handle);
-      this.hoursResize(block, handle, piece, day);
+      this.hoursResize(block, handle, piece, day, "end");
+    }
+
+    if (this.config.endField && !piece.continued) {
+      var top = el("div", "calendar-hours__resize calendar-hours__resize--start");
+
+      top.title = t("Drag to change its start");
+      top.setAttribute("aria-hidden", "true");
+      block.appendChild(top);
+      this.hoursResize(block, top, piece, day, "start");
     }
 
     return block;
@@ -1086,7 +1114,9 @@
       var from = self.minutesAt(column, event.clientY, self.dragging ? self.grab.offset : 0);
       var start = moment(day, from);
 
-      if (self.dragging) {
+      if (self.dragging && self.copying) {
+        self.copyPicked((parseMoment(start) - parseMoment(self.dragging.startsAt)) / MINUTE);
+      } else if (self.dragging) {
         self.moveTo(self.dragging, { start: start });
       } else {
         self.allocate(self.allocating, start, moment(day, from + length()));
@@ -1094,11 +1124,61 @@
     });
   };
 
-  /** Dragging a record's lower edge: another end. */
-  CalendarView.prototype.hoursResize = function (block, handle, piece, day) {
+  /** Dragging a record's lower edge: another end; its upper edge
+   * (``edge`` "start"): another start, the end staying. */
+  CalendarView.prototype.hoursResize = function (block, handle, piece, day, edge) {
     var self = this;
     var step = this.config.step || 15;
     var span = this.window.last - this.window.first;
+    var event = piece.event;
+
+    if (edge === "start") {
+      handle.addEventListener("pointerdown", function (down) {
+        if (down.button !== 0) {
+          return;
+        }
+
+        var column = block.parentNode;
+        var begin = piece.from;
+        // A record still open (no end) ends where it is drawn to.
+        var limit = piece.open ? self.window.last : piece.to;
+
+        down.preventDefault();
+        down.stopPropagation();
+        block.draggable = false;
+        block.classList.add("is-resizing");
+        handle.setPointerCapture(down.pointerId);
+
+        function follow(move) {
+          var box = column.getBoundingClientRect();
+          var minutes = self.window.first + ((move.clientY - box.top) / box.height) * span;
+
+          begin = Math.min(limit - step, Math.max(Math.round(minutes / step) * step, self.window.first));
+          block.style.top = ((begin - self.window.first) / span) * 100 + "%";
+          block.style.height = ((piece.bottom - begin) / span) * 100 + "%";
+          block.querySelector(".calendar-event__time").textContent = clock(begin) + "\u2013" + (piece.open ? "" : clock(piece.to));
+        }
+
+        function stop() {
+          handle.removeEventListener("pointermove", follow);
+          handle.removeEventListener("pointerup", stop);
+          handle.removeEventListener("pointercancel", stop);
+          block.draggable = true;
+          block.classList.remove("is-resizing");
+
+          if (begin !== piece.from) {
+            // The end sent too: it stays where it is.
+            self.moveTo(event, event.endsAt ? { start: moment(day, begin), end: event.endsAt } : { start: moment(day, begin) });
+          }
+        }
+
+        handle.addEventListener("pointermove", follow);
+        handle.addEventListener("pointerup", stop);
+        handle.addEventListener("pointercancel", stop);
+      });
+
+      return;
+    }
 
     handle.addEventListener("pointerdown", function (down) {
       if (down.button !== 0) {
@@ -1259,10 +1339,193 @@
     Generic.api
       .patch(url, change)
       .then(function () {
-        Generic.toast(Generic.format(change.start ? t("%(label)s moved.") : t("%(label)s changed."), { label: event.label }), "success");
+        Generic.toast(Generic.format(change.start && !change.end ? t("%(label)s moved.") : t("%(label)s changed."), { label: event.label }), "success");
       })
       .catch(function (error) {
         Generic.toast((error && error.message) || t("The record could not be moved."), "error");
+      })
+      .then(function () {
+        self.refresh();
+      });
+  };
+
+  /* -- Records picked, copied together ----------------------------------- */
+
+  /** The bar saying how many records are picked, and copying them to
+   * a day. */
+  CalendarView.prototype.buildPicking = function () {
+    var self = this;
+    var bar = el("div", "calendar__picked");
+    var day = el("input", "input input--sm calendar__picked-day");
+    var copy = el("button", "button button--sm button--primary", t("Copy"));
+    var clear = el("button", "button button--sm button--ghost", t("Clear"));
+
+    this.pickedCount = el("strong", "calendar__picked-count");
+    bar.hidden = true;
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", t("Records picked"));
+    bar.appendChild(this.pickedCount);
+    bar.appendChild(el("span", "muted", t("Drag one of them to another day or time to copy them there, or copy them to:")));
+    day.type = "date";
+    day.setAttribute("aria-label", t("Day to copy them to"));
+    bar.appendChild(day);
+    copy.type = "button";
+    clear.type = "button";
+    copy.addEventListener("click", function () {
+      var target = parseDay(day.value);
+      var first = self.pickedEvents()
+        .map(function (event) {
+          return parseDay(event.start);
+        })
+        .sort(function (a, b) {
+          return a - b;
+        })[0];
+
+      if (!target || !first) {
+        day.focus();
+        return;
+      }
+
+      self.copyPicked(Math.round((target - first) / DAY) * 1440);
+    });
+    clear.addEventListener("click", function () {
+      self.unpick();
+    });
+    bar.appendChild(copy);
+    bar.appendChild(clear);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && self.pickedEvents().length) {
+        self.unpick();
+      }
+    });
+    this.pickedBar = bar;
+    this.pickedDay = day;
+
+    return bar;
+  };
+
+  /** Shift or Ctrl and a click picks a record (or lets it go) instead
+   * of opening it: one that can be planned again (``record``). */
+  CalendarView.prototype.pickable = function (node, event) {
+    var self = this;
+
+    if (!this.config.allocate || !event.record) {
+      return;
+    }
+
+    if (this.picked[event.id]) {
+      this.picked[event.id] = event;
+      node.classList.add("is-picked");
+    }
+
+    node.setAttribute("data-event-id", event.id);
+    node.addEventListener(
+      "click",
+      function (click) {
+        if (!click.shiftKey && !click.ctrlKey && !click.metaKey) {
+          return;
+        }
+
+        click.preventDefault();
+        click.stopPropagation();
+
+        if (self.picked[event.id]) {
+          delete self.picked[event.id];
+        } else {
+          self.picked[event.id] = event;
+        }
+
+        self.paintPicked();
+      },
+      true
+    );
+  };
+
+  CalendarView.prototype.pickedEvents = function () {
+    var picked = this.picked;
+
+    return Object.keys(picked).map(function (id) {
+      return picked[id];
+    });
+  };
+
+  CalendarView.prototype.paintPicked = function () {
+    var picked = this.picked;
+    var count = this.pickedEvents().length;
+
+    Array.prototype.forEach.call(this.body.querySelectorAll("[data-event-id]"), function (node) {
+      node.classList.toggle("is-picked", !!picked[node.getAttribute("data-event-id")]);
+    });
+
+    if (!this.pickedBar) {
+      return;
+    }
+
+    this.pickedBar.hidden = !count;
+    this.pickedCount.textContent = Generic.format(Generic.nt("%(count)s picked", "%(count)s picked", count), { count: count });
+
+    if (count && !this.pickedDay.value) {
+      var first = this.pickedEvents()[0];
+
+      this.pickedDay.value = iso(addDays(parseDay(first.start), 1));
+    }
+  };
+
+  CalendarView.prototype.unpick = function () {
+    this.picked = {};
+    this.paintPicked();
+  };
+
+  /** The picked records planned again ``minutes`` later (whole days
+   * on a calendar of dates): one record each, through the panel's
+   * endpoint - the same relation, at the same hours. */
+  CalendarView.prototype.copyPicked = function (minutes) {
+    var self = this;
+    var events = this.pickedEvents();
+    var timed = this.config.timed;
+    var done = 0;
+
+    if (!events.length || !minutes) {
+      return;
+    }
+
+    function later(event) {
+      if (!timed) {
+        return { start: iso(addDays(parseDay(event.start), Math.round(minutes / 1440))) };
+      }
+
+      var body = { start: moment(parseMoment(event.startsAt), minutes) };
+
+      if (event.endsAt) {
+        body.end = moment(parseMoment(event.endsAt), minutes);
+      }
+
+      return body;
+    }
+
+    // One after the other: each answered before the next is sent.
+    events
+      .reduce(function (chain, event) {
+        return chain.then(function () {
+          var body = later(event);
+
+          body.record = event.record;
+
+          return Generic.api.post(self.config.allocate.createUrl, body).then(function () {
+            done += 1;
+          });
+        });
+      }, Promise.resolve())
+      .then(function () {
+        Generic.toast(Generic.format(Generic.nt("%(count)s record copied.", "%(count)s records copied.", done), { count: done }), "success");
+        self.unpick();
+      })
+      .catch(function (error) {
+        Generic.toast(
+          ((error && error.message) || t("The record could not be created.")) +
+            (done ? " " + Generic.format(Generic.nt("(%(count)s copied before.)", "(%(count)s copied before.)", done), { count: done }) : ""),
+          "error"
+        );
       })
       .then(function () {
         self.refresh();

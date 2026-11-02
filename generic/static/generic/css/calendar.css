@@ -59,6 +59,33 @@
   font-size: var(--font-size-sm);
 }
 
+/* Records picked (Shift+click): a bar to copy them, each outlined. */
+.calendar__picked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--color-accent-subtle);
+  border-radius: var(--border-radius);
+}
+
+.calendar__picked[hidden] {
+  display: none;
+}
+
+.calendar__picked-day {
+  width: auto;
+}
+
+.calendar-event.is-picked {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
 /* -- Month and week ------------------------------------------------------ */
 
 .calendar-grid {
@@ -452,6 +479,16 @@ a.calendar-event:focus-visible {
   background: var(--event);
   border-radius: var(--border-radius-pill);
   opacity: 0;
+}
+
+.calendar-hours__resize--start {
+  top: 0;
+  bottom: auto;
+}
+
+.calendar-hours__resize--start::after {
+  top: 2px;
+  bottom: auto;
 }
 
 .calendar-hours__event:hover .calendar-hours__resize::after {

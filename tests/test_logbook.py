@@ -333,6 +333,20 @@ SCENARIO = textwrap.dedent("""
     assert send(
         bob, "patch", MOVE, {"end": "2026-10-08T13:00"}
     ).status_code == 400
+    # Its start moved earlier, the end staying (the upper edge).
+    assert send(
+        bob, "patch", MOVE,
+        {"start": "2026-10-08T13:30", "end": "2026-10-08T16:30"},
+    ).status_code == 200
+    logged.refresh_from_db()
+    assert str(logged.hours) == "3.00", logged.hours
+    # Each entry names its task: picked, it is copied by planning that
+    # task again elsewhere.
+    week = bob.get(SHEET, {"start": "2026-10-05", "end": "2026-10-12"})
+    event = next(
+        e for e in week.json()["events"] if e["id"] == str(logged.pk)
+    )
+    assert event["record"] == str(logged.task_id), event
 
     # A reader neither drops nor moves.
     assert viewer.get(SHEET + "sources/").status_code == 200

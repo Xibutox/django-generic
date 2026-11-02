@@ -273,7 +273,7 @@ generic/
     │                       element (tree, cards, calendar); loaded by base.html
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
-    │                       resize, allocate (§5.20)
+    │                       resize either edge, allocate, Shift+click to copy (§5.20)
     ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
     ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
@@ -1753,14 +1753,18 @@ time, `end` shifts by as many days. *Add* on a day opens the add form
 with the date filled. With `hours`: week and day as columns of hours
 (`drawHours`), a record as tall as it lasts, side by side when they
 overlap, day totals in the header, a now line; drag moves the start
-(the end follows, `move_in_time`), the foot handle the end, a drag over
+(the end follows, `move_in_time`), the foot handle the end, the top
+handle the start (`{start, end}`, the end kept), a drag over
 empty hours opens the add form in a popup with both filled
 (`generic:relation-saved` refreshes). `allocate`: a panel of the
 related list (its `get_list_queryset`, `filters` through
 `FilterTreeBuilder`, `q`, pages of `limit` ≤ `MAX_SOURCES`) whose
 records dropped on a time POST `calendars/<name>/` and are created
 through `create_editable(request, {}, {date, end, fk})` (add
-permission, 201). Events carry `startsAt`/`endsAt` (`wall_clock`); the
+permission, 201); events carry `record` (the fk's key) then, and
+Shift/Ctrl+click picks them: one dragged elsewhere, or *Copy* to a day,
+POSTs a copy of each (`copyPicked`, the same relation and hours,
+shifted). Events carry `startsAt`/`endsAt` (`wall_clock`); the
 browser sends `YYYY-MM-DDTHH:MM` (`parse_moment`). Declarations checked
 by `check_hours`. `docs/calendars.md`; example: *Support › Due dates*,
 *Arrivals* (hourly); `logbook/` *Timesheet* (allocates tasks).

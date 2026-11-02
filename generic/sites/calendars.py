@@ -415,6 +415,12 @@ class BoundCalendar:
             "endsAt": wall_clock(ends),
         }
 
+        if self.allocation is not None:
+            # The record it points at: picked, it is planned again
+            # elsewhere through the panel's endpoint (a copy).
+            field = obj._meta.get_field(self.allocation.field)
+            event["record"] = force_str(getattr(obj, field.attname) or "")
+
         if definition.color:
             entry = describe_entry(
                 self.resource, request, obj, definition.color

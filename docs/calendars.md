@@ -147,6 +147,8 @@ With `editable=True`:
 - a record dragged to another time **starts there**, its end moving
   with it (its length is kept);
 - the handle at its foot **stretches it** - a later or earlier end;
+- the handle at its top **moves its start**, the end staying where it
+  is;
 - dragging across the empty hours of a day opens the add form (in a
   popup) with the start and the end filled in; the calendar refreshes
   when it is saved.
@@ -190,11 +192,23 @@ The panel shows to a reader with the add permission and the related
 resource's view permission. A timed calendar that allocates must draw
 `hours`.
 
+### Copying records: Shift+click
+
+On a calendar that allocates, each event carries `record` - the key of
+the record its foreign key points at. Shift+click (or Ctrl+click)
+**picks** an event instead of opening it; a bar then counts the picked
+ones and offers a day. Dragging one of the picked events to another
+day or time **copies them all** there - each keeps its place relative
+to the one dragged - and *Copy* puts them on the day chosen, at their
+own hours. Each copy is a record created through the same `POST` as a
+drop from the panel (`{"record", "start", "end"}`), so `create_editable`
+fills it in as it does a dropped one; Escape lets the picked ones go.
+
 ## Endpoints
 
 | | |
 | --- | --- |
-| `GET api/<app>/<model>/calendars/<name>/?start=&end=` | the records from `start` to `end` (excluded, ISO days, at most 62 days): `{start, end, truncated, editable, events: [{id, label, url, start, end, time, color, background, cells, editable}]}`; the table's `filters` and `search` apply |
+| `GET api/<app>/<model>/calendars/<name>/?start=&end=` | the records from `start` to `end` (excluded, ISO days, at most 62 days): `{start, end, truncated, editable, events: [{id, label, url, start, end, time, color, background, cells, editable, record?}]}`, `record` with `allocate``; the table's `filters` and `search` apply |
 | `PATCH api/<app>/<model>/<pk>/calendars/<name>/` | `{"date": "YYYY-MM-DD"}`: the record moved to that day; on the hours, `{"start"}` (the end moves with it), `{"end"}` or both, `YYYY-MM-DDTHH:MM`: answered as an event |
 | `POST api/<app>/<model>/calendars/<name>/` | with `allocate`: `{"record", "start", "end"?}`: a record created on that time (or day), pointing at `record`; 201, answered as an event |
 | `GET api/<app>/<model>/calendars/<name>/sources/?q=&page=` | with `allocate`: the records offered, `{items: [{id, label, url, color, background, cells}], more, page}` |
