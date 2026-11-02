@@ -264,3 +264,9 @@ msgid "This line is added to the specification of the task you pick, with the no
 msgid_plural "These %(count)s lines are added to the specification of the task you pick, with the note's title and today's date."
 msgstr[0] "Cette ligne est ajoutée à la spécification de la tâche choisie, avec le titre de la note et la date du jour."
 msgstr[1] "Ces %(count)s lignes sont ajoutées à la spécification de la tâche choisie, avec le titre de la note et la date du jour."
+
+msgid "The server's answer could not be read: reload the page, or sign in again."
+msgstr "La réponse du serveur n'a pas pu être lue : rechargez la page, ou reconnectez-vous."
+
+msgid "The server's answer could not be read: the note is kept here and sent again in a moment."
+msgstr "La réponse du serveur n'a pas pu être lue : la note est gardée ici et renvoyée dans un instant."

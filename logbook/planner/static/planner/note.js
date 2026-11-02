@@ -186,6 +186,10 @@
     Generic.api
       .get(this.url)
       .then(function (answer) {
+        if (!answer || !Array.isArray(answer.lines)) {
+          throw new Error(t("The server's answer could not be read: reload the page, or sign in again."));
+        }
+
         self.load(answer);
         self.build();
       })
@@ -2122,6 +2126,14 @@
       .then(function (answer) {
         var tasksMoved = false;
 
+        // A 2xx that is not the note (an empty body, a page from a proxy
+        // or a sign-in page): not saved - kept, and sent again.
+        if (!answer || !Array.isArray(answer.lines)) {
+          throw new Error(t("The server's answer could not be read: the note is kept here and sent again in a moment."));
+        }
+
+        self.retryDelay = 0;
+
         // Lines come back in the order they went: each takes its key,
         // and its task - what was typed meanwhile stays as typed.
         (answer.lines || []).forEach(function (stored, index) {
@@ -2162,16 +2174,33 @@
           time: now.toLocaleTimeString(document.documentElement.lang || undefined, { hour: "2-digit", minute: "2-digit" })
         });
 
-        if (!self.selection && !self.dirty) {
+        if (self.selection) {
+          self.paintSelection();
+        } else if (!self.dirty) {
           self.showStatus(self.savedText);
         }
 
         self.element.dispatchEvent(new CustomEvent("planner:note-saved", { bubbles: true }));
       })
       .catch(function (error) {
+        var refused = error && error.status >= 400 && error.status < 500;
+
         self.dirty = true;
         self.showStatus((error && error.message) || t("The note could not be saved."), "error");
-        Generic.toast((error && error.message) || t("The note could not be saved."), "error");
+
+        // Refused (a mistake, a permission): said once. Anything else -
+        // the network, the server - tried again, less and less often.
+        if (refused || !self.retryDelay) {
+          Generic.toast((error && error.message) || t("The note could not be saved."), "error");
+        }
+
+        if (!refused) {
+          self.retryDelay = Math.min((self.retryDelay || 2500) * 2, 60000);
+          window.clearTimeout(self.timer);
+          self.timer = window.setTimeout(function () {
+            self.save();
+          }, self.retryDelay);
+        }
       })
       .then(function () {
         self.saving = null;

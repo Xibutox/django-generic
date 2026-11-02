@@ -92,16 +92,15 @@
     return line;
   }
 
-  /** Empty lines at either end dropped, two in a row made one. */
+  /** Empty lines at either end dropped; those between kept, as many
+   * as there were. */
   function tidy(lines) {
     var out = [];
 
     lines.forEach(function (line) {
       line.text = line.text.replace(/\s+$/, "");
 
-      if (line.kind !== "text" || line.text) {
-        out.push(line);
-      } else if (out.length && (out[out.length - 1].kind !== "text" || out[out.length - 1].text)) {
+      if (line.kind !== "text" || line.text || out.length) {
         out.push(line);
       }
     });
