@@ -55,6 +55,9 @@
 
 .note-line {
   --indent: 0;
+  /* The height of a line's first row of text: the controls beside it
+     centre on it, whatever the kind's type size. */
+  --line-box: 1.9rem;
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -69,6 +72,7 @@
 
 .note-line__kind {
   flex: none;
+  margin-top: calc((var(--line-box) - 1.75rem) / 2);
   color: var(--text-muted);
   opacity: 0.6;
 }
@@ -82,14 +86,14 @@
   flex: none;
   width: 1rem;
   height: 1rem;
-  margin: 0.45rem 0.25rem 0 0;
+  margin: calc((var(--line-box) - 1rem) / 2) 0.25rem 0 0;
   accent-color: var(--color-accent);
 }
 
 .note-line__text {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 1.9rem;
+  min-height: var(--line-box);
   padding: 0.3rem 0;
   overflow: hidden;
   color: var(--text-primary);
@@ -108,8 +112,12 @@
   color: var(--text-muted);
 }
 
-.note-line--heading .note-line__text {
+.note-line--heading {
+  --line-box: 2.2rem;
   margin-top: var(--space-2);
+}
+
+.note-line--heading .note-line__text {
   font-size: var(--font-size-lg);
   font-weight: 700;
 }
@@ -155,7 +163,7 @@
   justify-content: flex-end;
   gap: var(--space-1) var(--space-2);
   max-width: 55%;
-  padding: 0.2rem var(--space-1) 0 0;
+  padding: calc((var(--line-box) - var(--control-height-sm)) / 2) var(--space-1) 0 0;
   font-size: var(--font-size-xs);
 }
 
@@ -336,7 +344,7 @@
 .note-line__handle,
 .note-line__add {
   position: absolute;
-  top: 0.15rem;
+  top: calc((var(--line-box) - 1.75rem) / 2);
   color: var(--text-muted);
   opacity: 0;
 }
