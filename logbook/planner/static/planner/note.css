@@ -127,7 +127,8 @@
   background: radial-gradient(circle, var(--text-secondary) 0.18rem, transparent 0.2rem) no-repeat 0.2rem 0.6rem / 0.6rem 0.6rem;
 }
 
-.note-line.is-done .note-line__text {
+.note-line.is-done .note-line__text,
+.note-line.is-task-done .note-line__text {
   color: var(--text-muted);
   text-decoration: line-through;
 }

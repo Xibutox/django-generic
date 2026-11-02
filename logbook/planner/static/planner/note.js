@@ -545,6 +545,8 @@
 
     box.textContent = "";
     box.taskId = task ? task.id : null;
+    // A task done: its line struck through, like a to-do ticked.
+    line.row.classList.toggle("is-task-done", line.kind === "task" && !!task && task.status === "done");
 
     if (line.kind !== "task") {
       return;
