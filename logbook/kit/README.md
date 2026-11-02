@@ -7,9 +7,10 @@
 >
 >     python scripts/logbook_kit.py ../logbook-kit
 >
-> then run everything below in `../logbook-kit`. To try the logbook
-> from the repository instead: `docker compose -f logbook/compose.yaml
-> up --build` (SQLite and the demo, see ../README.md).
+> then run everything below in `../logbook-kit`. The same stack runs
+> from the repository too, without the kit: `docker compose -f
+> logbook/compose.yaml up --build -d`, settings in `logbook/.env`
+> (../README.md).
 
 Everything the logbook needs to run on its own machine, and the two
 scripts that move the old planner's data into it:
@@ -48,6 +49,11 @@ can check the logbook gives the same figures.
 cp .env.example .env      # then fill it in: secret key, passwords, COMET/DES
 docker compose up --build -d
 ```
+
+Behind a proxy, set `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` in
+`.env` first: the build installs the libraries through it, `sync_kpi`
+reads COMET and DES through it. Docker pulls its images through its own
+setting (Docker Desktop: *Settings > Resources > Proxies*).
 
 The site is on http://localhost:4243 (`LOGBOOK_PORT`). The first start
 creates the tables and the administrator named in `.env`.

@@ -28,6 +28,7 @@ SKIPPED = shutil.ignore_patterns(
     # The checkout's own Docker files (compose.yaml): the kit has its own.
     "Dockerfile",
     "compose.yaml",
+    "import",
 )
 RENAMED = {"env.example": ".env.example"}
 

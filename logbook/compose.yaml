@@ -1,26 +1,91 @@
-# The logbook from this checkout, one service, SQLite and its demo:
+# The logbook from this checkout, the kit's stack: the site (gunicorn)
+# on port LOGBOOK_PORT (4243), its PostgreSQL, and the scheduler that
+# reads the COMET and DES figures (sync_kpi) every KPI_SYNC_EVERY
+# seconds. Settings in logbook/.env (copy kit/env.example), from the
+# repository's root:
 #
-#   docker compose -f logbook/compose.yaml up --build
+#   cp logbook/kit/env.example logbook/.env      # then fill it in
+#   docker compose -f logbook/compose.yaml up --build -d
 #
-# then http://localhost:8000/ (LOGBOOK_PORT for another port), signed in
-# as admin, alice, bob or viewer, password demo. For trying it on this
-# machine: the secret key and the passwords are known to everyone.
-#
-# The standalone install - PostgreSQL, gunicorn, the KPI scheduler -
-# is kit/, run from the kit that scripts/logbook_kit.py assembles, not
-# from here (kit/README.md).
+# Behind a proxy: HTTP_PROXY, HTTPS_PROXY and NO_PROXY in .env. The
+# build hands them to pip; the containers get them too, for sync_kpi.
+# Docker itself pulls the python and postgres images through its own
+# proxy setting (Docker Desktop: Settings > Resources > Proxies).
 
-name: logbook-demo
+name: logbook
+
+x-build: &build
+  context: ..
+  dockerfile: logbook/Dockerfile
+  args:
+    HTTP_PROXY: ${HTTP_PROXY:-}
+    HTTPS_PROXY: ${HTTPS_PROXY:-}
+    NO_PROXY: ${NO_PROXY:-}
+    http_proxy: ${HTTP_PROXY:-}
+    https_proxy: ${HTTPS_PROXY:-}
+    no_proxy: ${NO_PROXY:-}
+
+x-proxy: &proxy
+  HTTP_PROXY: ${HTTP_PROXY:-}
+  HTTPS_PROXY: ${HTTPS_PROXY:-}
+  # The database is never reached through the proxy.
+  NO_PROXY: db,localhost,127.0.0.1${NO_PROXY:+,}${NO_PROXY:-}
+  http_proxy: ${HTTP_PROXY:-}
+  https_proxy: ${HTTPS_PROXY:-}
+  no_proxy: db,localhost,127.0.0.1${NO_PROXY:+,}${NO_PROXY:-}
 
 services:
-  web:
-    build:
-      context: ..
-      dockerfile: logbook/Dockerfile
-    ports:
-      - "${LOGBOOK_PORT:-8000}:8000"
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: logbook
+      POSTGRES_USER: logbook
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
-      - logbook-data:/data
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logbook -d logbook"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: *build
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *proxy
+      POSTGRES_HOST: db
+      POSTGRES_DB: logbook
+      POSTGRES_USER: logbook
+    ports:
+      - "${LOGBOOK_PORT:-4243}:8000"
+    volumes:
+      # Where the old planner's export is put for the import
+      # (kit/README.md): logbook/import.
+      - ./import:/import:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  scheduler:
+    build: *build
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *proxy
+      POSTGRES_HOST: db
+      POSTGRES_DB: logbook
+      POSTGRES_USER: logbook
+    # The site's start migrates; this one only waits for it.
+    entrypoint: []
+    command: >
+      sh -c 'while true; do python manage.py sync_kpi || true;
+      sleep "$${KPI_SYNC_EVERY:-3600}"; done'
+    depends_on:
+      web:
+        condition: service_started
 
 volumes:
-  logbook-data:
+  postgres-data:

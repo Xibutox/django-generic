@@ -38,3 +38,6 @@ docker/prod.env
 # The nginx stack's certificates stay on the server.
 docker/nginx/certs
 docker/nginx/acme
+
+# The logbook's import: data, never in an image.
+logbook/import
