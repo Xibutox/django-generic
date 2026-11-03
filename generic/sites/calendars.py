@@ -90,7 +90,7 @@ MAX_DAYS = 62
 MAX_EVENTS = 2000
 
 #: How a calendar may be looked at.
-VIEWS = ("month", "week", "day", "list")
+VIEWS = ("month", "week", "workweek", "day", "list")
 
 #: The views of the default: a day is offered when asked for.
 DEFAULT_VIEWS = ("month", "week", "list")
@@ -414,6 +414,12 @@ class BoundCalendar:
             "startsAt": wall_clock(begins),
             "endsAt": wall_clock(ends),
         }
+
+        if self.allocation is not None:
+            # The record it points at: picked, it is planned again
+            # elsewhere through the panel's endpoint (a copy).
+            field = obj._meta.get_field(self.allocation.field)
+            event["record"] = force_str(getattr(obj, field.attname) or "")
 
         if definition.color:
             entry = describe_entry(

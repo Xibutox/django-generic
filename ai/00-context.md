@@ -276,7 +276,7 @@ generic/
     │                       window; header sticky; data-table-frame="false" opts out
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
-    │                       resize, allocate (§5.20)
+    │                       resize either edge, allocate, Shift+click to copy (§5.20)
     ├── js/board.js         Generic.board: columns of cards; drag or "Move to" (§5.22)
     ├── js/compare.js       Generic.compare: records side by side, differences marked (§5.23)
     ├── js/select2.js       Generic.select2 helpers
@@ -416,6 +416,19 @@ computed, comment, `verified`/`_by`/`_at`, permission
 whole note to the `@page document` (`planner/documents.py`: lines
 synced in one transaction, a task created by a task line - `add_task`
 - renamed with it, and deleted when its line goes only if untouched).
+The editor moves lines (drag handle, Alt+Shift+Up/Down, a line with
+the lines indented under it), selects whole lines (copy, cut, delete,
+indent, move), undoes a paste, move or removal, and reads and writes
+the clipboard through `planner/static/planner/note-clipboard.js`
+(HTML first - OneNote/Word lists and depth, headings, to-dos, tables -
+then plain text with its markers; written back as HTML lists carrying
+`data-line-kind`/`data-line-indent`, and text). `@page attach` lists
+tasks to attach to (`?q=`, the note's own first) and, posted `{task,
+text}`, appends the text to that task's specification under the note's
+title and the date (`change` on the task). A task line posted with
+`taskId` shows that existing task (`link`): a new line, or in place of
+the line's task (released); a line of another note showing it turns
+to text, its title; one of this note is a 400.
 `planner/timers.py`: one running entry a person, starting one stops
 the other and moves a backlog/todo task to doing (`@page timer`,
 *Start timer*/*Stop timer* actions). Everything else is the
@@ -1734,7 +1747,8 @@ calendars = (
 A page `<model>/<name>/` (button on the list; `navigation` adds a
 sidebar entry) with the resource's table above it, rows hidden (as a
 tree's page), whose `filters`/`search` the calendar follows (`calendar`
-is a table action). Month (6 weeks), week, list of days; the week
+is a table action). Month (6 weeks), week, work week (`workweek`, Monday
+to Friday), day, list of days; the week
 starts on `FIRST_DAY_OF_WEEK`; `?view=&date=` in the address. Records
 of a range through `get_list_queryset`, a date-and-time placed on its
 local day with its time. Moving goes through `save_editable` (change
@@ -1743,14 +1757,18 @@ time, `end` shifts by as many days. *Add* on a day opens the add form
 with the date filled. With `hours`: week and day as columns of hours
 (`drawHours`), a record as tall as it lasts, side by side when they
 overlap, day totals in the header, a now line; drag moves the start
-(the end follows, `move_in_time`), the foot handle the end, a drag over
+(the end follows, `move_in_time`), the foot handle the end, the top
+handle the start (`{start, end}`, the end kept), a drag over
 empty hours opens the add form in a popup with both filled
 (`generic:relation-saved` refreshes). `allocate`: a panel of the
 related list (its `get_list_queryset`, `filters` through
 `FilterTreeBuilder`, `q`, pages of `limit` ≤ `MAX_SOURCES`) whose
 records dropped on a time POST `calendars/<name>/` and are created
 through `create_editable(request, {}, {date, end, fk})` (add
-permission, 201). Events carry `startsAt`/`endsAt` (`wall_clock`); the
+permission, 201); events carry `record` (the fk's key) then, and
+Shift/Ctrl+click picks them: one dragged elsewhere, or *Copy* to a day,
+POSTs a copy of each (`copyPicked`, the same relation and hours,
+shifted). Events carry `startsAt`/`endsAt` (`wall_clock`); the
 browser sends `YYYY-MM-DDTHH:MM` (`parse_moment`). Declarations checked
 by `check_hours`. `docs/calendars.md`; example: *Support › Due dates*,
 *Arrivals* (hourly); `logbook/` *Timesheet* (allocates tasks).

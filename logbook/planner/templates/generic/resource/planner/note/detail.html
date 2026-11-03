@@ -12,13 +12,15 @@
 
 {% block components %}
   {{ block.super }}
+  <script src="{% static 'planner/note-clipboard.js' %}" defer></script>
   <script src="{% static 'planner/note.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
   <section class="card note-editor"
            aria-label="{% translate 'The note' %}"
-           data-url="{{ request.path }}document/">
+           data-url="{{ request.path }}document/"
+           data-attach-url="{{ request.path }}attach/">
     <p class="note-editor__loading muted">{% translate "Loading the note..." %}</p>
   </section>
   {{ block.super }}

@@ -34,6 +34,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 from rest_framework.exceptions import APIException
 
+from generic.search import text_lookup
 from generic.sites import (
     Allocate,
     Board,
@@ -67,6 +68,9 @@ from planner.models import (
 )
 
 GROUP = _("Planner")
+
+#: The most notes "All the notes" shows at once.
+MAX_NOTES_SHOWN = 30
 TIME = _("Time")
 
 KIND_COLORS = {"FNC": "#dc2626", "DM": "#7c3aed", "AUT": "#0d9488"}
@@ -326,6 +330,42 @@ class NoteResource(ModelResource):
             )["total"]
         )
 
+    @page(
+        name="all",
+        title=_("All the notes"),
+        icon="view_agenda",
+        description=_(
+            "Every note one after the other, each written in place."
+        ),
+        template="planner/notes_all.html",
+    )
+    def everything(self, request: Any) -> dict[str, Any]:
+        """The notes the list shows (its search, ``?q=``, too), one
+        under the other, each with its own editor: pinned first, then
+        the latest written."""
+        notes = self.get_list_queryset(request).order_by(*self.ordering)
+        term = " ".join(request.GET.get("q", "").split())[:100]
+
+        if term:
+            notes = notes.filter(**{text_lookup("title"): term})
+
+        shown = list(notes[: MAX_NOTES_SHOWN + 1])
+
+        return {
+            "notes": [
+                {
+                    "note": note,
+                    "url": self.get_object_url(note.pk),
+                    "document": self.get_page_url("document", note),
+                    "attach": self.get_page_url("attach", note),
+                }
+                for note in shown[:MAX_NOTES_SHOWN]
+            ],
+            "more": len(shown) > MAX_NOTES_SHOWN,
+            "limit": MAX_NOTES_SHOWN,
+            "term": term,
+        }
+
     @page(detail=True, button=False, methods=("get", "post"))
     def document(self, request: Any, note: Note) -> JsonResponse:
         """The note's title and lines, as the editor reads them; posted
@@ -338,7 +378,7 @@ class NoteResource(ModelResource):
                 )
 
             try:
-                documents.write(note, request, read_json(request))
+                documents.write(note, request, read_json(request), self.site)
             except APIException as error:
                 return JsonResponse(
                     error_body(error.detail), status=error.status_code
@@ -350,6 +390,32 @@ class NoteResource(ModelResource):
         answer["canEdit"] = self.has_change_permission(request, note)
         answer["canAddTasks"] = request.user.has_perm("planner.add_task")
         answer["canTime"] = request.user.has_perm("planner.add_timeentry")
+        answer["canAttach"] = request.user.has_perm("planner.change_task")
+
+        return JsonResponse(answer)
+
+    @page(detail=True, button=False, methods=("get", "post"))
+    def attach(self, request: Any, note: Note) -> JsonResponse:
+        """The tasks the note's text may be attached to (``?q=``);
+        posted ``{task, text}``, the text added to that task's
+        specification (planner/documents.py)."""
+        if request.method == "GET":
+            return JsonResponse(
+                {
+                    "tasks": documents.attach_choices(
+                        note, request, self.site, request.GET.get("q", "")
+                    )
+                }
+            )
+
+        try:
+            answer = documents.attach(
+                note, request, self.site, read_json(request)
+            )
+        except APIException as error:
+            return JsonResponse(
+                error_body(error.detail), status=error.status_code
+            )
 
         return JsonResponse(answer)
 
@@ -875,7 +941,7 @@ class TimeEntryResource(ModelResource):
             navigation=True,
             hours=(7, 20),
             step=15,
-            views=("week", "day", "month", "list"),
+            views=("week", "workweek", "day", "month", "list"),
             allocate=Allocate(
                 "task",
                 title=_("Tasks under way"),

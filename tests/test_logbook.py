@@ -100,6 +100,15 @@ SCENARIO = textwrap.dedent("""
         status = bob.get(url).status_code
         assert status == 200, (url, status)
 
+    # All the notes on one page, an editor each; searched by title.
+    every = bob.get("/planner/note/all/")
+    assert every.status_code == 200, every.status_code
+    page = every.content.decode()
+    assert page.count('class="card note-editor"') == Note.objects.count()
+    assert f'data-url="/planner/note/{note.pk}/document/"' in page
+    found = bob.get("/planner/note/all/", {"q": "SPRINT"}).content.decode()
+    assert found.count('class="card note-editor"') == 1, found
+
     # The editor reads the note: its lines, their tasks.
     DOCUMENT = f"/planner/note/{note.pk}/document/"
     read = bob.get(DOCUMENT).json()
@@ -107,7 +116,25 @@ SCENARIO = textwrap.dedent("""
     kinds = [line["kind"] for line in read["lines"]]
     assert kinds.count("task") == 4, kinds
     first_task = next(line for line in read["lines"] if line["task"])
+    assert read["today"] and "dueOn" in first_task["task"]
+    assert first_task["task"]["assignee"], first_task
     assert first_task["task"]["reference"].startswith("FNC-")
+    # Its form, for the dialog on the line; none for a reader.
+    edit = first_task["task"]["editUrl"]
+    assert edit and bob.get(edit).status_code == 200
+    assert not viewer.get(DOCUMENT).json()["lines"][
+        kinds.index("task")
+    ]["task"]["editUrl"]
+    # Renamed in its form, the task names its line.
+    renamed = Task.objects.get(pk=first_task["task"]["id"])
+    original = renamed.title
+    Task.objects.filter(pk=renamed.pk).update(title="Renamed in the form")
+    again = next(
+        line for line in bob.get(DOCUMENT).json()["lines"]
+        if line["id"] == first_task["id"]
+    )
+    assert again["text"] == "Renamed in the form"
+    Task.objects.filter(pk=renamed.pk).update(title=original)
 
     # A line typed as a task makes a task, numbered by its kind; a task
     # line renamed renames its task.
@@ -179,6 +206,98 @@ SCENARIO = textwrap.dedent("""
     ).status_code == 403
     assert send(bob, "post", DOCUMENT, {"lines": "nope"}).status_code == 400
 
+    # Text from the note attached to a task that already exists: the
+    # note's own tasks are offered first, a search narrows them, and the
+    # text lands at the end of the task's specification.
+    ATTACH = f"/planner/note/{note.pk}/attach/"
+    assert bob.get(DOCUMENT).json()["canAttach"] is True
+    assert viewer.get(DOCUMENT).json()["canAttach"] is False
+    offered = bob.get(ATTACH).json()["tasks"]
+    own = set(note.tasks.values_list("pk", flat=True))
+    assert offered and offered[0]["id"] in own, offered[:3]
+    found = bob.get(ATTACH, {"q": "checkout one-page"}).json()["tasks"]
+    assert [item["title"] for item in found] == ["One-page checkout"], found
+    target = Task.objects.get(title="One-page checkout")
+    before = target.description
+    attached = send(
+        bob,
+        "post",
+        ATTACH,
+        {"task": target.pk, "text": "- Ask the bank\\n  - about 3-D Secure"},
+    )
+    assert attached.status_code == 200, attached.content
+    assert attached.json()["reference"] == target.reference
+    target.refresh_from_db()
+    assert target.description.startswith(before.rstrip())
+    assert f'From the note "{note.title}"' in target.description
+    assert target.description.endswith(
+        "- Ask the bank\\n  - about 3-D Secure"
+    ), target.description
+    # An existing task no line shows is put in the note by a task line
+    # naming it; one a line already shows is refused.
+    loose = Task.objects.create(kind="AUT", title="Imported, in no note")
+    choices = bob.get(ATTACH, {"q": "imported"}).json()["tasks"]
+    assert [(c["id"], c["inNote"]) for c in choices] == [(loose.pk, None)]
+    shown = bob.get(ATTACH, {"q": "checkout one-page"}).json()["tasks"][0]
+    assert shown["inNote"] == note.title and shown["here"] is True
+    current = [
+        {k: line[k] for k in ("id", "kind", "indent", "text", "done")}
+        for line in bob.get(DOCUMENT).json()["lines"]
+    ]
+    linked = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": loose.title, "taskKind": "AUT",
+         "taskId": loose.pk},
+    ]})
+    assert linked.status_code == 200, linked.content
+    assert linked.json()["lines"][-1]["task"]["id"] == loose.pk
+    loose.refresh_from_db()
+    assert loose.note == note and loose.line.note == note
+    assert Task.objects.filter(title=loose.title).count() == 1
+    again = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": "x", "taskKind": "DM",
+         "taskId": target.pk},
+    ]})
+    assert again.status_code == 400, again.content
+    # A task line's own task replaced by one of another note: that note
+    # keeps its title as text, the task replaced (untouched) goes.
+    lines = bob.get(DOCUMENT).json()["lines"]
+    current = [
+        {k: line[k] for k in ("id", "kind", "indent", "text", "done")}
+        for line in lines
+    ]
+    fresh = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"kind": "task", "text": "Fresh DM", "taskKind": "DM"},
+    ]}).json()["lines"][-1]
+    elsewhere = Note.objects.create(title="Supplier call")
+    moved = Task.objects.create(kind="DM", title="Ask for the quote")
+    NoteLine.objects.create(
+        note=elsewhere, kind="task", text=moved.title, task=moved
+    )
+    swapped = send(bob, "post", DOCUMENT, {"lines": current + [
+        {"id": fresh["id"], "kind": "task", "text": moved.title,
+         "taskKind": "DM", "taskId": moved.pk},
+    ]})
+    assert swapped.status_code == 200, swapped.content
+    assert swapped.json()["lines"][-1]["task"]["id"] == moved.pk
+    assert not Task.objects.filter(pk=fresh["task"]["id"]).exists()
+    moved.refresh_from_db()
+    assert moved.note == note and moved.line.pk == fresh["id"]
+    left = elsewhere.lines.get()
+    assert (left.kind, left.text, left.task) == (
+        "text", "Ask for the quote", None
+    )
+    for body in (
+        {"task": target.pk, "text": "   "},
+        {"task": "1", "text": "x"},
+        {"task": 999999, "text": "x"},
+        {"task": target.pk, "text": "x" * 20001},
+        ["nope"],
+    ):
+        assert send(bob, "post", ATTACH, body).status_code == 400, body
+    assert send(
+        viewer, "post", ATTACH, {"task": target.pk, "text": "x"}
+    ).status_code == 403
+
     # The timer: one running at a time, the task moving along.
     todo = Task.objects.get(title="Address autocomplete")
     assert todo.status == "todo"
@@ -202,6 +321,18 @@ SCENARIO = textwrap.dedent("""
         Task.objects.get(pk=item["id"]).status in ("todo", "doing", "review")
         for item in offered
     )
+    # Searched without the accents: "deploiement" finds "Déploiement".
+    accented = Task.objects.create(
+        kind="DM", title="Déploiement du réseau", status="doing"
+    )
+    found = bob.get(SHEET + "sources/", {"q": "deploiement reseau"})
+    assert [item["id"] for item in found.json()["items"]] == [
+        str(accented.pk)
+    ], found.json()
+    assert [
+        task["id"]
+        for task in bob.get(ATTACH, {"q": "DEPLOIEMENT"}).json()["tasks"]
+    ] == [accented.pk]
     dropped = send(
         bob,
         "post",
@@ -227,6 +358,20 @@ SCENARIO = textwrap.dedent("""
     assert send(
         bob, "patch", MOVE, {"end": "2026-10-08T13:00"}
     ).status_code == 400
+    # Its start moved earlier, the end staying (the upper edge).
+    assert send(
+        bob, "patch", MOVE,
+        {"start": "2026-10-08T13:30", "end": "2026-10-08T16:30"},
+    ).status_code == 200
+    logged.refresh_from_db()
+    assert str(logged.hours) == "3.00", logged.hours
+    # Each entry names its task: picked, it is copied by planning that
+    # task again elsewhere.
+    week = bob.get(SHEET, {"start": "2026-10-05", "end": "2026-10-12"})
+    event = next(
+        e for e in week.json()["events"] if e["id"] == str(logged.pk)
+    )
+    assert event["record"] == str(logged.task_id), event
 
     # A reader neither drops nor moves.
     assert viewer.get(SHEET + "sources/").status_code == 200

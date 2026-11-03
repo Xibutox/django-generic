@@ -6,12 +6,25 @@
  * shows its status, the time spent on it, and a button starting or
  * stopping the timer. Typing at the start of a line changes its kind:
  * "# " a heading, "- " a bullet, "[] " a to-do, "/fnc ", "/dm " or "/aut " a
- * task. Enter starts a line, Backspace on an empty one removes it, Tab
- * and Shift+Tab indent. The note saves itself a moment after the last
- * change (Ctrl+S at once): the whole note is posted to its document
- * page (planner/documents.py), which answers what it stored.
+ * task; the buttons above the lines add a line of any kind. Enter starts
+ * a line, Backspace on an empty one removes it, Tab and Shift+Tab
+ * indent.
  *
- *   <section class="note-editor" data-url="<the note's document page>">
+ * Lines move: by their handle (drag), or Alt+Shift+Up/Down - a line
+ * takes the lines indented under it along. Shift+Up/Down past a line's
+ * edge, a click on a handle or Ctrl+A twice select whole lines, to copy,
+ * cut, delete, indent, move or attach to a task; Escape lets go. What is
+ * copied is HTML and plain text both, and a paste reads either - lists,
+ * headings and to-dos from OneNote or Word included - through
+ * note-clipboard.js. A paste, a move or a deletion can be undone (the
+ * toast's Undo, or Ctrl+Z right after).
+ *
+ * The note saves itself a moment after the last change (Ctrl+S at
+ * once): the whole note is posted to its document page
+ * (planner/documents.py), which answers what it stored.
+ *
+ *   <section class="note-editor" data-url="<the note's document page>"
+ *            data-attach-url="<the note's attach page>">
  *
  * Text reaches the page through textContent and form values, addresses
  * through Generic.isSafeUrl.
@@ -21,15 +34,16 @@
 
   var Generic = window.Generic;
   var t = Generic.t;
+  var clipboard = Generic.noteClipboard;
 
   var KINDS = [
-    { kind: "text", icon: "notes", label: t("Text") },
-    { kind: "heading", icon: "title", label: t("Heading") },
-    { kind: "bullet", icon: "format_list_bulleted", label: t("Bullet") },
-    { kind: "check", icon: "check_box", label: t("To-do") },
-    { kind: "task", taskKind: "FNC", icon: "bug_report", label: t("FNC task - a ticket") },
-    { kind: "task", taskKind: "DM", icon: "rocket_launch", label: t("DM task - an evolution") },
-    { kind: "task", taskKind: "AUT", icon: "groups", label: t("AUT task - a meeting, support") }
+    { kind: "text", icon: "notes", label: t("Text"), short: t("Text") },
+    { kind: "heading", icon: "title", label: t("Heading"), short: t("Heading") },
+    { kind: "bullet", icon: "format_list_bulleted", label: t("Bullet"), short: t("Bullet") },
+    { kind: "check", icon: "check_box", label: t("To-do"), short: t("To-do") },
+    { kind: "task", taskKind: "FNC", icon: "bug_report", label: t("FNC task - a ticket"), short: "FNC" },
+    { kind: "task", taskKind: "DM", icon: "rocket_launch", label: t("DM task - an evolution"), short: "DM" },
+    { kind: "task", taskKind: "AUT", icon: "groups", label: t("AUT task - a meeting, support"), short: "AUT" }
   ];
 
   //: What a line may start with to change its kind.
@@ -43,8 +57,24 @@
     { pattern: /^\/(aut|autre|autres|other)\s/i, kind: "task", taskKind: "AUT" }
   ];
 
+  //: The keys, for the list the keyboard button opens.
+  var KEYS = [
+    ["Enter", t("A new line; Shift+Enter breaks the line inside it")],
+    ["Tab / Shift+Tab", t("Indent, outdent")],
+    ["Alt+Shift+\u2191 / \u2193", t("Move the line, with the lines indented under it (Ctrl+Shift+\u2191 / \u2193 too)")],
+    ["Shift+\u2191 / \u2193", t("At the start or end of a line: select whole lines")],
+    ["Ctrl+A", t("Twice: select every line")],
+    ["Ctrl+C / Ctrl+X / Ctrl+V", t("Copy, cut, paste lines - from OneNote, Word, Outlook too")],
+    ["Delete", t("Remove the selected lines")],
+    ["Ctrl+Z", t("Undo a paste, a move, a removal")],
+    ["Ctrl+Enter", t("Tick or untick a to-do")],
+    ["Ctrl+S", t("Save now")],
+    ["Escape", t("Let go of the selection")]
+  ];
+
   var SAVE_DELAY = 900;
   var MAX_INDENT = 4;
+  var UNDO_DEPTH = 50;
   var counter = 0;
 
   function el(tag, className, text) {
@@ -65,6 +95,17 @@
     var node = el("span", "icon material-symbols-outlined icon--sm", name);
 
     node.setAttribute("aria-hidden", "true");
+
+    return node;
+  }
+
+  function iconButton(name, label, className) {
+    var node = el("button", "icon-button icon-button--sm " + (className || ""));
+
+    node.type = "button";
+    node.title = label;
+    node.setAttribute("aria-label", label);
+    node.appendChild(icon(name));
 
     return node;
   }
@@ -99,16 +140,44 @@
     return whole + " h" + (minutes ? " " + (minutes < 10 ? "0" : "") + minutes : "");
   }
 
+  function clampIndent(indent) {
+    return Math.min(Math.max(indent || 0, 0), MAX_INDENT);
+  }
+
+  function command(event) {
+    return event.ctrlKey || event.metaKey;
+  }
+
+  /** Alt+Shift+Up/Down (OneNote's), or Ctrl+Shift+Up/Down: a move. */
+  function moveStep(event) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+      return 0;
+    }
+
+    if (!event.shiftKey || !(event.altKey || command(event))) {
+      return 0;
+    }
+
+    return event.key === "ArrowUp" ? -1 : 1;
+  }
+
   /* -- The editor ------------------------------------------------------ */
 
   function NoteEditor(element) {
     this.element = element;
     this.url = element.getAttribute("data-url");
+    this.attachUrl = element.getAttribute("data-attach-url");
     this.lines = [];
     this.timer = null;
     this.saving = null;
     this.dirty = false;
     this.again = false;
+    this.selection = null;
+    this.current = null;
+    this.history = [];
+    this.undoReady = false;
+    this.dragging = null;
+    this.copying = null;
   }
 
   NoteEditor.prototype.start = function () {
@@ -117,6 +186,10 @@
     Generic.api
       .get(this.url)
       .then(function (answer) {
+        if (!answer || !Array.isArray(answer.lines)) {
+          throw new Error(t("The server's answer could not be read: reload the page, or sign in again."));
+        }
+
         self.load(answer);
         self.build();
       })
@@ -131,15 +204,31 @@
         event.returnValue = "";
       }
     });
+
+    // Copying, cutting and pasting whole lines: the selection has the
+    // focus (the list), or a toolbar button asked for it.
+    document.addEventListener("copy", function (event) {
+      self.copied(event, false);
+    });
+    document.addEventListener("cut", function (event) {
+      self.copied(event, true);
+    });
+    document.addEventListener("paste", function (event) {
+      if (self.selection && document.activeElement === self.list) {
+        self.pasteOverSelection(event);
+      }
+    });
   };
 
   NoteEditor.prototype.load = function (answer) {
     this.canEdit = !!answer.canEdit;
     this.canAddTasks = !!answer.canAddTasks;
     this.canTime = !!answer.canTime;
+    this.canAttach = !!answer.canAttach && !!this.attachUrl;
     this.statuses = answer.statuses || [];
     this.criticalities = answer.criticalities || [];
     this.title = answer.title || "";
+    this.today = answer.today || "";
     this.lines = (answer.lines || []).map(function (line) {
       return {
         key: key(),
@@ -195,9 +284,26 @@
     head.appendChild(this.titleInput);
     head.appendChild(this.status);
     this.element.appendChild(head);
+    this.element.appendChild(this.toolbar());
+
+    this.keys = this.keyList();
+    this.element.appendChild(this.keys);
 
     this.list = el("div", "note-editor__lines");
     this.list.setAttribute("role", "list");
+    this.list.setAttribute("aria-label", t("Lines"));
+    this.list.tabIndex = -1;
+    this.list.addEventListener("keydown", function (event) {
+      if (event.target === self.list) {
+        self.selectionKey(event);
+      }
+    });
+    this.list.addEventListener("focusin", function (event) {
+      if (event.target !== self.list && event.target.classList.contains("note-line__text")) {
+        self.clearSelection();
+      }
+    });
+    this.dragAndDrop();
     this.element.appendChild(this.list);
 
     if (this.canEdit) {
@@ -219,19 +325,155 @@
     this.showStatus(t("Saved"));
   };
 
+  /* -- The toolbar ----------------------------------------------------- */
+
+  NoteEditor.prototype.toolbar = function () {
+    var self = this;
+    var bar = el("div", "note-editor__toolbar");
+
+    bar.setAttribute("role", "toolbar");
+    bar.setAttribute("aria-label", t("Note tools"));
+
+    if (this.canEdit) {
+      var add = el("div", "note-editor__tools");
+
+      add.appendChild(el("span", "note-editor__tools-label muted", t("Add")));
+      KINDS.forEach(function (entry) {
+        if (entry.kind === "task" && !self.canAddTasks) {
+          return;
+        }
+
+        var button = el("button", "button button--sm button--ghost note-editor__add note-editor__add--" + (entry.taskKind || entry.kind).toLowerCase());
+
+        button.type = "button";
+        button.title = Generic.format(t("Add a line: %(kind)s"), { kind: entry.label });
+        button.appendChild(icon(entry.icon));
+        button.appendChild(el("span", "", entry.short));
+        // The line being written keeps the focus until the click.
+        button.addEventListener("mousedown", function (event) {
+          event.preventDefault();
+        });
+        button.addEventListener("click", function () {
+          self.addLine(entry.kind, entry.taskKind);
+        });
+        add.appendChild(button);
+      });
+      bar.appendChild(add);
+    }
+
+    var actions = el("div", "note-editor__tools note-editor__tools--end");
+    var copy = iconButton("content_copy", t("Copy the selected lines, or the whole note"));
+
+    copy.addEventListener("mousedown", function (event) {
+      event.preventDefault();
+    });
+    copy.addEventListener("click", function () {
+      self.copyLines(self.selection ? self.selectedLines() : self.lines.slice());
+    });
+    actions.appendChild(copy);
+
+    if (this.canAttach) {
+      var attach = iconButton("add_link", t("An existing task: put it in the note, or add the selected lines to it"));
+
+      attach.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+      });
+      attach.addEventListener("click", function () {
+        self.attach(self.selection ? self.selectedLines() : self.current ? [self.current] : []);
+      });
+      actions.appendChild(attach);
+    }
+
+    var keys = iconButton("keyboard", t("Keyboard shortcuts"));
+
+    keys.setAttribute("aria-expanded", "false");
+    keys.addEventListener("click", function () {
+      var open = self.keys.hidden;
+
+      self.keys.hidden = !open;
+      keys.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    actions.appendChild(keys);
+    bar.appendChild(actions);
+
+    return bar;
+  };
+
+  NoteEditor.prototype.keyList = function () {
+    var box = el("dl", "note-editor__keys");
+
+    box.hidden = true;
+    KEYS.forEach(function (entry) {
+      var term = el("dt");
+
+      term.appendChild(el("kbd", "", entry[0]));
+      box.appendChild(term);
+      box.appendChild(el("dd", "", entry[1]));
+    });
+
+    return box;
+  };
+
+  /** A line of this kind: the current line turned into it when it is
+   * empty, a new one under it otherwise. */
+  NoteEditor.prototype.addLine = function (kind, taskKind) {
+    var line = this.current && this.lines.indexOf(this.current) !== -1 ? this.current : this.lines[this.lines.length - 1];
+
+    if (line && !line.input.value && !line.task) {
+      this.clearSelection();
+      this.setKind(line, kind, taskKind);
+      this.focus(line, 0);
+      return;
+    }
+
+    var block = this.block(line);
+    var next = this.blank(kind, line.indent, taskKind);
+
+    this.clearSelection();
+    this.insert(next, this.lines.indexOf(block[block.length - 1]) + 1);
+    this.focus(next, 0);
+    this.changed();
+  };
+
   /* -- A line ------------------------------------------------------------ */
 
   NoteEditor.prototype.row = function (line) {
     var self = this;
     var row = el("div", "note-line");
+    var handle = iconButton("drag_indicator", this.canEdit ? t("Drag to move; click to select") : t("Click to select"), "note-line__handle");
     var kind = el("button", "note-line__kind icon-button icon-button--sm");
     var text = el("textarea", "note-line__text");
 
     row.setAttribute("role", "listitem");
     line.row = row;
     line.input = text;
+
+    handle.tabIndex = -1;
+    handle.draggable = this.canEdit;
+    handle.addEventListener("click", function (event) {
+      self.handleClicked(line, event);
+    });
+    handle.addEventListener("dragstart", function (event) {
+      self.dragStart(line, event);
+    });
+    handle.addEventListener("dragend", function () {
+      self.dragEnd();
+    });
+    row.appendChild(handle);
+
+    if (this.canEdit) {
+      var add = iconButton("add", t("Add a line below"), "note-line__add");
+
+      add.tabIndex = -1;
+      add.addEventListener("click", function () {
+        self.addBelow(line);
+      });
+      row.appendChild(add);
+    }
+
     kind.type = "button";
     kind.disabled = !this.canEdit;
+    kind.setAttribute("aria-haspopup", "menu");
     kind.addEventListener("click", function (event) {
       event.stopPropagation();
       self.menu(line, kind);
@@ -263,6 +505,9 @@
     text.addEventListener("paste", function (event) {
       self.paste(line, event);
     });
+    text.addEventListener("focus", function () {
+      self.current = line;
+    });
 
     row.appendChild(kind);
     row.appendChild(check);
@@ -278,9 +523,11 @@
   NoteEditor.prototype.paint = function (line) {
     var entry = kindOf(line);
     var row = line.row;
+    var selected = this.selection && this.selectedLines().indexOf(line) !== -1;
 
-    row.className = "note-line note-line--" + line.kind + (line.done ? " is-done" : "");
+    row.className = "note-line note-line--" + line.kind + (line.done ? " is-done" : "") + (selected ? " is-selected" : "");
     row.style.setProperty("--indent", String(line.indent));
+    row.setAttribute("aria-selected", selected ? "true" : "false");
     line.kindButton.textContent = "";
     line.kindButton.appendChild(icon(entry.icon));
     line.kindButton.title = entry.label;
@@ -297,6 +544,9 @@
     var task = line.task;
 
     box.textContent = "";
+    box.taskId = task ? task.id : null;
+    // A task done: its line struck through, like a to-do ticked.
+    line.row.classList.toggle("is-task-done", line.kind === "task" && !!task && task.status === "done");
 
     if (line.kind !== "task") {
       return;
@@ -307,7 +557,13 @@
     box.appendChild(kind);
 
     if (!task) {
-      box.appendChild(el("span", "note-line__new muted", t("new task, saved soon")));
+      box.appendChild(
+        el(
+          "span",
+          "note-line__new muted",
+          line.linkTask ? Generic.format(t("%(task)s, in the note once saved"), { task: line.linkReference }) : t("new task, saved soon")
+        )
+      );
       return;
     }
 
@@ -319,6 +575,19 @@
       box.appendChild(link);
     } else {
       box.appendChild(el("span", "note-line__reference", task.reference));
+    }
+
+    if (task.editUrl && Generic.isSafeUrl(task.editUrl)) {
+      var edit = el("button", "icon-button icon-button--sm note-line__edit");
+
+      edit.type = "button";
+      edit.appendChild(icon("edit"));
+      edit.title = Generic.format(t("Edit %(task)s"), { task: task.reference });
+      edit.setAttribute("aria-label", edit.title);
+      edit.addEventListener("click", function () {
+        self.editTask(line);
+      });
+      box.appendChild(edit);
     }
 
     var status = el("select", "input input--sm note-line__status note-line__status--" + task.status);
@@ -356,6 +625,25 @@
       box.appendChild(criticality);
     }
 
+    box.appendChild(this.dueDate(line));
+
+    // Who does it, as initials; the name on hover.
+    if (task.assignee) {
+      var initials = task.assignee
+        .split(/[\s._-]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(function (part) {
+          return part.charAt(0).toUpperCase();
+        })
+        .join("");
+      var who = el("span", "note-line__assignee", initials);
+
+      who.title = Generic.format(t("Assignee: %(name)s"), { name: task.assignee });
+      who.setAttribute("aria-label", who.title);
+      box.appendChild(who);
+    }
+
     var spent = el("span", "note-line__hours", hours(task.hours));
 
     spent.title = t("Time spent");
@@ -376,6 +664,133 @@
     }
   };
 
+  /** The task's form in a dialog; saved, the note's tasks are read
+   * again - its title is the line's text. */
+  NoteEditor.prototype.editTask = function (line) {
+    var self = this;
+    var task = line.task;
+
+    // What was typed goes first: the form then starts from it.
+    if (this.dirty) {
+      this.save();
+    }
+
+    Generic.dialogs.record({ url: task.editUrl, title: Generic.format(t("Edit %(task)s"), { task: task.reference }), icon: "edit" }).then(function (result) {
+      if (result && (result.saved || result.deleted)) {
+        self.reloadTasks();
+      }
+    });
+  };
+
+  /** The tasks of the note read again (one changed elsewhere): each
+   * line keeps what is typed in it, its task and a title changed take
+   * their stored state. */
+  NoteEditor.prototype.reloadTasks = function () {
+    var self = this;
+
+    Generic.api
+      .get(this.url)
+      .then(function (answer) {
+        var stored = {};
+
+        if (!answer || !Array.isArray(answer.lines)) {
+          return;
+        }
+
+        answer.lines.forEach(function (item) {
+          stored[item.id] = item;
+        });
+        self.lines.forEach(function (line) {
+          var item = line.id ? stored[line.id] : null;
+
+          if (!item || line.kind !== "task") {
+            return;
+          }
+
+          // Deleted in its form: the line stays, as text.
+          if (!item.task) {
+            line.kind = "text";
+            line.task = null;
+            line.linkTask = null;
+            self.paint(line);
+            self.changed();
+            return;
+          }
+
+          line.task = item.task;
+
+          if (item.text !== line.text) {
+            line.text = item.text;
+            line.input.value = item.text;
+            self.grow(line);
+          }
+
+          self.paint(line);
+        });
+        document.dispatchEvent(new CustomEvent("generic:tables-reload"));
+      })
+      .catch(function (error) {
+        Generic.toast((error && error.message) || t("The note could not be read again: reload the page."), "error");
+      });
+  };
+
+  /** A task's due date: a chip opening the browser's date picker; the
+   * date picked is saved at once, Clear empties it. Late in red. */
+  NoteEditor.prototype.dueDate = function (line) {
+    var self = this;
+    var task = line.task;
+    var due = task.dueOn || "";
+    var late = due && this.today && due < this.today && task.status !== "done";
+    var wrap = el("span", "note-line__due" + (due ? "" : " is-empty") + (late ? " is-late" : ""));
+    var chip = el("button", "button button--sm button--ghost note-line__due-button");
+    var input = el("input", "note-line__due-input");
+    var label;
+
+    if (due) {
+      var parts = due.split("-");
+      var date = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+
+      label = date.toLocaleDateString(document.documentElement.lang || undefined, {
+        day: "numeric",
+        month: "short",
+        year: parts[0] === this.today.slice(0, 4) ? undefined : "numeric"
+      });
+    }
+
+    chip.type = "button";
+    chip.disabled = !this.canEdit;
+    chip.appendChild(icon(late ? "event_busy" : "event"));
+    if (label) {
+      chip.appendChild(el("span", "", label));
+    }
+    chip.title = due ? Generic.format(late ? t("Late: due %(date)s - change") : t("Due %(date)s - change"), { date: label }) : t("Set a due date");
+    chip.setAttribute("aria-label", chip.title);
+
+    input.type = "date";
+    input.value = due;
+    input.tabIndex = -1;
+    input.setAttribute("aria-hidden", "true");
+    input.addEventListener("change", function () {
+      self.setTaskField(line, "due_on", input.value || null, "dueOn");
+    });
+    chip.addEventListener("click", function () {
+      try {
+        input.showPicker();
+      } catch (error) {
+        // No picker to show (an old browser): the field itself, typed in.
+        input.classList.add("is-shown");
+        input.removeAttribute("aria-hidden");
+        input.tabIndex = 0;
+        input.focus();
+      }
+    });
+
+    wrap.appendChild(chip);
+    wrap.appendChild(input);
+
+    return wrap;
+  };
+
   NoteEditor.prototype.grow = function (line) {
     var input = line.input;
 
@@ -383,14 +798,25 @@
     input.style.height = input.scrollHeight + "px";
   };
 
-  /* -- Kinds ------------------------------------------------------------- */
+  /** A line under this one: a list goes on, anything else is text. */
+  NoteEditor.prototype.addBelow = function (line) {
+    var kind = line.kind === "bullet" || line.kind === "check" ? line.kind : "text";
+    var next = this.blank(kind, line.indent);
+
+    this.clearSelection();
+    this.insert(next, this.lines.indexOf(line) + 1);
+    this.focus(next, 0);
+    this.changed();
+  };
+
+  /* -- Kinds, and the line's menu ---------------------------------------- */
 
   NoteEditor.prototype.menu = function (line, button) {
     var self = this;
     var open = this.element.querySelector(".note-line__menu");
 
     if (open) {
-      open.remove();
+      open.close();
 
       if (open.owner === line) {
         return;
@@ -401,6 +827,31 @@
 
     menu.owner = line;
     menu.setAttribute("role", "menu");
+    button.setAttribute("aria-expanded", "true");
+
+    function item(iconName, label, run, options) {
+      var entry = el("button", "menu-item" + (options && options.danger ? " menu-item--danger" : ""));
+
+      entry.type = "button";
+      entry.setAttribute("role", options && options.checked !== undefined ? "menuitemradio" : "menuitem");
+
+      if (options && options.checked !== undefined) {
+        entry.setAttribute("aria-checked", options.checked ? "true" : "false");
+      }
+
+      entry.appendChild(icon(iconName));
+      entry.appendChild(el("span", "menu-item__label", label));
+
+      if (options && options.hint) {
+        entry.appendChild(el("kbd", "menu-item__hint", options.hint));
+      }
+
+      entry.addEventListener("click", function () {
+        menu.close(true);
+        run();
+      });
+      menu.appendChild(entry);
+    }
 
     KINDS.forEach(function (entry) {
       if (entry.kind === "task" && !self.canAddTasks && !(line.kind === "task" && line.task)) {
@@ -412,45 +863,110 @@
         return;
       }
 
-      var item = el("button", "menu-item");
-
-      item.type = "button";
-      item.setAttribute("role", "menuitemradio");
-      item.setAttribute("aria-checked", kindOf(line) === entry ? "true" : "false");
-      item.appendChild(icon(entry.icon));
-      item.appendChild(el("span", "menu-item__label", entry.label));
-      item.addEventListener("click", function () {
-        menu.remove();
-        self.setKind(line, entry.kind, entry.taskKind);
-        line.input.focus();
-      });
-      menu.appendChild(item);
+      item(
+        entry.icon,
+        entry.label,
+        function () {
+          self.setKind(line, entry.kind, entry.taskKind);
+          line.input.focus();
+        },
+        { checked: kindOf(line) === entry }
+      );
     });
+
+    menu.appendChild(el("div", "dropdown__divider"));
+    item("add", t("Add a line below"), function () {
+      self.addBelow(line);
+    });
+    item(
+      "arrow_upward",
+      t("Move up"),
+      function () {
+        self.move(self.block(line), -1);
+        line.input.focus();
+      },
+      { hint: "Alt+Shift+\u2191" }
+    );
+    item(
+      "arrow_downward",
+      t("Move down"),
+      function () {
+        self.move(self.block(line), 1);
+        line.input.focus();
+      },
+      { hint: "Alt+Shift+\u2193" }
+    );
+    item("select", t("Select the line"), function () {
+      self.select(line, line);
+    });
+
+    if (this.canAttach) {
+      item("add_link", t("An existing task..."), function () {
+        self.attach([line]);
+      });
+    }
+
+    item(
+      "delete",
+      t("Remove the line"),
+      function () {
+        self.removeLines([line]);
+      },
+      { danger: true }
+    );
 
     line.row.appendChild(menu);
 
-    var first = menu.querySelector("button");
+    var entries = Array.prototype.slice.call(menu.querySelectorAll(".menu-item"));
+    var checked = menu.querySelector('[aria-checked="true"]');
 
-    if (first) {
-      first.focus();
-    }
+    (checked || entries[0]).focus();
 
     function close(event) {
-      if (event.type === "keydown" && event.key !== "Escape") {
-        return;
-      }
-
       if (event.type === "click" && menu.contains(event.target)) {
         return;
       }
 
-      menu.remove();
-      document.removeEventListener("click", close);
-      document.removeEventListener("keydown", close);
+      menu.close();
     }
 
+    menu.close = function (chosen) {
+      menu.remove();
+      button.setAttribute("aria-expanded", "false");
+      document.removeEventListener("click", close);
+
+      if (!chosen) {
+        line.input.focus();
+      }
+    };
+
+    menu.addEventListener("keydown", function (event) {
+      var at = entries.indexOf(document.activeElement);
+      var to = null;
+
+      if (event.key === "Escape" || event.key === "Tab") {
+        event.preventDefault();
+        menu.close();
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        to = (at + 1) % entries.length;
+      } else if (event.key === "ArrowUp") {
+        to = (at - 1 + entries.length) % entries.length;
+      } else if (event.key === "Home") {
+        to = 0;
+      } else if (event.key === "End") {
+        to = entries.length - 1;
+      }
+
+      if (to !== null) {
+        event.preventDefault();
+        entries[to].focus();
+      }
+    });
+
     document.addEventListener("click", close);
-    document.addEventListener("keydown", close);
   };
 
   NoteEditor.prototype.setKind = function (line, kind, taskKind) {
@@ -496,27 +1012,37 @@
     this.changed();
   };
 
+  /** The task kind a shortcut gives, when tasks may be made. */
+  NoteEditor.prototype.shortcut = function (text) {
+    for (var index = 0; index < SHORTCUTS.length; index += 1) {
+      var shortcut = SHORTCUTS[index];
+
+      if (shortcut.pattern.test(text)) {
+        if (shortcut.kind === "task" && !this.canAddTasks) {
+          return null;
+        }
+
+        return shortcut;
+      }
+    }
+
+    return null;
+  };
+
   /* -- Typing ------------------------------------------------------------- */
 
   NoteEditor.prototype.typed = function (line) {
     var text = line.input.value;
+    var shortcut = this.shortcut(text);
 
     line.text = text;
+    this.undoReady = false;
 
-    for (var index = 0; index < SHORTCUTS.length; index += 1) {
-      var shortcut = SHORTCUTS[index];
-
-      if (shortcut.pattern.test(text) && (line.kind === "text" || line.kind === "bullet") && !line.task) {
-        if (shortcut.kind === "task" && !this.canAddTasks) {
-          break;
-        }
-
-        line.text = text.replace(shortcut.pattern, "");
-        line.input.value = line.text;
-        line.done = !!shortcut.done;
-        this.setKind(line, shortcut.kind, shortcut.taskKind);
-        break;
-      }
+    if (shortcut && (line.kind === "text" || line.kind === "bullet") && !line.task) {
+      line.text = text.replace(shortcut.pattern, "");
+      line.input.value = line.text;
+      line.done = !!shortcut.done;
+      this.setKind(line, shortcut.kind, shortcut.taskKind);
     }
 
     this.grow(line);
@@ -526,12 +1052,67 @@
   NoteEditor.prototype.key = function (line, event) {
     var input = line.input;
     var index = this.lines.indexOf(line);
-    var atStart = input.selectionStart === 0 && input.selectionEnd === 0;
-    var atEnd = input.selectionStart === input.value.length;
+    var start = input.selectionStart;
+    var end = input.selectionEnd;
+    var length = input.value.length;
+    var atStart = start === 0 && end === 0;
+    var atEnd = start === length;
+    var step = moveStep(event);
 
-    if ((event.ctrlKey || event.metaKey) && (event.key === "s" || event.key === "S")) {
+    if (command(event) && (event.key === "s" || event.key === "S")) {
       event.preventDefault();
       this.save();
+      return;
+    }
+
+    // Right after a paste, a move or a removal, Ctrl+Z takes it back;
+    // after typing, the browser's own undo takes the typing back.
+    if (command(event) && !event.shiftKey && (event.key === "z" || event.key === "Z") && this.undoReady) {
+      event.preventDefault();
+      this.undo();
+      return;
+    }
+
+    if (step && this.canEdit) {
+      event.preventDefault();
+      this.move(this.block(line), step);
+      this.focus(line, start);
+      return;
+    }
+
+    // Shift+Up from a line's start, Shift+Down from its end: lines.
+    if (event.key === "ArrowUp" && event.shiftKey && !event.altKey && !command(event) && start === 0 && (end === 0 || input.selectionDirection === "backward")) {
+      event.preventDefault();
+      this.select(line, this.lines[Math.max(index - 1, 0)]);
+      return;
+    }
+
+    if (event.key === "ArrowDown" && event.shiftKey && !event.altKey && !command(event) && end === length && (start === length || input.selectionDirection !== "backward")) {
+      event.preventDefault();
+      this.select(line, this.lines[Math.min(index + 1, this.lines.length - 1)]);
+      return;
+    }
+
+    // Ctrl+A on a line already all selected: every line.
+    if (command(event) && (event.key === "a" || event.key === "A") && start === 0 && end === length) {
+      event.preventDefault();
+      this.select(this.lines[0], this.lines[this.lines.length - 1]);
+      return;
+    }
+
+    if (!this.canEdit) {
+      return;
+    }
+
+    if (event.key === "Enter" && command(event)) {
+      event.preventDefault();
+
+      if (line.kind === "check") {
+        line.done = !line.done;
+        this.paint(line);
+        this.changed();
+      }
+
       return;
     }
 
@@ -625,37 +1206,109 @@
     }
   };
 
-  /** Several lines pasted: several lines of the note. */
-  NoteEditor.prototype.paste = function (line, event) {
-    var data = event.clipboardData && event.clipboardData.getData("text/plain");
+  /* -- Pasting ------------------------------------------------------------ */
 
-    if (!data || data.indexOf("\n") === -1 || !this.canEdit) {
+  /** Text into a line, as typed: the browser's undo knows it. */
+  function insertText(input, text) {
+    input.focus();
+
+    var done = false;
+
+    try {
+      done = document.execCommand("insertText", false, text);
+    } catch (error) {
+      done = false;
+    }
+
+    if (!done) {
+      input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+
+  /** What was copied, read by note-clipboard.js: one line goes into the
+   * line, several become lines of the note. */
+  NoteEditor.prototype.paste = function (line, event) {
+    var data = event.clipboardData;
+
+    if (!this.canEdit || !data) {
+      return;
+    }
+
+    var pasted = clipboard.read(data);
+    var plain = data.getData("text/plain");
+
+    if (!pasted.length) {
+      return;
+    }
+
+    if (pasted.length === 1) {
+      var only = pasted[0];
+
+      // An empty line takes the kind of what is pasted in it.
+      if (only.kind !== "text" && !line.input.value && !line.task) {
+        event.preventDefault();
+        line.done = !!only.done;
+        this.applyKind(line, only.kind);
+        insertText(line.input, only.text);
+        return;
+      }
+
+      if (only.text !== plain) {
+        event.preventDefault();
+        insertText(line.input, only.text);
+      }
+
       return;
     }
 
     event.preventDefault();
+    this.pasteLines(line, pasted);
+  };
 
+  /** Lines from the clipboard, a kind each: plain lines pasted in a
+   * list keep to the list. */
+  NoteEditor.prototype.pastedKind = function (line, pasted) {
+    var flat = pasted.every(function (item) {
+      return item.kind === "text";
+    });
+
+    return function (item) {
+      if (flat && (line.kind === "bullet" || line.kind === "check")) {
+        return line.kind;
+      }
+
+      return item.kind;
+    };
+  };
+
+  NoteEditor.prototype.pasteLines = function (line, pasted) {
     var input = line.input;
-    var parts = data.replace(/\r\n?/g, "\n").split("\n");
     var before = input.value.slice(0, input.selectionStart);
     var after = input.value.slice(input.selectionEnd);
     var index = this.lines.indexOf(line);
-    var last = line;
+    var base = line.indent;
+    var kindFor = this.pastedKind(line, pasted);
+    var first = pasted[0];
 
-    line.text = before + parts[0];
-    input.value = line.text;
-    this.grow(line);
+    this.remember();
 
-    for (var part = 1; part < parts.length; part += 1) {
-      var next = this.blank(line.kind === "task" || line.kind === "heading" ? "text" : line.kind, line.indent);
-
-      next.text = parts[part];
-      index += 1;
-      this.insert(next, index);
-      this.typed(next);
-      last = next;
+    // An empty line becomes the first line pasted; otherwise the first
+    // line pasted goes on where the cursor was.
+    if (!before.trim() && !line.task) {
+      line.kind = kindFor(first);
+      line.done = !!first.done;
+      line.indent = clampIndent(base + first.indent);
+      line.text = first.text;
+    } else {
+      line.text = before + first.text;
     }
 
+    input.value = line.text;
+    this.paint(line);
+    this.grow(line);
+
+    var last = this.insertPasted(index + 1, pasted.slice(1), base, kindFor) || line;
     var end = last.text.length;
 
     last.text += after;
@@ -663,10 +1316,691 @@
     this.grow(last);
     this.focus(last, end);
     this.changed();
+    this.undoReady = true;
+    this.offerUndo(Generic.format(Generic.nt("%(count)s line pasted.", "%(count)s lines pasted.", pasted.length), { count: pasted.length }));
   };
 
+  /** Pasted lines put in at an index, indented from `base`; the last
+   * one made. */
+  NoteEditor.prototype.insertPasted = function (index, pasted, base, kindFor) {
+    var self = this;
+    var last = null;
+
+    pasted.forEach(function (item) {
+      var next = self.blank(kindFor(item), clampIndent(base + item.indent));
+
+      next.text = item.text;
+      next.done = !!item.done && next.kind === "check";
+      self.insert(next, index);
+      index += 1;
+
+      // "/fnc ..." pasted is a task, as typed.
+      var shortcut = next.kind === "text" ? self.shortcut(next.text) : null;
+
+      if (shortcut && shortcut.kind === "task") {
+        next.text = next.text.replace(shortcut.pattern, "");
+        next.input.value = next.text;
+        self.applyKind(next, "task", shortcut.taskKind);
+      }
+
+      self.grow(next);
+      last = next;
+    });
+
+    return last;
+  };
+
+  /** A paste on selected lines replaces them - task lines stay, the
+   * lines pasted go after them. */
+  NoteEditor.prototype.pasteOverSelection = function (event) {
+    var pasted = clipboard.read(event.clipboardData);
+    var selected = this.selectedLines();
+
+    event.preventDefault();
+
+    if (!this.canEdit || !pasted.length || !selected.length) {
+      return;
+    }
+
+    var first = selected[0];
+    var base = first.indent;
+    var kept = selected.filter(function (line) {
+      return line.task;
+    });
+    var at = this.lines.indexOf(kept.length ? kept[kept.length - 1] : first);
+
+    this.remember();
+
+    if (!kept.length) {
+      at -= 1;
+    }
+
+    var self = this;
+
+    selected.forEach(function (line) {
+      if (!line.task) {
+        self.remove(line);
+      }
+    });
+
+    at = kept.length ? this.lines.indexOf(kept[kept.length - 1]) + 1 : Math.max(at + 1, 0);
+
+    var last = this.insertPasted(
+      at,
+      pasted,
+      base,
+      this.pastedKind(first, pasted)
+    );
+
+    this.clearSelection();
+    this.focus(last, null);
+    this.changed();
+    this.undoReady = true;
+    this.offerUndo(Generic.format(Generic.nt("%(count)s line pasted.", "%(count)s lines pasted.", pasted.length), { count: pasted.length }));
+  };
+
+  /* -- Copying ---------------------------------------------------------------- */
+
+  NoteEditor.prototype.plain = function (lines) {
+    return lines.map(function (line) {
+      return {
+        kind: line.kind,
+        indent: line.indent,
+        text: line.input ? line.input.value : line.text,
+        done: line.done,
+        reference: line.task ? line.task.reference : ""
+      };
+    });
+  };
+
+  /** Ctrl+C, Ctrl+X on selected lines, or the copy button. */
+  NoteEditor.prototype.copied = function (event, cut) {
+    var lines = this.copying;
+
+    if (!lines && this.selection && document.activeElement === this.list) {
+      lines = this.selectedLines();
+    }
+
+    if (!lines || !event.clipboardData) {
+      return;
+    }
+
+    var written = clipboard.write(this.plain(lines));
+
+    event.preventDefault();
+    event.clipboardData.setData("text/plain", written.text);
+    event.clipboardData.setData("text/html", written.html);
+    this.copying = null;
+    this.copiedCount = lines.length;
+
+    if (cut && this.canEdit) {
+      this.removeLines(lines, { cut: true });
+    }
+  };
+
+  NoteEditor.prototype.copyLines = function (lines) {
+    var self = this;
+    var count = lines.length;
+    var done = false;
+
+    this.copying = lines;
+
+    try {
+      done = document.execCommand("copy");
+    } catch (error) {
+      done = false;
+    }
+
+    // Asked for, and not given: the asynchronous clipboard, when there
+    // is one (a secure page).
+    if (this.copying) {
+      var written = clipboard.write(this.plain(lines));
+
+      this.copying = null;
+
+      if (window.navigator.clipboard && window.ClipboardItem) {
+        window.navigator.clipboard
+          .write([
+            new window.ClipboardItem({
+              "text/plain": new Blob([written.text], { type: "text/plain" }),
+              "text/html": new Blob([written.html], { type: "text/html" })
+            })
+          ])
+          .then(function () {
+            self.copiedToast(count);
+          })
+          .catch(function () {
+            Generic.toast(t("The lines could not be copied: select them and press Ctrl+C."), "error");
+          });
+
+        return;
+      }
+
+      done = false;
+    }
+
+    if (done) {
+      this.copiedToast(count);
+    } else {
+      Generic.toast(t("The lines could not be copied: select them and press Ctrl+C."), "error");
+    }
+  };
+
+  NoteEditor.prototype.copiedToast = function (count) {
+    Generic.toast(Generic.format(Generic.nt("%(count)s line copied.", "%(count)s lines copied.", count), { count: count }), "success");
+  };
+
+  /* -- Selecting lines --------------------------------------------------- */
+
+  NoteEditor.prototype.select = function (anchor, focus) {
+    this.selection = { anchor: anchor, focus: focus || anchor };
+    this.paintSelection();
+    this.list.focus({ preventScroll: true });
+    this.reveal(this.selection.focus);
+  };
+
+  NoteEditor.prototype.clearSelection = function () {
+    if (!this.selection) {
+      return;
+    }
+
+    this.selection = null;
+    this.paintSelection();
+  };
+
+  NoteEditor.prototype.selectedLines = function () {
+    if (!this.selection) {
+      return [];
+    }
+
+    var from = this.lines.indexOf(this.selection.anchor);
+    var to = this.lines.indexOf(this.selection.focus);
+
+    if (from === -1 || to === -1) {
+      return [];
+    }
+
+    return this.lines.slice(Math.min(from, to), Math.max(from, to) + 1);
+  };
+
+  NoteEditor.prototype.paintSelection = function () {
+    var selected = this.selectedLines();
+
+    this.lines.forEach(function (line) {
+      var on = selected.indexOf(line) !== -1;
+
+      line.row.classList.toggle("is-selected", on);
+      line.row.setAttribute("aria-selected", on ? "true" : "false");
+    });
+
+    this.list.classList.toggle("has-selection", selected.length > 0);
+
+    if (selected.length) {
+      this.showStatus(Generic.format(Generic.nt("%(count)s line selected", "%(count)s lines selected", selected.length), { count: selected.length }));
+    } else if (!this.dirty && !this.saving) {
+      this.showStatus(this.savedText || t("Saved"));
+    }
+  };
+
+  NoteEditor.prototype.reveal = function (line) {
+    if (line && line.row && line.row.scrollIntoView) {
+      line.row.scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  NoteEditor.prototype.handleClicked = function (line, event) {
+    if (event.shiftKey && (this.selection || this.current)) {
+      this.select(this.selection ? this.selection.anchor : this.current, line);
+      return;
+    }
+
+    if (this.selection && this.selectedLines().length === 1 && this.selection.anchor === line) {
+      this.clearSelection();
+      this.focus(line, null);
+      return;
+    }
+
+    this.select(line, line);
+  };
+
+  /** Keys while whole lines are selected (the list has the focus). */
+  NoteEditor.prototype.selectionKey = function (event) {
+    var selected = this.selectedLines();
+    var focus = this.selection ? this.selection.focus : null;
+    var step = moveStep(event);
+
+    if (!selected.length) {
+      return;
+    }
+
+    if (step) {
+      event.preventDefault();
+
+      if (this.canEdit) {
+        this.move(selected, step);
+      }
+
+      return;
+    }
+
+    var at = this.lines.indexOf(focus);
+
+    switch (event.key) {
+      case "Escape":
+      case "Enter":
+        event.preventDefault();
+        this.clearSelection();
+        this.focus(focus, null);
+        return;
+      case "ArrowUp":
+      case "ArrowDown":
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          var to = this.lines[Math.min(Math.max(at + (event.key === "ArrowUp" ? -1 : 1), 0), this.lines.length - 1)];
+
+          this.selection.focus = to;
+          this.paintSelection();
+          this.reveal(to);
+        } else {
+          var edge = event.key === "ArrowUp" ? selected[0] : selected[selected.length - 1];
+
+          this.clearSelection();
+          this.focus(edge, event.key === "ArrowUp" ? 0 : null);
+        }
+
+        return;
+      case "Tab":
+        event.preventDefault();
+
+        if (this.canEdit) {
+          this.indentLines(selected, event.shiftKey ? -1 : 1);
+        }
+
+        return;
+      case "Backspace":
+      case "Delete":
+        event.preventDefault();
+
+        if (this.canEdit) {
+          this.removeLines(selected);
+        }
+
+        return;
+      default:
+        break;
+    }
+
+    if (command(event) && (event.key === "a" || event.key === "A")) {
+      event.preventDefault();
+      this.select(this.lines[0], this.lines[this.lines.length - 1]);
+      return;
+    }
+
+    if (command(event) && !event.shiftKey && (event.key === "z" || event.key === "Z")) {
+      event.preventDefault();
+      this.undo();
+    }
+  };
+
+  /* -- Moving and removing lines -------------------------------------------- */
+
+  /** A line and the lines indented under it. */
+  NoteEditor.prototype.block = function (line) {
+    var index = this.lines.indexOf(line);
+    var block = [line];
+
+    for (var next = index + 1; next < this.lines.length && this.lines[next].indent > line.indent; next += 1) {
+      block.push(this.lines[next]);
+    }
+
+    return block;
+  };
+
+  /** Lines (one after the other) moved past their neighbour - with the
+   * neighbour's own indented lines - up (-1) or down (1). */
+  NoteEditor.prototype.move = function (lines, step) {
+    var first = this.lines.indexOf(lines[0]);
+    var last = first + lines.length - 1;
+    var target;
+
+    if (first === -1) {
+      return;
+    }
+
+    if (step < 0) {
+      if (first === 0) {
+        return;
+      }
+
+      // Up past the previous line at most as deep, and what is under it.
+      target = first - 1;
+
+      while (target > 0 && this.lines[target].indent > lines[0].indent) {
+        target -= 1;
+      }
+    } else {
+      if (last >= this.lines.length - 1) {
+        return;
+      }
+
+      var after = this.block(this.lines[last + 1]);
+
+      target = last + after.length + 1 - lines.length;
+    }
+
+    this.remember();
+    this.moveTo(lines, target);
+    this.undoReady = true;
+  };
+
+  /** Lines moved so the first one sits at `index` once they are out. */
+  NoteEditor.prototype.moveTo = function (lines, index) {
+    var self = this;
+
+    lines.forEach(function (line) {
+      self.lines.splice(self.lines.indexOf(line), 1);
+    });
+    Array.prototype.splice.apply(this.lines, [index, 0].concat(lines));
+    this.redraw();
+    this.reveal(lines[0]);
+    this.changed();
+  };
+
+  NoteEditor.prototype.redraw = function () {
+    var self = this;
+
+    this.lines.forEach(function (line) {
+      self.list.appendChild(line.row);
+    });
+    this.paint(this.lines[0]);
+    this.paintSelection();
+  };
+
+  NoteEditor.prototype.indentLines = function (lines, step) {
+    var self = this;
+
+    lines.forEach(function (line) {
+      self.indent(line, step);
+    });
+  };
+
+  /** Lines taken out of the note - asked first when tasks go with them. */
+  NoteEditor.prototype.removeLines = function (lines, options) {
+    var self = this;
+    var tasks = lines
+      .filter(function (line) {
+        return line.task;
+      })
+      .map(function (line) {
+        return line.task.reference;
+      });
+
+    function go() {
+      var index = self.lines.indexOf(lines[0]);
+
+      self.remember();
+      self.clearSelection();
+      lines.forEach(function (line) {
+        self.remove(line);
+      });
+
+      if (!self.lines.length) {
+        self.insert(self.blank(), 0);
+      }
+
+      var next = self.lines[Math.min(Math.max(index, 0), self.lines.length - 1)];
+
+      self.paint(self.lines[0]);
+      self.focus(next, 0);
+      self.changed();
+      self.undoReady = true;
+      self.offerUndo(
+        Generic.format(
+          options && options.cut
+            ? Generic.nt("%(count)s line cut.", "%(count)s lines cut.", lines.length)
+            : Generic.nt("%(count)s line removed.", "%(count)s lines removed.", lines.length),
+          { count: lines.length }
+        )
+      );
+    }
+
+    if (!tasks.length) {
+      go();
+      return;
+    }
+
+    Generic.dialogs
+      .confirm({
+        title: Generic.format(Generic.nt("Remove %(count)s line?", "Remove %(count)s lines?", lines.length), { count: lines.length }),
+        message: Generic.format(t("With them go the lines of %(tasks)s: each task is kept if time was logged on it or work started; otherwise it is deleted."), {
+          tasks: tasks.join(", ")
+        }),
+        confirmLabel: t("Remove"),
+        variant: "danger"
+      })
+      .then(function (confirmed) {
+        if (confirmed) {
+          go();
+        } else {
+          self.list.focus();
+        }
+      });
+  };
+
+  /* -- Dragging ---------------------------------------------------------- */
+
+  NoteEditor.prototype.dragStart = function (line, event) {
+    if (!this.canEdit) {
+      event.preventDefault();
+      return;
+    }
+
+    var selected = this.selectedLines();
+    var lines = selected.indexOf(line) !== -1 ? selected : this.block(line);
+
+    this.dragging = lines;
+    lines.forEach(function (item) {
+      item.row.classList.add("is-dragging");
+    });
+
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", clipboard.toText(this.plain(lines)));
+
+    if (event.dataTransfer.setDragImage) {
+      event.dataTransfer.setDragImage(line.row, 16, 16);
+    }
+  };
+
+  NoteEditor.prototype.dragEnd = function () {
+    if (this.dragging) {
+      this.dragging.forEach(function (item) {
+        item.row.classList.remove("is-dragging");
+      });
+    }
+
+    this.dragging = null;
+    this.dropMark(null);
+  };
+
+  /** Where a drop at this height lands: before or after which line. */
+  NoteEditor.prototype.dropAt = function (y) {
+    for (var index = 0; index < this.lines.length; index += 1) {
+      var box = this.lines[index].row.getBoundingClientRect();
+
+      if (y < box.top + box.height / 2) {
+        return { line: this.lines[index], after: false };
+      }
+    }
+
+    return { line: this.lines[this.lines.length - 1], after: true };
+  };
+
+  NoteEditor.prototype.dropMark = function (at) {
+    var marked = this.list.querySelectorAll(".is-drop-before, .is-drop-after");
+
+    Array.prototype.forEach.call(marked, function (row) {
+      row.classList.remove("is-drop-before", "is-drop-after");
+    });
+
+    if (at) {
+      at.line.row.classList.add(at.after ? "is-drop-after" : "is-drop-before");
+    }
+  };
+
+  NoteEditor.prototype.dragAndDrop = function () {
+    var self = this;
+
+    this.list.addEventListener("dragover", function (event) {
+      if (!self.dragging) {
+        return;
+      }
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+
+      var at = self.dropAt(event.clientY);
+
+      self.dropMark(self.dragging.indexOf(at.line) === -1 ? at : null);
+    });
+
+    this.list.addEventListener("dragleave", function (event) {
+      if (self.dragging && !self.list.contains(event.relatedTarget)) {
+        self.dropMark(null);
+      }
+    });
+
+    this.list.addEventListener("drop", function (event) {
+      if (!self.dragging) {
+        return;
+      }
+
+      event.preventDefault();
+
+      var lines = self.dragging;
+      var at = self.dropAt(event.clientY);
+
+      self.dragEnd();
+
+      if (lines.indexOf(at.line) !== -1) {
+        return;
+      }
+
+      var rest = self.lines.filter(function (line) {
+        return lines.indexOf(line) === -1;
+      });
+      var index = rest.indexOf(at.line) + (at.after ? 1 : 0);
+
+      self.remember();
+      self.moveTo(lines, index);
+      self.undoReady = true;
+      self.offerUndo(Generic.format(Generic.nt("%(count)s line moved.", "%(count)s lines moved.", lines.length), { count: lines.length }));
+    });
+  };
+
+  /* -- Undo ---------------------------------------------------------------- */
+
+  /** The note as it is, kept to come back to. The line objects are kept
+   * themselves: what a save gives them meanwhile (an id, a task) stays
+   * theirs. */
+  NoteEditor.prototype.remember = function () {
+    var focused = this.current && this.lines.indexOf(this.current) !== -1 ? this.current : null;
+
+    this.history.push({
+      focus: focused,
+      caret: focused ? focused.input.selectionStart : 0,
+      lines: this.lines.map(function (line) {
+        return {
+          line: line,
+          kind: line.kind,
+          indent: line.indent,
+          text: line.input ? line.input.value : line.text,
+          done: line.done,
+          task: line.task,
+          taskKind: line.taskKind,
+          linkTask: line.linkTask || null,
+          linkReference: line.linkReference || null
+        };
+      })
+    });
+
+    if (this.history.length > UNDO_DEPTH) {
+      this.history.shift();
+    }
+  };
+
+  NoteEditor.prototype.undo = function () {
+    var self = this;
+    var state = this.history.pop();
+
+    this.undoReady = false;
+
+    if (!state) {
+      return;
+    }
+
+    this.clearSelection();
+    this.list.textContent = "";
+    this.lines = state.lines.map(function (kept) {
+      var line = kept.line;
+
+      // A task linked since, and saved: the line stays it, its text the
+      // task's title (else the task would be renamed back).
+      if (line.task && line.kind === "task" && (kept.task ? kept.task.id : null) !== line.task.id) {
+        return line;
+      }
+
+      line.kind = kept.kind;
+      line.indent = kept.indent;
+      line.text = kept.text;
+      line.done = kept.done;
+      line.taskKind = kept.taskKind;
+      line.task = line.task || kept.task;
+      line.linkTask = line.task ? null : kept.linkTask;
+      line.linkReference = kept.linkReference;
+      line.input.value = kept.text;
+
+      return line;
+    });
+    this.lines.forEach(function (line) {
+      self.list.appendChild(line.row);
+      self.paint(line);
+    });
+    this.lines.forEach(function (line) {
+      self.grow(line);
+    });
+    if (state.focus) {
+      this.focus(state.focus, state.caret);
+    } else {
+      this.focus(this.lines[0], 0);
+    }
+
+    this.changed();
+    this.undoReady = this.history.length > 0;
+  };
+
+  NoteEditor.prototype.offerUndo = function (message) {
+    var self = this;
+    var depth = this.history.length;
+
+    Generic.toast(message, "info", {
+      action: {
+        label: t("Undo"),
+        icon: "undo",
+        run: function () {
+          // Only the latest change is undone from its toast.
+          if (self.history.length === depth) {
+            self.undo();
+          }
+        }
+      }
+    });
+  };
+
+  /* -- Indenting, inserting ------------------------------------------------ */
+
   NoteEditor.prototype.indent = function (line, step) {
-    var indent = Math.min(Math.max(line.indent + step, 0), MAX_INDENT);
+    var indent = clampIndent(line.indent + step);
 
     if (indent !== line.indent) {
       line.indent = indent;
@@ -691,6 +2025,10 @@
       this.lines.splice(index, 1);
       line.row.remove();
     }
+
+    if (this.current === line) {
+      this.current = null;
+    }
   };
 
   NoteEditor.prototype.focus = function (line, position) {
@@ -699,10 +2037,301 @@
     }
 
     var input = line.input;
-    var at = position === null ? input.value.length : position;
+    var at = position === null ? input.value.length : Math.min(position, input.value.length);
 
     input.focus();
     input.setSelectionRange(at, at);
+  };
+
+  /* -- Attaching lines to a task ------------------------------------------- */
+
+  /** An existing task, picked in a dialog (searched by reference or
+   * title): put in the note as a task line, or given the lines' text at
+   * the end of its specification. */
+  NoteEditor.prototype.attach = function (lines) {
+    var self = this;
+    var written = this.plain(lines).filter(function (line) {
+      return line.text.trim() && !line.reference;
+    });
+
+    if (!this.canAttach) {
+      return;
+    }
+
+    var text = written.length ? clipboard.toText(written, { indent: "  " }) : "";
+    var dialog = Generic.dialogs.open({ title: t("An existing task"), icon: "add_link", wide: true });
+    var search = el("input", "input");
+    var results = el("div", "note-attach__results");
+    var why = el("p", "muted note-attach__why");
+    var chosen = null;
+    var options = [];
+    var cancel = el("button", "button button--ghost", t("Cancel"));
+    var addText = el("button", "button", t("Add the text to its specification"));
+    // One task line given: the task picked takes its place.
+    var target = lines && lines.length === 1 && lines[0].kind === "task" ? lines[0] : null;
+    var former = target ? (target.task ? target.task.reference : target.linkReference) : null;
+    var accept = el(
+      "button",
+      "button button--primary",
+      former ? Generic.format(t("Put it in place of %(task)s"), { task: former }) : target ? t("Put it on this line") : t("Put the task in the note")
+    );
+    var waiting = null;
+
+    dialog.body.appendChild(el("p", "muted", t("Put the task you pick in this note, as a task line - or add the selected lines to its specification.")));
+
+    var field = el("label", "sf-field note-attach__search");
+
+    field.appendChild(el("span", "sf-label", t("Task")));
+    search.type = "search";
+    search.placeholder = t("Search by reference or title");
+    search.setAttribute("aria-controls", "note-attach-results");
+    search.autocomplete = "off";
+    field.appendChild(search);
+    dialog.body.appendChild(field);
+    results.id = "note-attach-results";
+    results.setAttribute("role", "listbox");
+    results.setAttribute("aria-label", t("Tasks"));
+    dialog.body.appendChild(results);
+    why.hidden = true;
+    dialog.body.appendChild(why);
+
+    if (text) {
+      var details = el("details", "note-attach__text");
+
+      details.appendChild(
+        el(
+          "summary",
+          "",
+          Generic.format(Generic.nt("Text to add: %(count)s line", "Text to add: %(count)s lines", written.length), { count: written.length })
+        )
+      );
+      details.appendChild(el("pre", "note-attach__preview", text));
+      dialog.body.appendChild(details);
+    }
+
+    cancel.type = "button";
+    accept.type = "button";
+    addText.type = "button";
+    accept.disabled = true;
+    addText.disabled = true;
+    addText.hidden = !text;
+    cancel.addEventListener("click", function () {
+      dialog.close(null);
+    });
+    accept.addEventListener("click", put);
+    addText.addEventListener("click", send);
+    dialog.footer.appendChild(cancel);
+    dialog.footer.appendChild(addText);
+    dialog.footer.appendChild(accept);
+
+    function pick(option) {
+      chosen = option ? option.task : null;
+      options.forEach(function (other) {
+        other.node.setAttribute("aria-selected", other === option ? "true" : "false");
+      });
+      addText.disabled = !chosen;
+      accept.disabled = !chosen || !!chosen.here || self.lines.some(function (line) {
+        return line.linkTask === chosen.id || (line.task && line.task.id === chosen.id);
+      });
+      why.hidden = !chosen || !chosen.inNote;
+      why.textContent = !chosen || !chosen.inNote
+        ? ""
+        : chosen.here
+          ? Generic.format(t("%(task)s is already in this note."), { task: chosen.reference })
+          : Generic.format(t("%(task)s moves here from the note \"%(note)s\", where its title stays as text."), { task: chosen.reference, note: chosen.inNote });
+
+      if (option) {
+        option.node.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function draw(tasks) {
+      results.textContent = "";
+      options = [];
+
+      if (!tasks.length) {
+        results.appendChild(el("p", "muted note-attach__empty", t("No task found.")));
+        pick(null);
+        return;
+      }
+
+      tasks.forEach(function (task) {
+        var node = el("button", "note-attach__option");
+        var option = { task: task, node: node };
+
+        node.type = "button";
+        node.setAttribute("role", "option");
+        node.appendChild(el("span", "tag note-line__task-kind note-line__task-kind--" + String(task.kind).toLowerCase(), task.reference));
+        node.appendChild(el("span", "note-attach__title", task.title));
+
+        if (task.inNote) {
+          node.appendChild(el("span", "muted note-attach__status", task.here ? t("in this note") : Generic.format(t("in %(note)s"), { note: task.inNote })));
+        }
+
+        node.appendChild(el("span", "muted note-attach__status", task.statusLabel));
+        node.addEventListener("click", function () {
+          pick(option);
+        });
+        node.addEventListener("dblclick", function () {
+          pick(option);
+
+          if (!accept.disabled) {
+            put();
+          }
+        });
+        results.appendChild(node);
+        options.push(option);
+      });
+
+      // A search typed: its best match is picked, Enter puts it in.
+      pick(search.value.trim() ? options[0] : null);
+    }
+
+    function load() {
+      var asked = search.value.trim();
+
+      Generic.api
+        .get(self.attachUrl, { q: asked })
+        .then(function (answer) {
+          if (search.value.trim() === asked) {
+            draw((answer && answer.tasks) || []);
+          }
+        })
+        .catch(function (error) {
+          results.textContent = "";
+          results.appendChild(el("p", "callout callout--danger", (error && error.message) || t("The tasks could not be loaded.")));
+        });
+    }
+
+    function put() {
+      if (!chosen || accept.disabled) {
+        return;
+      }
+
+      dialog.close(true);
+      self.linkTask(chosen, lines);
+    }
+
+    function send() {
+      if (!chosen || !text) {
+        return;
+      }
+
+      var task = chosen;
+
+      addText.disabled = true;
+      Generic.api
+        .post(self.attachUrl, { task: task.id, text: text })
+        .then(function (answer) {
+          if (!answer || !answer.id) {
+            throw new Error(t("The server's answer could not be read: the text may not have been added."));
+          }
+
+          dialog.close(true);
+          Generic.toast(
+            Generic.format(t("Added to the specification of %(task)s."), { task: answer.reference || task.reference }),
+            "success",
+            answer.url && Generic.isSafeUrl(answer.url)
+              ? {
+                  action: {
+                    label: t("Open"),
+                    icon: "open_in_new",
+                    run: function () {
+                      window.location.href = answer.url;
+                    }
+                  }
+                }
+              : {}
+          );
+        })
+        .catch(function (error) {
+          addText.disabled = false;
+          Generic.toast((error && error.message) || t("The text could not be attached."), "error");
+        });
+    }
+
+    search.addEventListener("input", function () {
+      window.clearTimeout(waiting);
+      waiting = window.setTimeout(load, 200);
+    });
+    search.addEventListener("keydown", function (event) {
+      var at = -1;
+
+      options.forEach(function (option, index) {
+        if (option.task === chosen) {
+          at = index;
+        }
+      });
+
+      if (event.key === "ArrowDown" && options.length) {
+        event.preventDefault();
+        pick(options[Math.min(at + 1, options.length - 1)]);
+      } else if (event.key === "ArrowUp" && options.length) {
+        event.preventDefault();
+        pick(options[Math.max(at - 1, 0)]);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+
+        if (!accept.disabled) {
+          put();
+        } else {
+          send();
+        }
+      }
+    });
+
+    dialog.closed.then(function () {
+      if (self.selection) {
+        self.list.focus();
+      } else if (self.current) {
+        self.focus(self.current, null);
+      }
+    });
+
+    search.focus();
+    load();
+  };
+
+  /** An existing task as a task line, its title as the text: in place
+   * of the task of the one task line given, on the current line when it
+   * is empty, on a new one under the lines given otherwise. The save
+   * links it (planner/documents.py, link); the task replaced is let go. */
+  NoteEditor.prototype.linkTask = function (task, lines) {
+    var after = lines && lines.length ? lines[lines.length - 1] : this.current || this.lines[this.lines.length - 1];
+    var line;
+    var replaced = lines && lines.length === 1 && after.kind === "task" ? after.task || null : null;
+
+    this.remember();
+    this.clearSelection();
+
+    if (lines && lines.length === 1 && after.kind === "task") {
+      line = after;
+    } else if (after && !after.input.value && !after.task && !after.linkTask) {
+      line = after;
+      line.kind = "task";
+    } else {
+      line = this.blank("task", after ? after.indent : 0, task.kind);
+      this.insert(line, after ? this.lines.indexOf(after) + 1 : this.lines.length);
+    }
+
+    // Shown as the task to come until saved; undo brings the former back.
+    line.task = null;
+    line.taskKind = task.kind;
+    line.linkTask = task.id;
+    line.linkReference = task.reference;
+    line.text = task.title;
+    line.input.value = task.title;
+    line.done = false;
+    this.paint(line);
+    this.grow(line);
+    this.focus(line, null);
+    this.changed();
+    this.undoReady = true;
+    this.offerUndo(
+      replaced
+        ? Generic.format(t("%(task)s in place of %(former)s."), { task: task.reference, former: replaced.reference })
+        : Generic.format(t("%(task)s put in the note."), { task: task.reference })
+    );
   };
 
   /* -- Saving -------------------------------------------------------------- */
@@ -751,7 +2380,8 @@
           indent: line.indent,
           text: line.text,
           done: line.done,
-          taskKind: line.taskKind
+          taskKind: line.taskKind,
+          taskId: line.kind === "task" && line.linkTask ? line.linkTask : null
         };
       })
     };
@@ -762,6 +2392,14 @@
       .post(this.url, body)
       .then(function (answer) {
         var tasksMoved = false;
+
+        // A 2xx that is not the note (an empty body, a page from a proxy
+        // or a sign-in page): not saved - kept, and sent again.
+        if (!answer || !Array.isArray(answer.lines)) {
+          throw new Error(t("The server's answer could not be read: the note is kept here and sent again in a moment."));
+        }
+
+        self.retryDelay = 0;
 
         // Lines come back in the order they went: each takes its key,
         // and its task - what was typed meanwhile stays as typed.
@@ -775,12 +2413,19 @@
           line.id = stored.id;
 
           if (line.kind === "task") {
-            var wasNew = !line.task;
+            var before = line.task ? line.task.id : null;
 
             line.task = stored.task;
 
-            if (wasNew && stored.task) {
+            if (stored.task) {
+              line.linkTask = null;
+            }
+
+            if (stored.task && before !== stored.task.id) {
               tasksMoved = true;
+            }
+
+            if (line.taskBox && line.taskBox.taskId !== (stored.task ? stored.task.id : null)) {
               self.paintTask(line);
             }
           } else {
@@ -796,17 +2441,37 @@
 
         var now = new Date();
 
-        self.showStatus(
-          Generic.format(t("Saved at %(time)s"), {
-            time: now.toLocaleTimeString(document.documentElement.lang || undefined, { hour: "2-digit", minute: "2-digit" })
-          })
-        );
+        self.savedText = Generic.format(t("Saved at %(time)s"), {
+          time: now.toLocaleTimeString(document.documentElement.lang || undefined, { hour: "2-digit", minute: "2-digit" })
+        });
+
+        if (self.selection) {
+          self.paintSelection();
+        } else if (!self.dirty) {
+          self.showStatus(self.savedText);
+        }
+
         self.element.dispatchEvent(new CustomEvent("planner:note-saved", { bubbles: true }));
       })
       .catch(function (error) {
+        var refused = error && error.status >= 400 && error.status < 500;
+
         self.dirty = true;
         self.showStatus((error && error.message) || t("The note could not be saved."), "error");
-        Generic.toast((error && error.message) || t("The note could not be saved."), "error");
+
+        // Refused (a mistake, a permission): said once. Anything else -
+        // the network, the server - tried again, less and less often.
+        if (refused || !self.retryDelay) {
+          Generic.toast((error && error.message) || t("The note could not be saved."), "error");
+        }
+
+        if (!refused) {
+          self.retryDelay = Math.min((self.retryDelay || 2500) * 2, 60000);
+          window.clearTimeout(self.timer);
+          self.timer = window.setTimeout(function () {
+            self.save();
+          }, self.retryDelay);
+        }
       })
       .then(function () {
         self.saving = null;
@@ -824,7 +2489,7 @@
     this.setTaskField(line, "status", status);
   };
 
-  NoteEditor.prototype.setTaskField = function (line, name, value) {
+  NoteEditor.prototype.setTaskField = function (line, name, value, key) {
     var self = this;
     var task = line.task;
     var body = {};
@@ -837,7 +2502,7 @@
     Generic.api
       .patch(task.api, body)
       .then(function () {
-        task[name] = value;
+        task[key || name] = value;
         self.paintTask(line);
       })
       .catch(function (error) {

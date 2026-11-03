@@ -2392,8 +2392,8 @@ msgid "Drag across the hours to add one."
 msgstr "Faites glisser sur les heures pour en ajouter un."
 
 #: generic/static/generic/js/calendar.js
-msgid "Drag a record to move it, its lower edge to change its end."
-msgstr "Faites glisser un enregistrement pour le déplacer, son bord inférieur pour changer sa fin."
+msgid "Drag a record to move it, its upper or lower edge to change its start or end."
+msgstr "Faites glisser un enregistrement pour le déplacer, son bord supérieur ou inférieur pour changer son début ou sa fin."
 
 #: generic/static/generic/js/calendar.js
 msgid "Drop one of the list on a time to plan it."
@@ -2508,3 +2508,53 @@ msgstr "Afficher les %(name)s des lignes affichées"
 #: generic/static/generic/js/datatables/outline.js
 msgid "Every row shown is unfolded"
 msgstr "Toutes les lignes affichées sont dépliées"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag to change its start"
+msgstr "Faites glisser pour changer le début"
+
+#: generic/static/generic/js/calendar.js
+msgid "Shift+click records to pick several, then drag one of them to copy them all."
+msgstr "Maj+clic sur des enregistrements pour en choisir plusieurs, puis faites-en glisser un pour tous les copier."
+
+#: generic/static/generic/js/calendar.js
+msgid "Records picked"
+msgstr "Enregistrements choisis"
+
+#: generic/static/generic/js/calendar.js
+msgid "Drag one of them to another day or time to copy them there, or copy them to:"
+msgstr "Faites-en glisser un vers un autre jour ou une autre heure pour les y copier, ou copiez-les au :"
+
+#: generic/static/generic/js/calendar.js
+msgid "Day to copy them to"
+msgstr "Jour où les copier"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(count)s picked"
+msgid_plural "%(count)s picked"
+msgstr[0] "%(count)s choisi"
+msgstr[1] "%(count)s choisis"
+
+#: generic/static/generic/js/calendar.js
+msgid "%(count)s record copied."
+msgid_plural "%(count)s records copied."
+msgstr[0] "%(count)s enregistrement copié."
+msgstr[1] "%(count)s enregistrements copiés."
+
+#: generic/static/generic/js/calendar.js
+msgid "(%(count)s copied before.)"
+msgid_plural "(%(count)s copied before.)"
+msgstr[0] "(%(count)s copié avant.)"
+msgstr[1] "(%(count)s copiés avant.)"
+
+#: generic/static/generic/js/calendar.js
+msgid "Copy"
+msgstr "Copier"
+
+#: generic/static/generic/js/calendar.js
+msgid "Clear"
+msgstr "Effacer"
+
+#: generic/static/generic/js/calendar.js
+msgid "Work week"
+msgstr "Semaine de travail"

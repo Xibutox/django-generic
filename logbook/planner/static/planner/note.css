@@ -55,6 +55,9 @@
 
 .note-line {
   --indent: 0;
+  /* The height of a line's first row of text: the controls beside it
+     centre on it, whatever the kind's type size. */
+  --line-box: 1.9rem;
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -69,8 +72,9 @@
 
 .note-line__kind {
   flex: none;
+  margin-top: calc((var(--line-box) - 1.75rem) / 2);
   color: var(--text-muted);
-  opacity: 0.35;
+  opacity: 0.6;
 }
 
 .note-line:hover .note-line__kind,
@@ -82,14 +86,14 @@
   flex: none;
   width: 1rem;
   height: 1rem;
-  margin: 0.45rem 0.25rem 0 0;
+  margin: calc((var(--line-box) - 1rem) / 2) 0.25rem 0 0;
   accent-color: var(--color-accent);
 }
 
 .note-line__text {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 1.9rem;
+  min-height: var(--line-box);
   padding: 0.3rem 0;
   overflow: hidden;
   color: var(--text-primary);
@@ -108,8 +112,12 @@
   color: var(--text-muted);
 }
 
-.note-line--heading .note-line__text {
+.note-line--heading {
+  --line-box: 2.2rem;
   margin-top: var(--space-2);
+}
+
+.note-line--heading .note-line__text {
   font-size: var(--font-size-lg);
   font-weight: 700;
 }
@@ -119,7 +127,8 @@
   background: radial-gradient(circle, var(--text-secondary) 0.18rem, transparent 0.2rem) no-repeat 0.2rem 0.6rem / 0.6rem 0.6rem;
 }
 
-.note-line.is-done .note-line__text {
+.note-line.is-done .note-line__text,
+.note-line.is-task-done .note-line__text {
   color: var(--text-muted);
   text-decoration: line-through;
 }
@@ -154,8 +163,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-1) var(--space-2);
-  max-width: 55%;
-  padding: 0.2rem var(--space-1) 0 0;
+  max-width: 65%;
+  padding: calc((var(--line-box) - var(--control-height-sm)) / 2) var(--space-1) 0 0;
   font-size: var(--font-size-xs);
 }
 
@@ -240,6 +249,10 @@
     padding: var(--space-3);
   }
 
+  .note-editor__add span:not(.icon) {
+    display: none;
+  }
+
   .note-line {
     flex-wrap: wrap;
   }
@@ -250,4 +263,299 @@
     justify-content: flex-start;
     padding-inline-start: 2rem;
   }
+}
+
+/* -- The toolbar: lines to add, the note's tools ------------------------- */
+
+.note-editor__toolbar {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 calc(var(--space-2) * -1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.note-editor__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.note-editor__tools--end {
+  margin-inline-start: auto;
+}
+
+.note-editor__tools-label {
+  margin-inline-end: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.note-editor__add {
+  gap: 0.25rem;
+}
+
+.note-editor__add--fnc .icon {
+  color: oklch(0.58 0.2 27);
+}
+
+.note-editor__add--dm .icon {
+  color: oklch(0.55 0.2 300);
+}
+
+.note-editor__add--aut .icon {
+  color: oklch(0.6 0.12 185);
+}
+
+.note-editor__keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius);
+}
+
+.note-editor__keys[hidden] {
+  display: none;
+}
+
+.note-editor__keys dt,
+.note-editor__keys dd {
+  margin: 0;
+}
+
+/* -- Handles, selection, dragging ----------------------------------------- */
+
+/* Room on the left for each line's handle and + button. */
+.note-editor__lines {
+  padding-inline-start: 3.25rem;
+  outline: none;
+}
+
+.note-line__handle,
+.note-line__add {
+  position: absolute;
+  top: calc((var(--line-box) - 1.75rem) / 2);
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.note-line__handle {
+  inset-inline-start: calc(var(--indent) * 1.75rem - 3.25rem);
+  cursor: grab;
+}
+
+.note-line__add {
+  inset-inline-start: calc(var(--indent) * 1.75rem - 1.75rem);
+}
+
+.note-line:hover .note-line__handle,
+.note-line:hover .note-line__add,
+.note-line:focus-within .note-line__handle,
+.note-line:focus-within .note-line__add,
+.note-line.is-selected .note-line__handle {
+  opacity: 1;
+}
+
+/* Touch screens have no hover: the handles stay in sight. */
+@media (hover: none) {
+  .note-line__handle,
+  .note-line__add {
+    opacity: 0.6;
+  }
+}
+
+.note-line.is-selected {
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+}
+
+.note-editor__lines:focus .note-line.is-selected {
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.note-line.is-dragging {
+  opacity: 0.45;
+}
+
+.note-line.is-drop-before {
+  box-shadow: 0 -2px 0 var(--color-accent);
+}
+
+.note-line.is-drop-after {
+  box-shadow: 0 2px 0 var(--color-accent);
+}
+
+/* -- Attaching to a task ------------------------------------------------------ */
+
+.note-attach__preview {
+  max-height: 8rem;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  overflow: auto;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  background: var(--surface-sunken);
+  border-radius: var(--border-radius-sm);
+}
+
+.note-attach__search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.note-attach__results {
+  display: flex;
+  flex-direction: column;
+  max-height: 16rem;
+  margin-top: var(--space-2);
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.note-attach__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.note-attach__option:last-child {
+  border-bottom: 0;
+}
+
+.note-attach__option:hover {
+  background: var(--surface-sunken);
+}
+
+.note-attach__option[aria-selected="true"] {
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.note-attach__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.note-attach__status {
+  flex: none;
+  font-size: var(--font-size-xs);
+}
+
+.note-attach__empty {
+  margin: 0;
+  padding: var(--space-3);
+}
+
+/* The selected lines say where the focus is; the list needs no ring. */
+.note-editor__lines:focus,
+.note-editor__lines:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.note-attach__why {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xs);
+}
+
+.note-attach__text {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.note-attach__text summary {
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* A task line's due date: a chip that opens the date picker. */
+.note-line__due {
+  position: relative;
+  display: inline-flex;
+}
+
+.note-line__due-button {
+  gap: 0.25rem;
+  padding-inline: var(--space-1);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.note-line__due.is-empty .note-line__due-button {
+  color: var(--text-muted);
+}
+
+.note-line__due.is-late .note-line__due-button {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* Under the chip: only its picker shows. */
+.note-line__due-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.note-line__due-input.is-shown {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.note-line__assignee {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+}
+
+/* All the notes, one under the other. */
+.notes-all__search {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 32rem;
+  margin-bottom: var(--space-4);
+}
+
+.notes-all__note + .notes-all__note {
+  margin-top: var(--space-6);
+}
+
+.notes-all__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
 }
