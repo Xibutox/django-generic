@@ -100,6 +100,15 @@ SCENARIO = textwrap.dedent("""
         status = bob.get(url).status_code
         assert status == 200, (url, status)
 
+    # All the notes on one page, an editor each; searched by title.
+    every = bob.get("/planner/note/all/")
+    assert every.status_code == 200, every.status_code
+    page = every.content.decode()
+    assert page.count('class="card note-editor"') == Note.objects.count()
+    assert f'data-url="/planner/note/{note.pk}/document/"' in page
+    found = bob.get("/planner/note/all/", {"q": "SPRINT"}).content.decode()
+    assert found.count('class="card note-editor"') == 1, found
+
     # The editor reads the note: its lines, their tasks.
     DOCUMENT = f"/planner/note/{note.pk}/document/"
     read = bob.get(DOCUMENT).json()

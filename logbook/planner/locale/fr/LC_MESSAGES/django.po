@@ -604,3 +604,32 @@ msgstr "De la note « %(note)s », %(date)s :"
 
 msgid "This task is already in this note, or cannot be found: reload the page."
 msgstr "Cette tâche est déjà dans cette note, ou introuvable : rechargez la page."
+
+msgid "All the notes"
+msgstr "Toutes les notes"
+
+msgid "Every note one after the other, each written in place."
+msgstr "Toutes les notes à la suite, chacune modifiable sur place."
+
+msgid "Notes whose title holds..."
+msgstr "Notes dont le titre contient..."
+
+msgid "Search the notes by title"
+msgstr "Chercher les notes par titre"
+
+msgid "Search"
+msgstr "Chercher"
+
+#, python-format
+msgid "Written %(when)s"
+msgstr "Écrite le %(when)s"
+
+msgid "Open the note"
+msgstr "Ouvrir la note"
+
+msgid "No note."
+msgstr "Aucune note."
+
+#, python-format
+msgid "The first %(limit)s only: search by title for the others."
+msgstr "Les %(limit)s premières seulement : cherchez les autres par titre."

@@ -34,6 +34,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 from rest_framework.exceptions import APIException
 
+from generic.search import text_lookup
 from generic.sites import (
     Allocate,
     Board,
@@ -67,6 +68,9 @@ from planner.models import (
 )
 
 GROUP = _("Planner")
+
+#: The most notes "All the notes" shows at once.
+MAX_NOTES_SHOWN = 30
 TIME = _("Time")
 
 KIND_COLORS = {"FNC": "#dc2626", "DM": "#7c3aed", "AUT": "#0d9488"}
@@ -325,6 +329,42 @@ class NoteResource(ModelResource):
                 total=Sum("hours")
             )["total"]
         )
+
+    @page(
+        name="all",
+        title=_("All the notes"),
+        icon="view_agenda",
+        description=_(
+            "Every note one after the other, each written in place."
+        ),
+        template="planner/notes_all.html",
+    )
+    def everything(self, request: Any) -> dict[str, Any]:
+        """The notes the list shows (its search, ``?q=``, too), one
+        under the other, each with its own editor: pinned first, then
+        the latest written."""
+        notes = self.get_list_queryset(request).order_by(*self.ordering)
+        term = " ".join(request.GET.get("q", "").split())[:100]
+
+        if term:
+            notes = notes.filter(**{text_lookup("title"): term})
+
+        shown = list(notes[: MAX_NOTES_SHOWN + 1])
+
+        return {
+            "notes": [
+                {
+                    "note": note,
+                    "url": self.get_object_url(note.pk),
+                    "document": self.get_page_url("document", note),
+                    "attach": self.get_page_url("attach", note),
+                }
+                for note in shown[:MAX_NOTES_SHOWN]
+            ],
+            "more": len(shown) > MAX_NOTES_SHOWN,
+            "limit": MAX_NOTES_SHOWN,
+            "term": term,
+        }
 
     @page(detail=True, button=False, methods=("get", "post"))
     def document(self, request: Any, note: Note) -> JsonResponse:
