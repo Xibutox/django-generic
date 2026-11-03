@@ -66,6 +66,7 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
         .first()
     )
     task_resource = site.get_resource(Task)
+    may_change = task_resource.has_change_permission(request)
 
     def task_of(task: Task | None) -> dict[str, Any] | None:
         if task is None:
@@ -83,6 +84,10 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
                 task_resource.api_url_name("detail"), pk=task.pk
             ),
             "timerUrl": task_resource.get_page_url("timer", task),
+            # Its form, opened in a dialog from the line.
+            "editUrl": (
+                task_resource.get_change_url(task.pk) if may_change else ""
+            ),
             "hours": str(hours.get(task.pk) or "0.00"),
             "running": running == task.pk,
             "dueOn": task.due_on.isoformat() if task.due_on else None,
@@ -111,13 +116,23 @@ def read(note: Note, request: Any, site: Any) -> dict[str, Any]:
                 "id": line.pk,
                 "kind": line.kind,
                 "indent": line.indent,
-                "text": line.text,
+                "text": line_text(line),
                 "done": line.done,
                 "task": task_of(line.task),
             }
             for line in lines
         ],
     }
+
+
+def line_text(line: NoteLine) -> str:
+    """A line's text; a task line's, its task's title once that title
+    was changed elsewhere (its form, the board) - or the next save would
+    give the task the line's old text back."""
+    if line.task is not None and task_title(line.text) != line.task.title:
+        return line.task.title
+
+    return line.text
 
 
 def clean_lines(payload: Any) -> tuple[str | None, list[dict[str, Any]]]:

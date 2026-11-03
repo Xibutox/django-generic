@@ -341,3 +341,9 @@ msgstr "Responsable"
 
 msgid "Assignee: %(name)s"
 msgstr "Responsable : %(name)s"
+
+msgid "Edit %(task)s"
+msgstr "Modifier %(task)s"
+
+msgid "The note could not be read again: reload the page."
+msgstr "La note n'a pas pu être relue : rechargez la page."

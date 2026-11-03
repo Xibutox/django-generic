@@ -35,6 +35,8 @@ WSGI, SQLite.
 - **Searches ignore accents**: `deploiement` finds *Déploiement* - the
   tables, the timesheet's tasks, the note's task picker
   (`generic.search`, see `docs/search.md`).
+- A task line's **pencil** opens the task's form in a dialog; saved,
+  the line takes its new title (a task renamed anywhere does).
 - A task line whose task is **done** is struck through, like a ticked
   to-do.
 - A task is about **several projects, or none**: one written in a note

@@ -577,6 +577,19 @@
       box.appendChild(el("span", "note-line__reference", task.reference));
     }
 
+    if (task.editUrl && Generic.isSafeUrl(task.editUrl)) {
+      var edit = el("button", "icon-button icon-button--sm note-line__edit");
+
+      edit.type = "button";
+      edit.appendChild(icon("edit"));
+      edit.title = Generic.format(t("Edit %(task)s"), { task: task.reference });
+      edit.setAttribute("aria-label", edit.title);
+      edit.addEventListener("click", function () {
+        self.editTask(line);
+      });
+      box.appendChild(edit);
+    }
+
     var status = el("select", "input input--sm note-line__status note-line__status--" + task.status);
 
     status.setAttribute("aria-label", t("Status"));
@@ -649,6 +662,76 @@
       });
       box.appendChild(timer);
     }
+  };
+
+  /** The task's form in a dialog; saved, the note's tasks are read
+   * again - its title is the line's text. */
+  NoteEditor.prototype.editTask = function (line) {
+    var self = this;
+    var task = line.task;
+
+    // What was typed goes first: the form then starts from it.
+    if (this.dirty) {
+      this.save();
+    }
+
+    Generic.dialogs.record({ url: task.editUrl, title: Generic.format(t("Edit %(task)s"), { task: task.reference }), icon: "edit" }).then(function (result) {
+      if (result && (result.saved || result.deleted)) {
+        self.reloadTasks();
+      }
+    });
+  };
+
+  /** The tasks of the note read again (one changed elsewhere): each
+   * line keeps what is typed in it, its task and a title changed take
+   * their stored state. */
+  NoteEditor.prototype.reloadTasks = function () {
+    var self = this;
+
+    Generic.api
+      .get(this.url)
+      .then(function (answer) {
+        var stored = {};
+
+        if (!answer || !Array.isArray(answer.lines)) {
+          return;
+        }
+
+        answer.lines.forEach(function (item) {
+          stored[item.id] = item;
+        });
+        self.lines.forEach(function (line) {
+          var item = line.id ? stored[line.id] : null;
+
+          if (!item || line.kind !== "task") {
+            return;
+          }
+
+          // Deleted in its form: the line stays, as text.
+          if (!item.task) {
+            line.kind = "text";
+            line.task = null;
+            line.linkTask = null;
+            self.paint(line);
+            self.changed();
+            return;
+          }
+
+          line.task = item.task;
+
+          if (item.text !== line.text) {
+            line.text = item.text;
+            line.input.value = item.text;
+            self.grow(line);
+          }
+
+          self.paint(line);
+        });
+        document.dispatchEvent(new CustomEvent("generic:tables-reload"));
+      })
+      .catch(function (error) {
+        Generic.toast((error && error.message) || t("The note could not be read again: reload the page."), "error");
+      });
   };
 
   /** A task's due date: a chip opening the browser's date picker; the

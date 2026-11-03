@@ -110,6 +110,22 @@ SCENARIO = textwrap.dedent("""
     assert read["today"] and "dueOn" in first_task["task"]
     assert first_task["task"]["assignee"], first_task
     assert first_task["task"]["reference"].startswith("FNC-")
+    # Its form, for the dialog on the line; none for a reader.
+    edit = first_task["task"]["editUrl"]
+    assert edit and bob.get(edit).status_code == 200
+    assert not viewer.get(DOCUMENT).json()["lines"][
+        kinds.index("task")
+    ]["task"]["editUrl"]
+    # Renamed in its form, the task names its line.
+    renamed = Task.objects.get(pk=first_task["task"]["id"])
+    original = renamed.title
+    Task.objects.filter(pk=renamed.pk).update(title="Renamed in the form")
+    again = next(
+        line for line in bob.get(DOCUMENT).json()["lines"]
+        if line["id"] == first_task["id"]
+    )
+    assert again["text"] == "Renamed in the form"
+    Task.objects.filter(pk=renamed.pk).update(title=original)
 
     # A line typed as a task makes a task, numbered by its kind; a task
     # line renamed renames its task.
