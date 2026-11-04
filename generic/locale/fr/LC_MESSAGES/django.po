@@ -4869,3 +4869,18 @@ msgstr "Textes d'aide"
 #, python-format
 msgid "At most %(count)d records at once."
 msgstr "Au plus %(count)d enregistrements à la fois."
+
+#: generic/sites/locks.py
+msgid "This record is locked: it cannot be changed."
+msgstr "Cet enregistrement est verrouillé : il ne peut pas être modifié."
+
+#, python-format
+msgid "Nothing was deleted: %(count)s of the selected records is locked."
+msgid_plural ""
+"Nothing was deleted: %(count)s of the selected records are locked."
+msgstr[0] ""
+"Rien n'a été supprimé : %(count)s des enregistrements sélectionnés est "
+"verrouillé."
+msgstr[1] ""
+"Rien n'a été supprimé : %(count)s des enregistrements sélectionnés sont "
+"verrouillés."

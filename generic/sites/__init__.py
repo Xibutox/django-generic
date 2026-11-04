@@ -91,6 +91,7 @@ from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
 from generic.sites.labels import Labels
+from generic.sites.locks import Lock
 from generic.sites.outlines import Level, Outline
 from generic.sites.pages import ResourcePage, ResourcePageView, page
 from generic.sites.related import RelatedTable
@@ -119,6 +120,7 @@ __all__ = [
     "ChartBuilder",
     "DataResource",
     "Duplicate",
+    "Lock",
     "GenericSite",
     "Grid",
     "Import",

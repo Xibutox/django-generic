@@ -491,8 +491,11 @@ def build_history_entry(resource: Any, obj: Any) -> dict[str, Any] | None:
 
 def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
     """Everything the summary page of ``obj`` shows."""
-    can_change = resource.has_change_permission(request, obj)
-    can_delete = resource.has_delete_permission(request, obj)
+    lock = resource.get_record_lock(request, obj)
+    can_change = resource.has_change_permission(request, obj) and not (
+        lock and lock.everything
+    )
+    can_delete = resource.may_delete(request, obj)
 
     related = [
         {
@@ -501,7 +504,12 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
             "icon": bound.get_icon(),
             "description": force_str(bound.definition.description),
             "count": bound.count(request, obj),
-            "addUrl": bound.get_add_url(request, obj),
+            # Nothing is added under a record whose lock holds them.
+            "addUrl": (
+                ""
+                if lock.freezes(bound.name)
+                else bound.get_add_url(request, obj)
+            ),
         }
         for bound in resource.get_related_tables(request)
         if bound.is_visible(request)
@@ -561,4 +569,6 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
         "related": related,
         "history": build_history_entry(resource, obj),
         "topic": resource.topic_name if resource.realtime else "",
+        # Why it cannot be changed, when a lock holds it (null otherwise).
+        "lock": lock.as_client() if lock else None,
     }

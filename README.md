@@ -231,6 +231,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Boards](docs/boards.md) — `Board(...)`: records as cards, a column per value of a field, the list's filters above them, dragged to another column
 - [Comparing records](docs/compare.md) — `compare_fields`: two to six records ticked in the list, side by side, the values that differ marked
 - [Duplicating records](docs/duplicate.md) — `duplicate = True` or `Duplicate(...)`: a record's values in a new add form, edited before it is written, its many-to-many values, inline rows and declared relations ticked to come along; wiki pages and wikis too
+- [Locking records](docs/locks.md) — `lock = Lock("released", related=("bom_lines",))`: once a field says so, a record's fields and its related records are refused by every write - form, API, grid, bulk edit, import, transition - and it is not deleted
 - [Labels](docs/labels.md) — `labels = Labels(...)`: stickers with a QR code leading to each record, printed from a selection or a record's page
 - [Trees](docs/trees.md) — `Tree(...)`: records holding records (a bill of materials, nested categories) unfolded a level at a time, thousands of children included, searched at any depth, and laid flat as an exploded BOM table
 - [Outlines](docs/outlines.md) — `outline = ("equipment", "maintenances")`: a list unfolding into its related records, level after level, behind an *Outline* button, every level edited in place

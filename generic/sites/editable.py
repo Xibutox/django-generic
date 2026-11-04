@@ -192,6 +192,10 @@ def may_edit(
         if column.field_name in owner.get_locked_fields(request):
             return False
 
+        # And that record's lock (generic.sites.locks).
+        if owner.get_record_lock(request, obj).freezes(column.field_name):
+            return False
+
     if owner is not None:
         return bool(owner.has_change_permission(request, obj))
 
@@ -212,11 +216,11 @@ def serializer_for(
     The form serializer, not a new one: a cell must refuse exactly what
     the form refuses, or the table becomes a way round a rule.
     """
+    from generic.sites.locks import guarded
     from generic.sites.serializers import build_form_serializer
 
     owner = resource_for(resource, column)
-
-    return build_form_serializer(
+    serializer = build_form_serializer(
         column.model,
         fields=fields,
         overrides=getattr(owner, "form_overrides", {}),
@@ -224,6 +228,9 @@ def serializer_for(
         source=owner,
         name=f"{column.model.__name__}CellSerializer",
     )
+
+    # A cell refuses what the record's lock freezes, as its form does.
+    return guarded(serializer, owner) if owner is not None else serializer
 
 
 def schema_for(
@@ -390,13 +397,17 @@ def write(
             resource, row, changes
         ):
             if not may_edit(resource, request, column, target):
+                owner = resource_for(resource, column) or resource
+                lock = owner.get_record_lock(request, target)
+                # A locked record says why; any other refusal, the same.
+                reason = (
+                    lock.message
+                    if lock.freezes(column.field_name)
+                    else gettext("You may not change this column.")
+                )
+
                 raise serializers.ValidationError(
-                    {
-                        naming[name]: [
-                            gettext("You may not change this column.")
-                        ]
-                        for name in values
-                    }
+                    {naming[name]: [reason] for name in values}
                 )
 
             serializer_class = serializer_for(

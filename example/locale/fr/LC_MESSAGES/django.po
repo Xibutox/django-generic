@@ -2143,3 +2143,22 @@ msgstr "Chaque ticket à l'heure où il a été ouvert."
 
 msgid "Tickets and time"
 msgstr "Tickets et temps passé"
+
+#: example/models.py
+msgid "released"
+msgstr "publié"
+
+msgid ""
+"A released article cannot be changed, nor its bill of materials. Untick to "
+"change it."
+msgstr ""
+"Un article publié ne peut plus être modifié, ni sa nomenclature. Décochez "
+"pour le modifier."
+
+#: example/resources.py
+msgid ""
+"This article is released: its definition and its bill of materials are "
+"frozen. Untick Released to change them."
+msgstr ""
+"Cet article est publié : sa définition et sa nomenclature sont figées. "
+"Décochez Publié pour les modifier."

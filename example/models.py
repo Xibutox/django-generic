@@ -568,6 +568,16 @@ class Article(models.Model):
         blank=True,
         related_name="articles",
     )
+    # Released, an article's definition is what was built: it locks
+    # (ArticleResource.lock), its bill of materials with it.
+    released = models.BooleanField(
+        _("released"),
+        default=False,
+        help_text=_(
+            "A released article cannot be changed, nor its bill of "
+            "materials. Untick to change it."
+        ),
+    )
 
     class Meta:
         ordering = ("reference",)

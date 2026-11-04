@@ -64,6 +64,7 @@ from generic.sites import (
     Kpi,
     Labels,
     Level,
+    Lock,
     ModelResource,
     Outline,
     RelatedRows,
@@ -1490,6 +1491,7 @@ class ArticleResource(ModelResource):
         "unit_cost",
         "family",
         "component_count",
+        "released",
     )
     search_fields = ("reference", "name")
     ordering = ("reference",)
@@ -1511,7 +1513,26 @@ class ArticleResource(ModelResource):
             }
         )
     }
-    fields = (("reference", "name"), ("kind", "unit"), ("unit_cost", "family"))
+    fields = (
+        ("reference", "name"),
+        ("kind", "unit"),
+        ("unit_cost", "family"),
+        "released",
+    )
+    # A released article is frozen: its definition and its bill of
+    # materials - the BOM lines, in its grid and on their own pages -
+    # cannot change, nor can it be deleted, until *Released* is
+    # unticked. Its cost still follows the suppliers' prices
+    # (docs/locks.md).
+    lock = Lock(
+        "released",
+        exclude=("unit_cost",),
+        related=("bom_lines",),
+        message=_(
+            "This article is released: its definition and its bill of "
+            "materials are frozen. Untick Released to change them."
+        ),
+    )
     # What an article costs is for whoever maintains the articles: the
     # others read them without it - no column, filter, export or form
     # field, nowhere on the summary or in the trees (docs/sites.md).

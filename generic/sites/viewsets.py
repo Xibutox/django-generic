@@ -406,8 +406,24 @@ class ResourceViewSet(
 
         return annotate(base, custom) if custom else base
 
+    def get_object(self) -> Any:
+        obj = super().get_object()
+        # The record being written: its lock decides which inlines are
+        # read only (``get_inline_form_definitions``).
+        self.lock_target = obj
+
+        return obj
+
     def get_inline_form_definitions(self) -> Any:
-        return self.resource.get_inline_definitions(self.request)
+        from generic.sites.locks import frozen_inlines
+
+        definitions = self.resource.get_inline_definitions(self.request)
+        target = getattr(self, "lock_target", None)
+
+        if target is None or self.action not in ("update", "partial_update"):
+            return definitions
+
+        return frozen_inlines(self.resource, self.request, target, definitions)
 
     # -- writes ----------------------------------------------------------
 
@@ -434,7 +450,14 @@ class ResourceViewSet(
         self.resource.save_model(self.request, serializer, change=True)
 
     def destroy(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        from generic.sites.locks import refused_delete
+
         instance = self.get_object()
+        locked = refused_delete(self.resource, request, instance)
+
+        if locked:
+            raise PermissionDenied(locked)
+
         summary = collect_deletion_summary(instance)
 
         # Refused with the reason rather than failing with a 500 on the

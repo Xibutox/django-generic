@@ -181,6 +181,8 @@ class GenericSite:
             resource.get_compare_sections()
             # And what a copy of a record leaves out and copies with it.
             resource.get_duplicate()
+            # And when its records lock, and what that freezes.
+            resource.get_lock()
             # And what its labels show.
             resource.get_labels()
             # And the relations its list unfolds into.
