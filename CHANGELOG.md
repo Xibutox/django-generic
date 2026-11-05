@@ -13,6 +13,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Locking records: `lock = Lock("released", exclude=("unit_cost",),
+  related=("bom_lines",))` on a resource. While the field (the record's
+  own, or one read through foreign keys: `"order__is_closed"`; locked
+  when set, or in `values=`) says so, the fields it freezes (`fields=`,
+  all by default, but `exclude=` and the lock's own field) are refused
+  by every write - the form and the API (the message under the field),
+  a grid's cells and new rows, a bulk edit (counted refused), an import,
+  a transition whose state is frozen, the form's inlines - and the
+  record is not deleted (`delete=`). The records of its `related`
+  relations lock with it, and none is added under it. `permission=`
+  lets some through; `message=` says why, on the record's page and its
+  form, frozen fields drawn read only. `resource.unlocked(request,
+  queryset)` for a project's own `update()`. The example's articles lock
+  once *Released* (docs/locks.md).
 - Long tables scroll in a frame of the window's height: a data table's,
   a tree's or an outline's rows scroll inside their own box, the column
   titles and search row pinned at its top, sized so that the toolbar,

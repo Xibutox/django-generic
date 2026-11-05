@@ -628,6 +628,14 @@ In the wiki, a page's *Duplicate* asks for a title and whether its
 subpages come; on *Wikis*, a wiki's copy icon copies it whole. See
 [Duplicating records](duplicate.md).
 
+**A record locked.** *Manufacturing › Articles › Mountain bicycle* is
+released: its page says so on top and offers no *Delete*; its form
+opens with every field read only but *Unit cost* and *Released*, and
+its *Edit the BOM* grid refuses a new quantity with the same message.
+A BOM line's own page has nothing left to edit. Untick *Released* and
+everything is writable again; tick it on the city bicycle and its bill
+of materials freezes. See [Locking records](locks.md).
+
 **On the API.** These are worth pasting into the address bar:
 
 ```

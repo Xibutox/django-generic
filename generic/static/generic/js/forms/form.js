@@ -173,6 +173,7 @@
       .then(function (results) {
         self.schema = results[0] || {};
         self.objectData = results[1] || {};
+        self.applyLock(config.lock);
         self.render();
         self.populate();
         self.snapshot();
@@ -188,6 +189,40 @@
         box.setAttribute("role", "alert");
         self.host.replaceChildren(box);
       });
+  };
+
+  /**
+   * A locked record (generic.sites.locks): the fields and inlines its
+   * lock freezes are drawn read only, and never sent. `lock.fields` is
+   * null when it freezes every one but `lock.except`. The server
+   * refuses them anyway; this only says so before anybody types.
+   */
+  SchemaForm.prototype.applyLock = function (lock) {
+    if (!lock || !lock.locked) {
+      return;
+    }
+
+    function frozen(name) {
+      if (lock.fields === null || lock.fields === undefined) {
+        return (lock["except"] || []).indexOf(name) === -1;
+      }
+
+      return lock.fields.indexOf(name) !== -1;
+    }
+
+    (this.schema.fields || []).forEach(function (field) {
+      if (frozen(field.name)) {
+        field.readOnly = true;
+      }
+    });
+
+    (this.schema.inlines || []).forEach(function (definition) {
+      if (frozen(definition.name)) {
+        definition.readOnly = true;
+      }
+    });
+
+    this.lock = lock;
   };
 
   /* -- Drawing ---------------------------------------------------------- */
@@ -207,6 +242,14 @@
     this.message.hidden = true;
     this.message.setAttribute("role", "alert");
     form.appendChild(this.message);
+
+    if (this.lock && this.lock.message) {
+      var locked = el("div", "callout callout--warning form-lock");
+
+      locked.setAttribute("role", "status");
+      locked.append(icon("lock", "icon--sm"), el("span", "", this.lock.message));
+      form.appendChild(locked);
+    }
 
     var copies = this.renderCopies();
 

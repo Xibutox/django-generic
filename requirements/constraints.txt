@@ -404,7 +404,7 @@ tomli==2.5.0
     # via pip-audit
 tomli-w==1.2.0
     # via pip-audit
-twisted==26.4.0
+twisted==26.10.0
     # via daphne
 txaio==26.6.1
     # via autobahn

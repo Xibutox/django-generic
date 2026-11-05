@@ -131,6 +131,8 @@ generic/
 │   ├── compare.py          compare_fields: records side by side, ComparePageView (§5.23)
 │   ├── duplicates.py       duplicate / Duplicate: a record copied into a new add form,
 │   │                       relations ticked to come along (§5.25)
+│   ├── locks.py            lock / Lock: a record frozen while a field says so, its
+│   │                       related records with it; every write refuses (§5.28)
 │   ├── labels.py           Labels, LabelSheetView: stickers with a QR code, printed (§5.24)
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
@@ -812,6 +814,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `boards` | `()` | `Board(...)`: records as cards, a column per value of a choice, boolean or foreign key, a page each with the list's filters above, drag to move (§5.22) |
 | `compare_fields` | `()` | `True` (the summary's sections) or field names: *Compare the selected ...* for 2-6 ticked rows, page `<model>/compare/?ids=` (§5.23) |
 | `duplicate` | `False` (`auto`: `True`) | `True` or `Duplicate(exclude=, related=, values=, permission=)`: *Duplicate* on a record's page and row menu, the add form filled with its values and a *Copy with it* box per M2M field, inline and `related` relation (§5.25) |
+| `lock` | `None` | `Lock("field", values=, fields=, exclude=, related=, delete=, permission=, message=)`: while the field (own, or through FKs) says so, the frozen fields - and the records of `related` relations - are refused by every write, and the record is not deleted (§5.28). `docs/locks.md` |
 | `labels` | `None` | `True` or `Labels(fields=, size=, content=, title=, permission=)`: bulk action *Print labels* and a record's *Label* page, QR codes (§5.24) |
 | `charts` | `()` | `Chart(...)` declarations |
 | `list_charts` | `()` | chart names drawn above the list, following its filters |
@@ -850,6 +853,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `has_record_action(request, obj, name)` | whether the record's page offers the bulk action `name` for this record now (default True). Override so a record's page shows only what applies to its state - few buttons, none answering "already done"; the list keeps them all |
 | `get_record_links(request, obj)` | `ToolbarItem`s to pages built around this record (e.g. a page for correcting its rows), first on its summary; leave out any the reader cannot open. Any number: the toolbar folds the overflow into its ⋯ menu |
 | `can_edit_column(request, column, obj=None)`, `save_editable(request, obj, changes)` | freeze an editable column; replace the write of edited cells (§5.10) |
+| `get_record_lock(request, obj)`, `is_locked(request, obj)`, `may_delete(request, obj)`, `unlocked(request, queryset)` | what locks `obj` for this reader (`LockState`); whether it may be deleted (permission and lock); a selection without its locked records, for an action writing with `update()` (§5.28) |
 | `can_duplicate(request, obj=None)`, `get_duplicate_initial(request, obj)`, `save_duplicate(request, source, target, related)` | who is offered *Duplicate*; what its form opens with (`values`, `display`, `inlines`, `copies`); the copy of the ticked relations after the new record is saved, in its transaction (§5.25) |
 | `save_bulk_edit(request, serializer, obj)`, `can_bulk_edit(request)` | write one record of a bulk edit (default `save_model(..., change=True)`; raise a `ValidationError` to leave it as it was, named); who is offered it (§5.21) |
 | `clean_import_row(request, values, row_number)`, `save_import_row(request, serializer, instance)` | adjust an imported row before validation; replace its write (default `save_model`) |
@@ -2060,6 +2064,58 @@ once per request (`definitions.definitions`, `forget(request)`);
 (`serializers.SECTION`); the summary gets a section of its own
 (`display.summary_section`). Not yet: grids, bulk edit, imports,
 compare, chart builder, outlines, the OpenAPI schema.
+
+### 5.28 Locking records (`lock`)
+
+```python
+lock = Lock("released",                    # own field, or "order__is_closed" (FKs)
+            values=None,                   # locking values; None: set (True / not null nor "")
+            fields=None,                   # frozen: fields, M2M, inline names; None = all
+            exclude=("unit_cost",),        # still written while locked
+            related=("bom_lines",),        # one-to-many: their records lock too
+            delete=True,                   # nor deleted
+            permission=None,               # str | callable(request, obj): not held back
+            message=_("Released: frozen."))
+```
+
+`generic/sites/locks.py`. Resolved at registration
+(`resource.get_lock()`, a `BoundLock`; `ImproperlyConfigured` on an
+unknown field, a path through a value or a many-valued relation, an
+unknown `fields`/`exclude` name, a `related` that is not a reverse FK,
+a string for a tuple). The lock's own field is never frozen
+(unlocking is writing it; guard it with `field_permissions`); an FSM
+state as lock field keeps its transitions. `locks_of(resource)`: its
+own + the ones handed down by a parent's `related` (path
+`<fk>__<parent path>`, everything frozen, delete refused), worked out
+again when the registry grows. Per record and reader:
+`get_record_lock(request, obj)` -> `LockState` (false when free;
+`freezes(name)`, `message`, `delete`, `everything`, `as_client()`),
+`is_locked`, `may_delete` (what every delete asks), `unlocked(request,
+qs, delete=False)` (SQL `BoundLock.q()`; a callable permission per
+row).
+
+Enforced: `locks.guarded(serializer, resource)` wraps
+`get_form_serializer_for(request)` and `editable.serializer_for` (cells):
+`validate` refuses a frozen field whose value changes (unchanged values
+pass; `locks.unchanged`) and a key putting a record under a locked one
+(create or move) - so form, API, cells, grid rows, bulk edit, imports,
+transitions' `fields`, calendar drops, duplicates' related copies.
+`may_write_column` False for a frozen own column (bulk edit counts it
+refused, grids/boards/calendars/outlines refuse); `editable.may_edit`
+asks a related column's owner lock. Inlines read only on update
+(`ResourceViewSet.get_object` keeps `lock_target`,
+`get_inline_form_definitions` -> `frozen_inlines`). Transitions:
+`may_take`/`take` refuse (403) when its state field is frozen. Deletes:
+`destroy` 403, `ResourceDeleteView.get_object` 403, `delete_selected`
+deletes nothing (`delete_refusal`), toolbar/summary/form config via
+`may_delete`. Summary JSON and form config gain `lock` (null or
+`{locked, message, fields (null = all but except), except, delete,
+everything}`); `everything` -> no *Edit*, form `readOnly`. `form.js`
+`applyLock` marks fields/inlines read only and shows the message;
+`detail.html` a `.summary__lock` callout. Duplicate skips the own lock
+field (a copy starts unlocked). Not covered: `queryset.update()`, shell,
+admin, undo. `docs/locks.md`; example: articles (`released`, BK-200
+seeded released, `related=("bom_lines",)`).
 
 ## 6. URLs and endpoints (generated)
 
