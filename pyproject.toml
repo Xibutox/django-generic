@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=84.2.0", "wheel"]
+requires = ["setuptools>=84.2.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -81,7 +81,7 @@ beat = ["django-celery-beat>=2.6"]
 # "django-db") and read from the Tasks pages, as "Celery results".
 results = ["django-celery-results>=2.5"]
 
-postgres = ["psycopg[binary]>=3.1"]
+postgres = ["psycopg[binary]>=3.3.7"]
 
 # Passwords hashed with Argon2, as OWASP recommends: a project lists
 # Argon2PasswordHasher first in PASSWORD_HASHERS (docs/security.md).
@@ -135,17 +135,17 @@ dev = [
     # The document manager's Word merge (docmanager/requirements.txt).
     "python-docx>=1.1",
     "docxcompose>=1.4",
-    "pytest>=8.0",
+    "pytest>=9.2.0",
     "pytest-django>=4.8",
     "pytest-cov>=5.0",
-    "pytest-asyncio>=0.23",
+    "pytest-asyncio>=1.4.1.post1",
     "factory-boy>=3.3",
-    "faker>=25.0",
+    "faker>=40.44.0",
     "freezegun>=1.5",
     "black>=24.3",
     "isort>=5.13",
     "flake8>=7.0",
-    "mypy>=1.10",
+    "mypy>=2.4.1",
     "django-stubs>=5.0",
     "djangorestframework-stubs>=3.15",
     "bandit>=1.7",
