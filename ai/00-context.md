@@ -2779,9 +2779,14 @@ site.add_sso_provider(_("Entra ID"), route="oidc_authentication_init",
 - **What you grant, you must already have** (`accounts/guard.py`): a
   non-superuser cannot tick *superuser*, cannot tick *staff* unless
   they are, cannot add a group or a permission granting anything they
-  lack, and cannot open a superuser's form at all. Nobody can delete
-  or deactivate the account they are signed in as - including through
-  a bulk action, which goes through the same `delete_model`.
+  lack, and cannot open a superuser's form at all - nor that of any
+  account that may do more than they may (`guard.may_manage`,
+  `guard.outranks`: granted a permission they lack, or staff while
+  they are not), since changing an account is setting its password;
+  the bulk *Activate* and *Deactivate* skip those accounts too. Nobody
+  can delete or deactivate the account they are signed in as -
+  including through a bulk action, which goes through the same
+  `delete_model`.
 - Nothing is declared against a field a custom user model may not have:
   columns, fieldsets, search and the members tab are computed in
   `register_screens`. `history_exclude = ("password", "last_login")`.

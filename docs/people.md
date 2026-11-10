@@ -69,6 +69,8 @@ permission. These screens refuse, on a single rule:
 | adds a group granting a permission they lack | refused, naming the permission |
 | adds such a permission directly | refused, the same way |
 | opens a superuser's form at all | refused — whoever may change an account may set its password, and so become it |
+| opens the form of an account that may do more than they may — granted a permission they lack, or staff while they are not | refused, for the same reason: `guard.may_manage` |
+| switches such an account back on with the bulk *Activate* | left alone, and counted as skipped |
 
 And two that apply to everybody, superusers included:
 
