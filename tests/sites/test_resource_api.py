@@ -286,6 +286,79 @@ class TestRecord:
         )
 
 
+class TestWhoReadsTheDeletionPreview:
+    """What a delete would take names records of other models: it is
+    for whoever may delete, and names only what they may read."""
+
+    @staticmethod
+    def someone(*codenames):
+        user = UserFactory(username="someone")
+        user.user_permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="example", codename__in=codenames
+            )
+        )
+
+        return user
+
+    @staticmethod
+    def flat(nodes):
+        for node in nodes:
+            if isinstance(node, list):
+                yield from TestWhoReadsTheDeletionPreview.flat(node)
+            else:
+                yield node
+
+    def test_a_reader_who_may_not_delete_is_refused(
+        self, client, support_desk
+    ):
+        client.force_login(self.someone("view_ticket", "change_ticket"))
+        login = support_desk["login"]
+
+        response = client.get(f"{TICKETS}{login.pk}/deletion-preview/")
+
+        assert response.status_code == 403
+        assert "SD-1" not in response.content.decode()
+
+    def test_records_the_reader_may_not_view_are_counted_not_named(
+        self, client, support_desk
+    ):
+        client.force_login(self.someone("view_ticket", "delete_ticket"))
+        login = support_desk["login"]
+        comments = TicketComment.objects.filter(ticket=login)
+        assert comments.exists()
+
+        body = client.get(f"{TICKETS}{login.pk}/deletion-preview/").json()
+        nodes = [
+            node
+            for node in self.flat(body["nested"])
+            if node["model"] == "example.ticketcomment"
+        ]
+
+        assert body["object"]["label"].startswith("SD-1")
+        assert len(nodes) == comments.count()
+        assert all(node["hidden"] for node in nodes)
+        assert {(node["id"], node["label"]) for node in nodes} == {(None, "")}
+        assert all(node["modelLabel"] for node in nodes)
+
+    def test_and_named_once_they_may(self, client, support_desk):
+        client.force_login(
+            self.someone("view_ticket", "delete_ticket", "view_ticketcomment")
+        )
+        login = support_desk["login"]
+
+        body = client.get(f"{TICKETS}{login.pk}/deletion-preview/").json()
+        nodes = [
+            node
+            for node in self.flat(body["nested"])
+            if node["model"] == "example.ticketcomment"
+        ]
+
+        assert nodes
+        assert all(node["label"] and node["id"] for node in nodes)
+        assert not any(node.get("hidden") for node in nodes)
+
+
 class TestFormSchema:
     @staticmethod
     def schema(client) -> dict:

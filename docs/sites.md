@@ -740,7 +740,7 @@ better tool.
 | `DELETE api/<app>/<model>/<pk>/` | Delete; refused with the reason when protected |
 | `GET .../<pk>/summary/` | The summary page, as JSON: figures, typed values, related tables |
 | `GET .../form-schema/` | The form, as JSON |
-| `GET .../<pk>/deletion-preview/` | What a delete would take with it |
+| `GET .../<pk>/deletion-preview/` | What a delete would take with it: asks the delete permission, names only records the reader may view |
 | `GET .../export/`, `.../export-csv/` | Every filtered row |
 | `POST .../actions/` | Run a bulk action: `{"action", "ids"}` or `{"action", "all": true}` |
 | `GET .../autocomplete/` | Select2 results: `?q=` and `?page=`, or `?ids=1,2` to label known values |

@@ -159,7 +159,9 @@ class ResourcePermission(BasePermission):
         if name == "bulk_edit":
             return resource.can_bulk_edit(request)
 
-        if name == "destroy":
+        # What a delete would take with it names records of other
+        # models: for whoever may delete, not for every reader.
+        if name in ("destroy", "deletion_preview"):
             return resource.has_delete_permission(request)
 
         if name == "form_schema":
@@ -188,7 +190,7 @@ class ResourcePermission(BasePermission):
         ):
             return resource.has_change_permission(request, obj)
 
-        if name == "destroy":
+        if name in ("destroy", "deletion_preview"):
             return resource.has_delete_permission(request, obj)
 
         return resource.has_view_permission(request, obj)
@@ -580,6 +582,16 @@ class ResourceViewSet(
             )
 
         return response
+
+    def may_name_in_deletion(self, request: Any, record: Any) -> bool:
+        """A record with pages of its own answers by its resource's
+        rules - its teams, its own ``has_view_permission``."""
+        resource = self.resource.site.get_resource(type(record))
+
+        if resource is None:
+            return super().may_name_in_deletion(request, record)
+
+        return bool(resource.has_view_permission(request, record))
 
     def finalize_response(
         self,

@@ -2083,7 +2083,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/files/<field>/` | one of the record's files, permission-checked (§5.17) |
 | `GET .../<pk>/history/` | the record's versions, newest first (`limit`, `offset`); 404 where the model keeps none |
 | `GET .../form-schema/` | form schema |
-| `GET .../<pk>/deletion-preview/` | cascade preview |
+| `GET .../<pk>/deletion-preview/` | cascade preview: delete permission (class and record); a record the reader may not view is counted, `hidden`, unnamed (`may_name_in_deletion`) |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}`; the answer may carry `undo` |
 | `POST .../undo/` | `{"token"}` from an answer's `undo`: what it did, put back (§13c) |

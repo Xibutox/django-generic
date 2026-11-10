@@ -187,20 +187,27 @@ class AggregatedDataTableViewSet(DataTableViewSet):
         return queryset.order_by(*self.ordering)
 
 
-def serialize_deletion_node(node: Any) -> Any:
-    """Turn ``NestedObjects.nested()`` into JSON safe recursive data."""
+def serialize_deletion_node(node: Any, may_name: Any = None) -> Any:
+    """Turn ``NestedObjects.nested()`` into JSON safe recursive data.
+
+    ``may_name(record)`` says whether the reader may see that record:
+    one they may not is counted - a delete takes it all the same - but
+    neither named nor identified (``hidden``).
+    """
     if isinstance(node, (list, tuple)):
-        return [serialize_deletion_node(item) for item in node]
+        return [serialize_deletion_node(item, may_name) for item in node]
 
     meta = node._meta
-
-    return {
+    data = {
         "model": meta.label_lower,
         "modelLabel": force_str(meta.verbose_name),
         "modelLabelPlural": force_str(meta.verbose_name_plural),
-        "id": force_str(node.pk),
-        "label": force_str(node),
     }
+
+    if may_name is not None and not may_name(node):
+        return {**data, "id": None, "label": "", "hidden": True}
+
+    return {**data, "id": force_str(node.pk), "label": force_str(node)}
 
 
 class InlineFormViewSetMixin:
@@ -434,6 +441,11 @@ class FormSchemaViewSetMixin(InlineFormViewSetMixin):
         database = router.db_for_write(type(instance), instance=instance)
         collector = NestedObjects(using=database, origin=instance)
 
+        def may_name(record: Any) -> bool:
+            return record is instance or self.may_name_in_deletion(
+                request, record
+            )
+
         try:
             collector.collect([instance])
         except (ProtectedError, RestrictedError) as error:
@@ -448,9 +460,7 @@ class FormSchemaViewSetMixin(InlineFormViewSetMixin):
                     "canDelete": False,
                     "object": serialize_deletion_node(instance),
                     "nested": [],
-                    "protected": [
-                        serialize_deletion_node(item) for item in protected
-                    ],
+                    "protected": serialize_deletion_node(protected, may_name),
                 }
             )
 
@@ -460,11 +470,27 @@ class FormSchemaViewSetMixin(InlineFormViewSetMixin):
             {
                 "canDelete": not protected,
                 "object": serialize_deletion_node(instance),
-                "nested": serialize_deletion_node(collector.nested()),
-                "protected": [
-                    serialize_deletion_node(item) for item in protected
-                ],
+                "nested": serialize_deletion_node(
+                    collector.nested(), may_name
+                ),
+                "protected": serialize_deletion_node(protected, may_name),
             }
+        )
+
+    def may_name_in_deletion(self, request: Any, record: Any) -> bool:
+        """Whether the preview may name ``record``, one the delete
+        would take or one that prevents it.
+
+        Whoever may delete a record is not thereby allowed to read
+        every model hanging off it: a record of a model the reader may
+        neither view nor change is counted, not named.
+        """
+        meta = record._meta
+        user = request.user
+
+        return any(
+            user.has_perm(f"{meta.app_label}.{action}_{meta.model_name}")
+            for action in ("view", "change")
         )
 
 
