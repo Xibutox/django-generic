@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.apps import AppConfig
 from django.utils.module_loading import autodiscover_modules
 from django.utils.translation import gettext_lazy as _
@@ -105,7 +107,45 @@ class GenericConfig(AppConfig):
 
         site.complete_auto()
 
+        self.arm_django_admin()
         self.arm_restart_announcements()
+
+    def arm_django_admin(self) -> None:
+        """Django's admin, when the project installed it: its sign-in
+        form behind the same lock as the site's, and none of its pages
+        at all while ``GENERIC["DJANGO_ADMIN"]`` is ``False``.
+
+        The default admin site only: a project that built another one
+        gives it its form (``generic.accounts.adminforms``) and
+        mounts it, or not, itself.
+        """
+        from django.apps import apps
+
+        if not apps.is_installed("django.contrib.admin"):
+            return
+
+        from django.contrib import admin
+
+        from generic.accounts.adminforms import (
+            ThrottledAdminAuthenticationForm,
+        )
+        from generic.conf import generic_settings
+
+        if admin.site.login_form is None:
+            admin.site.login_form = ThrottledAdminAuthenticationForm
+
+        get_urls = admin.site.get_urls
+
+        if getattr(get_urls, "generic_switch", False):
+            return
+
+        def switched() -> list[Any]:
+            # Read when the URLconf is: mounted or not, the admin has
+            # no address while the setting is off.
+            return get_urls() if generic_settings.DJANGO_ADMIN else []
+
+        switched.generic_switch = True  # type: ignore[attr-defined]
+        admin.site.get_urls = switched  # type: ignore[method-assign]
 
     def arm_restart_announcements(self) -> None:
         """Pick up a restart this process was not around to warn about.

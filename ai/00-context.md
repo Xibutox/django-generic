@@ -2300,6 +2300,9 @@ write (also a *Write a message* button on the notifications page),
 ## 9. Settings (`GENERIC = {...}`)
 
 `SITE_TITLE`, `SITE_HEADER`, `SITE_ICON`, `SITE_URL`, `SHOW_ADMIN_LINK`,
+`DJANGO_ADMIN` (True; False: every page of the default admin site is a
+404, sign-in form included, mounted or not, and the link goes - read
+when the URLconf is; `GenericConfig.arm_django_admin`),
 `THEME` (`{"--ui-hue": "150", "--ui-colorfulness": "1", "--ui-tint": "0.35",
 "--ui-contrast": "0", "--ui-stripes": "0.6"}`), `NAVIGATION`,
 `SEARCH_RESULTS_PER_RESOURCE`, `TABLE_PAGE_SIZE`, `TABLE_DATETIME_FORMAT`
@@ -2321,7 +2324,9 @@ no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`,
 `WIKI_ARCHIVE_MAX_SIZE` (100 MB), `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
-`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
+`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off; the site's
+sign-in form and the default admin site's, `ThrottledSignInMixin` for
+another password form),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
 `SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
 `CONTENT_SECURITY_POLICY` (None; "recommended" or directives),

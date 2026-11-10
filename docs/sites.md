@@ -907,6 +907,7 @@ All of it is REST, under `api/generic/`: `account/preferences/`,
 | `SITE_ICON` | `"dataset"` | Brand icon |
 | `SITE_URL` | `None` | Where the brand links; the dashboard by default |
 | `SHOW_ADMIN_LINK` | `True` | Link staff to the Django admin, when mounted |
+| `DJANGO_ADMIN` | `True` | `False` takes every page of the Django admin away, mounted or not |
 | `THEME` | `{}` | Appearance parameters or design tokens, such as `{"--ui-hue": "150"}` |
 
 `THEME` values are checked against a strict pattern — a number, a

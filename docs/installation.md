@@ -324,6 +324,8 @@ framework's; the rest is Django's usual.
 ```python
 INSTALLED_APPS = [
     "django.contrib.admin",          # optional: it keeps working beside
+                                     # (GENERIC["DJANGO_ADMIN"] = False
+                                     # turns its pages off)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

@@ -45,16 +45,21 @@ class SitePageMixin(PageMixin):
         return context
 
 
-class ThrottledAuthenticationForm(AuthenticationForm):
-    """Django's sign-in form, refusing an account or an address after
-    too many failed passwords (``generic.accounts.throttle``)."""
+class ThrottledSignInMixin:
+    """A password form refusing an account or an address after too
+    many failed passwords (``generic.accounts.throttle``).
+
+    Before an ``AuthenticationForm`` of Django's, the admin's included:
+    every form asking for a password counts on the same lock.
+    """
 
     def clean(self) -> dict[str, Any]:
         from generic.accounts import throttle
 
-        username = self.data.get("username", "") or ""
+        username = self.data.get("username", "") or ""  # type: ignore[attr-defined]
+        request = self.request  # type: ignore[attr-defined]
 
-        if throttle.is_locked(self.request, username):
+        if throttle.is_locked(request, username):
             _attempts, seconds = throttle.limits()
 
             raise forms.ValidationError(
@@ -70,14 +75,18 @@ class ThrottledAuthenticationForm(AuthenticationForm):
             )
 
         try:
-            cleaned = super().clean()
+            cleaned = super().clean()  # type: ignore[misc]
         except forms.ValidationError:
-            throttle.failed(self.request, username)
+            throttle.failed(request, username)
             raise
 
-        throttle.succeeded(self.request, username)
+        throttle.succeeded(request, username)
 
         return cleaned
+
+
+class ThrottledAuthenticationForm(ThrottledSignInMixin, AuthenticationForm):
+    """Django's sign-in form, behind the lock."""
 
 
 class LoginView(SitePageMixin, auth_views.LoginView):
