@@ -128,6 +128,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   number is a 400; an autocomplete page far past the end is an empty
   one; a wiki archive cannot carry a position no column holds. Each
   was a 500 (`generic.api.body`, tests/test_bad_input.py).
+- Undo: an action that wrote more versions than Undo reads
+  (`UNDO_MAX_RECORDS`) is no longer offered an Undo of the part read.
+- `manage.py check` names a key of `GENERIC` that is no setting
+  (`generic.W014`), with the one probably meant: a misspelled
+  `LOGIN_MAX_ATTEMPT` used to be ignored in silence.
 - `TABLE_COUNT_LIMIT` said totals were estimated above it: nothing
   reads it, every total is counted, and the setting says so.
 
