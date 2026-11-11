@@ -56,8 +56,9 @@ class ThrottledSignInMixin:
     def clean(self) -> dict[str, Any]:
         from generic.accounts import throttle
 
-        username = self.data.get("username", "") or ""  # type: ignore[attr-defined]
-        request = self.request  # type: ignore[attr-defined]
+        form: Any = self
+        username = form.data.get("username", "") or ""
+        request = form.request
 
         if throttle.is_locked(request, username):
             _attempts, seconds = throttle.limits()

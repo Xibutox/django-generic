@@ -78,6 +78,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   French included; `seed_iso` fills them with demo data. The example
   project installs them all. Their main records are open to custom
   fields. See iso/README.md.
+- `GENERIC["DJANGO_ADMIN"] = False` turns Django's admin off: every
+  page of the default admin site answers 404, its sign-in form
+  included, even where `urls.py` still mounts it, and the account
+  menu loses its link. See docs/security.md, *The Django admin*.
 - Custom fields: `custom_fields = True` on a resource (or
   `auto(..., custom_fields=True)`, or `CustomFields(section=, types=,
   max_fields=, permission=)`) lets the holders of
@@ -114,6 +118,46 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - The Schedules list (django-celery-beat) read each row's interval,
   crontab, solar or clocked schedule with a query of its own: one
   query per row. They are joined now.
+- What a caller gets wrong is answered instead of crashing: a write
+  whose JSON body is a list, a string or a number (create, update,
+  bulk actions, bulk edit, undo, an outline's move, the watches, the
+  wiki) is a 400 *Send a JSON object*; a key that cannot be one
+  (`ids=abc` on an autocomplete, in a selection, on a watch) names no
+  record; a filter on a day that does not exist (`2024-02-30`), on
+  the first or last year of the calendar, or on a choice that is no
+  number is a 400; an autocomplete page far past the end is an empty
+  one; a wiki archive cannot carry a position no column holds. Each
+  was a 500 (`generic.api.body`, tests/test_bad_input.py).
+- `TABLE_COUNT_LIMIT` said totals were estimated above it: nothing
+  reads it, every total is counted, and the setting says so.
+
+### Security
+- People: an account that may do more than its editor is out of that
+  editor's reach. Holding `auth.change_user` used to be enough to set
+  the password of, edit, deactivate or delete an account holding
+  permissions the editor lacks - a staff account, an administrator of
+  another group - and so to sign in as it. The guard now asks that
+  the editor hold everything the account holds
+  (`generic.accounts.guard.outranks`); a superuser reaches everyone,
+  and everyone their own account. See docs/people.md.
+- The sign-in lock covers the Django admin's form: `/admin/login/`
+  took as many guesses as one liked, on a locked account too. The
+  default admin site now counts on the same lock
+  (`generic.accounts.adminforms`), and `ThrottledSignInMixin` puts a
+  project's own password form behind it. See docs/sso.md, *Locking
+  out guessers*.
+- The deletion preview (`.../<pk>/deletion-preview/`) answered anyone
+  who could view the record and named every record the delete would
+  take, of models they may not read. It asks the delete permission
+  now, on the record too, and a record the reader may not view is
+  counted without being named (`hidden`, `may_name_in_deletion`).
+- A request for a right kept `//elsewhere/` as the page it was made
+  from, which became the link of the answer's notification: only a
+  path of this site is kept, or followed.
+- twisted 26.10.0 and oauthlib 4.0.1 in `requirements/constraints.txt`:
+  the releases fixing what the dependency audit reported; the
+  exceptions they made unnecessary are gone from the audit's command
+  (SECURITY.md).
 
 ## [1.5.0] - 2026-10-23
 

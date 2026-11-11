@@ -60,6 +60,10 @@ msgstr "%(column)s doit contenir une liste de valeurs."
 msgid "%(column)s must use the YYYY-MM-DD format."
 msgstr "%(column)s doit utiliser le format AAAA-MM-JJ."
 
+#: generic/api/filters.py:153
+msgid "%(column)s holds a date out of range."
+msgstr "%(column)s contient une date hors limites."
+
 #: generic/api/filters.py:558
 #: generic/api/filters.py:553
 msgid "%(column)s needs a number of days."
@@ -1035,6 +1039,10 @@ msgstr "Indice de colonne de tri invalide."
 msgid "Invalid selection."
 msgstr "Sélection invalide."
 
+#: generic/api/body.py:34
+msgid "Send a JSON object."
+msgstr "Envoyez un objet JSON."
+
 #: generic/api/filters.py:313
 msgid "Invalid text operator '%(operator)s' for %(column)s."
 msgstr "Opérateur de texte « %(operator)s » invalide pour %(column)s."
@@ -1345,8 +1353,8 @@ msgid "One of interval, crontab or clocked. A clocked schedule runs once, so it 
 msgstr "Un intervalle, un crontab ou une heure fixe. Une heure fixe ne s'exécute qu'une fois : cochez Une seule fois."
 
 #: generic/accounts/resources.py:130
-msgid "Only a superuser can delete a superuser."
-msgstr "Seul un superutilisateur peut supprimer un superutilisateur."
+msgid "You cannot delete an account that may do more than you may."
+msgstr "Vous ne pouvez pas supprimer un compte qui peut faire plus que vous."
 
 #: generic/accounts/guard.py:109
 msgid "Only an account that has this itself can grant it."

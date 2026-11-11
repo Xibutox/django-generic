@@ -152,6 +152,27 @@ class TestUrls:
             ]
 
 
+class TestSettings:
+    def test_the_settings_of_the_suite_pass(self):
+        assert checks.check_settings() == []
+
+    def test_a_misspelled_key_is_named_with_the_one_meant(self):
+        with override_settings(GENERIC={"LOGIN_MAX_ATTEMPT": 3}):
+            (warning,) = checks.check_settings()
+
+        assert warning.id == "generic.W014"
+        assert "LOGIN_MAX_ATTEMPT" in warning.msg
+        assert "'LOGIN_MAX_ATTEMPTS'" in warning.hint
+
+    def test_a_key_like_nothing_is_named_too(self):
+        with override_settings(GENERIC={"ZZZ": 1, "SITE_TITLE": "Desk"}):
+            assert ids(checks.check_settings()) == ["generic.W014"]
+
+    def test_no_settings_at_all_pass(self):
+        with override_settings(GENERIC=None):
+            assert checks.check_settings() == []
+
+
 class TestOptionalParts:
     def test_the_wiki_needs_nh3(self, monkeypatch):
         real = importlib.util.find_spec

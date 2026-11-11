@@ -85,7 +85,9 @@ generic/
 │   ├── pagination.py       DataTables envelope {draw, recordsTotal, recordsFiltered, data}
 │   ├── renderers.py        ?format=datatables and DataTables-shaped errors
 │   ├── exports.py          ExportMixin: streaming Excel and CSV of the filtered rows
-│   ├── autocomplete.py     AutocompleteView (Select2)
+│   ├── autocomplete.py     AutocompleteView (Select2); read_page (bounded)
+│   ├── body.py             ObjectBodyMixin / require_object: a write's body is an object
+│   │                       (400 otherwise); clean_keys: values that can be primary keys
 │   ├── forms.py            FormModelSerializer: serializer -> JSON form schema
 │   ├── files.py            FormFileField, FileValueMixin: a stored file as {name, url, size}
 │   ├── parsers.py          MultiPartJSONParser: _payload (JSON) + one part per file
@@ -586,7 +588,8 @@ without `MAILERS`, `W007` `search_rank` without `generic.search`,
 drf-spectacular, `W010` a model with a file field - or the wiki - and
 no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
 result backend / results not extended, `W013` a resource open to custom
-fields without history, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+fields without history, `W014` a key of `GENERIC` that is no setting
+(misspelled: nothing reads it), `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1363,7 +1366,10 @@ several, or `callable(user)`; object rules: override
 record page - its form when no summary), `row_menu` (record pages),
 `navigation` (resource pages), `methods` (`("get","post")` for a form).
 Routes `site:<app>_<model>_<name>` / `site:data_<name>_<name>`, before
-the record's route; `resource.get_page_url(name, obj=None)`. Checked at
+the record's route; `resource.get_page_url(name, obj=None)`. A record
+page's address names its record by `page_object_argument` /
+`page_object_converter` on the resource (`"pk"` / `"path"`; a
+`DataResource`: `"key"` / `"str"`), found by `get_page_object`. Checked at
 registration (`check_pages`). In templates: `{% include
 "generic/components/table.html" with config=... id=... %}` for a table,
 `{% generic_chart %}` for a chart, `.prose` for long text; styles in
@@ -2310,6 +2316,7 @@ when the URLconf is; `GenericConfig.arm_django_admin`),
 `datatables/core.js formatStamp` draws them in `<html lang>`; a
 strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
+`TABLE_COUNT_LIMIT` (reserved: read by nothing, every total is counted),
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
 `IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `UNDO_SECONDS` (600; None:
@@ -2474,7 +2481,8 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   `generic.add_restartannouncement`. See `docs/maintenance.md`.
 - **Help and changelog**: pages `site:help` and `site:changelog` read
   files the project already keeps — `LICENSE` and `CHANGELOG.md` at its
-  root (`GENERIC["LICENSE_FILE"]`, `["CHANGELOG_FILES"]`,
+  root (`GENERIC["LICENSE_FILE"]`, `["LICENSE_TEXT"]` when there is
+  no file, `["CHANGELOG_FILES"]`,
   `["HELP_LINKS"]`, `["HELP_TEXT"]`, `["VERSION"]`). The changelog is
   parsed as Keep a Changelog and rendered escaped, never as HTML -
   only its `backquoted` parts become `<code>` (`inline_code` filter). Both

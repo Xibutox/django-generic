@@ -138,6 +138,13 @@ the name being the method's (underscores become dashes).
 A subclass replaces a parent's page by declaring a method of the same
 name, and removes it by redefining the method without `@page`.
 
+A record's page names its record in the address by the resource's
+`page_object_argument`, read through `page_object_converter`: `"pk"`
+and `"path"` on a `ModelResource`, `"key"` and `"str"` on a
+`DataResource`. A view that is not a `ResourcePageView` receives the
+record's key under that name. They are the resource's to set, and
+seldom need to be.
+
 ## Permissions
 
 The resource's view permission always comes first: a page never shows
