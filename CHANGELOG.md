@@ -10,7 +10,7 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.6.0] - 2026-11-11
 
 ### Added
 - Long tables scroll in a frame of the window's height: a data table's,
