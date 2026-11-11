@@ -74,9 +74,9 @@ lint:
     - python scripts/lock.py --check
     # B101 (assert) is noise where asserts are internal invariants.
     - bandit -r generic example docmanager logbook iso minimal -ll --skip B101
-    # Known vulnerabilities in the dependencies; the one skipped is
-    # explained in SECURITY.md.
-    - pip-audit --skip-editable --ignore-vuln CVE-2026-106454
+    # Known vulnerabilities in the dependencies; one skipped
+    # (--ignore-vuln) is explained in SECURITY.md.
+    - pip-audit --skip-editable
 
 # The .mo files are what the running application reads; a .po edited
 # without recompiling translates nothing, and nothing says so. The
@@ -111,7 +111,7 @@ test:
       --cov-report=term
       --cov-report=xml
       --cov-report=html
-      --cov-fail-under=80
+      --cov-fail-under=88
       --junitxml=report.xml
   after_script:
     # The counts, areas, slowest tests and coverage, in the log and as

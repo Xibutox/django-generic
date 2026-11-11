@@ -16,3 +16,7 @@ tzdata
 # The minimal example's Microsoft sign-in, the document manager's server.
 django-allauth[socialaccount]>=65.0
 gunicorn>=22
+# Floors the audit asked for (SECURITY.md): the releases fixing what
+# pip-audit reported in the versions resolved before.
+twisted>=26.10.0
+oauthlib>=4.0.1

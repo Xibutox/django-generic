@@ -70,7 +70,7 @@ quiet has its WebSocket closed with a `TimeoutError` every few seconds,
 reconnected, and deaf in between. Any value above 5 will do; a Redis
 that stops answering is still noticed.
 
-Then the ASGI application (a full example is in `tests/asgi.py`):
+Then the ASGI application (a full example is in `example_project/asgi.py`):
 
 ```python
 django_asgi_application = get_asgi_application()

@@ -1112,7 +1112,9 @@ class GenericSite:
         return api
 
     def get_admin_url(self, user: Any) -> str:
-        if not generic_settings.SHOW_ADMIN_LINK:
+        if not (
+            generic_settings.SHOW_ADMIN_LINK and generic_settings.DJANGO_ADMIN
+        ):
             return ""
 
         if user is None or not getattr(user, "is_staff", False):

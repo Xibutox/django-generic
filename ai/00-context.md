@@ -85,7 +85,9 @@ generic/
 │   ├── pagination.py       DataTables envelope {draw, recordsTotal, recordsFiltered, data}
 │   ├── renderers.py        ?format=datatables and DataTables-shaped errors
 │   ├── exports.py          ExportMixin: streaming Excel and CSV of the filtered rows
-│   ├── autocomplete.py     AutocompleteView (Select2)
+│   ├── autocomplete.py     AutocompleteView (Select2); read_page (bounded)
+│   ├── body.py             ObjectBodyMixin / require_object: a write's body is an object
+│   │                       (400 otherwise); clean_keys: values that can be primary keys
 │   ├── forms.py            FormModelSerializer: serializer -> JSON form schema
 │   ├── files.py            FormFileField, FileValueMixin: a stored file as {name, url, size}
 │   ├── parsers.py          MultiPartJSONParser: _payload (JSON) + one part per file
@@ -586,7 +588,8 @@ without `MAILERS`, `W007` `search_rank` without `generic.search`,
 drf-spectacular, `W010` a model with a file field - or the wiki - and
 no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
 result backend / results not extended, `W013` a resource open to custom
-fields without history, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+fields without history, `W014` a key of `GENERIC` that is no setting
+(misspelled: nothing reads it), `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -1363,7 +1366,10 @@ several, or `callable(user)`; object rules: override
 record page - its form when no summary), `row_menu` (record pages),
 `navigation` (resource pages), `methods` (`("get","post")` for a form).
 Routes `site:<app>_<model>_<name>` / `site:data_<name>_<name>`, before
-the record's route; `resource.get_page_url(name, obj=None)`. Checked at
+the record's route; `resource.get_page_url(name, obj=None)`. A record
+page's address names its record by `page_object_argument` /
+`page_object_converter` on the resource (`"pk"` / `"path"`; a
+`DataResource`: `"key"` / `"str"`), found by `get_page_object`. Checked at
 registration (`check_pages`). In templates: `{% include
 "generic/components/table.html" with config=... id=... %}` for a table,
 `{% generic_chart %}` for a chart, `.prose` for long text; styles in
@@ -2083,7 +2089,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | `GET .../<pk>/files/<field>/` | one of the record's files, permission-checked (§5.17) |
 | `GET .../<pk>/history/` | the record's versions, newest first (`limit`, `offset`); 404 where the model keeps none |
 | `GET .../form-schema/` | form schema |
-| `GET .../<pk>/deletion-preview/` | cascade preview |
+| `GET .../<pk>/deletion-preview/` | cascade preview: delete permission (class and record); a record the reader may not view is counted, `hidden`, unnamed (`may_name_in_deletion`) |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}`; the answer may carry `undo` |
 | `POST .../undo/` | `{"token"}` from an answer's `undo`: what it did, put back (§13c) |
@@ -2300,6 +2306,9 @@ write (also a *Write a message* button on the notifications page),
 ## 9. Settings (`GENERIC = {...}`)
 
 `SITE_TITLE`, `SITE_HEADER`, `SITE_ICON`, `SITE_URL`, `SHOW_ADMIN_LINK`,
+`DJANGO_ADMIN` (True; False: every page of the default admin site is a
+404, sign-in form included, mounted or not, and the link goes - read
+when the URLconf is; `GenericConfig.arm_django_admin`),
 `THEME` (`{"--ui-hue": "150", "--ui-colorfulness": "1", "--ui-tint": "0.35",
 "--ui-contrast": "0", "--ui-stripes": "0.6"}`), `NAVIGATION`,
 `SEARCH_RESULTS_PER_RESOURCE`, `TABLE_PAGE_SIZE`, `TABLE_DATETIME_FORMAT`
@@ -2307,6 +2316,7 @@ write (also a *Write a message* button on the notifications page),
 `datatables/core.js formatStamp` draws them in `<html lang>`; a
 strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
+`TABLE_COUNT_LIMIT` (reserved: read by nothing, every total is counted),
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
 `IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `UNDO_SECONDS` (600; None:
@@ -2321,7 +2331,9 @@ no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`,
 `WIKI_ARCHIVE_MAX_SIZE` (100 MB), `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
-`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
+`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off; the site's
+sign-in form and the default admin site's, `ThrottledSignInMixin` for
+another password form),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
 `SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
 `CONTENT_SECURITY_POLICY` (None; "recommended" or directives),
@@ -2380,7 +2392,7 @@ Read them via `from generic.conf import generic_settings`.
 - Build explicit, named fixture data (not random) so assertions name rows.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
-  `pytest` (coverage ≥ 80%). CI summarises each test job - counts,
+  `pytest` (coverage ≥ 88%, branches counted). CI summarises each test job - counts,
   time, areas, slowest tests, coverage per package - with
   `scripts/ci_report.py` (JUnit + coverage XML -> Markdown/JSON) and
   keeps `junit.xml`, `coverage.xml` and `htmlcov/` as artifacts;
@@ -2469,7 +2481,8 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   `generic.add_restartannouncement`. See `docs/maintenance.md`.
 - **Help and changelog**: pages `site:help` and `site:changelog` read
   files the project already keeps — `LICENSE` and `CHANGELOG.md` at its
-  root (`GENERIC["LICENSE_FILE"]`, `["CHANGELOG_FILES"]`,
+  root (`GENERIC["LICENSE_FILE"]`, `["LICENSE_TEXT"]` when there is
+  no file, `["CHANGELOG_FILES"]`,
   `["HELP_LINKS"]`, `["HELP_TEXT"]`, `["VERSION"]`). The changelog is
   parsed as Keep a Changelog and rendered escaped, never as HTML -
   only its `backquoted` parts become `<code>` (`inline_code` filter). Both
@@ -2779,9 +2792,14 @@ site.add_sso_provider(_("Entra ID"), route="oidc_authentication_init",
 - **What you grant, you must already have** (`accounts/guard.py`): a
   non-superuser cannot tick *superuser*, cannot tick *staff* unless
   they are, cannot add a group or a permission granting anything they
-  lack, and cannot open a superuser's form at all. Nobody can delete
-  or deactivate the account they are signed in as - including through
-  a bulk action, which goes through the same `delete_model`.
+  lack, and cannot open a superuser's form at all - nor that of any
+  account that may do more than they may (`guard.may_manage`,
+  `guard.outranks`: granted a permission they lack, or staff while
+  they are not), since changing an account is setting its password;
+  the bulk *Activate* and *Deactivate* skip those accounts too. Nobody
+  can delete or deactivate the account they are signed in as -
+  including through a bulk action, which goes through the same
+  `delete_model`.
 - Nothing is declared against a field a custom user model may not have:
   columns, fieldsets, search and the members tab are computed in
   `register_screens`. `history_exclude = ("password", "last_login")`.

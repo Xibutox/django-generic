@@ -356,12 +356,37 @@ class TestAsking:
         assert rights["export"]["status"] == "pending"
         assert rights["export"]["retryAt"]
 
-    def test_a_page_outside_the_site_is_not_kept(self, gated):
-        signed_in(person()).post(
-            ASK, {"kind": "export", "page": "https://evil.example/"}
-        )
+    @pytest.mark.parametrize(
+        "page",
+        [
+            "https://evil.example/",
+            "//evil.example/",
+            "/\\evil.example/",
+            "javascript:alert(1)",
+        ],
+    )
+    def test_a_page_outside_the_site_is_not_kept(self, gated, page):
+        signed_in(person()).post(ASK, {"kind": "export", "page": page})
 
         assert AccessRequest.objects.get().page == ""
+
+    def test_nor_followed_when_it_was_kept_before(
+        self, screen, admin_user, django_capture_on_commit_callbacks
+    ):
+        """A request recorded before the page was checked this way."""
+        user = person()
+        request = AccessRequest.objects.create(
+            user=user, kind="export", page="//evil.example/"
+        )
+
+        with django_capture_on_commit_callbacks(execute=True):
+            signed_in(admin_user).post(
+                screen.get_actions_url(),
+                {"action": "grant_selected", "ids": [request.pk]},
+                format="json",
+            )
+
+        assert Notification.objects.get(user=user).url == ""
 
 
 class TestDeciding:

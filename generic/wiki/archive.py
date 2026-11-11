@@ -63,6 +63,9 @@ MANIFEST = "wiki.json"
 #: More members than any wiki holds: what is beyond is not a wiki.
 MAX_MEMBERS = 10_000
 
+#: The largest position kept: a PositiveIntegerField's, on any database.
+MAX_POSITION = 2_147_483_647
+
 #: The manifest is text; this is far more than any wiki writes.
 MAX_MANIFEST_SIZE = 20 * 1024 * 1024
 
@@ -274,7 +277,8 @@ def _number(value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         return 0
 
-    return value
+    # A position: what a database's integer column holds at most.
+    return min(value, MAX_POSITION)
 
 
 def read_manifest(archive: zipfile.ZipFile) -> dict[str, Any]:

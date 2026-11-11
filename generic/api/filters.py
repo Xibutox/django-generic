@@ -136,11 +136,22 @@ def _end_of_day(value: datetime.date) -> datetime.datetime:
 
 
 def _parse_date(name: str, raw_value: Any) -> datetime.date:
-    value = parse_date(str(raw_value)[:10]) if raw_value else None
+    try:
+        value = parse_date(str(raw_value)[:10]) if raw_value else None
+    except ValueError:
+        # Well formed and no such day: 2024-02-30.
+        value = None
 
     if value is None:
         raise _error(
             _("%(column)s must use the YYYY-MM-DD format.") % {"column": name}
+        )
+
+    # The first and the last year have no midnight in every time zone:
+    # a day's edges, a week or a month around it, would overflow.
+    if not 1 < value.year < datetime.MAXYEAR:
+        raise _error(
+            _("%(column)s holds a date out of range.") % {"column": name}
         )
 
     return value
@@ -695,7 +706,7 @@ def _choice_values(name: str, spec: FilterSpec, raw_value: Any) -> list[Any]:
             values: list[Any] = [int(value) for value in raw_value]
         else:
             values = [str(value) for value in raw_value]
-    except (TypeError, ValueError) as error:
+    except (TypeError, ValueError, OverflowError) as error:
         raise _error(
             _("%(column)s holds an invalid value.") % {"column": name}
         ) from error

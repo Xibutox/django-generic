@@ -23,6 +23,19 @@ from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.search import text_lookup
 
+#: The last page of suggestions served: a million of them is past the
+#: end of any list a person scrolls, and short of the offset a database
+#: refuses.
+MAX_PAGE = 1_000_000
+
+
+def read_page(raw: Any) -> int:
+    """The page asked for, between the first and ``MAX_PAGE``."""
+    try:
+        return min(max(1, int(raw)), MAX_PAGE)
+    except (TypeError, ValueError, OverflowError):
+        return 1
+
 
 class AutocompleteView(APIView):
     """Paginated, searchable option list.
@@ -126,10 +139,7 @@ class AutocompleteView(APIView):
     # -- request ------------------------------------------------------
 
     def get_page(self, request: Any) -> int:
-        try:
-            return max(1, int(request.query_params.get(self.page_param, 1)))
-        except (TypeError, ValueError):
-            return 1
+        return read_page(request.query_params.get(self.page_param, 1))
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
         term = (request.query_params.get(self.search_param) or "").strip()

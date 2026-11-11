@@ -27,6 +27,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Optional beside the framework, and installed here: its sign-in
+    # form shares the site's lock, GENERIC["DJANGO_ADMIN"] turns it off
+    # (tests/test_django_admin.py mounts it; tests.urls does not).
+    "django.contrib.admin",
     "rest_framework",
     "generic",
     "generic.wiki",

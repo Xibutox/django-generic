@@ -740,7 +740,7 @@ better tool.
 | `DELETE api/<app>/<model>/<pk>/` | Delete; refused with the reason when protected |
 | `GET .../<pk>/summary/` | The summary page, as JSON: figures, typed values, related tables |
 | `GET .../form-schema/` | The form, as JSON |
-| `GET .../<pk>/deletion-preview/` | What a delete would take with it |
+| `GET .../<pk>/deletion-preview/` | What a delete would take with it: asks the delete permission, names only records the reader may view |
 | `GET .../export/`, `.../export-csv/` | Every filtered row |
 | `POST .../actions/` | Run a bulk action: `{"action", "ids"}` or `{"action", "all": true}` |
 | `GET .../autocomplete/` | Select2 results: `?q=` and `?page=`, or `?ids=1,2` to label known values |
@@ -907,6 +907,7 @@ All of it is REST, under `api/generic/`: `account/preferences/`,
 | `SITE_ICON` | `"dataset"` | Brand icon |
 | `SITE_URL` | `None` | Where the brand links; the dashboard by default |
 | `SHOW_ADMIN_LINK` | `True` | Link staff to the Django admin, when mounted |
+| `DJANGO_ADMIN` | `True` | `False` takes every page of the Django admin away, mounted or not |
 | `THEME` | `{}` | Appearance parameters or design tokens, such as `{"--ui-hue": "150"}` |
 
 `THEME` values are checked against a strict pattern — a number, a

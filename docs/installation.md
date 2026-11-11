@@ -324,6 +324,8 @@ framework's; the rest is Django's usual.
 ```python
 INSTALLED_APPS = [
     "django.contrib.admin",          # optional: it keeps working beside
+                                     # (GENERIC["DJANGO_ADMIN"] = False
+                                     # turns its pages off)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -495,6 +497,8 @@ names what is missing, with the line to write:
 | `generic.W010` | A registered model has a file field - or the wiki is installed - and `MEDIA_ROOT` is empty: files would be written relative to the working directory ([Files](forms.md#files)) |
 | `generic.W011` | `django_celery_results` is installed but Celery's result backend is not `django-db`: the Celery results page stays empty ([Tasks](tasks.md#celery-results)) |
 | `generic.W012` | `django_celery_results` is installed but `CELERY_RESULT_EXTENDED` is off: its rows have no task name ([Tasks](tasks.md#celery-results)) |
+| `generic.W013` | A resource opens its model to custom fields but keeps no history: their changes are not recorded ([Custom fields](custom-fields.md)) |
+| `generic.W014` | A key of `GENERIC` is no setting of the framework - misspelled, or of another version - so nothing reads it; the hint names the closest one ([Settings](settings.md)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.

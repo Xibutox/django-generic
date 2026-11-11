@@ -24,6 +24,7 @@ a project may silence (``SILENCED_SYSTEM_CHECKS``) when it knows why.
     generic.W011  django_celery_results installed, results kept elsewhere
     generic.W012  django_celery_results installed, results not extended
     generic.W013  custom fields on a model that keeps no history
+    generic.W014  a key of GENERIC that is no setting: misspelled, unread
     generic.I001  the JavaScript catalog is not mounted
 """
 
@@ -451,6 +452,45 @@ def check_media_root() -> list:
             id="generic.W010",
         )
     ]
+
+
+@checks.register()
+def check_settings(app_configs: Any = None, **kwargs: Any) -> list:
+    """A key of ``GENERIC`` nothing reads is a setting that was meant
+    and is not applied: ``LOGIN_MAX_ATTEMPT`` locks nobody out."""
+    import difflib
+
+    from generic.conf import DEFAULTS
+
+    declared = getattr(settings, "GENERIC", None) or {}
+
+    if not isinstance(declared, dict):
+        return []
+
+    found = []
+
+    for key in declared:
+        if key in DEFAULTS:
+            continue
+
+        close = difflib.get_close_matches(str(key), DEFAULTS, n=1)
+        hint = (
+            f"Did you mean {close[0]!r}? "
+            if close
+            else "Remove it, or see docs/settings.md for the settings. "
+        )
+
+        found.append(
+            checks.Warning(
+                f"GENERIC[{key!r}] is not a setting of the framework: "
+                f"nothing reads it.",
+                hint=hint + "A key of the project's own belongs in a "
+                "setting of its own.",
+                id="generic.W014",
+            )
+        )
+
+    return found
 
 
 def check_search_rank() -> list:
