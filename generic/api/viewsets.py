@@ -33,6 +33,7 @@ from rest_framework.parsers import FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from generic.api.body import ObjectBodyMixin
 from generic.api.exports import ExportMixin
 from generic.api.facets import FacetMixin
 from generic.api.filters import DATATABLE_FILTER_BACKENDS
@@ -210,7 +211,7 @@ def serialize_deletion_node(node: Any, may_name: Any = None) -> Any:
     return {**data, "id": force_str(node.pk), "label": force_str(node)}
 
 
-class InlineFormViewSetMixin:
+class InlineFormViewSetMixin(ObjectBodyMixin):
     """Transactional tabular inlines on a ModelViewSet.
 
     The POST/PATCH payload may nest related rows::

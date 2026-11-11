@@ -69,6 +69,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
+from generic.api.autocomplete import read_page
+from generic.api.body import clean_keys
 from generic.api.exports import ExportMixin
 from generic.api.facets import FacetMixin
 from generic.api.files import FILE_URL
@@ -1259,9 +1261,11 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return self.resource.get_queryset(request).filter(
-            pk__in=[str(value) for value in ids]
-        )
+        # A value that cannot be a key names no row: left out rather
+        # than raised on.
+        queryset = self.resource.get_queryset(request)
+
+        return queryset.filter(pk__in=clean_keys(queryset.model, ids))
 
     @action(
         detail=False,
@@ -1548,7 +1552,10 @@ class ResourceViewSet(
         raw_ids = request.query_params.get("ids")
 
         if raw_ids is not None:
-            values = [value for value in raw_ids.split(",") if value][:100]
+            values = clean_keys(
+                queryset.model,
+                [value for value in raw_ids.split(",") if value][:100],
+            )
             rows = list(queryset.filter(pk__in=values)) if values else []
 
             return Response(
@@ -1579,10 +1586,7 @@ class ResourceViewSet(
             term,
         )
 
-        try:
-            page = max(1, int(request.query_params.get("page", 1)))
-        except (TypeError, ValueError):
-            page = 1
+        page = read_page(request.query_params.get("page", 1))
 
         size = generic_settings.AUTOCOMPLETE_PAGE_SIZE
         offset = (page - 1) * size
