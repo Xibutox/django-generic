@@ -465,7 +465,8 @@ SQLite, once more against Postgres 16 and 17 and Redis - with
 django-celery-beat and django-celery-results installed as the images
 ship them, so the schedule and Celery results tests run there - the
 browser tests, and the package job above. Coverage must stay at or
-above 80%; it sits at 93%. mypy fails the build on a new error
+above 88%, branches counted
+(`branch = true` in `pyproject.toml`); it sits at 91%. mypy fails the build on a new error
 only: the ones carried today - django-stubs trails the Django versions
 the framework runs on, and most of what it says is that - are listed in
 `scripts/mypy-baseline.txt`, by file and message, not by line. Fixing

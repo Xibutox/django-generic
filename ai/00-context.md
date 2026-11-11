@@ -2392,7 +2392,7 @@ Read them via `from generic.conf import generic_settings`.
 - Build explicit, named fixture data (not random) so assertions name rows.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
-  `pytest` (coverage ≥ 80%). CI summarises each test job - counts,
+  `pytest` (coverage ≥ 88%, branches counted). CI summarises each test job - counts,
   time, areas, slowest tests, coverage per package - with
   `scripts/ci_report.py` (JUnit + coverage XML -> Markdown/JSON) and
   keeps `junit.xml`, `coverage.xml` and `htmlcov/` as artifacts;

@@ -38,7 +38,7 @@ supported setup.
 ## What the project does
 
 - **Code**: every change goes through a pull request, the CI's linters,
-  the test suite (coverage at least 80 %) and `bandit` over the
+  the test suite (coverage at least 88 %, branches counted) and `bandit` over the
   framework and the example applications.
 - **Dependencies**: `pip-audit` checks every installed dependency
   against the known vulnerabilities on every push; Dependabot proposes
