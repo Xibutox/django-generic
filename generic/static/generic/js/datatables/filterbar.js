@@ -209,15 +209,20 @@
    * What a column holds: the facets endpoint when the column offers it -
    * values present under the other filters, with their counts - else
    * its fixed choices, else its autocomplete route.
+   *
+   * Both endpoints answer a page at a time, `more` saying another one
+   * follows; `page` (from 1) asks for it. Fixed choices come whole.
    */
 
   function facetsUrl(controller) {
     return controller.url.replace(/[?#].*$/, "").replace(/\/$/, "") + "/facets/";
   }
 
-  function loadValues(controller, column, term, ids) {
+  function loadValues(controller, column, term, ids, page) {
     var Generic = generic();
     var key = query.keyOf(column);
+
+    page = ids && ids.length ? 1 : Math.max(1, parseInt(page, 10) || 1);
 
     if (column.facets && !column.facetsFailed && Generic) {
       var params = Object.assign({}, controller.currentParams(), { column: key });
@@ -228,6 +233,8 @@
 
       if (ids && ids.length) {
         params.ids = ids.join(",");
+      } else if (page > 1) {
+        params.page = page;
       }
 
       return Generic.api.get(facetsUrl(controller), params).then(
@@ -246,14 +253,20 @@
             return true;
           });
 
-          return { kind: "values", values: values, more: Boolean(body.more), empty: empty };
+          return {
+            kind: "values",
+            values: values,
+            more: Boolean(body.more),
+            empty: empty,
+            page: page
+          };
         },
         function (error) {
           // A table without facets - an aggregated one - still works:
           // the editor falls back to what the column itself declares.
           if (error && (error.status === 400 || error.status === 404)) {
             column.facetsFailed = true;
-            return loadValues(controller, column, term, ids);
+            return loadValues(controller, column, term, ids, page);
           }
 
           throw error;
@@ -263,6 +276,10 @@
 
     if (column.choices && column.choices.length) {
       var wanted = String(term || "").toLowerCase();
+
+      if (page > 1) {
+        return Promise.resolve({ kind: "values", values: [], more: false, empty: 0, page: page });
+      }
 
       return Promise.resolve({
         kind: "values",
@@ -279,7 +296,7 @@
     }
 
     if (column.autocompleteUrl && Generic) {
-      var lookup = ids && ids.length ? { ids: ids.join(",") } : { q: term || "", page: 1 };
+      var lookup = ids && ids.length ? { ids: ids.join(",") } : { q: term || "", page: page };
 
       return Generic.api.get(column.autocompleteUrl, lookup).then(function (body) {
         return {
@@ -288,7 +305,8 @@
             return { value: row.id, label: row.text };
           }),
           more: Boolean(body.pagination && body.pagination.more),
-          empty: 0
+          empty: 0,
+          page: page
         };
       });
     }
@@ -702,7 +720,13 @@
     return { node: node };
   }
 
-  /** A searchable list of the values, with their counts. */
+  /**
+   * A searchable list of the values, with their counts.
+   *
+   * The list holds the first page of values; scrolling to its end loads
+   * the next, and so on while the endpoint says more follow - a value
+   * past the first page is never out of reach.
+   */
   function choicesEditor(controller, column, draft, hooks) {
     var node = el("div", "dt-choices");
     var search = el("input", "input input--sm");
@@ -710,6 +734,10 @@
     var status = el("p", "dt-editor__hint");
     var bulk = el("div", "dt-choices__bulk");
     var shownResult = null;
+    var shownKeys = {};
+    var emptyNode = null;
+    var emptyCount = 0;
+    var loadingMore = false;
     var selected = (Array.isArray(draft.value) ? draft.value : []).map(String);
     var raw = {};
     var sequence = 0;
@@ -831,9 +859,67 @@
       bulk.hidden = !bulk.childNodes.length;
     }
 
+    /** "Empty", with its count, kept last as pages come in. */
+    function renderEmpty(count) {
+      if (!count) {
+        return;
+      }
+
+      if (!emptyNode) {
+        emptyNode = button("dt-choice dt-choice--empty", "");
+        emptyNode.title = t("Rows without a value");
+        emptyNode.addEventListener("click", function () {
+          hooks.setOperator("empty", true);
+        });
+      }
+
+      emptyCount += count;
+      emptyNode.replaceChildren(
+        el("span", "dt-value-label", t("Empty")),
+        el("span", "dt-count", formatCount(emptyCount))
+      );
+      list.appendChild(emptyNode);
+    }
+
+    /** The values of one page, below those already listed. */
+    function append(values) {
+      values.forEach(function (entry) {
+        var key = String(entry.value);
+
+        if (shownKeys[key]) {
+          // A ticked value drawn ahead of its page: labelled anew.
+          return;
+        }
+
+        shownKeys[key] = true;
+        list.insertBefore(row(entry), emptyNode && emptyNode.parentNode === list ? emptyNode : null);
+      });
+    }
+
+    function renderStatus(result) {
+      if (!list.childNodes.length) {
+        status.textContent = t("No value found.");
+      } else if (loadingMore) {
+        status.textContent = t("Loading more values\u2026");
+      } else {
+        status.textContent = "";
+      }
+
+      status.hidden = !status.textContent;
+      list.setAttribute("aria-busy", loadingMore ? "true" : "false");
+
+      if (result) {
+        hooks.reposition();
+      }
+    }
+
     function render(result, term) {
       shownResult = { result: result, term: term };
+      shownKeys = {};
+      emptyNode = null;
+      emptyCount = 0;
       list.replaceChildren();
+      list.scrollTop = 0;
       renderBulk(result, term);
 
       var shown = {};
@@ -846,45 +932,80 @@
       if (!term) {
         selected.forEach(function (key) {
           if (!shown[key]) {
+            shownKeys[key] = true;
             list.appendChild(row({ value: raw[key], label: draft.labels[key] || key }));
           }
         });
       }
 
-      (result.values || []).forEach(function (entry) {
-        list.appendChild(row(entry));
-      });
+      append(result.values || []);
+      renderEmpty(result.empty);
+      renderStatus(result);
+      fill();
+    }
 
-      if (result.empty) {
-        var empty = button("dt-choice dt-choice--empty", "");
+    /** The next page, when the list is scrolled near its end. */
+    function nearEnd() {
+      return list.scrollTop + list.clientHeight >= list.scrollHeight - 48;
+    }
 
-        empty.append(
-          el("span", "dt-value-label", t("Empty")),
-          el("span", "dt-count", formatCount(result.empty))
-        );
-        empty.title = t("Rows without a value");
-        empty.addEventListener("click", function () {
-          hooks.setOperator("empty", true);
+    function loadMore() {
+      var shownNow = shownResult;
+
+      if (!shownNow || !shownNow.result.more || loadingMore) {
+        return;
+      }
+
+      var current = sequence;
+      var page = (shownNow.result.page || 1) + 1;
+
+      loadingMore = true;
+      renderStatus();
+
+      loadValues(controller, column, shownNow.term, null, page)
+        .then(function (result) {
+          if (current !== sequence || shownResult !== shownNow) {
+            return;
+          }
+
+          loadingMore = false;
+          // One result for the whole list: "Select the N values found"
+          // counts what is listed.
+          shownNow.result = Object.assign({}, result, {
+            values: (shownNow.result.values || []).concat(result.values || []),
+            empty: (shownNow.result.empty || 0) + (result.empty || 0)
+          });
+          append(result.values || []);
+          renderEmpty(result.empty);
+          renderBulk(shownNow.result, shownNow.term);
+          renderStatus(result);
+          fill();
+        })
+        .catch(function (error) {
+          if (current === sequence) {
+            loadingMore = false;
+            shownNow.result = Object.assign({}, shownNow.result, { more: false });
+            status.textContent = (error && error.message) || t("The values could not be loaded.");
+            status.hidden = false;
+          }
         });
-        list.appendChild(empty);
-      }
+    }
 
-      if (!list.childNodes.length) {
-        status.textContent = t("No value found.");
-      } else if (result.more) {
-        status.textContent = t("More values exist: refine the search.");
-      } else {
-        status.textContent = "";
+    /**
+     * A page too short to scroll would leave the next out of reach: it
+     * is loaded straight away, until the list scrolls or ends.
+     */
+    function fill() {
+      if (list.isConnected && list.clientHeight && nearEnd()) {
+        loadMore();
       }
-
-      status.hidden = !status.textContent;
-      hooks.reposition();
     }
 
     function load() {
       var current = (sequence += 1);
       var term = search.value.trim();
 
+      loadingMore = false;
       status.textContent = t("Loading") + "\u2026";
       status.hidden = false;
 
@@ -902,6 +1023,11 @@
         });
     }
 
+    list.addEventListener("scroll", function () {
+      if (nearEnd()) {
+        loadMore();
+      }
+    }, { passive: true });
     search.addEventListener("input", core.debounce(load, 250));
     bulk.hidden = true;
     node.append(search, bulk, list, status);

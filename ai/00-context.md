@@ -922,7 +922,9 @@ words. Operators per type include *any of / none of / has all of*,
 *contains / is / starts with*, comparisons and *between*, relative dates
 (this month, last 30 days, more than N days ago), *is empty*; conditions
 combine with *all*/*any* and groups. The editor lists a column's values
-with counts from `facets/`; once searched, *Select the N values found*
+with counts from `facets/`, a page at a time: scrolling to the list's
+end loads the next page (`page=`, `more`), so every value is reachable
+without a search; once searched, *Select the N values found* (those listed)
 ticks them all, and on a relation *Contains "..."* filters by the words
 instead (`contains`/`not_contains` on a multiselect column whose
 `search_field` differs from its filter path: `FilterSpec.text_field`,
@@ -2082,7 +2084,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | Request | Does |
 | --- | --- |
 | `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `columns[i][data]`, `order[i][column|dir]`, `filters` JSON tree, `_related`); `table.js` drops the rest of DataTables' request to keep the URL short |
-| `GET .../facets/?column=<name>` | a column's values with counts under the other filters (`q=` search, `ids=` labels), or `{"kind": "range", min, max, empty}` |
+| `GET .../facets/?column=<name>` | a column's values with counts under the other filters, `facet_limit` (50) a page (`q=` search, `page=` from 1, `more`, `ids=` labels), or `{"kind": "range", min, max, empty}` |
 | `POST api/<app>/<model>/` | create (JSON, `_inlines`; or multipart `_payload` + a part per file, §5.17) |
 | `GET/PATCH/DELETE api/<app>/<model>/<pk>/` | read (with `_display`, `_label`, `_inlines`), update, delete (refused with reason when protected) |
 | `GET .../<pk>/summary/` | summary JSON |

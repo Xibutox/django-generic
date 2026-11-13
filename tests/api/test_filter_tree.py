@@ -347,6 +347,46 @@ class TestFacets:
         assert len(body["values"]) == 2
         assert body["more"] is True
 
+    def test_the_next_pages_hold_the_values_left_out(
+        self, api_client, library, monkeypatch
+    ):
+        from tests.testapp.viewsets import BookTableViewSet
+
+        for index in range(3):
+            BookFactory(title=f"Extra {index}", genre="poetry")
+
+        whole = self.facets(api_client, "genre")["values"]
+        monkeypatch.setattr(BookTableViewSet, "facet_limit", 1)
+        pages = [
+            self.facets(api_client, "genre", page=page)
+            for page in range(1, len(whole) + 1)
+        ]
+
+        assert [body["page"] for body in pages] == list(
+            range(1, len(whole) + 1)
+        )
+        assert [body["more"] for body in pages] == [True] * (
+            len(whole) - 1
+        ) + [False]
+        assert [body["values"][0] for body in pages] == whole
+
+    def test_a_page_past_the_end_is_empty(self, api_client, library):
+        body = self.facets(api_client, "genre", page=99)
+
+        assert (body["values"], body["more"]) == ([], False)
+
+    def test_a_page_that_is_no_number_is_the_first(self, api_client, library):
+        first = self.facets(api_client, "genre")
+        body = self.facets(api_client, "genre", page="next")
+
+        assert body["values"] == first["values"]
+        assert body["page"] == 1
+
+    def test_labels_of_known_values_ignore_the_page(self, api_client, library):
+        body = self.facets(api_client, "genre", ids="essay", page=3)
+
+        assert [entry["value"] for entry in body["values"]] == ["essay"]
+
     def test_free_text_has_no_facets(self, api_client, library):
         response = api_client.get(f"{BOOKS_URL}facets/", {"column": "title"})
 
