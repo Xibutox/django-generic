@@ -118,11 +118,16 @@ class WikiSerializer(serializers.ModelSerializer):
         if request is None or not wiki.pk:
             return {}
 
-        # One query for the whole list.
-        if "roles" not in self.context:
-            self.context["roles"] = roles_of(request.user)
+        # One query for the whole list: the view's, or kept here.
+        roles = self.context.get("roles")
 
-        return wiki_rights(request.user, wiki, self.context["roles"])
+        if roles is None:
+            roles = getattr(self, "_roles", None)
+
+        if roles is None:
+            roles = self._roles = roles_of(request.user)
+
+        return wiki_rights(request.user, wiki, roles)
 
     def validate_access(self, value: str) -> str:
         from generic.wiki.access import wiki_rights

@@ -96,7 +96,7 @@ record.
 | `/example/team/1/change/` | a stacked inline: the team's agents as cards |
 | `/example/ticket/1/delete/` | the cascade preview |
 | `/example/team/1/delete/` | the protected case: refused, with the reason |
-| `/wiki/` | the wikis - the desk's handbook and the infrastructure runbooks - each with its menu, pages, editor, history and PDF |
+| `/wiki/` | the wikis - the desk's handbook, open, and the infrastructure runbooks, protected: `viewer` is one of its editors and writes there without any permission - each with its menu, pages, editor, history with its comparisons, trash and PDF |
 | `/account/` | profile, appearance sliders, preferences, what you watch, password |
 | `/generic/historyentry/` | every recorded change, as an ordinary table |
 | `/auth/user/`, `/auth/group/` | accounts and groups, as `admin` only |

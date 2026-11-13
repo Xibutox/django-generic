@@ -4877,3 +4877,120 @@ msgstr "Textes d'aide"
 #, python-format
 msgid "At most %(count)d records at once."
 msgstr "Au plus %(count)d enregistrements à la fois."
+
+#: generic/wiki
+msgid "Open: everyone signed in reads and writes"
+msgstr "Ouvert : toute personne connectée lit et écrit"
+
+#: generic/wiki
+msgid "Protected: everyone signed in reads, its editors write"
+msgstr "Protégé : toute personne connectée lit, ses rédacteurs écrivent"
+
+#: generic/wiki
+msgid "Private: only its members read"
+msgstr "Privé : seuls ses membres lisent"
+
+#: generic/wiki
+msgid "Reader"
+msgstr "Lecteur"
+
+#: generic/wiki
+msgid "Editor"
+msgstr "Rédacteur"
+
+#: generic/wiki
+msgid "Manager"
+msgstr "Gestionnaire"
+
+#: generic/wiki
+msgid "wiki member"
+msgstr "membre de wiki"
+
+#: generic/wiki
+msgid "wiki members"
+msgstr "membres de wiki"
+
+#: generic/wiki
+msgid "group"
+msgstr "groupe"
+
+#: generic/wiki
+msgid "role"
+msgstr "rôle"
+
+#: generic/wiki
+msgid "You may not change who reads this wiki."
+msgstr "Vous ne pouvez pas changer qui lit ce wiki."
+
+#: generic/wiki
+msgid "Another wiki has this address."
+msgstr "Un autre wiki a cette adresse."
+
+#: generic/wiki
+#, python-format
+msgid "%(name)s changed this page since you opened it."
+msgstr "%(name)s a modifié cette page depuis son ouverture."
+
+#: generic/wiki
+msgid "You may not manage this wiki's members."
+msgstr "Vous ne pouvez pas gérer les membres de ce wiki."
+
+#: generic/wiki
+msgid "An object is expected."
+msgstr "Un objet est attendu."
+
+#: generic/wiki
+msgid "Unknown access."
+msgstr "Accès inconnu."
+
+#: generic/wiki
+msgid "A list is expected."
+msgstr "Une liste est attendue."
+
+#: generic/wiki
+msgid "A member is not valid."
+msgstr "Un membre n’est pas valide."
+
+#: generic/wiki
+msgid "A member no longer exists."
+msgstr "Un membre n’existe plus."
+
+#: generic/wiki
+msgid "Only its owner hands a wiki to someone else."
+msgstr "Seul son propriétaire confie un wiki à quelqu’un d’autre."
+
+#: generic/wiki
+msgid "Group"
+msgstr "Groupe"
+
+#: generic/wiki
+msgid "You may not delete pages in this wiki."
+msgstr "Vous ne pouvez pas supprimer de pages dans ce wiki."
+
+#: generic/wiki
+msgid "You may not write in a wiki."
+msgstr "Vous ne pouvez écrire dans aucun wiki."
+
+#: generic/wiki
+msgid "The deleted wikis, to restore or to delete for good"
+msgstr "Les wikis supprimés, à restaurer ou à supprimer définitivement"
+
+#: generic/wiki
+msgid "Only its members read it"
+msgstr "Seuls ses membres le lisent"
+
+#: generic/wiki
+msgid "Private"
+msgstr "Privé"
+
+#: generic/wiki
+msgid "Everyone reads it, only its editors write"
+msgstr "Tout le monde le lit, seuls ses rédacteurs y écrivent"
+
+#: generic/wiki
+msgid "Protected"
+msgstr "Protégé"
+
+#: generic/wiki
+msgid "Access and members"
+msgstr "Accès et membres"

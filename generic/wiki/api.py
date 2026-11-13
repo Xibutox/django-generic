@@ -297,7 +297,7 @@ def user_fields() -> list[str]:
 
 
 def member_json(member: WikiMember) -> dict[str, Any]:
-    if member.user_id is not None:
+    if member.user is not None:
         return {
             "kind": "user",
             "id": member.user_id,
@@ -309,7 +309,7 @@ def member_json(member: WikiMember) -> dict[str, Any]:
     return {
         "kind": "group",
         "id": member.group_id,
-        "name": member.group.name,
+        "name": member.group.name if member.group is not None else "",
         "detail": gettext("Group"),
         "role": member.role,
     }
@@ -828,9 +828,11 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             }
         else:
             after = version("to") or current
-            before = version("from")
+            start = version("from")
 
-            if before is None:
+            if start is not None:
+                before = start
+            else:
                 # The version written just before ``after``.
                 older = page.revisions.select_related("author")
 

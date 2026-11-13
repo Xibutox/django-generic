@@ -30,7 +30,7 @@ def assign(apps, schema_editor):
         "file": apps.get_model("generic_wiki", "WikiFile"),
     }
     patterns = {kind: pattern(kind) for kind in kinds}
-    found = {kind: {} for kind in kinds}
+    found: dict = {kind: {} for kind in kinds}
 
     for wiki_id, content in (
         WikiPage.objects.exclude(content="")
@@ -46,7 +46,7 @@ def assign(apps, schema_editor):
                 found[kind].setdefault(int(match.group(1)), wiki_id)
 
     for kind, model in kinds.items():
-        by_wiki = {}
+        by_wiki: dict = {}
 
         for pk, wiki_id in found[kind].items():
             by_wiki.setdefault(wiki_id, []).append(pk)

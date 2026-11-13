@@ -1205,6 +1205,24 @@ class Command(BaseCommand):
             },
         )
 
+        # The runbooks are read by everyone and written by their
+        # members only: the viewer is one of its editors.
+        if _created:
+            from django.contrib.auth import get_user_model
+
+            from generic.wiki.models import ACCESS_PROTECTED, WikiMember
+
+            users = get_user_model().objects
+            runbooks.access = ACCESS_PROTECTED
+            runbooks.owner = users.filter(username="admin").first()
+            runbooks.save()
+            viewer = users.filter(username="viewer").first()
+
+            if viewer is not None:
+                WikiMember.objects.get_or_create(
+                    wiki=runbooks, user=viewer, defaults={"role": "editor"}
+                )
+
         # A file attached to a page from its editor: a block of the
         # page, linking to where readers download it.
         checklist = WikiFile.objects.filter(

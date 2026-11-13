@@ -2097,6 +2097,8 @@
             .get(this.pageUrl(this.page.id) + "revisions/")
             .then(function (revisions) {
               var dialog = Generic.dialogs.open({ title: t("History"), icon: "history" });
+
+              dialog.dialog.classList.add("dialog--wide");
               var list = el("ul", "wiki-history");
               var restored = (revisions || []).some(function (revision) {
                 return revision.current;

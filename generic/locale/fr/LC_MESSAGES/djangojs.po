@@ -2508,3 +2508,234 @@ msgstr "Afficher les %(name)s des lignes affichées"
 #: generic/static/generic/js/datatables/outline.js
 msgid "Every row shown is unfolded"
 msgstr "Toutes les lignes affichées sont dépliées"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "%(date)s, by %(name)s"
+msgstr "%(date)s, par %(name)s"
+
+#: generic/static/generic/js/wiki.js
+msgid "The text is the same."
+msgstr "Le texte est le même."
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "%(count)s unchanged lines"
+msgstr "%(count)s lignes inchangées"
+
+#: generic/static/generic/js/wiki.js
+msgid "What changed"
+msgstr "Ce qui a changé"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "From %(before)s to %(after)s."
+msgstr "De %(before)s à %(after)s."
+
+#: generic/static/generic/js/wiki.js
+msgid "an empty page"
+msgstr "une page vide"
+
+#: generic/static/generic/js/wiki.js
+msgid "the page as it stands"
+msgstr "la page actuelle"
+
+#: generic/static/generic/js/wiki.js
+msgid "The versions could not be compared."
+msgstr "Les versions n’ont pas pu être comparées."
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "Members of “%(name)s”"
+msgstr "Membres de « %(name)s »"
+
+#: generic/static/generic/js/wiki.js
+msgid "No member yet."
+msgstr "Aucun membre pour l’instant."
+
+#: generic/static/generic/js/wiki.js
+msgid "Role"
+msgstr "Rôle"
+
+#: generic/static/generic/js/wiki.js
+msgid "Nobody found."
+msgstr "Personne n’a été trouvé."
+
+#: generic/static/generic/js/wiki.js
+msgid "Access"
+msgstr "Accès"
+
+#: generic/static/generic/js/wiki.js
+msgid "Add a person or a group"
+msgstr "Ajouter une personne ou un groupe"
+
+#: generic/static/generic/js/wiki.js
+msgid "A name…"
+msgstr "Un nom…"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "Owner: %(name)s. The owner always reads, writes and manages it."
+msgstr "Propriétaire : %(name)s. Le propriétaire peut toujours le lire, y écrire et le gérer."
+
+#: generic/static/generic/js/wiki.js
+msgid "Members"
+msgstr "Membres"
+
+#: generic/static/generic/js/wiki.js
+msgid "The members could not be saved."
+msgstr "Les membres n’ont pas pu être enregistrés."
+
+#: generic/static/generic/js/wiki.js
+msgid "The members could not be loaded."
+msgstr "Les membres n’ont pas pu être chargés."
+
+#: generic/static/generic/js/wiki.js
+msgid "The trash is empty."
+msgstr "La corbeille est vide."
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete for good"
+msgstr "Supprimer définitivement"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "Deleted %(date)s, by %(name)s"
+msgstr "Supprimé le %(date)s, par %(name)s"
+
+#: generic/static/generic/js/wiki.js
+msgid "Restored."
+msgstr "Restauré."
+
+#: generic/static/generic/js/wiki.js
+msgid "It could not be restored."
+msgstr "La restauration a échoué."
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete for good?"
+msgstr "Supprimer définitivement ?"
+
+#: generic/static/generic/js/wiki.js
+msgid "It could not be deleted."
+msgstr "La suppression a échoué."
+
+#: generic/static/generic/js/wiki.js
+msgid "The trash could not be loaded."
+msgstr "La corbeille n’a pas pu être chargée."
+
+#: generic/static/generic/js/wiki.js
+msgid "Take up your unsaved text?"
+msgstr "Reprendre votre texte non enregistré ?"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "This browser kept a text of this page that was never saved, written %(date)s."
+msgstr "Ce navigateur a gardé un texte de cette page qui n’a jamais été enregistré, écrit le %(date)s."
+
+#: generic/static/generic/js/wiki.js
+msgid "Take it up"
+msgstr "Le reprendre"
+
+#: generic/static/generic/js/wiki.js
+msgid "Not now"
+msgstr "Pas maintenant"
+
+#: generic/static/generic/js/wiki.js
+msgid "This page was changed meanwhile"
+msgstr "Cette page a été modifiée entre-temps"
+
+#: generic/static/generic/js/wiki.js
+msgid "Keep writing"
+msgstr "Continuer à écrire"
+
+#: generic/static/generic/js/wiki.js
+msgid "Take their version"
+msgstr "Prendre leur version"
+
+#: generic/static/generic/js/wiki.js
+msgid "Save mine"
+msgstr "Enregistrer la mienne"
+
+#: generic/static/generic/js/wiki.js
+msgid "What your text changes in the page as it stands now - saving yours takes out what is struck through:"
+msgstr "Ce que votre texte change dans la page actuelle - enregistrer le vôtre retire ce qui est barré :"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "“%(title)s” goes to the trash with its history, where it can be restored. Its subpages move up a level."
+msgstr "« %(title)s » part à la corbeille avec son historique, d’où elle peut être restaurée. Ses sous-pages remontent d’un niveau."
+
+#: generic/static/generic/js/wiki.js
+msgid "The page was moved to the trash."
+msgstr "La page a été mise à la corbeille."
+
+#: generic/static/generic/js/wiki.js
+msgid "Changes"
+msgstr "Modifications"
+
+#: generic/static/generic/js/wiki.js
+msgid "What this version changed"
+msgstr "Ce que cette version a changé"
+
+#: generic/static/generic/js/wiki.js
+msgid "Compare"
+msgstr "Comparer"
+
+#: generic/static/generic/js/wiki.js
+msgid "From this version to the page as it stands"
+msgstr "De cette version à la page actuelle"
+
+#: generic/static/generic/js/wiki.js
+msgid "The members were saved."
+msgstr "Les membres ont été enregistrés."
+
+#: generic/static/generic/js/wiki.js
+msgid "Deleted pages"
+msgstr "Pages supprimées"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "“%(name)s” and its history will be deleted for good."
+msgstr "« %(name)s » et son historique seront supprimés définitivement."
+
+#: generic/static/generic/js/wiki.js
+msgid "Deleted wikis"
+msgstr "Wikis supprimés"
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "“%(name)s”, its pages and their history will be deleted for good."
+msgstr "« %(name)s », ses pages et leur historique seront supprimés définitivement."
+
+#: generic/static/generic/js/wiki.js
+#, python-format
+msgid "“%(name)s” and its %(count)s pages go to the trash, where the wiki can be restored."
+msgstr "« %(name)s » et ses %(count)s pages partent à la corbeille, d’où le wiki peut être restauré."
+
+#: generic/static/generic/js/wiki.js
+msgid "The wiki was moved to the trash."
+msgstr "Le wiki a été mis à la corbeille."
+
+#: generic/static/generic/js/wiki.js
+msgid "Open: everyone signed in reads it, and writes with the page permissions"
+msgstr "Ouvert : toute personne connectée le lit, et y écrit avec les permissions des pages"
+
+#: generic/static/generic/js/wiki.js
+msgid "Protected: everyone signed in reads it, only its editors write"
+msgstr "Protégé : toute personne connectée le lit, seuls ses rédacteurs y écrivent"
+
+#: generic/static/generic/js/wiki.js
+msgid "Private: only its members read it"
+msgstr "Privé : seuls ses membres le lisent"
+
+#: generic/static/generic/js/wiki.js
+msgid "Reader"
+msgstr "Lecteur"
+
+#: generic/static/generic/js/wiki.js
+msgid "Editor"
+msgstr "Rédacteur"
+
+#: generic/static/generic/js/wiki.js
+msgid "Manager"
+msgstr "Gestionnaire"

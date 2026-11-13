@@ -222,7 +222,7 @@ generic/
 │                           own LICENSE and CHANGELOG.md files; HelpSettings,
 │                           where to report a bug (models.py, api.py)
 ├── events/                 Channels consumer, topic registry, publish helpers, Notification, Message (messages.py sends, resources.py the screen)
-├── wiki/                   optional app generic.wiki: Wiki (several), pages, revisions, Quill editor,
+├── wiki/                   optional app generic.wiki: Wiki (several; access, owner, members: access.py), pages, revisions (diff.py), trash, Quill editor,
 │                           guide.py + guide/ (the user guide, migration 0007, wiki_user_guide),
 │                           archive.py (export.zip / import of a whole wiki),
 │                           nh3 cleaning (text colours: TEXT_COLORS; sizes: TEXT_SIZES; images beside text: IMAGE_FLOATS, laid out in the PDF by pdf.write_beside, lines of images by PageHTML.rows; tables from Quill's table module), WikiImage, WikiFile (uploads from the editor), pdf.py (fpdf2)
@@ -1567,6 +1567,33 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   and `WikiPermission.has_object_permission` / `perform_create` -
   403); the wikis themselves still answer to the wiki permissions only.
   Never build a page's URL without its wiki: `page.get_absolute_url()`.
+- Wiki access, members, trash, diff (`generic/wiki/access.py`,
+  `diff.py`): `Wiki.access` `open` (default: everyone signed in reads,
+  the page permissions write) / `protected` (everyone reads, members
+  write) / `private` (members read), `Wiki.owner` (whoever created,
+  copied or imported it), `WikiMember` (`wiki`, `user` or `group`,
+  `role` reader/editor/manager). `readable_by` / `writable_by` apply
+  them before `WIKI_ACCESS` / `WIKI_EDIT_ACCESS`; superusers pass. What
+  a user may do in one wiki: `access.page_rights(user, wiki)` (add,
+  change, delete: all for owner/manager/editor, else the model
+  permissions, in an open wiki only) and `access.wiki_rights(user,
+  wiki)` (change, members: owner/manager or `change_wiki`; delete:
+  owner or `delete_wiki`) - never `can(user, ...)` alone for a page.
+  `GET`/`PUT wikis/<id>/members/` (`{"access", "members": [{"user" |
+  "group", "role"}], "owner"}`), `GET wikis/<id>/candidates/?q=`.
+  Uploads carry their `wiki` (the editor sends it; `upload_wiki`) and
+  are opened through `access.may_open` (the wiki's readers, the
+  uploader, readers of a page or version showing it; else 404).
+  Trash: `DELETE` stamps `deleted_at`/`deleted_by` (`Trashed`);
+  `Wiki.objects` / `WikiPage.objects` are live only, `all_objects`
+  everything; slugs stay taken; `pages/trash/?wiki=`, `wikis/trash/`,
+  `<id>/undelete/`, `<id>/purge/`; `manage.py wiki_cleanup [--days]
+  [--uploads] [--dry-run]`. Diff: `GET pages/<id>/diff/?from=&to=`,
+  `POST` `{"title", "content"}` (page as it stands -> text sent) ->
+  `{"lines": [{"op", "text" | "parts" | "count"}], ...}`, text only.
+  Editor: draft in `localStorage` (`generic.wiki.draft.<id>`), a 409
+  opens the conflict dialog (`wikiPage.conflict`). See
+  `docs/wiki.md#access-owner-and-members`, `#the-trash`.
 - Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=,
   orientation="portrait"|"landscape")` -> bytes, A4 (`?orientation=`
   on `export.pdf`, anything else portrait; the button is a menu,

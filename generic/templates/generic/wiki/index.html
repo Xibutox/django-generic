@@ -48,12 +48,6 @@
               <h2 class="card__title">
                 {% icon "auto_stories" %}
                 <a href="{{ wiki.get_absolute_url }}">{{ wiki.name }}</a>
-                {# Who reads it, when not everyone writes in it. #}
-                {% if wiki.access == "private" %}
-                  <span class="badge badge--warning" title="{% translate 'Only its members read it' %}">{% icon "lock" "icon--sm" %} {% translate "Private" %}</span>
-                {% elif wiki.access == "protected" %}
-                  <span class="badge" title="{% translate 'Everyone reads it, only its editors write' %}">{% icon "edit_off" "icon--sm" %} {% translate "Protected" %}</span>
-                {% endif %}
               </h2>
               {% if can.add or wiki.rights.change or wiki.rights.delete or archive_available and wiki.page_count %}
                 <div class="wiki-list__tools">
@@ -96,6 +90,12 @@
             <div class="wiki-list__footer">
               <span class="muted">
                 {% blocktranslate count counter=wiki.page_count %}{{ counter }} page{% plural %}{{ counter }} pages{% endblocktranslate %}
+                {# Who reads it, when not everyone writes in it. #}
+                {% if wiki.access == "private" %}
+                  <span class="badge badge--warning" title="{% translate 'Only its members read it' %}">{% icon "lock" "icon--sm" %} {% translate "Private" %}</span>
+                {% elif wiki.access == "protected" %}
+                  <span class="badge" title="{% translate 'Everyone reads it, only its editors write' %}">{% icon "edit_off" "icon--sm" %} {% translate "Protected" %}</span>
+                {% endif %}
               </span>
               <span class="wiki-list__actions">
                 {% if pdf_available and wiki.page_count %}

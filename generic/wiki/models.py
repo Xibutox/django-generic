@@ -134,7 +134,7 @@ class WikiQuerySet(models.QuerySet):
             index = 2
 
             # A wiki in the trash keeps its address.
-            while self.model.all_objects.filter(slug=slug).exists():
+            while Wiki.all_objects.filter(slug=slug).exists():
                 slug = f"{DEFAULT_WIKI_SLUG}-{index}"
                 index += 1
 

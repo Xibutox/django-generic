@@ -919,6 +919,7 @@
 
 .wiki-diff {
   max-height: 60vh;
+  margin-top: var(--space-3);
   overflow: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);

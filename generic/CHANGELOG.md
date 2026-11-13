@@ -9,6 +9,44 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [Unreleased]
+
+### Added
+- Wiki, access and members: a wiki is *open* (as before), *protected*
+  (everyone reads, its editors write) or *private* (its members read),
+  has an owner - whoever made it - and members, people or groups, each
+  a reader, an editor or a manager (`WikiMember`, `Wiki.access`,
+  `Wiki.owner`, `generic.wiki.access`). A role is enough to write: no
+  group has to give the page permissions. *Access and members* on a
+  wiki's card and under its menu; `GET`/`PUT wikis/<id>/members/`,
+  `GET wikis/<id>/candidates/?q=` (docs/wiki.md).
+- Wiki, the trash: a deleted page or wiki waits in a trash, restored
+  or deleted for good from there (`pages/trash/`, `wikis/trash/`,
+  `undelete/`, `purge/`); `manage.py wiki_cleanup` empties it after
+  `TRASH_DAYS` and, with `--uploads`, deletes the images and files no
+  page shows.
+- Wiki, comparing versions: *Changes* and *Compare* in a page's
+  history show the lines and words put in and taken out
+  (`generic/wiki/diff.py`, `GET`/`POST pages/<id>/diff/`).
+- Wiki, drafts and conflicts: what is being written is kept in the
+  browser until saved; a save refused because someone else saved
+  shows what it would overwrite, to keep writing, take their version
+  or save over it.
+
+### Changed
+- Whoever creates, copies or imports a wiki owns it and writes its
+  pages: copying a wiki's pages and importing an archive need
+  `add_wiki` only, no longer `add_wikipage` too.
+- A deleted page's subpages move under the page it was under, not to
+  the top of the menu.
+
+### Security
+- An image or a file of the wiki is read by the readers of the wiki
+  it was uploaded into - or of a page showing it - instead of by
+  anyone signed in who knew its number. Migration 0009 gives each
+  existing upload the wiki of the first page showing it; the editor
+  sends the wiki with each upload.
+
 ## [1.6.0] - 2026-11-11
 
 ### Added
