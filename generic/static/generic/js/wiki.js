@@ -634,10 +634,462 @@
     return (error && error.message) || "";
   }
 
+  /* -- A text kept in this browser while it is written ------------------
+   * What the editor holds and has not saved, by page: a tab closed by
+   * mistake, a session that ran out, a browser that crashed do not
+   * take a writer's text with them. Never sent anywhere; dropped once
+   * saved or discarded. A browser that refuses storage keeps nothing.
+   */
+
+  function draftKey(id) {
+    return "generic.wiki.draft." + id;
+  }
+
+  function readDraft(id) {
+    try {
+      var draft = JSON.parse(window.localStorage.getItem(draftKey(id)));
+
+      return draft && typeof draft.content === "string" ? draft : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeDraft(id, draft) {
+    try {
+      window.localStorage.setItem(draftKey(id), JSON.stringify(draft));
+    } catch (error) {
+      // Storage full or refused: the text is still in the editor.
+    }
+  }
+
+  function dropDraft(id) {
+    try {
+      window.localStorage.removeItem(draftKey(id));
+    } catch (error) {
+      // Nothing was kept.
+    }
+  }
+
+  function icon(name) {
+    var node = el("span", "icon icon--sm material-symbols-outlined", name);
+
+    node.setAttribute("aria-hidden", "true");
+
+    return node;
+  }
+
+  function when(value) {
+    return value ? new Date(value).toLocaleString() : "";
+  }
+
+  /* -- What changed between two versions --------------------------------
+   * The lines the server compared (generic/wiki/diff.py), drawn as
+   * text: never as HTML.
+   */
+
+  /** One side of a comparison, in words: a version, or the page. */
+  function sideLabel(side, fallback) {
+    if (!side || !side.created_at) {
+      return fallback;
+    }
+
+    return Generic.format(t("%(date)s, by %(name)s"), {
+      date: when(side.created_at),
+      name: side.author_name || t("someone")
+    });
+  }
+
+  function diffView(data) {
+    var box = el("div", "wiki-diff");
+    var lines = (data && data.lines) || [];
+    var changed = lines.some(function (line) {
+      return line.op !== "equal" && line.op !== "skip";
+    });
+
+    if (data.before && data.after && data.before.title !== data.after.title && data.before.title) {
+      var title = el("div", "wiki-diff__line wiki-diff__line--change");
+
+      title.appendChild(el("span", "wiki-diff__mark", t("Title")));
+      title.appendChild(el("del", "", data.before.title));
+      title.appendChild(document.createTextNode(" "));
+      title.appendChild(el("ins", "", data.after.title));
+      box.appendChild(title);
+      changed = true;
+    }
+
+    if (!changed) {
+      box.appendChild(el("p", "muted", t("The text is the same.")));
+
+      return box;
+    }
+
+    lines.forEach(function (line) {
+      var row = el("div", "wiki-diff__line wiki-diff__line--" + line.op);
+
+      if (line.op === "skip") {
+        row.textContent = Generic.format(t("%(count)s unchanged lines"), { count: line.count });
+      } else if (line.op === "change") {
+        (line.parts || []).forEach(function (part) {
+          var tag = part.op === "insert" ? "ins" : part.op === "delete" ? "del" : "span";
+
+          row.appendChild(el(tag, "", part.text));
+        });
+      } else {
+        row.textContent = line.text;
+      }
+
+      box.appendChild(row);
+    });
+
+    return box;
+  }
+
+  /** A comparison asked of `url`, shown in a dialog of its own. */
+  function showDiff(url) {
+    return Generic.api
+      .get(url)
+      .then(function (data) {
+        var dialog = Generic.dialogs.open({ title: t("What changed"), icon: "difference" });
+        var close = el("button", "button button--ghost", t("Close"));
+
+        dialog.dialog.classList.add("dialog--wide");
+        dialog.body.appendChild(
+          el(
+            "p",
+            "muted",
+            Generic.format(t("From %(before)s to %(after)s."), {
+              before: sideLabel(data.before, t("an empty page")),
+              after: sideLabel(data.after, t("the page as it stands"))
+            })
+          )
+        );
+        dialog.body.appendChild(diffView(data));
+        close.type = "button";
+        close.addEventListener("click", function () {
+          dialog.close(false);
+        });
+        dialog.footer.appendChild(close);
+      })
+      .catch(function (error) {
+        Generic.toast(errorText(error) || t("The versions could not be compared."), "error");
+      });
+  }
+
+  /* -- A wiki's access and members ------------------------------------- */
+
+  var ACCESS = [
+    ["open", "Open: everyone signed in reads it, and writes with the page permissions"],
+    ["protected", "Protected: everyone signed in reads it, only its editors write"],
+    ["private", "Private: only its members read it"]
+  ];
+
+  var ROLES = [
+    ["reader", "Reader"],
+    ["editor", "Editor"],
+    ["manager", "Manager"]
+  ];
+
+  function select(options, value) {
+    var node = el("select", "input input--sm");
+
+    options.forEach(function (option) {
+      var item = el("option", "", t(option[1]));
+
+      item.value = option[0];
+      item.selected = option[0] === value;
+      node.appendChild(item);
+    });
+
+    return node;
+  }
+
+  /**
+   * Who reads `wiki` ({id, name}), who writes in it and who manages
+   * it: its access, and its members - people and groups, each with a
+   * role - found by name and saved together. Resolves true once saved.
+   */
+  function membersDialog(api, wiki) {
+    var base = api + wiki.id + "/";
+
+    return Generic.api
+      .get(base + "members/")
+      .then(function (data) {
+        var dialog = Generic.dialogs.open({
+          title: Generic.format(t("Members of \u201c%(name)s\u201d"), { name: wiki.name }),
+          icon: "group"
+        });
+        var members = (data.members || []).slice();
+        var form = el("div", "stack wiki-members");
+        var access = select(ACCESS, data.access);
+        var list = el("ul", "wiki-members__list");
+        var search = el("input", "input");
+        var found = el("ul", "wiki-members__found");
+        var cancel = el("button", "button button--ghost", t("Cancel"));
+        var save = el("button", "button button--primary", t("Save"));
+        var timer = null;
+
+        function has(candidate) {
+          return members.some(function (member) {
+            return member.kind === candidate.kind && member.id === candidate.id;
+          });
+        }
+
+        function draw() {
+          list.textContent = "";
+
+          if (!members.length) {
+            list.appendChild(el("li", "muted", t("No member yet.")));
+          }
+
+          members.forEach(function (member, index) {
+            var item = el("li", "wiki-members__item");
+            var name = el("span", "wiki-members__name");
+            var role = select(ROLES, member.role);
+            var remove = el("button", "icon-button icon-button--sm");
+
+            name.appendChild(icon(member.kind === "group" ? "group" : "person"));
+            name.appendChild(el("span", "", member.name));
+            name.appendChild(el("span", "muted", member.detail || ""));
+            role.setAttribute("aria-label", t("Role"));
+            role.addEventListener("change", function () {
+              member.role = role.value;
+            });
+            remove.type = "button";
+            remove.title = t("Remove");
+            remove.setAttribute("aria-label", t("Remove"));
+            remove.appendChild(icon("close"));
+            remove.addEventListener("click", function () {
+              members.splice(index, 1);
+              draw();
+            });
+            item.append(name, role, remove);
+            list.appendChild(item);
+          });
+        }
+
+        function look() {
+          var term = search.value.trim();
+
+          if (!term) {
+            found.textContent = "";
+            return;
+          }
+
+          Generic.api
+            .get(base + "candidates/?q=" + encodeURIComponent(term))
+            .then(function (candidates) {
+              found.textContent = "";
+
+              (candidates || [])
+                .filter(function (candidate) {
+                  return !has(candidate);
+                })
+                .forEach(function (candidate) {
+                  var item = el("li", "");
+                  var add = el("button", "wiki-members__candidate");
+
+                  add.type = "button";
+                  add.appendChild(icon(candidate.kind === "group" ? "group" : "person"));
+                  add.appendChild(el("span", "", candidate.name));
+                  add.appendChild(el("span", "muted", candidate.detail || ""));
+                  add.addEventListener("click", function () {
+                    members.push({
+                      kind: candidate.kind,
+                      id: candidate.id,
+                      name: candidate.name,
+                      detail: candidate.detail,
+                      role: "editor"
+                    });
+                    search.value = "";
+                    found.textContent = "";
+                    draw();
+                    search.focus();
+                  });
+                  item.appendChild(add);
+                  found.appendChild(item);
+                });
+
+              if (!found.childNodes.length) {
+                found.appendChild(el("li", "muted", t("Nobody found.")));
+              }
+            })
+            .catch(function () {
+              found.textContent = "";
+            });
+        }
+
+        var accessField = el("div", "sf-field");
+        var accessLabel = el("label", "sf-label", t("Access"));
+        var addField = el("div", "sf-field");
+        var addLabel = el("label", "sf-label", t("Add a person or a group"));
+
+        access.id = "wiki-members-access";
+        access.classList.remove("input--sm");
+        accessLabel.htmlFor = access.id;
+        accessField.append(accessLabel, access);
+        search.type = "search";
+        search.id = "wiki-members-search";
+        search.placeholder = t("A name\u2026");
+        search.autocomplete = "off";
+        addLabel.htmlFor = search.id;
+        addField.append(addLabel, search, found);
+        search.addEventListener("input", function () {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(look, 250);
+        });
+
+        form.appendChild(accessField);
+
+        if (data.owner) {
+          form.appendChild(
+            el("p", "muted", Generic.format(t("Owner: %(name)s. The owner always reads, writes and manages it."), { name: data.owner.name }))
+          );
+        }
+
+        form.appendChild(el("h3", "wiki-members__title", t("Members")));
+        form.appendChild(list);
+        form.appendChild(addField);
+        dialog.body.appendChild(form);
+        draw();
+
+        cancel.type = "button";
+        save.type = "button";
+        cancel.addEventListener("click", function () {
+          dialog.close(false);
+        });
+        save.addEventListener("click", function () {
+          save.disabled = true;
+          Generic.api
+            .put(base + "members/", {
+              access: access.value,
+              members: members.map(function (member) {
+                var row = { role: member.role };
+
+                row[member.kind] = member.id;
+
+                return row;
+              })
+            })
+            .then(function () {
+              dialog.close(true);
+            })
+            .catch(function (error) {
+              save.disabled = false;
+              Generic.toast(errorText(error) || t("The members could not be saved."), "error");
+            });
+        });
+        dialog.footer.append(cancel, save);
+
+        return dialog.closed.then(function (result) {
+          return result === true;
+        });
+      })
+      .catch(function (error) {
+        Generic.toast(errorText(error) || t("The members could not be loaded."), "error");
+
+        return false;
+      });
+  }
+
+  /* -- The trash --------------------------------------------------------
+   * What was deleted - pages of a wiki, or wikis - each to restore or
+   * to delete for good. `options`: {title, url (the list), item (id ->
+   * its address), name (row -> its name), gone (the confirmation)}.
+   */
+  function trashDialog(options) {
+    return Generic.api
+      .get(options.url)
+      .then(function (rows) {
+        var dialog = Generic.dialogs.open({ title: options.title, icon: "delete" });
+        var list = el("ul", "wiki-history");
+        var close = el("button", "button button--ghost", t("Close"));
+        var empty = el("p", "muted", t("The trash is empty."));
+
+        function row(record) {
+          var item = el("li", "wiki-history__item");
+          var text = el("div", "wiki-history__text");
+          var actions = el("div", "wiki-history__actions");
+          var restore = el("button", "button button--sm", t("Restore"));
+          var purge = el("button", "button button--danger-ghost button--sm", t("Delete for good"));
+
+          text.appendChild(el("strong", "", options.name(record)));
+          text.appendChild(
+            el(
+              "span",
+              "wiki-history__meta",
+              Generic.format(t("Deleted %(date)s, by %(name)s"), {
+                date: when(record.deleted_at),
+                name: record.deleted_by_name || t("someone")
+              })
+            )
+          );
+          restore.type = "button";
+          purge.type = "button";
+          restore.addEventListener("click", function () {
+            Generic.api
+              .post(options.item(record.id) + "undelete/", {})
+              .then(function (data) {
+                Generic.flash(t("Restored."), "success");
+                window.location.assign(data.url);
+              })
+              .catch(function (error) {
+                Generic.toast(errorText(error) || t("It could not be restored."), "error");
+              });
+          });
+          purge.addEventListener("click", function () {
+            Generic.dialogs
+              .confirm({
+                title: t("Delete for good?"),
+                message: Generic.format(options.gone, { name: options.name(record) }),
+                confirmLabel: t("Delete for good"),
+                variant: "danger"
+              })
+              .then(function (confirmed) {
+                if (!confirmed) {
+                  return;
+                }
+
+                Generic.api
+                  .post(options.item(record.id) + "purge/", {})
+                  .then(function () {
+                    item.remove();
+                    empty.hidden = list.childNodes.length > 0;
+                  })
+                  .catch(function (error) {
+                    Generic.toast(errorText(error) || t("It could not be deleted."), "error");
+                  });
+              });
+          });
+          actions.append(restore, purge);
+          item.append(text, actions);
+
+          return item;
+        }
+
+        (rows || []).forEach(function (record) {
+          list.appendChild(row(record));
+        });
+        empty.hidden = list.childNodes.length > 0;
+        dialog.body.append(list, empty);
+        close.type = "button";
+        close.addEventListener("click", function () {
+          dialog.close(false);
+        });
+        dialog.footer.appendChild(close);
+
+        return dialog.closed;
+      })
+      .catch(function (error) {
+        Generic.toast(errorText(error) || t("The trash could not be loaded."), "error");
+      });
+  }
+
   document.addEventListener("alpine:init", function () {
     window.Alpine.data("wikiPage", function (configId) {
       var config = readJson(configId) || {};
       var quill = null;
+      var draftTimer = null;
 
       return {
         config: config,
@@ -650,9 +1102,17 @@
         filter: "",
         form: {},
         original: "",
+        //: The version the text being written started from: what a
+        //: save is checked against.
+        base: "",
 
         init: function () {
           var self = this;
+
+          // The title is part of what a draft keeps.
+          this.$watch("form.title", function () {
+            self.draftSoon();
+          });
 
           // A page just created opens straight in the editor.
           if (this.page && config.edit) {
@@ -708,8 +1168,79 @@
             );
             quill.history.clear();
             self.original = htmlOf(quill);
+            self.base = page.version;
             quill.focus();
+            self.offerDraft();
           });
+        },
+
+        /** Keep what is being written, a moment after the last key. */
+        draftSoon: function () {
+          var self = this;
+
+          window.clearTimeout(draftTimer);
+          draftTimer = window.setTimeout(function () {
+            self.keepDraft();
+          }, 800);
+        },
+
+        keepDraft: function () {
+          if (!this.editing || !quill || !this.page) {
+            return;
+          }
+
+          if (!this.isDirty()) {
+            dropDraft(this.page.id);
+            return;
+          }
+
+          writeDraft(this.page.id, {
+            title: this.form.title,
+            content: htmlOf(quill),
+            // What it was written from: saved later, it is still
+            // checked against the page as it was then.
+            version: this.base,
+            at: Date.now()
+          });
+        },
+
+        /**
+         * A text of this page this browser kept and never saved: offer
+         * to take it up where it was left.
+         */
+        offerDraft: function () {
+          var self = this;
+          var page = this.page;
+          var draft = readDraft(page.id);
+
+          if (!draft) {
+            return;
+          }
+
+          if (draft.content === this.original && draft.title === page.title) {
+            dropDraft(page.id);
+            return;
+          }
+
+          Generic.dialogs
+            .confirm({
+              title: t("Take up your unsaved text?"),
+              message: Generic.format(
+                t("This browser kept a text of this page that was never saved, written %(date)s."),
+                { date: when(draft.at) }
+              ),
+              confirmLabel: t("Take it up"),
+              cancelLabel: t("Not now")
+            })
+            .then(function (confirmed) {
+              if (!confirmed || !self.editing) {
+                return;
+              }
+
+              quill.setContents(quill.clipboard.convert({ html: draft.content }), "user");
+              self.form.title = draft.title || page.title;
+              self.base = draft.version || page.version;
+            });
         },
 
         startEditor: function () {
@@ -811,6 +1342,10 @@
           this.labelColors(editor);
           this.labelTableMenu(editor);
           this.acceptFiles(editor);
+          // What is written is kept in this browser until it is saved.
+          editor.on("text-change", function () {
+            self.draftSoon();
+          });
 
           return editor;
         },
@@ -1069,6 +1604,8 @@
           var body = new FormData();
 
           body.append("file", file, file.name);
+          // The wiki it is for: its readers are the upload's.
+          body.append("wiki", config.wiki);
           this.uploads += 1;
           this.uploading = true;
 
@@ -1262,6 +1799,7 @@
           var body = new FormData();
 
           body.append("file", file, file.name);
+          body.append("wiki", config.wiki);
           this.uploads += 1;
           this.uploading = true;
 
@@ -1322,8 +1860,62 @@
             })
             .then(function (confirmed) {
               if (confirmed) {
+                window.clearTimeout(draftTimer);
+                dropDraft(self.page.id);
                 self.editing = false;
               }
+            });
+        },
+
+        /**
+         * Someone saved the page while it was being written: what this
+         * text would change in theirs, and the choice - go on writing,
+         * take theirs, or save this one over it.
+         */
+        conflict: function (error, body) {
+          var self = this;
+          var page = this.page;
+
+          Generic.api
+            .post(this.pageUrl(page.id) + "diff/", { title: body.title, content: body.content })
+            .then(function (data) {
+              var dialog = Generic.dialogs.open({
+                title: t("This page was changed meanwhile"),
+                icon: "warning"
+              });
+              var keep = el("button", "button button--ghost", t("Keep writing"));
+              var theirs = el("button", "button", t("Take their version"));
+              var mine = el("button", "button button--primary", t("Save mine"));
+
+              dialog.dialog.classList.add("dialog--wide");
+              dialog.body.appendChild(el("p", "", errorText(error)));
+              dialog.body.appendChild(
+                el("p", "muted", t("What your text changes in the page as it stands now - saving yours takes out what is struck through:"))
+              );
+              dialog.body.appendChild(diffView(data));
+              [keep, theirs, mine].forEach(function (node) {
+                node.type = "button";
+              });
+              keep.addEventListener("click", function () {
+                dialog.close(false);
+              });
+              theirs.addEventListener("click", function () {
+                dialog.close(false);
+                window.clearTimeout(draftTimer);
+                dropDraft(page.id);
+                self.editing = false;
+                window.location.reload();
+              });
+              mine.addEventListener("click", function () {
+                dialog.close(false);
+                // Checked against the page just compared with.
+                self.base = data.version;
+                self.save();
+              });
+              dialog.footer.append(keep, theirs, mine);
+            })
+            .catch(function () {
+              Generic.toast(errorText(error) || t("The page could not be saved."), "error");
             });
         },
 
@@ -1339,25 +1931,34 @@
 
           this.saving = true;
 
+          var body = {
+            title: String(form.title).trim(),
+            slug: String(form.slug || "").trim(),
+            parent: form.parent === "" ? null : Number(form.parent),
+            position: Number(form.position) || 0,
+            show_on_dashboard: Boolean(form.show_on_dashboard),
+            content: htmlOf(quill),
+            // Refused if someone saved in between.
+            version: this.base || page.version
+          };
+
           Generic.api
-            .patch(this.pageUrl(page.id), {
-              title: String(form.title).trim(),
-              slug: String(form.slug || "").trim(),
-              parent: form.parent === "" ? null : Number(form.parent),
-              position: Number(form.position) || 0,
-              show_on_dashboard: Boolean(form.show_on_dashboard),
-              content: htmlOf(quill),
-              // Refused if someone saved in between.
-              version: page.version
-            })
+            .patch(this.pageUrl(page.id), body)
             .then(function (data) {
               // The server draws the page, its menu and its address, and
               // the cleaned HTML is what the reader sees next.
+              window.clearTimeout(draftTimer);
+              dropDraft(page.id);
               self.editing = false;
               Generic.flash(t("The page was saved."), "success");
               window.location.assign(data.url);
             })
             .catch(function (error) {
+              if (error && error.status === 409) {
+                self.conflict(error, body);
+                return;
+              }
+
               Generic.toast(errorText(error) || t("The page could not be saved."), "error");
             })
             .then(function () {
@@ -1458,8 +2059,8 @@
               title: t("Delete this page?"),
               message: Generic.format(
                 t(
-                  "\u201c%(title)s\u201d and its history will be deleted. " +
-                    "Its subpages move up a level."
+                  "\u201c%(title)s\u201d goes to the trash with its history, " +
+                    "where it can be restored. Its subpages move up a level."
                 ),
                 { title: page.title }
               ),
@@ -1474,7 +2075,7 @@
               Generic.api
                 .delete(self.pageUrl(page.id))
                 .then(function () {
-                  Generic.flash(t("The page was deleted."), "success");
+                  Generic.flash(t("The page was moved to the trash."), "success");
                   window.location.assign(config.indexUrl);
                 })
                 .catch(function (error) {
@@ -1526,6 +2127,30 @@
                   )
                 );
                 item.appendChild(text);
+
+                // What this version changed; for the page as it
+                // stands, what the last save did.
+                if (version.id || (revisions && revisions.length)) {
+                  var changes = el("button", "button button--ghost button--sm", t("Changes"));
+
+                  changes.type = "button";
+                  changes.title = t("What this version changed");
+                  changes.addEventListener("click", function () {
+                    showDiff(self.pageUrl(page.id) + "diff/" + (version.id ? "?to=" + version.id : ""));
+                  });
+                  actions.appendChild(changes);
+                }
+
+                if (!current && version.id) {
+                  var compare = el("button", "button button--ghost button--sm", t("Compare"));
+
+                  compare.type = "button";
+                  compare.title = t("From this version to the page as it stands");
+                  compare.addEventListener("click", function () {
+                    showDiff(self.pageUrl(page.id) + "diff/?from=" + version.id);
+                  });
+                  actions.appendChild(compare);
+                }
 
                 if (version.url) {
                   var view = el("a", "button button--ghost button--sm", t("View"));
@@ -1586,6 +2211,33 @@
             .catch(function (error) {
               Generic.toast(errorText(error) || t("The history could not be loaded."), "error");
             });
+        },
+
+        /** The wiki's access and members, for whoever manages it. */
+        members: function () {
+          membersDialog(config.wikiApi, { id: config.wiki, name: config.wikiName }).then(function (saved) {
+            if (saved) {
+              Generic.flash(t("The members were saved."), "success");
+              window.location.reload();
+            }
+          });
+        },
+
+        /** The wiki's deleted pages, to restore or delete for good. */
+        trash: function () {
+          var self = this;
+
+          trashDialog({
+            title: t("Deleted pages"),
+            url: config.api + "trash/?wiki=" + config.wiki,
+            item: function (id) {
+              return self.pageUrl(id);
+            },
+            name: function (record) {
+              return record.title;
+            },
+            gone: t("\u201c%(name)s\u201d and its history will be deleted for good.")
+          });
         },
 
         restore: function (revision) {
@@ -1747,6 +2399,37 @@
           });
         },
 
+        /** Who reads the wiki, who writes in it, who manages it. */
+        members: function (id) {
+          var wiki = find(id);
+
+          if (!wiki) {
+            return;
+          }
+
+          membersDialog(config.api, wiki).then(function (saved) {
+            if (saved) {
+              Generic.flash(t("The members were saved."), "success");
+              window.location.reload();
+            }
+          });
+        },
+
+        /** The deleted wikis, to restore or delete for good. */
+        trash: function () {
+          trashDialog({
+            title: t("Deleted wikis"),
+            url: config.api + "trash/",
+            item: function (id) {
+              return config.api + id + "/";
+            },
+            name: function (record) {
+              return record.name;
+            },
+            gone: t("\u201c%(name)s\u201d, its pages and their history will be deleted for good.")
+          });
+        },
+
         /** A copy of the wiki: its name and description asked first,
          * its pages if wanted. */
         duplicate: function (id) {
@@ -1814,7 +2497,7 @@
             .confirm({
               title: t("Delete this wiki?"),
               message: Generic.format(
-                t("\u201c%(name)s\u201d and its %(count)s pages, with their history, will be deleted."),
+                t("\u201c%(name)s\u201d and its %(count)s pages go to the trash, where the wiki can be restored."),
                 { name: wiki.name, count: wiki.page_count }
               ),
               confirmLabel: t("Delete"),
@@ -1828,7 +2511,7 @@
               Generic.api
                 .delete(config.api + id + "/")
                 .then(function () {
-                  Generic.flash(t("The wiki was deleted."), "success");
+                  Generic.flash(t("The wiki was moved to the trash."), "success");
                   window.location.reload();
                 })
                 .catch(function (error) {

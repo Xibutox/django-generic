@@ -16,6 +16,11 @@
 {% endblock %}
 
 {% block object_tools %}
+  {% if trash_count %}
+    <button type="button" class="button button--ghost" x-data @click="$dispatch('wiki-trash')" title="{% translate 'The deleted wikis, to restore or to delete for good' %}">
+      {% icon "delete" %} {% translate "Trash" %} <span class="badge-count">{{ trash_count }}</span>
+    </button>
+  {% endif %}
   {% if can.import %}
     <button type="button" class="button" x-data @click="$dispatch('wiki-import')" title="{% translate 'Make a new wiki from an archive exported here or on another site' %}">
       {% icon "upload" %} {% translate "Import a wiki" %}
@@ -31,7 +36,7 @@
 {% block content %}
   {{ wikis_config|json_script:"wikis-config" }}
 
-  <div x-data="wikiList('wikis-config')" @wiki-create.window="create()" @wiki-import.window="chooseArchive()">
+  <div x-data="wikiList('wikis-config')" @wiki-create.window="create()" @wiki-import.window="chooseArchive()" @wiki-trash.window="trash()">
     {% if can.import %}
       <input type="file" accept=".zip,application/zip" hidden x-ref="archive" @change="importArchive($event)">
     {% endif %}
@@ -43,8 +48,14 @@
               <h2 class="card__title">
                 {% icon "auto_stories" %}
                 <a href="{{ wiki.get_absolute_url }}">{{ wiki.name }}</a>
+                {# Who reads it, when not everyone writes in it. #}
+                {% if wiki.access == "private" %}
+                  <span class="badge badge--warning" title="{% translate 'Only its members read it' %}">{% icon "lock" "icon--sm" %} {% translate "Private" %}</span>
+                {% elif wiki.access == "protected" %}
+                  <span class="badge" title="{% translate 'Everyone reads it, only its editors write' %}">{% icon "edit_off" "icon--sm" %} {% translate "Protected" %}</span>
+                {% endif %}
               </h2>
-              {% if can.add or can.change or can.delete or archive_available and wiki.page_count %}
+              {% if can.add or wiki.rights.change or wiki.rights.delete or archive_available and wiki.page_count %}
                 <div class="wiki-list__tools">
                   {% if can.add %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Duplicate' %}" @click="duplicate({{ wiki.pk }})">
@@ -58,13 +69,19 @@
                       {% icon "folder_zip" "icon--sm" archive_label %}
                     </a>
                   {% endif %}
-                  {% if can.change %}
+                  {% if wiki.rights.members %}
+                    <button type="button" class="icon-button icon-button--sm" title="{% translate 'Access and members' %}" @click="members({{ wiki.pk }})">
+                      {% translate "Access and members" as members_label %}
+                      {% icon "group" "icon--sm" members_label %}
+                    </button>
+                  {% endif %}
+                  {% if wiki.rights.change %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Edit' %}" @click="edit({{ wiki.pk }})">
                       {% translate "Edit" as edit_label %}
                       {% icon "edit" "icon--sm" edit_label %}
                     </button>
                   {% endif %}
-                  {% if can.delete %}
+                  {% if wiki.rights.delete %}
                     <button type="button" class="icon-button icon-button--sm" title="{% translate 'Delete' %}" @click="remove({{ wiki.pk }})">
                       {% translate "Delete" as delete_label %}
                       {% icon "delete" "icon--sm" delete_label %}

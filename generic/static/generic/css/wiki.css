@@ -901,3 +901,140 @@
 .wiki-pinned__card .wiki-content {
   max-width: none;
 }
+
+/* -- The menu's tools: members, trash --------------------------------------- */
+
+.wiki__menu-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-color);
+}
+
+/* -- What changed between two versions --------------------------------------
+   Lines of text, never HTML: put in, taken out, or rewritten - then the
+   words say which. */
+
+.wiki-diff {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.wiki-diff > p {
+  margin: 0;
+  padding: var(--space-3);
+}
+
+.wiki-diff__line {
+  padding: var(--space-1) var(--space-3);
+  border-left: 3px solid transparent;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wiki-diff__line--insert {
+  border-left-color: var(--color-success);
+  background: var(--color-success-subtle);
+}
+
+.wiki-diff__line--delete {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  text-decoration: line-through;
+}
+
+.wiki-diff__line--change {
+  border-left-color: var(--color-warning);
+}
+
+.wiki-diff__line--skip {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  font-style: italic;
+  text-align: center;
+}
+
+.wiki-diff ins {
+  background: var(--color-success-subtle);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-success);
+}
+
+.wiki-diff del {
+  background: var(--color-danger-subtle);
+  color: var(--text-secondary);
+}
+
+.wiki-diff__mark {
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+}
+
+/* -- A wiki's access and members -------------------------------------------- */
+
+.wiki-members__title {
+  margin: 0;
+  font-size: var(--font-size-base, 1rem);
+}
+
+.wiki-members__list,
+.wiki-members__found {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wiki-members__list {
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.wiki-members__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wiki-members__name {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.wiki-members__item select {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.wiki-members__found {
+  margin-top: var(--space-1);
+}
+
+.wiki-members__candidate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wiki-members__candidate:hover,
+.wiki-members__candidate:focus-visible {
+  background: var(--surface-hover);
+}

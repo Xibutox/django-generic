@@ -24,7 +24,7 @@ from typing import Any, Iterable
 from django.db import transaction
 from django.dispatch import Signal
 
-from generic.wiki.models import Wiki, WikiPage
+from generic.wiki.models import Wiki, WikiMember, WikiPage
 from generic.wiki.serializers import unique_slug
 
 #: Sent, inside the copy's transaction, once a wiki and its pages are
@@ -129,7 +129,20 @@ def duplicate_wiki(
 ) -> Wiki:
     """A copy of ``wiki`` - name and description from ``serializer``,
     validated - with its pages when asked."""
-    copy = serializer.save(position=wiki.position)
+    # Whoever copies a wiki owns the copy; who reads it stays as it
+    # was - a private wiki's copy is not everyone's.
+    copy = serializer.save(
+        position=wiki.position, owner=user, access=wiki.access
+    )
+    WikiMember.objects.bulk_create(
+        WikiMember(
+            wiki=copy,
+            user_id=member.user_id,
+            group_id=member.group_id,
+            role=member.role,
+        )
+        for member in wiki.members.all()
+    )
 
     if pages:
         copy_subpages(

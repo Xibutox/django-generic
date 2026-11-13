@@ -40,7 +40,8 @@ def unique_slug(title: str, exclude_pk: Any = None, wiki: Any = None) -> str:
     if base in RESERVED_SLUGS:
         base = f"{base}-page"
 
-    pages = WikiPage.objects.all()
+    # A page in the trash keeps its address.
+    pages = WikiPage.all_objects.all()
 
     if wiki is not None:
         pages = pages.filter(wiki=wiki)
@@ -68,7 +69,8 @@ def unique_wiki_slug(name: str) -> str:
     slug = base
     index = 2
 
-    while Wiki.objects.filter(slug=slug).exists():
+    # A wiki in the trash keeps its address.
+    while Wiki.all_objects.filter(slug=slug).exists():
         slug = f"{base}-{index}"
         index += 1
 
@@ -82,6 +84,10 @@ class WikiSerializer(serializers.ModelSerializer):
     #: Where the wiki is downloaded as an archive to import elsewhere.
     archive_url = serializers.SerializerMethodField()
     page_count = serializers.SerializerMethodField()
+    owner_name = serializers.SerializerMethodField()
+    #: What the reader may do to it: ``change``, ``members``, ``delete``
+    #: (generic.wiki.access.wiki_rights).
+    can = serializers.SerializerMethodField()
 
     class Meta:
         model = Wiki
@@ -91,12 +97,52 @@ class WikiSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "position",
+            "access",
+            "owner_name",
             "url",
             "pdf_url",
             "archive_url",
             "page_count",
+            "can",
         )
         extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
+
+    def get_owner_name(self, wiki: Wiki) -> str:
+        return display_name(wiki.owner) if wiki.owner_id else ""
+
+    def get_can(self, wiki: Wiki) -> dict[str, bool]:
+        from generic.wiki.access import roles_of, wiki_rights
+
+        request = self.context.get("request")
+
+        if request is None or not wiki.pk:
+            return {}
+
+        # One query for the whole list.
+        if "roles" not in self.context:
+            self.context["roles"] = roles_of(request.user)
+
+        return wiki_rights(request.user, wiki, self.context["roles"])
+
+    def validate_access(self, value: str) -> str:
+        from generic.wiki.access import wiki_rights
+
+        request = self.context.get("request")
+        wiki = self.instance
+
+        # Who reads a wiki is its managers' to say, not whoever may
+        # only rename it.
+        if (
+            wiki is not None
+            and request is not None
+            and value != wiki.access
+            and not wiki_rights(request.user, wiki)["members"]
+        ):
+            raise serializers.ValidationError(
+                _("You may not change who reads this wiki.")
+            )
+
+        return value
 
     def get_url(self, wiki: Wiki) -> str:
         return wiki.get_absolute_url() if wiki.pk else ""
@@ -131,6 +177,14 @@ class WikiSerializer(serializers.ModelSerializer):
                 attrs["slug"] = unique_wiki_slug(attrs.get("name", ""))
             else:
                 attrs.pop("slug", None)
+        elif (
+            Wiki.all_objects.filter(slug=attrs["slug"])
+            .exclude(pk=self.instance.pk if self.instance else None)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                {"slug": _("Another wiki has this address.")}
+            )
 
         return attrs
 
@@ -261,10 +315,7 @@ class WikiPageSerializer(serializers.ModelSerializer):
             and expected != self.get_version(self.instance)
         ):
             raise Conflict(
-                _(
-                    "%(name)s changed this page since you opened it. Copy "
-                    "your text, reload the page and apply it again."
-                )
+                _("%(name)s changed this page since you opened it.")
                 % {
                     "name": self.get_updated_by_name(self.instance)
                     or _("Someone")
@@ -299,7 +350,7 @@ class WikiPageSerializer(serializers.ModelSerializer):
             else:
                 attrs.pop("slug", None)
         elif (
-            WikiPage.objects.filter(wiki=wiki, slug=attrs["slug"])
+            WikiPage.all_objects.filter(wiki=wiki, slug=attrs["slug"])
             .exclude(pk=instance.pk if instance else None)
             .exists()
         ):

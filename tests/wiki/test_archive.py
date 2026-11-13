@@ -498,10 +498,22 @@ class TestImportEndpoint:
         assert data["skipped"] == []
         assert Wiki.objects.get(slug="copy").pages.count() == 2
 
-    @pytest.mark.parametrize(
-        "codenames", [("add_wiki",), ("add_wikipage",), ()]
-    )
-    def test_it_needs_both_permissions(self, client, handbook, codenames):
+    def test_whoever_adds_a_wiki_imports_one_and_owns_it(
+        self, client, handbook
+    ):
+        # Its owner writes its pages: no page permission is asked.
+        importer = writer("add_wiki")
+        client.force_login(importer)
+
+        response = self.send(client, exported(handbook))
+
+        assert response.status_code == 201
+        assert Wiki.objects.get(pk=response.json()["id"]).owner == importer
+
+    @pytest.mark.parametrize("codenames", [("add_wikipage",), ()])
+    def test_it_needs_the_permission_to_add_a_wiki(
+        self, client, handbook, codenames
+    ):
         client.force_login(writer(*codenames))
         before = Wiki.objects.count()
 
@@ -555,7 +567,7 @@ class TestImportEndpoint:
     def test_the_list_does_not_offer_it_without_the_rights(
         self, client, handbook
     ):
-        client.force_login(writer("add_wiki"))
+        client.force_login(writer("add_wikipage"))
 
         page = client.get("/wiki/")
 

@@ -1,4 +1,5 @@
-"""Wikis, their pages, and the versions the pages went through."""
+"""Wikis, their members, their pages, and the versions the pages went
+through."""
 
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ from typing import Any
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -24,6 +26,31 @@ RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files"})
 #: The wiki the pages written before there were several land in.
 DEFAULT_WIKI_SLUG = "main"
 
+#: Who reads and who writes a wiki (``Wiki.access``).
+ACCESS_OPEN = "open"
+ACCESS_PROTECTED = "protected"
+ACCESS_PRIVATE = "private"
+
+#: What a member may do in a wiki (``WikiMember.role``), least first.
+ROLE_READER = "reader"
+ROLE_EDITOR = "editor"
+ROLE_MANAGER = "manager"
+ROLES = (ROLE_READER, ROLE_EDITOR, ROLE_MANAGER)
+
+#: The roles that write pages.
+WRITER_ROLES = (ROLE_EDITOR, ROLE_MANAGER)
+
+#: What :func:`generic.wiki.access.role_in` answers for a wiki's owner.
+ROLE_OWNER = "owner"
+
+
+def memberships(user: Any) -> Any:
+    """The rows making ``user`` a member of a wiki: their own, and
+    those of their groups."""
+    return WikiMember.objects.filter(
+        Q(user=user) | Q(group__in=user.groups.all())
+    )
+
 
 class WikiQuerySet(models.QuerySet):
     def readable_by(self, user: Any) -> "WikiQuerySet":
@@ -37,27 +64,52 @@ class WikiQuerySet(models.QuerySet):
         if not getattr(user, "is_authenticated", False):
             return self.none()
 
+        wikis = self
+
+        # A private wiki is its owner's and its members'.
+        if not user.is_superuser:
+            wikis = wikis.filter(
+                ~Q(access=ACCESS_PRIVATE)
+                | Q(owner=user)
+                | Q(pk__in=memberships(user).values("wiki"))
+            )
+
         access = generic_settings.WIKI_ACCESS
 
         if not access:
-            return self
+            return wikis
 
         if isinstance(access, str):
             access = import_string(access)
 
-        return access(user, self)
+        return access(user, wikis)
 
     def writable_by(self, user: Any) -> "WikiQuerySet":
-        """The wikis ``user`` may write pages in: those they read, unless
-        ``GENERIC["WIKI_EDIT_ACCESS"]`` narrows them further.
+        """The wikis ``user`` may write pages in: the open ones they
+        read, those they own and those they are an editor or a manager
+        of - unless ``GENERIC["WIKI_EDIT_ACCESS"]`` narrows them further.
 
         Only *where*: what they may do there - add, change, delete a
-        page - is still the model permissions'.
+        page - is :func:`generic.wiki.access.page_rights`.
         """
         readable = self.readable_by(user)
         access = generic_settings.WIKI_EDIT_ACCESS
 
-        if not access or not getattr(user, "is_authenticated", False):
+        if not getattr(user, "is_authenticated", False):
+            return readable
+
+        if not user.is_superuser:
+            readable = readable.filter(
+                Q(access=ACCESS_OPEN)
+                | Q(owner=user)
+                | Q(
+                    pk__in=memberships(user)
+                    .filter(role__in=WRITER_ROLES)
+                    .values("wiki")
+                )
+            )
+
+        if not access:
             return readable
 
         if isinstance(access, str):
@@ -65,22 +117,73 @@ class WikiQuerySet(models.QuerySet):
 
         return access(user, readable)
 
+    def with_page_count(self) -> "WikiQuerySet":
+        """Each wiki with ``page_count``: its pages, those in the trash
+        left out."""
+        return self.annotate(
+            page_count=Count("pages", filter=Q(pages__deleted_at__isnull=True))
+        )
+
     def default(self) -> "Wiki":
         """The first wiki, made when there is none: where a page saved
         without a wiki goes."""
         wiki = self.model.objects.order_by("position", "name", "pk").first()
 
         if wiki is None:
-            wiki, _created = self.model.objects.get_or_create(
-                slug=DEFAULT_WIKI_SLUG, defaults={"name": "Wiki"}
-            )
+            slug = DEFAULT_WIKI_SLUG
+            index = 2
+
+            # A wiki in the trash keeps its address.
+            while self.model.all_objects.filter(slug=slug).exists():
+                slug = f"{DEFAULT_WIKI_SLUG}-{index}"
+                index += 1
+
+            wiki = self.model.objects.create(slug=slug, name="Wiki")
 
         return wiki
 
 
-class Wiki(models.Model):
+class LiveManager(models.Manager):
+    """What is not in the trash: what every screen, search and export
+    reads. ``all_objects`` holds the rest too."""
+
+    def get_queryset(self) -> Any:
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
+class Trashed(models.Model):
+    """When a wiki or a page was moved to the trash, and by whom
+    (``generic.trash.Trashable``'s two fields)."""
+
+    deleted_at = models.DateTimeField(
+        _("deleted at"), null=True, blank=True, editable=False, db_index=True
+    )
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("deleted by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Wiki(Trashed):
     """A set of pages with a menu of its own: a team's handbook, a
     product's documentation, the procedures of a site."""
+
+    ACCESS = (
+        (ACCESS_OPEN, _("Open: everyone signed in reads and writes")),
+        (
+            ACCESS_PROTECTED,
+            _("Protected: everyone signed in reads, its editors write"),
+        ),
+        (ACCESS_PRIVATE, _("Private: only its members read")),
+    )
 
     name = models.CharField(_("name"), max_length=200)
     slug = models.SlugField(
@@ -97,8 +200,24 @@ class Wiki(models.Model):
         help_text=_("Order among the wikis."),
     )
     created_at = models.DateTimeField(_("created at"), default=timezone.now)
+    #: Who reads it and who writes in it: see ``readable_by`` and
+    #: ``writable_by``. Open is what a wiki was before it had members.
+    access = models.CharField(
+        _("access"), max_length=20, choices=ACCESS, default=ACCESS_OPEN
+    )
+    #: Whoever made it: reads it, writes in it, manages its members and
+    #: may delete it, whatever the groups say.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("owner"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
 
-    objects = WikiQuerySet.as_manager()
+    objects = LiveManager.from_queryset(WikiQuerySet)()
+    all_objects = WikiQuerySet.as_manager()
 
     class Meta:
         ordering = ("position", "name")
@@ -119,7 +238,69 @@ class Wiki(models.Model):
         return reverse("generic_wiki:archive", kwargs={"wiki": self.slug})
 
 
-class WikiPage(models.Model):
+class WikiMember(models.Model):
+    """A person - or a group, each of its people - given a role in a
+    wiki: a reader reads it, an editor writes its pages, a manager also
+    renames it and says who its members are."""
+
+    ROLE_CHOICES = (
+        (ROLE_READER, _("Reader")),
+        (ROLE_EDITOR, _("Editor")),
+        (ROLE_MANAGER, _("Manager")),
+    )
+
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="members",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("user"),
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    group = models.ForeignKey(
+        "auth.Group",
+        verbose_name=_("group"),
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    role = models.CharField(
+        _("role"), max_length=20, choices=ROLE_CHOICES, default=ROLE_READER
+    )
+
+    class Meta:
+        ordering = ("wiki", "pk")
+        verbose_name = _("wiki member")
+        verbose_name_plural = _("wiki members")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("wiki", "user"), name="generic_wiki_member_user"
+            ),
+            models.UniqueConstraint(
+                fields=("wiki", "group"), name="generic_wiki_member_group"
+            ),
+            # A person or a group: one of the two, never both.
+            models.CheckConstraint(
+                condition=(
+                    Q(user__isnull=False, group__isnull=True)
+                    | Q(user__isnull=True, group__isnull=False)
+                ),
+                name="generic_wiki_member_one",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user or self.group} ({self.role})"
+
+
+class WikiPage(Trashed):
     #: Left empty, the first wiki: what code written before there were
     #: several wikis keeps doing.
     wiki = models.ForeignKey(
@@ -173,6 +354,9 @@ class WikiPage(models.Model):
         null=True,
         blank=True,
     )
+
+    objects = LiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ("position", "title")
@@ -325,6 +509,17 @@ class WikiImage(models.Model):
     """
 
     file = models.FileField(_("file"), upload_to="wiki/images/%Y/%m/")
+    #: The wiki it was uploaded into: whoever reads that wiki opens it.
+    #: Empty for an upload from before wikis had readers of their own -
+    #: then whoever reads a page showing it does (``access.may_open``).
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     original_name = models.CharField(
         _("original name"), max_length=255, blank=True, default=""
     )
@@ -360,6 +555,17 @@ class WikiFile(models.Model):
     """
 
     file = models.FileField(_("file"), upload_to="wiki/files/%Y/%m/")
+    #: The wiki it was uploaded into: whoever reads that wiki opens it.
+    #: Empty for an upload from before wikis had readers of their own -
+    #: then whoever reads a page showing it does (``access.may_open``).
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
     original_name = models.CharField(
         _("original name"), max_length=255, blank=True, default=""
     )
