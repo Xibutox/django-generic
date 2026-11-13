@@ -16,6 +16,9 @@ A number or a date answers with its range instead::
 
 ``q`` narrows the values by their label, ``ids=1,2`` asks for the labels
 of known values - how a filter restored from a link names what it holds.
+``page=2`` asks for the next ``facet_limit`` values, most held first:
+the editor loads them as the list is scrolled, so a value past the first
+page is reached without having to guess a search for it.
 Only columns the serializer declares filterable and facetable answer.
 """
 
@@ -36,6 +39,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 
+from generic.api.autocomplete import read_page
 from generic.api.columns import (
     FILTER_BOOLEAN,
     FILTER_DATE,
@@ -50,8 +54,9 @@ from generic.search import normalize, text_lookup
 COLUMN_PARAM = "column"
 SEARCH_PARAM = "q"
 IDS_PARAM = "ids"
+PAGE_PARAM = "page"
 
-#: Values listed, at most, before ``more`` says there are others.
+#: Values on one page; ``more`` says another page follows.
 FACET_LIMIT = 50
 MAX_IDS = 100
 
@@ -136,6 +141,14 @@ def coerce_keys(spec: Any, raw: str) -> list[Any]:
             keys.append(item)
 
     return keys
+
+
+def facet_page(request: Any) -> int:
+    """The page of values asked for; labels of known values are one."""
+    if request.query_params.get(IDS_PARAM) is not None:
+        return 1
+
+    return read_page(request.query_params.get(PAGE_PARAM, 1))
 
 
 class FacetMixin:
@@ -267,7 +280,15 @@ class FacetMixin:
             )
 
         limit = self.facet_limit
-        found = list(rows.order_by("-facet_count", spec.field)[: limit + 1])
+        page = facet_page(request)
+        offset = (page - 1) * limit
+        # The key breaks ties between equal counts, so that pages never
+        # overlap; one extra row says whether another page follows.
+        found = list(
+            rows.order_by("-facet_count", spec.field)[
+                offset : offset + limit + 1
+            ]
+        )
         keys = [row[spec.field] for row in found[:limit]]
         records = (
             related._default_manager.in_bulk(
@@ -303,6 +324,7 @@ class FacetMixin:
             "kind": "values",
             "values": values,
             "more": len(found) > limit,
+            "page": page,
         }
 
     @staticmethod
