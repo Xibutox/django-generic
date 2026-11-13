@@ -9,19 +9,6 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
-## [Unreleased]
-
-### Changed
-- A filter's list of values loads as it scrolls: a choice or relation
-  column's editor (funnel, chip, search row) lists the first page of
-  values, and the next ones are fetched as the list nears its end -
-  no more *More values exist: refine the search.*, a value past the
-  first fifty is reached without guessing a search for it. The facets
-  endpoint takes `page=` (from 1, `facet_limit` values each, `more`
-  saying another follows, `page` echoed) on model and `DataResource`
-  tables; a relation listed from its autocomplete pages the same way.
-  A search starts from its own first page (docs/tables.md, Facets).
-
 ## [1.6.0] - 2026-11-11
 
 ### Added
