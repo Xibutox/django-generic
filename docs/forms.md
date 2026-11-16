@@ -112,6 +112,13 @@ rather than producing a dead button.
 Overrides merge along the MRO, so a subclass restates only what it
 changes.
 
+## Forms that are not a record's
+
+A form writing no model, a few fields of a record on a page of their
+own, or several models at once (`ModelsForm`, `FormPart`) is a **form
+page**: the same schema and widgets, posted to the page's own address.
+See [Form pages](form-pages.md).
+
 ## Questions that are not fields
 
 A form may ask something the record does not keep - why a file was
