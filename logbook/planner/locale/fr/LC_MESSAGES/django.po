@@ -580,3 +580,56 @@ msgstr "types d'activité"
 
 msgid "The kinds of work a task is: development, support, a meeting."
 msgstr "Les types de travail d'une tâche : développement, support, réunion."
+
+msgid "Send the task and the text."
+msgstr "Envoyez la tâche et le texte."
+
+msgid "There is no text."
+msgstr "Il n'y a pas de texte."
+
+msgid "Attach at most %(count)s characters at once."
+msgstr "Joignez au plus %(count)s caractères à la fois."
+
+msgid "Pick a task."
+msgstr "Choisissez une tâche."
+
+msgid "This task cannot be found."
+msgstr "Cette tâche est introuvable."
+
+msgid "You may not change this task."
+msgstr "Vous ne pouvez pas modifier cette tâche."
+
+msgid "From the note \"%(note)s\", %(date)s:"
+msgstr "De la note « %(note)s », %(date)s :"
+
+msgid "This task is already in this note, or cannot be found: reload the page."
+msgstr "Cette tâche est déjà dans cette note, ou introuvable : rechargez la page."
+
+msgid "All the notes"
+msgstr "Toutes les notes"
+
+msgid "Every note one after the other, each written in place."
+msgstr "Toutes les notes à la suite, chacune modifiable sur place."
+
+msgid "Notes whose title holds..."
+msgstr "Notes dont le titre contient..."
+
+msgid "Search the notes by title"
+msgstr "Chercher les notes par titre"
+
+msgid "Search"
+msgstr "Chercher"
+
+#, python-format
+msgid "Written %(when)s"
+msgstr "Écrite le %(when)s"
+
+msgid "Open the note"
+msgstr "Ouvrir la note"
+
+msgid "No note."
+msgstr "Aucune note."
+
+#, python-format
+msgid "The first %(limit)s only: search by title for the others."
+msgstr "Les %(limit)s premières seulement : cherchez les autres par titre."
