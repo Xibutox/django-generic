@@ -662,6 +662,10 @@ msgstr "Clair"
 msgid "Loading"
 msgstr "Chargement"
 
+#: generic/static/generic/js/datatables/filterbar.js
+msgid "Loading more values…"
+msgstr "Chargement d'autres valeurs…"
+
 #: generic/static/generic/js/select2.js:46
 msgid "Loading more results…"
 msgstr "Chargement d'autres résultats…"
@@ -670,9 +674,6 @@ msgstr "Chargement d'autres résultats…"
 msgid "Loading…"
 msgstr "Chargement…"
 
-#: generic/static/generic/js/datatables/filterbar.js:780
-msgid "More values exist: refine the search."
-msgstr "D'autres valeurs existent : affinez la recherche."
 
 #: generic/static/generic/js/datatables/toolbar.js:260
 msgid "My views"

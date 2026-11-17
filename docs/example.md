@@ -53,6 +53,8 @@ example/               the app
 │                      external services, a DataResource
 ├── external.py        a status API's answer: the rows of the external
 │                      services, a list of dicts, cached a minute
+├── form_pages.py      form pages: a notice (no model), a customer with its
+│                      first ticket (two models), a ticket reassigned
 ├── pages.py           pages the resources declare beside the generated
 │                      ones: the customer map, a ticket's timeline
 ├── serializers.py     hand-written declarations, for the classic pages
@@ -521,6 +523,26 @@ record, the frame and a button:
 Sign in as `guest`, who may see neither customers nor tickets: no
 button, no navigation entry, and a refusal at the address. See
 [Pages of a resource's own](pages.md).
+
+**Forms that are not a record's.** Three form pages, in
+`example/form_pages.py`, drawn like every form - sections, widgets,
+errors beside their fields, dark theme, French:
+
+- *Support › Send a notice* (`/demo/notice/`) writes no model: a
+  `FormSerializer` - recipients, title, message, level, link - whose
+  `form_valid` sends each recipient a notification, live. Send one to
+  yourself, then try a link that does not start with `/`.
+- *New customer with a ticket*, a button on the customers' list, writes
+  two models at once: a `ModelsForm` of two parts, the customer and its
+  first ticket, linked and numbered as they are saved. Reuse an existing
+  customer code: the error comes back under the code, and no ticket is
+  written either. `viewer`, who may not add customers, has no such
+  button, and a refusal at the address.
+- A ticket's *Reassign* button, or its row menu entry, is four of the
+  ticket's fields - team, assignee, priority, due date - on a page of
+  their own, saved under the ticket's change permission.
+
+See [Form pages](form-pages.md).
 
 **Triage: many tickets at once.** *Support › Triage* (`/demo/triage/`)
 is a grid the ticket resource declares over a set it chooses — every
