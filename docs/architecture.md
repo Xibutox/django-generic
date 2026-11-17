@@ -39,6 +39,7 @@ generic/
 │   ├── exports.py       Streaming Excel and CSV of the filtered set
 │   ├── autocomplete.py  Select2 endpoint for multiselect filters
 │   ├── forms.py         Serializer -> form schema
+│   ├── form_parts.py    ModelsForm, FormPart: one form over several models
 │   ├── files.py         A stored file as {name, url, size}; the form's file field
 │   ├── parsers.py       MultiPartJSONParser: _payload JSON + one part per file
 │   ├── inlines.py       Tabular inlines: parse, delete, validate, save
