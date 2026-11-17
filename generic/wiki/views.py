@@ -15,7 +15,6 @@ from typing import Any
 
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse
@@ -31,7 +30,13 @@ from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
 from generic.wiki import archive, pdf
-from generic.wiki.api import IMAGE_TYPES, can, may_write_in, readable_pages
+from generic.wiki.access import (
+    may_open,
+    page_rights,
+    roles_of,
+    wiki_rights,
+)
+from generic.wiki.api import IMAGE_TYPES, can, readable_pages
 from generic.wiki.models import (
     Wiki,
     WikiFile,
@@ -134,15 +139,13 @@ def descendants_of(pages: list[WikiPage], root: WikiPage) -> set[Any]:
     return found
 
 
-def wiki_rights(user: Any) -> dict[str, bool]:
-    """What ``user`` may do to the wikis themselves."""
-    rights = {
-        name: can(user, name, "wiki") for name in ("add", "change", "delete")
-    }
-    # An archive makes a wiki and writes its pages.
-    rights["import"] = rights["add"] and can(user, "add")
+def list_rights(user: Any) -> dict[str, bool]:
+    """What ``user`` may do on the list of wikis: make one, import one.
+    What they may do to each wiki is the wiki's ``rights``."""
+    add = can(user, "add", "wiki")
 
-    return rights
+    # Whoever makes a wiki owns it, and so writes its pages.
+    return {"add": add, "import": add}
 
 
 class WikiListView(SiteViewMixin, TemplateView):
@@ -174,29 +177,48 @@ class WikiListView(SiteViewMixin, TemplateView):
     def wikis(self) -> Any:
         return (
             Wiki.objects.readable_by(self.request.user)
-            .annotate(page_count=Count("pages"))
+            .with_page_count()
+            .select_related("owner")
             .order_by("position", "name")
         )
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         request = self.request
-        rights = wiki_rights(request.user)
+        user = request.user
+        rights = list_rights(user)
+        roles = roles_of(user)
+
+        # What the reader may do to each: the card's buttons.
+        for wiki in self.wiki_list:
+            wiki.rights = wiki_rights(user, wiki, roles)
+
+        trashed = [
+            wiki
+            for wiki in Wiki.all_objects.filter(
+                deleted_at__isnull=False
+            ).readable_by(user)
+            if wiki_rights(user, wiki, roles)["delete"]
+        ]
 
         context.update(
             wikis=self.wiki_list,
             can=rights,
+            trash_count=len(trashed),
             pdf_available=pdf.available(),
             archive_available=may_download(request),
             wikis_config={
                 "api": reverse("generic_wiki:wiki-list"),
                 "importUrl": reverse("generic_wiki:wiki-import"),
                 "importMaxSize": generic_settings.WIKI_ARCHIVE_MAX_SIZE,
+                "trashDays": generic_settings.TRASH_DAYS,
                 "wikis": WikiSerializer(
-                    self.wiki_list, many=True, context={"request": request}
+                    self.wiki_list,
+                    many=True,
+                    context={"request": request, "roles": roles},
                 ).data,
-                # A copy of a wiki takes its pages for who may add some.
-                "can": {**rights, "addPage": can(request.user, "add")},
+                # A copy of a wiki is its maker's: its pages come along.
+                "can": {**rights, "addPage": rights["add"]},
             },
         )
 
@@ -250,11 +272,8 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             .only("id", "title", "slug", "parent_id", "position", "wiki__slug")
             .order_by("position", "title")
         )
-        writes = may_write_in(request.user, wiki.pk)
-        rights = {
-            name: writes and can(request.user, name)
-            for name in ("add", "change", "delete")
-        }
+        rights = page_rights(request.user, wiki)
+        manages = wiki_rights(request.user, wiki)
         excluded = descendants_of(pages, page) if page is not None else set()
         others = Wiki.objects.readable_by(request.user).exclude(pk=wiki.pk)
 
@@ -270,8 +289,13 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             content=safe_html(page.content) if page else "",
             attachments=page.attachments() if page else [],
             can=rights,
+            can_wiki=manages,
             wiki_config={
                 "wiki": wiki.pk,
+                "wikiApi": reverse("generic_wiki:wiki-list"),
+                "wikiName": wiki.name,
+                "trashDays": generic_settings.TRASH_DAYS,
+                "canWiki": manages,
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None
@@ -493,7 +517,8 @@ class WikiArchiveView(View):
 
 
 class WikiImageView(View):
-    """An image of the wiki, for whoever may read its pages.
+    """An image of a wiki, for whoever may read that wiki - or a page
+    showing it (``generic.wiki.access.may_open``).
 
     Shown in the page (``inline``), as the image type its bytes were
     found to be when it was uploaded, never sniffed as anything else,
@@ -508,6 +533,11 @@ class WikiImageView(View):
             )
 
         image = get_object_or_404(WikiImage, pk=pk)
+
+        # Not there, for whoever reads no wiki showing it.
+        if not may_open(request.user, image):
+            raise Http404
+
         name = file_name(image.file)
         content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
 
@@ -526,7 +556,8 @@ class WikiImageView(View):
 
 
 class WikiFileView(View):
-    """A file of the wiki, for whoever may read its pages.
+    """A file of a wiki, for whoever may read that wiki - or a page
+    linking to it (``generic.wiki.access.may_open``).
 
     Always a download (``attachment``), under the name it was uploaded
     with, and never sniffed: whatever somebody uploaded, it never runs
@@ -546,7 +577,9 @@ class WikiFileView(View):
 
         attachment = get_object_or_404(WikiFile, pk=pk)
 
-        if not is_stored(attachment.file):
+        if not may_open(request.user, attachment) or not is_stored(
+            attachment.file
+        ):
             raise Http404
 
         name = attachment.original_name or file_name(attachment.file)

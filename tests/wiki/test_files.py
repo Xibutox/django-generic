@@ -6,7 +6,13 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from generic.wiki.models import WikiFile, WikiImage, WikiPage, attachments_in
+from generic.wiki.models import (
+    Wiki,
+    WikiFile,
+    WikiImage,
+    WikiPage,
+    attachments_in,
+)
 from generic.wiki.sanitize import clean_html
 from tests.factories import UserFactory
 
@@ -113,11 +119,16 @@ class TestUpload:
 class TestDownload:
     @pytest.fixture
     def attachment(self, author) -> WikiFile:
-        return WikiFile.objects.get(
+        attachment = WikiFile.objects.get(
             pk=send(author, "page.html", b"<script>alert(1)</script>").json()[
                 "id"
             ]
         )
+        # Uploaded into a wiki: its readers download it.
+        attachment.wiki = Wiki.objects.default()
+        attachment.save()
+
+        return attachment
 
     def test_a_reader_downloads_it_under_its_name(self, client, attachment):
         client.force_login(UserFactory())

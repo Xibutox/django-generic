@@ -99,6 +99,27 @@ class TestOrder:
             for page, depth in pdf.ordered_pages(handbook["wiki"])
         ] == [("first", 0), ("child", 1), ("second", 0)]
 
+    def test_only_its_own_wiki_s_pages(self, handbook):
+        other = Wiki.objects.create(name="Other", slug="other")
+        WikiPage.objects.create(wiki=other, title="Elsewhere", slug="away")
+        WikiPage.objects.create(
+            wiki=Wiki.objects.get(slug="main"), title="Main", slug="main-page"
+        )
+
+        assert [page.slug for page, _ in pdf.ordered_pages(other)] == ["away"]
+        assert "away" not in [
+            page.slug for page, _ in pdf.ordered_pages(handbook["wiki"])
+        ]
+
+    def test_a_page_in_the_trash_is_left_out(self, handbook):
+        WikiPage.objects.filter(slug="second").update(
+            deleted_at="2026-01-01T00:00:00Z"
+        )
+
+        assert "second" not in [
+            page.slug for page, _ in pdf.ordered_pages(handbook["wiki"])
+        ]
+
 
 class TestPageHtml:
     def rewrite(
@@ -616,6 +637,21 @@ class TestRender:
 
 
 class TestView:
+    def test_each_address_writes_its_own_wiki(self, auth_client, handbook):
+        other = Wiki.objects.create(name="Other", slug="other")
+        written = []
+
+        def render(wiki, **kwargs):
+            written.append(wiki.slug)
+
+            return b"%PDF-"
+
+        with mock.patch.object(pdf, "render", render):
+            auth_client.get("/wiki/other/export.pdf")
+            auth_client.get("/wiki/quality/export.pdf")
+
+        assert written == [other.slug, "quality"]
+
     def test_a_reader_downloads_it(self, auth_client, handbook):
         response = auth_client.get("/wiki/quality/export.pdf")
 

@@ -207,9 +207,12 @@ class TestAWiki:
 
         assert response.status_code == 403
 
-    def test_its_pages_need_the_page_add_permission(self, client, handbook):
-        client.force_login(writer("add_wiki"))
-        refused = post(
+    def test_the_copy_is_its_maker_s_pages_included(self, client, handbook):
+        # Whoever may add a wiki owns the copy, and an owner writes its
+        # pages: the page permission is not asked.
+        maker = writer("add_wiki")
+        client.force_login(maker)
+        full = post(
             client, f"{WIKIS}{handbook['wiki'].pk}/duplicate/", {"name": "A"}
         )
         empty = post(
@@ -218,9 +221,11 @@ class TestAWiki:
             {"name": "B", "pages": False},
         )
 
-        assert refused.status_code == 403
+        assert full.status_code == 201
         assert empty.status_code == 201
-        assert not Wiki.objects.filter(name="A").exists()
+        assert Wiki.objects.get(name="A").owner == maker
+        assert Wiki.objects.get(name="A").pages.exists()
+        assert not Wiki.objects.get(name="B").pages.exists()
 
     def test_tells_the_project_in_the_copy_s_transaction(
         self, admin_client, handbook

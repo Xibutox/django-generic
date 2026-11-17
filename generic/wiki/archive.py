@@ -354,9 +354,10 @@ def _uploads(
     user: Any,
     result: ImportResult,
     saved: list[Any],
+    wiki: Wiki | None = None,
 ) -> dict[str, str]:
-    """Store the archive's images and files; returns, for each place in
-    the archive, the address it now has."""
+    """Store the archive's images and files, as ``wiki``'s; returns,
+    for each place in the archive, the address it now has."""
     from generic.wiki.api import sniff_image
 
     limit = generic_settings.FILE_MAX_SIZE
@@ -402,7 +403,9 @@ def _uploads(
                     result.skipped.append(path)
                     continue
 
-                upload: Any = WikiImage(original_name=name, uploaded_by=user)
+                upload: Any = WikiImage(
+                    wiki=wiki, original_name=name, uploaded_by=user
+                )
                 stem = PurePath(name).stem or "image"
                 upload.file.save(
                     f"{stem}.{stored}", ContentFile(data), save=False
@@ -410,7 +413,10 @@ def _uploads(
                 result.images += 1
             else:
                 upload = WikiFile(
-                    original_name=name, size=len(data), uploaded_by=user
+                    wiki=wiki,
+                    original_name=name,
+                    size=len(data),
+                    uploaded_by=user,
                 )
                 upload.file.save(name or "file", ContentFile(data), save=False)
                 result.files += 1
@@ -430,7 +436,7 @@ def _wiki_slug(manifest_slug: Any, name: str) -> str:
     if (
         slug
         and slug not in RESERVED_WIKI_SLUGS
-        and not Wiki.objects.filter(slug=slug).exists()
+        and not Wiki.all_objects.filter(slug=slug).exists()
     ):
         return slug
 
@@ -607,9 +613,13 @@ def import_archive(
                         about.get("description"), 100_000, "description"
                     ),
                     position=0 if last is None else last + 1,
+                    # Whoever imports a wiki owns it.
+                    owner=user if getattr(user, "pk", None) else None,
                 )
                 result = ImportResult(wiki=wiki)
-                addresses = _uploads(archive, manifest, user, result, saved)
+                addresses = _uploads(
+                    archive, manifest, user, result, saved, wiki
+                )
                 result.pages = _pages(wiki, manifest, addresses, user)
 
                 if check is not None:

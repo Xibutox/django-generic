@@ -6,6 +6,7 @@ from __future__ import annotations
 import pytest
 from django.contrib.auth.models import Permission
 
+from generic.wiki.api import readable_pages
 from generic.wiki.models import Wiki, WikiPage
 from tests.factories import UserFactory
 
@@ -140,9 +141,12 @@ class TestWikiApi:
 
         response = client.delete(f"{WIKIS}{two_wikis['quality'].pk}/")
 
+        # To the trash: gone from every screen, deleted for good from
+        # there (test_trash.py).
         assert response.status_code == 204
-        assert not WikiPage.objects.filter(slug="rules").exists()
-        assert WikiPage.objects.filter(slug="welcome").exists()
+        assert not Wiki.objects.filter(slug="quality").exists()
+        assert not readable_pages(writer()).filter(slug="rules").exists()
+        assert readable_pages(writer()).filter(slug="welcome").exists()
 
 
 class TestPagesApi:

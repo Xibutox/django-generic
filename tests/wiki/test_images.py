@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from generic.wiki.api import sniff_image
-from generic.wiki.models import WikiImage, WikiPage
+from generic.wiki.models import Wiki, WikiImage, WikiPage
 from tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -149,9 +149,14 @@ class TestUpload:
 class TestServing:
     @pytest.fixture
     def image(self, author) -> WikiImage:
-        return WikiImage.objects.get(
+        image = WikiImage.objects.get(
             pk=send(author, "a.png", PNG).json()["id"]
         )
+        # Uploaded into a wiki: its readers see it.
+        image.wiki = Wiki.objects.default()
+        image.save()
+
+        return image
 
     def test_a_reader_sees_it_in_the_page(self, client, image):
         client.force_login(UserFactory())
