@@ -566,6 +566,35 @@ class WikiRedirect(models.Model):
         return f"{self.slug} -> {self.page_id}"
 
 
+class WikiComment(models.Model):
+    """A word on a page, below it: plain text, by whoever reads it."""
+
+    page = models.ForeignKey(
+        "WikiPage",
+        verbose_name=_("page"),
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("author"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    body = models.TextField(_("comment"))
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = _("wiki comment")
+        verbose_name_plural = _("wiki comments")
+
+    def __str__(self) -> str:
+        return self.body[:50]
+
+
 class WikiRevision(models.Model):
     """A version of a page: kept to read it again and to restore it.
 

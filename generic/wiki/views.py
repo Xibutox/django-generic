@@ -30,7 +30,7 @@ from generic.sites import site
 from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki import archive, invitations, pdf, sharing
+from generic.wiki import archive, invitations, pdf, presence, sharing
 from generic.wiki.access import (
     may_open,
     page_rights,
@@ -367,6 +367,19 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                     and is_watching(request.user, page),
                     "wiki": is_watching(request.user, wiki),
                 },
+                # Who reads it hears who edits it, and its comments.
+                "me": request.user.pk,
+                "topic": (
+                    presence.TOPIC.format(page_id=page.pk)
+                    if page is not None
+                    else ""
+                ),
+                "editors": (
+                    presence.editors(page, exclude=request.user.pk)
+                    if page is not None
+                    else []
+                ),
+                "editingBeat": presence.BEAT,
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None
@@ -541,6 +554,8 @@ class WikiRevisionView(WikiPageView):
         )
         # A version is read, not edited.
         context["wiki_config"]["edit"] = False
+        # A version is not commented, nor edited.
+        context["wiki_config"]["topic"] = ""
 
         return context
 

@@ -1206,3 +1206,62 @@
   top: var(--space-4);
   max-height: calc(100vh - 2 * var(--space-4));
 }
+
+/* -- Comments; who else edits the page ------------------------------------ */
+
+.wiki-comments {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+}
+
+.wiki-comments__list {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.wiki-comments__item {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wiki-comments__meta {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.wiki-comments__delete {
+  margin-left: auto;
+}
+
+.wiki-comments__body {
+  margin: var(--space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wiki-comments__form {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
+.wiki-comments__form textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+.wiki__editing,
+.wiki__others {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.wiki__editing {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+}

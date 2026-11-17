@@ -76,21 +76,28 @@ def sentence(change: str, page: WikiPage, actor: Any) -> str:
     if change == "deleted":
         return _("%(name)s deleted “%(title)s” from %(wiki)s.") % values
 
+    if change == "commented":
+        return _("%(name)s commented on “%(title)s” in %(wiki)s.") % values
+
     return _("%(name)s changed “%(title)s” in %(wiki)s.") % values
 
 
 def announce(page: WikiPage, change: str, actor: Any = None) -> None:
-    """Tell whoever watches ``page`` or its wiki, once the save is in."""
+    """Tell whoever watches ``page`` or its wiki, once the save is in:
+    ``change`` is ``created``, ``updated``, ``deleted`` - or
+    ``commented``, for the page's watchers only."""
     transaction.on_commit(lambda: _announce(page, change, actor))
 
 
 def _announce(page: WikiPage, change: str, actor: Any) -> int:
     try:
-        found = list(watches_of(page.wiki))
+        # A comment is news for the page's watchers, not the wiki's.
+        found = [] if change == "commented" else list(watches_of(page.wiki))
 
         if change != "created":
+            wanted = "updated" if change == "commented" else change
             found += [
-                watch for watch in watches_of(page) if watch.wants(change)
+                watch for watch in watches_of(page) if watch.wants(wanted)
             ]
     except Exception:
         logger.exception("Could not read the watches of page %s", page.pk)

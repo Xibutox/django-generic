@@ -39,6 +39,11 @@
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
 ``POST   pages/<id>/duplicate/``   a copy beside it: ``{"title",
                                    "subpages"}``
+``GET    pages/<id>/comments/``    its comments, oldest first
+``POST   pages/<id>/comments/``    a comment: ``{"body"}``
+``POST   pages/<id>/uncomment/``   one taken away: ``{"comment"}``
+``POST   pages/<id>/editing/``     the editor is open - or closed:
+                                   ``{"active"}``; answers the others
 ``POST   pages/<id>/place/``       elsewhere in the menu: ``{"parent",
                                    "before"}``
 ``POST   pages/<id>/move/``        to another wiki, with its subpages:
@@ -88,7 +93,7 @@ from generic.api.body import ObjectBodyMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.search import text_lookup
-from generic.wiki import sharing
+from generic.wiki import presence, sharing
 from generic.wiki.access import (
     has_perm,
     page_rights,
@@ -101,6 +106,7 @@ from generic.wiki.models import (
     ROLES,
     Wiki,
     WikiFile,
+    WikiComment,
     WikiImage,
     WikiMember,
     WikiPage,
@@ -177,6 +183,7 @@ PAGE_ACTIONS = {
     "restore": "change",
     "duplicate": "add",
     "place": "change",
+    "editing": "change",
     # It leaves its wiki: as good as deleted there.
     "move": "delete",
     "undelete": "delete",
@@ -184,8 +191,12 @@ PAGE_ACTIONS = {
 }
 
 #: Actions for any reader, though POSTed: a comparison changes
-#: nothing, a watch is the reader's own.
-READ_ACTIONS = frozenset({"diff", "watch"})
+#: nothing, a watch is the reader's own, a comment is the reader's to
+#: write - and to take away, or the wiki's manager's.
+READ_ACTIONS = frozenset({"diff", "watch", "comments", "uncomment"})
+
+#: The longest comment, in characters.
+COMMENT_MAX_LENGTH = 5000
 
 #: A wiki's actions for whoever says who its members are.
 MEMBER_ACTIONS = frozenset({"members", "invitations", "uninvite", "share"})
@@ -342,6 +353,31 @@ def member_json(member: WikiMember) -> dict[str, Any]:
         "name": member.group.name if member.group is not None else "",
         "detail": gettext("Group"),
         "role": member.role,
+    }
+
+
+def may_remove_comment(
+    user: Any, comment: WikiComment, wiki: Wiki, roles: Any = None
+) -> bool:
+    """Its author, the wiki's manager, or whoever may change any wiki."""
+    return bool(
+        (comment.author_id is not None and comment.author_id == user.pk)
+        or wiki_rights(user, wiki, roles)["members"]
+    )
+
+
+def comment_json(
+    comment: WikiComment, user: Any, wiki: Wiki, roles: Any = None
+) -> dict[str, Any]:
+    return {
+        "id": comment.pk,
+        "body": comment.body,
+        "author_name": (
+            display_name(comment.author) if comment.author_id else ""
+        ),
+        "created_at": comment.created_at,
+        "mine": comment.author_id is not None and comment.author_id == user.pk,
+        "can_delete": may_remove_comment(user, comment, wiki, roles),
     }
 
 
@@ -1104,6 +1140,74 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             WikiPageSerializer(copy, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=["get", "post"])
+    def comments(self, request: Any, pk: Any = None) -> Response:
+        """Its comments, oldest first; ``POST {"body"}`` writes one,
+        for anyone reading the page."""
+        page = self.get_object()
+
+        if request.method == "POST":
+            body = str(request.data.get("body") or "").strip()
+
+            if not body:
+                raise ValidationError(
+                    {"body": gettext("This field is required.")}
+                )
+
+            if len(body) > COMMENT_MAX_LENGTH:
+                raise ValidationError(
+                    {"body": gettext("This comment is too long.")}
+                )
+
+            comment = WikiComment.objects.create(
+                page=page, author=request.user, body=body
+            )
+            announce(page, "commented", request.user)
+            presence.tell(page, "wiki.comments", {})
+
+            return Response(
+                comment_json(comment, request.user, page.wiki),
+                status=status.HTTP_201_CREATED,
+            )
+
+        roles = roles_of(request.user)
+
+        return Response(
+            [
+                comment_json(comment, request.user, page.wiki, roles)
+                for comment in page.comments.select_related("author")
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def uncomment(self, request: Any, pk: Any = None) -> Response:
+        """A comment taken away, by its author or the wiki's manager."""
+        page = self.get_object()
+        comment = get_object_or_404(
+            page.comments, pk=as_id(request.data.get("comment"))
+        )
+
+        if not may_remove_comment(request.user, comment, page.wiki):
+            raise PermissionDenied(gettext("You may not delete this comment."))
+
+        comment.delete()
+        presence.tell(page, "wiki.comments", {})
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"])
+    def editing(self, request: Any, pk: Any = None) -> Response:
+        """The editor is open on the page - ``{"active": false}``: it
+        closed. Answers who else has it open (generic.wiki.presence)."""
+        page = self.get_object()
+        others = presence.beat(
+            page,
+            request.user,
+            active=as_bool(request.data.get("active", True)),
+        )
+
+        return Response({"editors": others})
 
     @action(detail=True, methods=["post"])
     def place(self, request: Any, pk: Any = None) -> Response:

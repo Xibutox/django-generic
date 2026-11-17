@@ -1437,6 +1437,11 @@
         form: {},
         original: "",
         watching: config.watching || { page: false, wiki: false },
+        //: Who else has the page open in the editor.
+        editors: config.editors || [],
+        comments: [],
+        commentBody: "",
+        commenting: false,
         //: The version the text being written started from: what a
         //: save is checked against.
         base: "",
@@ -1450,6 +1455,46 @@
           });
 
           var menu = this.$root.querySelector(".wiki__menu");
+          var beating = null;
+
+          if (this.page && config.topic) {
+            this.loadComments();
+
+            // Who edits the page, and its comments, as they happen.
+            if (Generic.events) {
+              Generic.events.subscribe(config.topic);
+              Generic.events.on("wiki.editing", function (payload) {
+                if (payload.page === self.page.id) {
+                  self.editors = (payload.editors || []).filter(function (editor) {
+                    return editor.id !== config.me;
+                  });
+                }
+              });
+              Generic.events.on("wiki.comments", function (payload) {
+                if (payload.page === self.page.id) {
+                  self.loadComments();
+                }
+              });
+            }
+
+            // An open editor says so, now and then, and when it closes.
+            this.$watch("editing", function (open) {
+              window.clearInterval(beating);
+              beating = null;
+
+              if (!self.config.can.change) {
+                return;
+              }
+
+              self.beat(open);
+
+              if (open) {
+                beating = window.setInterval(function () {
+                  self.beat(true);
+                }, (config.editingBeat || 20) * 1000);
+              }
+            });
+          }
 
           if (menu && config.can && config.can.change) {
             sortableMenu(menu, function (id, target) {
@@ -1470,6 +1515,107 @@
               event.returnValue = "";
             }
           });
+        },
+
+        /** Who else edits the page, in a sentence. */
+        editorsText: function () {
+          var names = this.editors.map(function (editor) {
+            return editor.name;
+          });
+
+          if (!names.length) {
+            return "";
+          }
+
+          return Generic.format(
+            names.length === 1
+              ? t("%(names)s is editing this page.")
+              : t("%(names)s are editing this page."),
+            { names: names.join(", ") }
+          );
+        },
+
+        beat: function (active) {
+          var self = this;
+
+          Generic.api
+            .post(this.pageUrl(this.page.id) + "editing/", { active: Boolean(active) })
+            .then(function (data) {
+              self.editors = (data && data.editors) || [];
+            })
+            .catch(function () {
+              /* Telling is a courtesy: the save's version check is the guard. */
+            });
+        },
+
+        loadComments: function () {
+          var self = this;
+
+          Generic.api
+            .get(this.pageUrl(this.page.id) + "comments/")
+            .then(function (rows) {
+              self.comments = (rows || []).map(function (row) {
+                row.author_name = row.author_name || t("Someone");
+
+                return row;
+              });
+            })
+            .catch(function () {
+              /* The page reads without its comments. */
+            });
+        },
+
+        commentDate: function (comment) {
+          return when(comment.created_at);
+        },
+
+        comment: function () {
+          var self = this;
+          var body = this.commentBody.trim();
+
+          if (!body || this.commenting) {
+            return;
+          }
+
+          this.commenting = true;
+          Generic.api
+            .post(this.pageUrl(this.page.id) + "comments/", { body: body })
+            .then(function () {
+              self.commentBody = "";
+              self.loadComments();
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The comment could not be saved."), "error");
+            })
+            .then(function () {
+              self.commenting = false;
+            });
+        },
+
+        uncomment: function (comment) {
+          var self = this;
+
+          Generic.dialogs
+            .confirm({
+              title: t("Delete this comment?"),
+              message: t("It is deleted for good."),
+              confirmLabel: t("Delete"),
+              variant: "danger"
+            })
+            .then(function (confirmed) {
+              if (!confirmed) {
+                return;
+              }
+
+              Generic.api
+                .post(self.pageUrl(self.page.id) + "uncomment/", { comment: comment.id })
+                .then(function () {
+                  self.loadComments();
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The comment could not be deleted."), "error");
+                });
+            });
         },
 
         /** A page dropped elsewhere in the menu: `{parent, before}`. */

@@ -207,6 +207,12 @@
             </div>
           </header>
 
+          {% if not revision %}
+            <p class="wiki__editing muted" x-show="editors.length" x-cloak>
+              {% icon "edit_note" "icon--sm" %} <span x-text="editorsText()"></span>
+            </p>
+          {% endif %}
+
           {# The page's headings, for a page with a few: each an anchor. #}
           {% if contents %}
             <nav class="wiki-toc" aria-labelledby="wiki-toc-title">
@@ -272,10 +278,53 @@
               </ul>
             </section>
           {% endif %}
+
+          {# What its readers say about it, below it. #}
+          {% if not revision %}
+            <section class="wiki-comments" aria-labelledby="wiki-comments-title">
+              <h2 class="wiki-attachments__title" id="wiki-comments-title">
+                {% icon "forum" "icon--sm" %} {% translate "Comments" %}
+                <span class="muted" x-show="comments.length" x-text="'(' + comments.length + ')'"></span>
+              </h2>
+              <ul class="wiki-comments__list">
+                <template x-for="comment in comments" :key="comment.id">
+                  <li class="wiki-comments__item">
+                    <div class="wiki-comments__meta">
+                      <strong x-text="comment.author_name"></strong>
+                      <span class="muted" x-text="commentDate(comment)"></span>
+                      <button type="button" class="icon-button icon-button--sm wiki-comments__delete"
+                              x-show="comment.can_delete"
+                              @click="uncomment(comment)"
+                              title="{% translate 'Delete the comment' %}" aria-label="{% translate 'Delete the comment' %}">
+                        {% icon "close" "icon--sm" %}
+                      </button>
+                    </div>
+                    <p class="wiki-comments__body" x-text="comment.body"></p>
+                  </li>
+                </template>
+              </ul>
+              <form class="wiki-comments__form" @submit.prevent="comment()">
+                <label class="sr-only" for="wiki-comment-body">{% translate "Your comment" %}</label>
+                <textarea id="wiki-comment-body" class="input" rows="2" maxlength="5000"
+                          placeholder="{% translate 'Add a comment' %}"
+                          x-model="commentBody"
+                          @keydown.ctrl.enter.prevent="comment()"
+                          @keydown.meta.enter.prevent="comment()"></textarea>
+                <button type="submit" class="button button--sm" :disabled="!commentBody.trim() || commenting">
+                  {% translate "Comment" %}
+                </button>
+              </form>
+            </section>
+          {% endif %}
         </div>
 
         {% if can.change and not revision %}
           <div class="wiki__editor" x-show="editing" x-cloak>
+            {# Someone else has this page open in the editor too. #}
+            <div class="callout callout--warning wiki__others" role="status" x-show="editors.length" x-cloak>
+              {% icon "edit_note" "icon--sm" %}
+              <p x-text="editorsText()"></p>
+            </div>
             <div class="wiki__editor-fields">
               <label class="field wiki__field-title">
                 <span class="field__label">{% translate "Title" %}</span>
