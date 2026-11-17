@@ -7,8 +7,10 @@ page, ``wiki/<wiki>/<page>/`` is a page,
 ``wiki/<wiki>/<page>/versions/<id>/`` one of its versions, read-only,
 ``wiki/<wiki>/export.pdf`` the whole wiki as a PDF and
 ``wiki/<wiki>/export.zip`` as an archive to import elsewhere
-(``api/wikis/import/``), ``wiki/invitations/<secret>/`` an invitation
-to join a wiki, sent by e-mail, and ``wiki/shared/<secret>/`` a wiki's
+(``api/wikis/import/``), ``wiki/<wiki>/<page>/export.pdf`` and
+``export.md`` one page as a PDF and as Markdown,
+``wiki/invitations/<secret>/`` an invitation to join a wiki, sent by
+e-mail, and ``wiki/shared/<secret>/`` a wiki's
 public link, read-only (``generic.wiki.sharing``).
 
 The editor uploads its images to ``api/generic/wiki/images/``, in
@@ -64,6 +66,16 @@ urlpatterns = [
         "<str:wiki>/export.zip",
         views.WikiArchiveView.as_view(),
         name="archive",
+    ),
+    path(
+        "<str:wiki>/<str:slug>/export.pdf",
+        views.WikiPdfView.as_view(),
+        name="page-pdf",
+    ),
+    path(
+        "<str:wiki>/<str:slug>/export.md",
+        views.WikiMarkdownView.as_view(),
+        name="page-markdown",
     ),
     path("<str:wiki>/", views.WikiIndexView.as_view(), name="wiki"),
     path("<str:wiki>/<str:slug>/", views.WikiPageView.as_view(), name="page"),

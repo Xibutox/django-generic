@@ -209,6 +209,7 @@ class WikiPageListSerializer(serializers.ModelSerializer):
             "parent",
             "position",
             "show_on_dashboard",
+            "is_template",
             "url",
         )
         read_only_fields = fields
@@ -237,6 +238,7 @@ class WikiPageSerializer(serializers.ModelSerializer):
             "position",
             "content",
             "show_on_dashboard",
+            "is_template",
             "url",
             "version",
             "updated_at",

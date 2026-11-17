@@ -137,6 +137,9 @@ DEFAULTS: dict[str, Any] = {
     # Whether a wiki's managers may give it a public link: its pages,
     # read-only, for anyone holding the link - signed in or not.
     "WIKI_PUBLIC_LINKS": False,
+    # The versions kept of each wiki page; older ones are dropped as new
+    # ones come. None keeps every version.
+    "WIKI_MAX_REVISIONS": 50,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

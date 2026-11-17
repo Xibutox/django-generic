@@ -26,8 +26,17 @@ def plain_text(html: str | None) -> str:
     return "\n".join(lines_of(html))
 
 
-#: Versions kept per page; older ones are dropped as new ones come.
+#: Versions kept per page, unless ``GENERIC["WIKI_MAX_REVISIONS"]``
+#: says otherwise; older ones are dropped as new ones come.
 MAX_REVISIONS = 50
+
+
+def max_revisions() -> int | None:
+    """Versions kept per page: the setting; None keeps every one."""
+    value = generic_settings.WIKI_MAX_REVISIONS
+
+    return None if value is None else max(int(value), 1)
+
 
 #: Addresses of the wiki's own routes: no wiki may take them.
 RESERVED_WIKI_SLUGS = frozenset(
@@ -356,6 +365,12 @@ class WikiPage(Trashed):
     #: The content's words, without its HTML: what a search reads, and
     #: where an excerpt is cut from. Written by ``save``.
     text = models.TextField(_("text"), blank=True, default="", editable=False)
+    #: Offered as the start of a new page of its wiki.
+    is_template = models.BooleanField(
+        _("template"),
+        default=False,
+        help_text=_("Offered as the start of a new page of its wiki."),
+    )
     show_on_dashboard = models.BooleanField(
         _("show on the dashboard"),
         default=False,
@@ -660,10 +675,15 @@ class WikiRevision(models.Model):
             created_at=page.updated_at or timezone.now(),
             author_id=page.updated_by_id,
         )
-        stale = list(
-            cls.objects.filter(page=page).values_list("pk", flat=True)[
-                MAX_REVISIONS:
-            ]
+        limit = max_revisions()
+        stale = (
+            list(
+                cls.objects.filter(page=page).values_list("pk", flat=True)[
+                    limit:
+                ]
+            )
+            if limit is not None
+            else []
         )
 
         if stale:

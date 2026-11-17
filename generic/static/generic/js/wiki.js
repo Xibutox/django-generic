@@ -1660,7 +1660,8 @@
             slug: page.slug,
             parent: page.parent === null || page.parent === undefined ? "" : String(page.parent),
             position: page.position || 0,
-            show_on_dashboard: Boolean(page.show_on_dashboard)
+            show_on_dashboard: Boolean(page.show_on_dashboard),
+            is_template: Boolean(page.is_template)
           };
           this.editing = true;
 
@@ -2350,7 +2351,8 @@
             form.slug !== page.slug ||
             String(form.parent) !== parent ||
             Number(form.position) !== Number(page.position) ||
-            Boolean(form.show_on_dashboard) !== Boolean(page.show_on_dashboard)
+            Boolean(form.show_on_dashboard) !== Boolean(page.show_on_dashboard) ||
+            Boolean(form.is_template) !== Boolean(page.is_template)
           );
         },
 
@@ -2447,6 +2449,7 @@
             parent: form.parent === "" ? null : Number(form.parent),
             position: Number(form.position) || 0,
             show_on_dashboard: Boolean(form.show_on_dashboard),
+            is_template: Boolean(form.is_template),
             content: htmlOf(quill),
             // Refused if someone saved in between.
             version: this.base || page.version
@@ -2476,26 +2479,55 @@
             });
         },
 
+        /**
+         * A new page: its title asked - and, where the wiki has templates,
+         * what it starts from - then opened in the editor.
+         */
         create: function (parent) {
+          var templates = config.templates || [];
+          var fields = [{ name: "title", label: t("Title"), required: true, maxLength: 200 }];
+
+          if (templates.length) {
+            fields.push({
+              name: "template",
+              label: t("Start from"),
+              value: "",
+              choices: [{ value: "", label: t("A blank page") }].concat(
+                templates.map(function (template) {
+                  return { value: template.id, label: template.title };
+                })
+              )
+            });
+          }
+
           Generic.dialogs
-            .prompt({
+            .fields({
               title: parent ? t("New subpage") : t("New page"),
-              label: t("Title"),
-              confirmLabel: t("Create")
+              icon: "note_add",
+              confirmLabel: t("Create"),
+              fields: fields
             })
-            .then(function (result) {
-              var title = result && result.value ? String(result.value).trim() : "";
+            .then(function (values) {
+              var title = values && values.title ? String(values.title).trim() : "";
 
               if (!title) {
                 return;
               }
 
-              Generic.api
-                .post(config.api, {
-                  title: title,
-                  wiki: config.wiki,
-                  parent: parent || null,
-                  content: ""
+              var start = values.template
+                ? Generic.api.get(config.api + values.template + "/").then(function (template) {
+                    return template.content || "";
+                  })
+                : Promise.resolve("");
+
+              start
+                .then(function (content) {
+                  return Generic.api.post(config.api, {
+                    title: title,
+                    wiki: config.wiki,
+                    parent: parent || null,
+                    content: content
+                  });
                 })
                 .then(function (data) {
                   window.location.assign(data.url + "?edit=1");
@@ -2503,6 +2535,46 @@
                 .catch(function (error) {
                   Generic.toast(errorText(error) || t("The page could not be created."), "error");
                 });
+            });
+        },
+
+        /** The file chooser for a Markdown file to make a page of. */
+        chooseMarkdown: function () {
+          if (this.$refs.markdown) {
+            this.$refs.markdown.value = "";
+            this.$refs.markdown.click();
+          }
+        },
+
+        /** A new page from the Markdown file chosen, opened in the editor. */
+        importMarkdown: function (event) {
+          var file = event.target.files && event.target.files[0];
+
+          if (!file) {
+            return;
+          }
+
+          if (file.size > 1000000) {
+            Generic.toast(t("The file is too large."), "error");
+            return;
+          }
+
+          file
+            .text()
+            .then(function (text) {
+              return Generic.api.post(config.importUrl, {
+                markdown: text,
+                name: file.name,
+                wiki: config.wiki,
+                parent: null
+              });
+            })
+            .then(function (data) {
+              Generic.flash(t("The page was imported."), "success");
+              window.location.assign(data.url + "?edit=1");
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The file could not be imported."), "error");
             });
         },
 

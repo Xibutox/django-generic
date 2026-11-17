@@ -80,6 +80,14 @@
             {% translate "New page" as new_label %}
             {% icon "add" "" new_label %}
           </button>
+          <button type="button"
+                  class="icon-button"
+                  title="{% translate 'A new page from a Markdown file' %}"
+                  @click="chooseMarkdown()">
+            {% translate "Import a Markdown file" as import_label %}
+            {% icon "upload_file" "" import_label %}
+          </button>
+          <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden x-ref="markdown" @change="importMarkdown($event)">
         {% endif %}
       </div>
 
@@ -169,6 +177,34 @@
               <button type="button" class="button button--ghost button--sm" @click="history()">
                 {% icon "history" "icon--sm" %} {% translate "History" %}
               </button>
+              {% if not revision and page_markdown_url %}
+                {# The page alone: a PDF, in portrait or landscape; Markdown. #}
+                <div class="dropdown wiki-pdf"
+                     x-data="{ open: false }"
+                     @keydown.escape.window="open = false"
+                     @click.outside="open = false">
+                  <button type="button" class="button button--ghost button--sm"
+                          @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="menu">
+                    {% icon "download" "icon--sm" %} {% translate "Export" %}
+                  </button>
+                  <div class="dropdown__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak style="min-width: 13rem;">
+                    {% if page_pdf_url %}
+                      <a class="menu-item" role="menuitem" href="{{ page_pdf_url }}">
+                        {% icon "picture_as_pdf" %}
+                        <span class="menu-item__label">{% translate "PDF, portrait" %}</span>
+                      </a>
+                      <a class="menu-item" role="menuitem" href="{{ page_pdf_url }}?orientation=landscape">
+                        {% icon "crop_landscape" %}
+                        <span class="menu-item__label">{% translate "PDF, landscape" %}</span>
+                      </a>
+                    {% endif %}
+                    <a class="menu-item" role="menuitem" href="{{ page_markdown_url }}">
+                      {% icon "markdown" %}
+                      <span class="menu-item__label">{% translate "Markdown" %}</span>
+                    </a>
+                  </div>
+                </div>
+              {% endif %}
               {% if not revision %}
               {# Told when it changes: a notification, an e-mail. #}
               <button type="button" class="button button--ghost button--sm"
@@ -350,6 +386,10 @@
               <label class="checkbox wiki__field-pin">
                 <input type="checkbox" x-model="form.show_on_dashboard">
                 <span>{% translate "Show on the dashboard" %}</span>
+              </label>
+              <label class="checkbox wiki__field-pin">
+                <input type="checkbox" x-model="form.is_template">
+                <span>{% translate "Offer as a template for new pages" %}</span>
               </label>
             </div>
 

@@ -44,6 +44,9 @@
 ``POST   pages/<id>/uncomment/``   one taken away: ``{"comment"}``
 ``POST   pages/<id>/editing/``     the editor is open - or closed:
                                    ``{"active"}``; answers the others
+``POST   pages/import/``           a new page from Markdown:
+                                   ``{"markdown", "name", "wiki",
+                                   "parent"}``
 ``POST   pages/<id>/place/``       elsewhere in the menu: ``{"parent",
                                    "before"}``
 ``POST   pages/<id>/move/``        to another wiki, with its subpages:
@@ -113,6 +116,7 @@ from generic.wiki.models import (
     WikiRedirect,
     WikiRevision,
 )
+from generic.wiki.markdown import from_markdown
 from generic.wiki.moving import MoveError, move_to_wiki, place
 from generic.wiki.serializers import (
     WikiPageListSerializer,
@@ -194,6 +198,9 @@ PAGE_ACTIONS = {
 #: nothing, a watch is the reader's own, a comment is the reader's to
 #: write - and to take away, or the wiki's manager's.
 READ_ACTIONS = frozenset({"diff", "watch", "comments", "uncomment"})
+
+#: The longest Markdown file a page is imported from, in characters.
+MARKDOWN_MAX_LENGTH = 1_000_000
 
 #: The longest comment, in characters.
 COMMENT_MAX_LENGTH = 5000
@@ -1140,6 +1147,40 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             WikiPageSerializer(copy, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(
+        detail=False, methods=["post"], url_path="import", url_name="import"
+    )
+    def import_markdown(self, request: Any) -> Response:
+        """A new page from a Markdown file's text (generic.wiki.markdown):
+        its first ``# heading`` is the title - else ``name``, the file's
+        name -, in ``wiki`` under ``parent``. Opened in the editor."""
+        text = request.data.get("markdown")
+
+        if not isinstance(text, str) or not text.strip():
+            raise ValidationError({"markdown": gettext("The file is empty.")})
+
+        if len(text) > MARKDOWN_MAX_LENGTH:
+            raise ValidationError(
+                {"markdown": gettext("The file is too large.")}
+            )
+
+        title, content = from_markdown(text)
+        name = PurePath(str(request.data.get("name") or "")).stem
+        title = (title or name.replace("-", " ").replace("_", " ")).strip()
+        serializer = WikiPageSerializer(
+            data={
+                "title": title[:TITLE_MAX_LENGTH] or gettext("Imported page"),
+                "content": content,
+                "wiki": request.data.get("wiki"),
+                "parent": request.data.get("parent") or None,
+            },
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["get", "post"])
     def comments(self, request: Any, pk: Any = None) -> Response:

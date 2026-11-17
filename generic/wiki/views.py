@@ -39,6 +39,7 @@ from generic.wiki.access import (
 )
 from generic.wiki.api import IMAGE_TYPES, can, readable_pages
 from generic.wiki.headings import table_of_contents, with_anchors
+from generic.wiki.markdown import to_markdown
 from generic.wiki.models import (
     Wiki,
     WikiFile,
@@ -354,6 +355,22 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             can=rights,
             can_wiki=manages,
             move_targets=move_targets,
+            page_pdf_url=(
+                reverse(
+                    "generic_wiki:page-pdf",
+                    kwargs={"wiki": wiki.slug, "slug": page.slug},
+                )
+                if page is not None and pdf.available()
+                else ""
+            ),
+            page_markdown_url=(
+                reverse(
+                    "generic_wiki:page-markdown",
+                    kwargs={"wiki": wiki.slug, "slug": page.slug},
+                )
+                if page is not None
+                else ""
+            ),
             wiki_config={
                 "wiki": wiki.pk,
                 "wikiApi": reverse("generic_wiki:wiki-list"),
@@ -380,6 +397,14 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                     else []
                 ),
                 "editingBeat": presence.BEAT,
+                # What a new page may start from.
+                "templates": [
+                    {"id": entry.pk, "title": entry.title}
+                    for entry in WikiPage.objects.filter(
+                        wiki=wiki, is_template=True
+                    ).order_by("title")
+                ],
+                "importUrl": reverse("generic_wiki:page-import"),
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None
@@ -561,14 +586,15 @@ class WikiRevisionView(WikiPageView):
 
 
 class WikiPdfView(View):
-    """A whole wiki as one PDF, for whoever may read it.
+    """A whole wiki as one PDF, for whoever may read it - or one of its
+    pages, under the page's address.
 
     Downloaded, never cached by a shared cache, and written each time:
     it is the wiki as it stands. ``?orientation=landscape`` turns the
     paper; anything else is portrait.
     """
 
-    def get(self, request: Any, wiki: str) -> Any:
+    def get(self, request: Any, wiki: str, slug: str = "") -> Any:
         if not request.user.is_authenticated:
             return redirect_to_login(
                 request.get_full_path(), site.get_login_url()
@@ -580,6 +606,12 @@ class WikiPdfView(View):
         found = get_object_or_404(
             Wiki.objects.readable_by(request.user), slug=wiki
         )
+        # ``wiki/<wiki>/<page>/export.pdf``: that page alone.
+        page = (
+            get_object_or_404(WikiPage, wiki=found, slug=slug)
+            if slug
+            else None
+        )
         orientation = request.GET.get("orientation", "")
 
         if orientation not in pdf.ORIENTATIONS:
@@ -589,10 +621,37 @@ class WikiPdfView(View):
             found,
             base_url=request.build_absolute_uri("/"),
             orientation=orientation,
+            page=page,
         )
         response = HttpResponse(content, content_type="application/pdf")
         response["Content-Disposition"] = content_disposition_header(
-            True, f"{found.slug}.pdf"
+            True, f"{page.slug if page else found.slug}.pdf"
+        )
+        protect(response)
+        response["Cache-Control"] = "private, no-cache"
+
+        return response
+
+
+class WikiMarkdownView(View):
+    """A page as Markdown (``generic.wiki.markdown``), downloaded, for
+    whoever may read it."""
+
+    def get(self, request: Any, wiki: str, slug: str) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        page = get_object_or_404(
+            readable_pages(request.user), wiki__slug=wiki, slug=slug
+        )
+        response = HttpResponse(
+            to_markdown(page.content, page.title),
+            content_type="text/markdown; charset=utf-8",
+        )
+        response["Content-Disposition"] = content_disposition_header(
+            True, f"{page.slug}.md"
         )
         protect(response)
         response["Cache-Control"] = "private, no-cache"
