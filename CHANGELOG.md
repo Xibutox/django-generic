@@ -10,9 +10,16 @@ django-generic keeps its changelog here, at its root, the same way.
 
 The format is [Keep a Changelog](https://keepachangelog.com).
 
-## [Unreleased]
+## [1.6.0] - 2026-11-11
 
 ### Added
+- Long tables scroll in a frame of the window's height: a data table's,
+  a tree's or an outline's rows scroll inside their own box, the column
+  titles and search row pinned at its top, sized so that the toolbar,
+  the headers, the rows and the paging are in sight together
+  (`table_frame.js`, loaded by `base.html`). A short table keeps its
+  height, a table in a dialog is left alone, `data-table-frame="false"`
+  on the frame opts out (docs/ui.md, The frame).
 - Personal data (GDPR), `generic.privacy`: `personal_data =
   PersonalData(fields={"name": "pseudonym", "email": "email"},
   subject="user", email=("email",), retention=Retention(days=,
@@ -71,6 +78,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   French included; `seed_iso` fills them with demo data. The example
   project installs them all. Their main records are open to custom
   fields. See iso/README.md.
+- `GENERIC["DJANGO_ADMIN"] = False` turns Django's admin off: every
+  page of the default admin site answers 404, its sign-in form
+  included, even where `urls.py` still mounts it, and the account
+  menu loses its link. See docs/security.md, *The Django admin*.
 - Custom fields: `custom_fields = True` on a resource (or
   `auto(..., custom_fields=True)`, or `CustomFields(section=, types=,
   max_fields=, permission=)`) lets the holders of
@@ -86,6 +97,20 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   docs/custom-fields.md.
 
 ### Fixed
+- The logbook in Docker: `logbook/kit/`'s files only build in the kit
+  `scripts/logbook_kit.py` assembles (they copy its `vendor/` and
+  `logbook/`), so run from the repository they failed on a missing
+  path. The kit's README says so, and the kit's stack (gunicorn,
+  PostgreSQL, the COMET/DES scheduler) now builds from the checkout
+  too: `docker compose -f logbook/compose.yaml up --build -d`, settings
+  in `logbook/.env`. Both read `HTTP_PROXY`, `HTTPS_PROXY` and
+  `NO_PROXY` from `.env`, for the build's pip and for `sync_kpi`.
+- The logbook's import made the old planner's activities projects:
+  they are the kind of work, not projects. A task now has an
+  **activity type** (`Task.activity`, *Tasks > Activity types*, in
+  its form, page, list and bulk edit), which the import fills; the
+  projects are left to set by hand, and an import run again keeps
+  them.
 - The "System" theme on a dark system drew the tables' sort arrows
   near-black, where an explicit dark choice draws them light grey:
   DataTables darkens them only for `data-theme="dark"`, which "System"
@@ -93,6 +118,51 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - The Schedules list (django-celery-beat) read each row's interval,
   crontab, solar or clocked schedule with a query of its own: one
   query per row. They are joined now.
+- What a caller gets wrong is answered instead of crashing: a write
+  whose JSON body is a list, a string or a number (create, update,
+  bulk actions, bulk edit, undo, an outline's move, the watches, the
+  wiki) is a 400 *Send a JSON object*; a key that cannot be one
+  (`ids=abc` on an autocomplete, in a selection, on a watch) names no
+  record; a filter on a day that does not exist (`2024-02-30`), on
+  the first or last year of the calendar, or on a choice that is no
+  number is a 400; an autocomplete page far past the end is an empty
+  one; a wiki archive cannot carry a position no column holds. Each
+  was a 500 (`generic.api.body`, tests/test_bad_input.py).
+- Undo: an action that wrote more versions than Undo reads
+  (`UNDO_MAX_RECORDS`) is no longer offered an Undo of the part read.
+- `manage.py check` names a key of `GENERIC` that is no setting
+  (`generic.W014`), with the one probably meant: a misspelled
+  `LOGIN_MAX_ATTEMPT` used to be ignored in silence.
+- `TABLE_COUNT_LIMIT` said totals were estimated above it: nothing
+  reads it, every total is counted, and the setting says so.
+
+### Security
+- People: an account that may do more than its editor is out of that
+  editor's reach. Holding `auth.change_user` used to be enough to set
+  the password of, edit, deactivate or delete an account holding
+  permissions the editor lacks - a staff account, an administrator of
+  another group - and so to sign in as it. The guard now asks that
+  the editor hold everything the account holds
+  (`generic.accounts.guard.outranks`); a superuser reaches everyone,
+  and everyone their own account. See docs/people.md.
+- The sign-in lock covers the Django admin's form: `/admin/login/`
+  took as many guesses as one liked, on a locked account too. The
+  default admin site now counts on the same lock
+  (`generic.accounts.adminforms`), and `ThrottledSignInMixin` puts a
+  project's own password form behind it. See docs/sso.md, *Locking
+  out guessers*.
+- The deletion preview (`.../<pk>/deletion-preview/`) answered anyone
+  who could view the record and named every record the delete would
+  take, of models they may not read. It asks the delete permission
+  now, on the record too, and a record the reader may not view is
+  counted without being named (`hidden`, `may_name_in_deletion`).
+- A request for a right kept `//elsewhere/` as the page it was made
+  from, which became the link of the answer's notification: only a
+  path of this site is kept, or followed.
+- twisted 26.10.0 and oauthlib 4.0.1 in `requirements/constraints.txt`:
+  the releases fixing what the dependency audit reported; the
+  exceptions they made unnecessary are gone from the audit's command
+  (SECURITY.md).
 
 ## [1.5.0] - 2026-10-23
 

@@ -571,3 +571,12 @@ msgstr "Rien de saisi"
 
 msgid "To come"
 msgstr "À venir"
+
+msgid "activity type"
+msgstr "type d'activité"
+
+msgid "activity types"
+msgstr "types d'activité"
+
+msgid "The kinds of work a task is: development, support, a meeting."
+msgstr "Les types de travail d'une tâche : développement, support, réunion."

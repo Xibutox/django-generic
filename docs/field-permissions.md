@@ -59,7 +59,7 @@ the framework draws or answers:
 - a [board](boards.md) whose columns are that field is not opened: its
   page asks for the field's permission too;
 - a [comparison](compare.md) has no row for it;
-- [files](files.md): a hidden file field is not downloaded.
+- [files](forms.md#files): a hidden file field is not downloaded.
 
 Without a request - a task, a management command - every guarded field
 is hidden: nothing is shown to nobody in particular.

@@ -187,6 +187,11 @@ def plan(site: Any, batches: Iterable[str]) -> list[Step] | None:
     if not entries:
         return None
 
+    # More was written than is read: putting back the part that was
+    # read would undo some of it and say it undid all.
+    if limit and len(entries) > limit * len(batches):
+        return None
+
     records: dict[tuple, list[HistoryEntry]] = {}
 
     for entry in entries:

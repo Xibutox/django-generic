@@ -48,3 +48,6 @@ docker/nginx/acme/
 
 # The document manager's files, when Docker runs it (docmanager/compose.yaml).
 docmanager/data/
+
+# The logbook's import: the old planner's data, never in git.
+logbook/import/*.json

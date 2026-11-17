@@ -69,6 +69,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
+from generic.api.autocomplete import read_page
+from generic.api.body import clean_keys
 from generic.api.exports import ExportMixin
 from generic.api.facets import FacetMixin
 from generic.api.files import FILE_URL
@@ -159,7 +161,9 @@ class ResourcePermission(BasePermission):
         if name == "bulk_edit":
             return resource.can_bulk_edit(request)
 
-        if name == "destroy":
+        # What a delete would take with it names records of other
+        # models: for whoever may delete, not for every reader.
+        if name in ("destroy", "deletion_preview"):
             return resource.has_delete_permission(request)
 
         if name == "form_schema":
@@ -188,7 +192,7 @@ class ResourcePermission(BasePermission):
         ):
             return resource.has_change_permission(request, obj)
 
-        if name == "destroy":
+        if name in ("destroy", "deletion_preview"):
             return resource.has_delete_permission(request, obj)
 
         return resource.has_view_permission(request, obj)
@@ -580,6 +584,16 @@ class ResourceViewSet(
             )
 
         return response
+
+    def may_name_in_deletion(self, request: Any, record: Any) -> bool:
+        """A record with pages of its own answers by its resource's
+        rules - its teams, its own ``has_view_permission``."""
+        resource = self.resource.site.get_resource(type(record))
+
+        if resource is None:
+            return super().may_name_in_deletion(request, record)
+
+        return bool(resource.has_view_permission(request, record))
 
     def finalize_response(
         self,
@@ -1247,9 +1261,11 @@ class ResourceViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return self.resource.get_queryset(request).filter(
-            pk__in=[str(value) for value in ids]
-        )
+        # A value that cannot be a key names no row: left out rather
+        # than raised on.
+        queryset = self.resource.get_queryset(request)
+
+        return queryset.filter(pk__in=clean_keys(queryset.model, ids))
 
     @action(
         detail=False,
@@ -1536,7 +1552,10 @@ class ResourceViewSet(
         raw_ids = request.query_params.get("ids")
 
         if raw_ids is not None:
-            values = [value for value in raw_ids.split(",") if value][:100]
+            values = clean_keys(
+                queryset.model,
+                [value for value in raw_ids.split(",") if value][:100],
+            )
             rows = list(queryset.filter(pk__in=values)) if values else []
 
             return Response(
@@ -1567,10 +1586,7 @@ class ResourceViewSet(
             term,
         )
 
-        try:
-            page = max(1, int(request.query_params.get("page", 1)))
-        except (TypeError, ValueError):
-            page = 1
+        page = read_page(request.query_params.get("page", 1))
 
         size = generic_settings.AUTOCOMPLETE_PAGE_SIZE
         offset = (page - 1) * size

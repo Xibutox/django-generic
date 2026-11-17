@@ -330,6 +330,23 @@ def refuse(request: Any, *, by: Any) -> bool:
     return decide(request, by=by, granted=False)
 
 
+def local_page(value: str) -> str:
+    """``value`` when it is a path of this site, nothing otherwise.
+
+    ``//elsewhere/`` and ``/\\elsewhere`` start with a slash and lead to
+    another site all the same: a page kept with a request becomes a
+    link in a notification.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    value = value or ""
+    local = value.startswith("/") and url_has_allowed_host_and_scheme(
+        value, allowed_hosts=None
+    )
+
+    return value if local else ""
+
+
 def tell_requester(request: Any) -> list[Any]:
     """Tell the person who asked what was decided."""
     from django.utils.translation import gettext
@@ -363,7 +380,7 @@ def tell_requester(request: Any) -> list[Any]:
         [request.user],
         channels=generic_settings.ACCESS_REQUEST_CHANNELS,
         message=message,
-        url=request.page if request.page.startswith("/") else "",
+        url=local_page(request.page),
         context=f"access request {request.pk}",
     )
 

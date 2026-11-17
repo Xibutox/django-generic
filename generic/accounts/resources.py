@@ -127,7 +127,10 @@ class UserResource(ModelResource):
 
         if not guard.may_manage(request, obj):
             raise PermissionDenied(
-                gettext("Only a superuser can delete a superuser.")
+                gettext(
+                    "You cannot delete an account that may do more than "
+                    "you may."
+                )
             )
 
         super().delete_model(request, obj)
@@ -244,10 +247,10 @@ class UserResource(ModelResource):
                 continue
 
             # The rules of the form, again: a bulk action is not a way
-            # around them.
-            if not value and (
-                user.pk == request.user.pk
-                or not guard.may_manage(request, user)
+            # around them - switching an account back on included, which
+            # hands back everything it holds.
+            if not guard.may_manage(request, user) or (
+                not value and user.pk == request.user.pk
             ):
                 skipped += 1
                 continue

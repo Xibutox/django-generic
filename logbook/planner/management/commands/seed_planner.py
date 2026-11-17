@@ -33,6 +33,7 @@ ROLES = {
         "timeentry": "view add change delete",
         "project": "view add change",
         "label": "view add change",
+        "activity": "view add change",
     },
     "Leads": {
         "note": "view add change delete",
@@ -41,6 +42,7 @@ ROLES = {
         "timeentry": "view add change delete verify",
         "project": "view add change delete",
         "label": "view add change delete",
+        "activity": "view add change delete",
     },
     "Readers": {
         model: "view"
@@ -51,6 +53,7 @@ ROLES = {
             "timeentry",
             "project",
             "label",
+            "activity",
         )
     },
 }

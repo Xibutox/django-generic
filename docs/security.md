@@ -15,6 +15,28 @@ every project written by `scripts/new_project.py` turn all of them on.
 The [sign-in lock](sso.md#locking-out-guessers) and the
 [security events](security-log.md) are on by default.
 
+## The Django admin
+
+`django.contrib.admin` keeps working beside the framework, and it is a
+second way in: its own sign-in form, its own pages on every registered
+model, none of the framework's rules on who may reach which account
+([People](people.md)). The framework puts its sign-in form behind the
+[same lock](sso.md#locking-out-guessers) as the site's. A project whose
+users never need it turns it off:
+
+```python
+GENERIC = {"DJANGO_ADMIN": False}
+```
+
+Every address of the default admin site then answers 404 - the sign-in
+form included - even where the URLconf still mounts
+`admin.site.urls`, and the account menu loses its link. The setting is
+read when the URLconf is, so it takes a restart, as any setting does.
+Removing `django.contrib.admin` from `INSTALLED_APPS` and its line from
+`urls.py` does the same and saves its tables' permissions; the setting
+is for a project that wants one switch, or one per environment. An
+`AdminSite` the project built itself is not concerned: do not mount it.
+
 ## Idle sign-out
 
 `SESSION_COOKIE_AGE` bounds a session's whole life - two weeks in

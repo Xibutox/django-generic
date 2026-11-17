@@ -101,6 +101,18 @@ so the right one does not get through either, and the page says to try
 again later. One address failing on any accounts is locked after four
 times as many. A successful sign-in clears the account's count.
 
+Django's admin has a sign-in form of its own, at `/admin/login/`. Where
+`django.contrib.admin` is installed the framework gives the default
+admin site a form behind the same lock, so an account locked here is
+locked there too, and failures there count here. A project that built
+its own `AdminSite` sets it itself
+(`my_admin.login_form = ThrottledAdminAuthenticationForm`, from
+`generic.accounts.adminforms`), and so does any other password form of
+the project's (`ThrottledSignInMixin`, from `generic.accounts.views`,
+before Django's `AuthenticationForm`). A project that does not use the
+admin can take its pages away altogether:
+`GENERIC = {"DJANGO_ADMIN": False}` ([Security](security.md#the-django-admin)).
+
 ```python
 GENERIC = {"LOGIN_MAX_ATTEMPTS": 10, "LOGIN_LOCKOUT_MINUTES": 30}
 GENERIC = {"LOGIN_MAX_ATTEMPTS": None}   # no lock

@@ -389,6 +389,33 @@ class TestFromCode:
 
         assert offer(resource, self.request(admin_user), captured) is None
 
+    def test_more_written_than_is_read_offers_nothing(
+        self, admin_user, support_desk
+    ):
+        """Several versions of one record in one batch - written past
+        the ORM, which keeps one: within the limit of records, past
+        what is read of the history. Putting back the part read would
+        undo some of it only."""
+        resource = site.get_resource(Ticket)
+        invoice = support_desk["invoice"]
+
+        with capture() as captured, acting_as(admin_user):
+            invoice.title = "Renamed"
+            invoice.save()
+
+        entry = HistoryEntry.objects.get(batch__in=captured.batches)
+        request = self.request(admin_user)
+
+        assert offer(resource, request, captured) is not None
+
+        for number in range(1, 4):
+            entry.pk = None
+            entry.version += 1
+            entry.save()
+
+        with override_settings(GENERIC={"UNDO_MAX_RECORDS": 2}):
+            assert offer(resource, request, captured) is None
+
     def test_nothing_written_offers_nothing(self, admin_user):
         resource = site.get_resource(Ticket)
 

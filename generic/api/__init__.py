@@ -31,6 +31,7 @@ from generic.api.filters import (
     DataTablesOrderingBackend,
     DataTablesSearchBackend,
 )
+from generic.api.form_parts import FormPart, ModelsForm
 from generic.api.forms import (
     FormModelSerializer,
     FormSerializer,
@@ -88,6 +89,7 @@ __all__ = [
     "FormFileField",
     "FormImageField",
     "FormModelSerializer",
+    "FormPart",
     "FormSchemaViewSetMixin",
     "FormSerializer",
     "FormSerializerMixin",
@@ -99,6 +101,7 @@ __all__ = [
     "ManyRelatedColumn",
     "MethodColumn",
     "ModelFormViewSet",
+    "ModelsForm",
     "MultiPartJSONParser",
     "RowList",
     "RowsDataTableViewSet",

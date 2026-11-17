@@ -4,6 +4,9 @@
 # WhiteNoise, PostgreSQL beside it (compose.yaml).
 #
 #   docker compose up --build -d
+#
+# Run in the kit scripts/logbook_kit.py assembles, not in the
+# repository: vendor/ and logbook/ are the kit's (README.md).
 
 FROM python:3.13-slim
 

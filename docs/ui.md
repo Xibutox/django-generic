@@ -222,7 +222,31 @@ The configuration is emitted with `json_script` and read from the DOM.
 - Excel and CSV exports of **every filtered row**, not just the page;
 - saved state — ordering, page length, hidden columns;
 - a **Views** menu: each user saves the layout under a name, and
-  `presets` offers some to everyone.
+  `presets` offers some to everyone;
+- a **frame of the window's height**: a long table's rows scroll inside
+  their own box, its column titles and search row pinned at the top of
+  it, so that scrolled to, the toolbar, the headers, the rows and the
+  paging are all in sight together (see below).
+
+### The frame
+
+`table_frame.js` (loaded by `generic/base.html`) gives each data table,
+tree and outline a `max-height` so that its whole card - toolbar,
+selection bar, headers, rows, paging - fits in the window under the top
+bar. The rows scroll down inside it as they already scrolled sideways,
+and the header row stays at its top (`position: sticky`). A short table
+keeps its height; one in a dialog, which scrolls itself, is left alone;
+so is a frame whose card leaves it less than `12rem` (a phone held
+sideways): the page scrolls instead. The size follows the window, the
+selection bar, the search row, a chart opened in the toolbar.
+
+A table that should keep its full height marks its frame:
+
+```js
+frame.dataset.tableFrame = "false";   // then Generic.tableFrame.update()
+```
+
+The server-rendered listings (`object-table`) are not framed.
 
 ### Views
 
@@ -739,6 +763,7 @@ Small files, no build step, no framework:
 | `messages.js` | dismisses; auto-hides success and info only |
 | `actions.js` | bulk selection and the select-across step |
 | `collapse.js` | collapsible fieldsets, never over an error |
+| `table_frame.js` | long tables scroll in a frame of the window's height, header pinned |
 | `datatables/` | the DataTables integration, eleven files |
 | `forms/` | the schema form, its inlines and its widgets |
 

@@ -36,7 +36,7 @@ class AskSerializer(serializers.Serializer):
 
     def validate_page(self, value: str) -> str:
         # A path of this site only: it becomes a link in a notification.
-        return value if value.startswith("/") else ""
+        return grants.local_page(value)
 
 
 class AccessRequestView(APIView):

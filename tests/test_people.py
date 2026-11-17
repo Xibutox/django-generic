@@ -308,6 +308,166 @@ class TestReachingASuperuser:
         assert response.status_code == 204
 
 
+class TestReachingAnAccountThatMayDoMore:
+    """Whoever sets an account's password becomes it: an account
+    holding a permission its editor lacks is out of that editor's
+    reach, superuser or not."""
+
+    @pytest.fixture
+    def lead(self, db):
+        """Not a superuser, and granted what the manager is not."""
+        user = get_user_model().objects.create_user(
+            username="lead",
+            password="yet-another-long-passphrase",
+        )
+        powerful = Group.objects.create(name="Leads")
+        powerful.permissions.set(permissions("delete_ticket"))
+        user.groups.add(powerful)
+
+        return user
+
+    @pytest.fixture
+    def peer(self, db):
+        """Granted nothing the manager lacks."""
+        user = get_user_model().objects.create_user(
+            username="peer",
+            password="yet-another-long-passphrase",
+        )
+        user.user_permissions.set(permissions("view_ticket"))
+
+        return user
+
+    def test_a_manager_may_not_set_its_password(self, manager_client, lead):
+        response = patch(
+            manager_client,
+            f"{USERS}{lead.pk}/",
+            {"password": "taken-over-passphrase-1"},
+        )
+
+        assert response.status_code == 403
+        assert authenticate(
+            username="lead", password="yet-another-long-passphrase"
+        )
+        assert not authenticate(
+            username="lead", password="taken-over-passphrase-1"
+        )
+
+    def test_nor_change_anything_else_of_it(self, manager_client, lead):
+        response = patch(
+            manager_client,
+            f"{USERS}{lead.pk}/",
+            {"email": "elsewhere@example.test", "is_active": False},
+        )
+        lead.refresh_from_db()
+
+        assert response.status_code == 403
+        assert lead.email == ""
+        assert lead.is_active is True
+
+    def test_nor_delete_it(self, manager_client, lead):
+        response = manager_client.delete(f"{USERS}{lead.pk}/")
+
+        assert response.status_code == 403
+        assert get_user_model().objects.filter(pk=lead.pk).exists()
+
+    def test_a_directly_granted_permission_counts_too(
+        self, manager_client, peer
+    ):
+        peer.user_permissions.add(permission("delete_ticket"))
+
+        response = patch(
+            manager_client, f"{USERS}{peer.pk}/", {"first_name": "Mine"}
+        )
+
+        assert response.status_code == 403
+
+    def test_a_staff_account_is_out_of_reach_of_one_that_is_not(
+        self, manager_client, peer
+    ):
+        peer.is_staff = True
+        peer.save()
+
+        response = patch(
+            manager_client, f"{USERS}{peer.pk}/", {"first_name": "Mine"}
+        )
+
+        assert response.status_code == 403
+
+    def test_an_inactive_account_is_judged_on_what_it_is_granted(
+        self, manager_client, lead
+    ):
+        """Switched off it may do nothing - until it is switched on."""
+        lead.is_active = False
+        lead.save()
+
+        response = patch(
+            manager_client, f"{USERS}{lead.pk}/", {"is_active": True}
+        )
+        lead.refresh_from_db()
+
+        assert response.status_code == 403
+        assert lead.is_active is False
+
+    def test_an_account_holding_no_more_is_managed(self, manager_client, peer):
+        response = patch(
+            manager_client,
+            f"{USERS}{peer.pk}/",
+            {"password": "a-new-long-passphrase-2"},
+        )
+
+        assert response.status_code == 200
+        assert authenticate(
+            username="peer", password="a-new-long-passphrase-2"
+        )
+
+    def test_the_bulk_actions_leave_it_alone(
+        self, manager_client, lead, peer, boss
+    ):
+        """Neither switched off - nor back on, which hands an account
+        everything it holds."""
+        boss.is_active = False
+        boss.save()
+        lead.is_active = False
+        lead.save()
+        peer.is_active = False
+        peer.save()
+
+        response = post(
+            manager_client,
+            f"{USERS}actions/",
+            {"action": "activate", "ids": [boss.pk, lead.pk, peer.pk]},
+        )
+
+        for user in (boss, lead, peer):
+            user.refresh_from_db()
+
+        assert response.status_code == 200
+        assert boss.is_active is False
+        assert lead.is_active is False
+        assert peer.is_active is True
+
+        lead.is_active = True
+        lead.save()
+
+        post(
+            manager_client,
+            f"{USERS}actions/",
+            {"action": "deactivate", "ids": [lead.pk, peer.pk]},
+        )
+        lead.refresh_from_db()
+        peer.refresh_from_db()
+
+        assert lead.is_active is True
+        assert peer.is_active is False
+
+    def test_a_superuser_reaches_everyone(self, boss_client, lead):
+        response = patch(
+            boss_client, f"{USERS}{lead.pk}/", {"first_name": "Lead"}
+        )
+
+        assert response.status_code == 200
+
+
 class TestYourOwnAccount:
     def test_you_cannot_delete_it(self, boss_client, boss):
         response = boss_client.delete(f"{USERS}{boss.pk}/")

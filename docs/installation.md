@@ -35,11 +35,11 @@ Built once per version, from a checkout:
 ```bash
 git clone https://github.com/Xibutox/django-generic.git
 cd django-generic
-git checkout v1.5.0          # the version to install; `git tag` lists them
+git checkout v1.6.0          # the version to install; `git tag` lists them
 python -m pip wheel --no-deps --wheel-dir dist .
 ```
 
-That leaves `dist/django_generic-1.5.0-py3-none-any.whl`. Building it
+That leaves `dist/django_generic-1.6.0-py3-none-any.whl`. Building it
 needs pip alone (and the network, for the build's own setuptools). The
 same file installs everywhere: a virtual environment, a Docker image, a
 server that cannot reach the repository.
@@ -60,14 +60,14 @@ python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 
 mkdir vendor
-cp ../django-generic/dist/django_generic-1.5.0-py3-none-any.whl vendor/
+cp ../django-generic/dist/django_generic-1.6.0-py3-none-any.whl vendor/
 ```
 
 `requirements.txt`, at the project's root - the wheel by its path,
 with the [extras](#extras) wanted in brackets:
 
 ```text
-./vendor/django_generic-1.5.0-py3-none-any.whl[export]
+./vendor/django_generic-1.6.0-py3-none-any.whl[export]
 ```
 
 ```bash
@@ -163,7 +163,7 @@ two middlewares, a few URLs and its own tables.
    itself:
 
    ```text
-   ./vendor/django_generic-1.5.0-py3-none-any.whl
+   ./vendor/django_generic-1.6.0-py3-none-any.whl
    -e .
    ```
 
@@ -237,7 +237,7 @@ parts come as extras, named in brackets after the wheel's path - in
 `requirements.txt`, or in `pyproject.toml` after the name:
 
 ```text
-./vendor/django_generic-1.5.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+./vendor/django_generic-1.6.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
 and installed again with `pip install -r requirements.txt`.
@@ -279,11 +279,11 @@ A new version is a new wheel:
 
 ```bash
 cd ../django-generic
-git fetch --tags && git checkout v1.5.0
+git fetch --tags && git checkout v1.6.0
 python -m pip wheel --no-deps --wheel-dir dist .
 cd ../mysite
 rm vendor/django_generic-*.whl
-cp ../django-generic/dist/django_generic-1.5.0-py3-none-any.whl vendor/
+cp ../django-generic/dist/django_generic-1.6.0-py3-none-any.whl vendor/
 ```
 
 Then the new file name in `requirements.txt`, and:
@@ -324,6 +324,8 @@ framework's; the rest is Django's usual.
 ```python
 INSTALLED_APPS = [
     "django.contrib.admin",          # optional: it keeps working beside
+                                     # (GENERIC["DJANGO_ADMIN"] = False
+                                     # turns its pages off)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -495,6 +497,8 @@ names what is missing, with the line to write:
 | `generic.W010` | A registered model has a file field - or the wiki is installed - and `MEDIA_ROOT` is empty: files would be written relative to the working directory ([Files](forms.md#files)) |
 | `generic.W011` | `django_celery_results` is installed but Celery's result backend is not `django-db`: the Celery results page stays empty ([Tasks](tasks.md#celery-results)) |
 | `generic.W012` | `django_celery_results` is installed but `CELERY_RESULT_EXTENDED` is off: its rows have no task name ([Tasks](tasks.md#celery-results)) |
+| `generic.W013` | A resource opens its model to custom fields but keeps no history: their changes are not recorded ([Custom fields](custom-fields.md)) |
+| `generic.W014` | A key of `GENERIC` is no setting of the framework - misspelled, or of another version - so nothing reads it; the hint names the closest one ([Settings](settings.md)) |
 | `generic.I001` | The JavaScript catalog is not mounted |
 
 A project that knows why silences one with `SILENCED_SYSTEM_CHECKS`.
