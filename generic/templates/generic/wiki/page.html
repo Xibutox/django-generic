@@ -188,6 +188,11 @@
                   {% icon "content_copy" "icon--sm" %} {% translate "Duplicate" %}
                 </button>
               {% endif %}
+              {% if can.delete and move_targets %}
+                <button type="button" class="button button--ghost button--sm" @click="moveToWiki()">
+                  {% icon "drive_file_move" "icon--sm" %} {% translate "Move" %}
+                </button>
+              {% endif %}
               {% if can.delete %}
                 <button type="button" class="button button--danger-ghost button--sm" @click="remove()">
                   {% icon "delete" "icon--sm" %} {% translate "Delete" %}

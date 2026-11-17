@@ -1088,6 +1088,129 @@
   }
 
   document.addEventListener("alpine:init", function () {
+  /**
+   * The menu's pages dragged and dropped: onto the top or the bottom edge
+   * of a page, beside it; onto its middle, under it. `drop(id, target)`
+   * is told where, `{parent, before}` - page ids, or null for the top of
+   * the menu and for last.
+   */
+  function sortableMenu(menu, drop) {
+    var dragged = null;
+    var marked = null;
+
+    function itemOf(node) {
+      var item = node && node.closest ? node.closest("li[data-page]") : null;
+
+      return item && menu.contains(item) ? item : null;
+    }
+
+    function idOf(item) {
+      return item ? Number(item.dataset.page) : null;
+    }
+
+    function parentOf(item) {
+      return itemOf(item.parentElement);
+    }
+
+    function nextOf(item) {
+      var next = item.nextElementSibling;
+
+      while (next && !next.matches("li[data-page]")) {
+        next = next.nextElementSibling;
+      }
+
+      return next;
+    }
+
+    function where(item, event) {
+      var box = item.querySelector(".wiki-tree__link").getBoundingClientRect();
+      var offset = (event.clientY - box.top) / (box.height || 1);
+
+      return offset < 0.25 ? "before" : offset > 0.75 ? "after" : "inside";
+    }
+
+    function unmark() {
+      if (marked) {
+        marked.classList.remove("is-drop-before", "is-drop-after", "is-drop-inside");
+        marked = null;
+      }
+    }
+
+    menu.addEventListener("dragstart", function (event) {
+      var item = itemOf(event.target);
+
+      if (!item || item.getAttribute("draggable") !== "true") {
+        return;
+      }
+
+      dragged = item;
+      item.classList.add("is-dragged");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.dataset.page);
+    });
+
+    menu.addEventListener("dragover", function (event) {
+      var item = itemOf(event.target);
+
+      // Never into itself or one of its subpages.
+      if (!dragged || !item || dragged.contains(item)) {
+        unmark();
+        return;
+      }
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      unmark();
+      marked = item;
+      item.classList.add("is-drop-" + where(item, event));
+    });
+
+    menu.addEventListener("dragleave", function (event) {
+      if (!menu.contains(event.relatedTarget)) {
+        unmark();
+      }
+    });
+
+    menu.addEventListener("dragend", function () {
+      unmark();
+
+      if (dragged) {
+        dragged.classList.remove("is-dragged");
+      }
+
+      dragged = null;
+    });
+
+    menu.addEventListener("drop", function (event) {
+      var item = itemOf(event.target);
+
+      if (!dragged || !item || dragged.contains(item)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      var spot = where(item, event);
+      var target;
+
+      if (spot === "inside") {
+        target = { parent: idOf(item), before: null };
+      } else {
+        var next = spot === "before" ? item : nextOf(item);
+
+        // Dropped just after itself, or just before: it stays put.
+        if (next === dragged) {
+          next = nextOf(dragged);
+        }
+
+        target = { parent: idOf(parentOf(item)), before: idOf(next) };
+      }
+
+      unmark();
+      drop(idOf(dragged), target);
+    });
+  }
+
     window.Alpine.data("wikiPage", function (configId) {
       var config = readJson(configId) || {};
       var quill = null;
@@ -1117,6 +1240,14 @@
             self.draftSoon();
           });
 
+          var menu = this.$root.querySelector(".wiki__menu");
+
+          if (menu && config.can && config.can.change) {
+            sortableMenu(menu, function (id, target) {
+              self.place(id, target);
+            });
+          }
+
           // A page just created opens straight in the editor.
           if (this.page && config.edit) {
             Generic.ready(function () {
@@ -1130,6 +1261,24 @@
               event.returnValue = "";
             }
           });
+        },
+
+        /** A page dropped elsewhere in the menu: `{parent, before}`. */
+        place: function (id, target) {
+          if (this.isDirty()) {
+            Generic.toast(t("Save or cancel your changes before moving pages in the menu."), "warning");
+            return;
+          }
+
+          Generic.api
+            .post(this.pageUrl(id) + "place/", target)
+            .then(function () {
+              // The menu, and the parent list of the editor, as they are now.
+              window.location.reload();
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The page could not be moved."), "error");
+            });
         },
 
         matches: function (text) {
@@ -2052,6 +2201,58 @@
                 })
                 .catch(function (error) {
                   Generic.toast(errorText(error) || t("The page could not be duplicated."), "error");
+                });
+            });
+        },
+
+        /** The page and its subpages, to another wiki the reader writes in. */
+        moveToWiki: function () {
+          var self = this;
+          var page = this.page;
+          var targets = config.moveTargets || [];
+
+          if (!targets.length) {
+            return;
+          }
+
+          Generic.dialogs
+            .fields({
+              title: t("Move this page to another wiki"),
+              icon: "drive_file_move",
+              message: config.subpages
+                ? Generic.format(
+                    t("\u201c%(title)s\u201d and its subpages (%(count)s) go to the end of the other wiki's menu, with their history. Their old addresses lead to them."),
+                    { title: page.title, count: config.subpages }
+                  )
+                : Generic.format(
+                    t("\u201c%(title)s\u201d goes to the end of the other wiki's menu, with its history. Its old address leads to it."),
+                    { title: page.title }
+                  ),
+              confirmLabel: t("Move"),
+              fields: [
+                {
+                  name: "wiki",
+                  label: t("Wiki"),
+                  required: true,
+                  choices: targets.map(function (target) {
+                    return { value: target.id, label: target.name };
+                  })
+                }
+              ]
+            })
+            .then(function (values) {
+              if (!values) {
+                return;
+              }
+
+              Generic.api
+                .post(self.pageUrl(page.id) + "move/", { wiki: Number(values.wiki) })
+                .then(function (data) {
+                  Generic.flash(t("The page was moved."), "success");
+                  window.location.assign(data.url);
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The page could not be moved."), "error");
                 });
             });
         },

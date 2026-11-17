@@ -143,6 +143,20 @@ def descendants_of(pages: list[WikiPage], root: WikiPage) -> set[Any]:
     return found
 
 
+def move_targets_of(user: Any, wiki: Wiki) -> list[Wiki]:
+    """The other wikis ``user`` adds pages in: where a page of ``wiki``
+    may move to."""
+    roles = roles_of(user)
+
+    return [
+        other
+        for other in Wiki.objects.writable_by(user)
+        .exclude(pk=wiki.pk)
+        .order_by("position", "name")
+        if page_rights(user, other, roles, writable=True)["add"]
+    ]
+
+
 def list_rights(user: Any) -> dict[str, bool]:
     """What ``user`` may do on the list of wikis: make one, import one.
     What they may do to each wiki is the wiki's ``rights``."""
@@ -305,6 +319,12 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
         excluded = descendants_of(pages, page) if page is not None else set()
         others = Wiki.objects.readable_by(request.user).exclude(pk=wiki.pk)
 
+        move_targets = (
+            move_targets_of(request.user, wiki)
+            if page is not None and rights["delete"]
+            else []
+        )
+
         content, headings = with_anchors(
             safe_html(page.content) if page else ""
         )
@@ -323,6 +343,7 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             attachments=page.attachments() if page else [],
             can=rights,
             can_wiki=manages,
+            move_targets=move_targets,
             wiki_config={
                 "wiki": wiki.pk,
                 "wikiApi": reverse("generic_wiki:wiki-list"),
@@ -360,6 +381,11 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                 ],
                 # What a copy of the page may take along.
                 "subpages": len(excluded) - 1 if page is not None else 0,
+                # The wikis the page may move to.
+                "moveTargets": [
+                    {"id": other.pk, "name": other.name}
+                    for other in move_targets
+                ],
                 # A new page opens straight in the editor.
                 "edit": request.GET.get("edit") == "1" and rights["change"],
             },

@@ -32,6 +32,10 @@
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
 ``POST   pages/<id>/duplicate/``   a copy beside it: ``{"title",
                                    "subpages"}``
+``POST   pages/<id>/place/``       elsewhere in the menu: ``{"parent",
+                                   "before"}``
+``POST   pages/<id>/move/``        to another wiki, with its subpages:
+                                   ``{"wiki"}``
 ================================  ====================================
 
 Reading is for any signed-in user, in the wikis
@@ -92,6 +96,7 @@ from generic.wiki.models import (
     WikiRedirect,
     WikiRevision,
 )
+from generic.wiki.moving import MoveError, move_to_wiki, place
 from generic.wiki.serializers import (
     WikiPageListSerializer,
     WikiPageSerializer,
@@ -160,6 +165,9 @@ WRITE_PERMISSIONS = {
 PAGE_ACTIONS = {
     "restore": "change",
     "duplicate": "add",
+    "place": "change",
+    # It leaves its wiki: as good as deleted there.
+    "move": "delete",
     "undelete": "delete",
     "purge": "delete",
 }
@@ -833,7 +841,9 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
 
         if (
             page.parent_id is not None
-            and not WikiPage.objects.filter(pk=page.parent_id).exists()
+            and not WikiPage.objects.filter(
+                pk=page.parent_id, wiki_id=page.wiki_id
+            ).exists()
         ):
             page.parent = None
             page.save(update_fields=["parent"])
@@ -990,6 +1000,62 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
         return Response(
             WikiPageSerializer(copy, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"])
+    def place(self, request: Any, pk: Any = None) -> Response:
+        """Elsewhere in its wiki's menu: under ``parent`` (none: the
+        top), before the sibling ``before`` (none: last). Answers the
+        new siblings, ``[{"id", "position"}]``."""
+        page = self.get_object()
+        pages = WikiPage.objects.filter(wiki_id=page.wiki_id)
+
+        def one(key: str) -> WikiPage | None:
+            value = request.data.get(key)
+
+            if value in (None, ""):
+                return None
+
+            return get_object_or_404(pages, pk=as_id(value))
+
+        try:
+            siblings = place(page, one("parent"), one("before"))
+        except MoveError as error:
+            return Response(
+                {"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            [
+                {"id": sibling.pk, "position": sibling.position}
+                for sibling in siblings
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def move(self, request: Any, pk: Any = None) -> Response:
+        """To another wiki, with its subpages: ``{"wiki"}``, one the
+        user adds pages in. Answers the page, at its new address."""
+        page = self.get_object()
+        wiki = get_object_or_404(
+            Wiki.objects.readable_by(request.user),
+            pk=as_id(request.data.get("wiki")),
+        )
+
+        if not page_rights(request.user, wiki)["add"]:
+            raise PermissionDenied(gettext("You may not write in this wiki."))
+
+        try:
+            move_to_wiki(page, wiki)
+        except MoveError as error:
+            return Response(
+                {"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        announce(page, "updated", request.user)
+
+        return Response(
+            WikiPageSerializer(page, context={"request": request}).data
         )
 
     @action(detail=True, methods=["get"])

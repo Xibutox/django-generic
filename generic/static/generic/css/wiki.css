@@ -1130,3 +1130,26 @@
   background: var(--color-warning-subtle);
   color: inherit;
 }
+
+/* -- Menu: pages dragged and dropped -------------------------------------- */
+
+.wiki-tree__item[draggable="true"] > .wiki-tree__link {
+  cursor: grab;
+}
+
+.wiki-tree__item.is-dragged > .wiki-tree__link {
+  opacity: 0.5;
+}
+
+.wiki-tree__item.is-drop-before > .wiki-tree__link {
+  box-shadow: inset 0 2px 0 var(--color-accent);
+}
+
+.wiki-tree__item.is-drop-after > .wiki-tree__link {
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.wiki-tree__item.is-drop-inside > .wiki-tree__link {
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
+}
