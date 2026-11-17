@@ -205,8 +205,13 @@ class BoundDuplicate:
         resource = self.resource
         context = self.serializer_context(request)
         serializer_class = resource.get_form_serializer_for(request)
+        # A copy starts unlocked: the lock's own field takes its default.
+        lock = resource.get_lock()
+        skip = self.exclude | (
+            {lock.path} if lock is not None and not lock.through else set()
+        )
         values, display = copy_values(
-            serializer_class, context, obj, skip=self.exclude
+            serializer_class, context, obj, skip=skip
         )
 
         overrides = self.declaration.values

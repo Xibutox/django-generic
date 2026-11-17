@@ -552,14 +552,19 @@ class ResourceFormView(ResourceViewMixin, TemplateView):
         request = self.request
         obj = self.object
 
-        can_delete = obj is not None and resource.has_delete_permission(
-            request,
-            obj,
+        can_delete = obj is not None and resource.may_delete(request, obj)
+        # A locked record's form: its frozen fields read only, and none
+        # but read only when it is locked whole (generic.sites.locks).
+        lock = (
+            resource.get_record_lock(request, obj)
+            if obj is not None and self.mode != "create"
+            else None
         )
 
         return {
             "mode": self.mode,
-            "readOnly": not self.can_change,
+            "readOnly": not self.can_change or bool(lock and lock.everything),
+            "lock": lock.as_client() if lock else None,
             "schemaUrl": resource.get_form_schema_url(),
             "collectionUrl": resource.get_api_url(),
             "objectUrl": (
@@ -764,7 +769,7 @@ class ResourceDetailView(ResourceViewMixin, TemplateView):
                 )
             )
 
-        if resource.has_delete_permission(request, obj):
+        if resource.may_delete(request, obj):
             items.append(
                 ToolbarItem(
                     url=resource.get_delete_url(obj.pk),
@@ -774,7 +779,12 @@ class ResourceDetailView(ResourceViewMixin, TemplateView):
                 )
             )
 
-        if resource.has_change_permission(request, obj):
+        # A record locked whole has nothing left to edit.
+        lock = resource.get_record_lock(request, obj)
+
+        if resource.has_change_permission(request, obj) and not (
+            lock and lock.everything
+        ):
             items.append(
                 ToolbarItem(
                     url=resource.get_change_url(obj.pk),
@@ -944,6 +954,18 @@ class ResourceDeleteView(GenericDeleteView):
 
     def get_queryset(self) -> Any:
         return self.resource.get_queryset(self.request)
+
+    def get_object(self, queryset: Any = None) -> Any:
+        from generic.sites.locks import refused_delete
+
+        obj = super().get_object(queryset)
+        # A locked record is not deleted, from this page either.
+        locked = refused_delete(self.resource, self.request, obj)
+
+        if locked:
+            raise PermissionDenied(locked)
+
+        return obj
 
     def get_permission_required(self) -> tuple[str, ...]:
         return ()

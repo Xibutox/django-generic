@@ -65,7 +65,9 @@
       sections: data.sections || [],
       related: data.related || [],
       history: data.history || null,
-      topic: data.topic || ""
+      topic: data.topic || "",
+      // Why it cannot be changed, when a lock holds it (generic.sites.locks).
+      lock: data.lock || null
     };
   }
 
