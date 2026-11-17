@@ -30,7 +30,9 @@ def plain_text(html: str | None) -> str:
 MAX_REVISIONS = 50
 
 #: Addresses of the wiki's own routes: no wiki may take them.
-RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files", "invitations"})
+RESERVED_WIKI_SLUGS = frozenset(
+    {"api", "images", "files", "invitations", "shared"}
+)
 
 #: The wiki the pages written before there were several land in.
 DEFAULT_WIKI_SLUG = "main"
@@ -213,6 +215,16 @@ class Wiki(Trashed):
     #: ``writable_by``. Open is what a wiki was before it had members.
     access = models.CharField(
         _("access"), max_length=20, choices=ACCESS, default=ACCESS_OPEN
+    )
+    #: The secret of its read-only link for anyone, signed in or not
+    #: (generic.wiki.sharing); none: not shared.
+    share_token = models.CharField(
+        _("public link"),
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
     )
     #: Whoever made it: reads it, writes in it, manages its members and
     #: may delete it, whatever the groups say.

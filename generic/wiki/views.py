@@ -30,7 +30,7 @@ from generic.sites import site
 from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki import archive, invitations, pdf
+from generic.wiki import archive, invitations, pdf, sharing
 from generic.wiki.access import (
     may_open,
     page_rights,
@@ -80,8 +80,13 @@ def page_url(page: WikiPage) -> str:
     )
 
 
-def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
-    """The page tree as nested dicts, the current branch open."""
+def build_menu(
+    pages: list[WikiPage],
+    current: WikiPage | None,
+    url: Any = page_url,
+) -> list:
+    """The page tree as nested dicts, the current branch open; ``url``
+    gives each page's address."""
     children: dict[Any, list[WikiPage]] = {}
 
     for page in pages:
@@ -110,7 +115,7 @@ def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
                 {
                     "id": page.pk,
                     "title": page.title,
-                    "url": page_url(page),
+                    "url": url(page),
                     "depth": depth,
                     "is_current": current is not None
                     and page.pk == current.pk,
@@ -617,6 +622,45 @@ class WikiArchiveView(View):
         return response
 
 
+def serve_image(image: WikiImage) -> FileResponse:
+    """An image, shown in the page (``inline``) as the type its bytes
+    were found to be when uploaded, never sniffed as anything else."""
+    name = file_name(image.file)
+    content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
+
+    if content_type is None or not is_stored(image.file):
+        raise Http404
+
+    response = FileResponse(
+        image.file.open("rb"),
+        filename=name,
+        content_type=content_type,
+    )
+    protect(response)
+    response["Cache-Control"] = "private, max-age=86400"
+
+    return response
+
+
+def serve_file(attachment: WikiFile) -> FileResponse:
+    """A file, always downloaded, under the name it was uploaded with."""
+    if not is_stored(attachment.file):
+        raise Http404
+
+    name = attachment.original_name or file_name(attachment.file)
+    response = FileResponse(
+        attachment.file.open("rb"),
+        as_attachment=True,
+        filename=name,
+        content_type=mimetypes.guess_type(name)[0]
+        or "application/octet-stream",
+    )
+    protect(response)
+    response["Cache-Control"] = "private, max-age=86400"
+
+    return response
+
+
 class WikiImageView(View):
     """An image of a wiki, for whoever may read that wiki - or a page
     showing it (``generic.wiki.access.may_open``).
@@ -639,21 +683,7 @@ class WikiImageView(View):
         if not may_open(request.user, image):
             raise Http404
 
-        name = file_name(image.file)
-        content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
-
-        if content_type is None or not is_stored(image.file):
-            raise Http404
-
-        response = FileResponse(
-            image.file.open("rb"),
-            filename=name,
-            content_type=content_type,
-        )
-        protect(response)
-        response["Cache-Control"] = "private, max-age=86400"
-
-        return response
+        return serve_image(image)
 
 
 class WikiFileView(View):
@@ -678,23 +708,10 @@ class WikiFileView(View):
 
         attachment = get_object_or_404(WikiFile, pk=pk)
 
-        if not may_open(request.user, attachment) or not is_stored(
-            attachment.file
-        ):
+        if not may_open(request.user, attachment):
             raise Http404
 
-        name = attachment.original_name or file_name(attachment.file)
-        response = FileResponse(
-            attachment.file.open("rb"),
-            as_attachment=True,
-            filename=name,
-            content_type=mimetypes.guess_type(name)[0]
-            or "application/octet-stream",
-        )
-        protect(response)
-        response["Cache-Control"] = "private, max-age=86400"
-
-        return response
+        return serve_file(attachment)
 
 
 class WikiInvitationView(SiteViewMixin, TemplateView):
@@ -748,3 +765,117 @@ class WikiInvitationView(SiteViewMixin, TemplateView):
         )
 
         return redirect(wiki.get_absolute_url())
+
+
+#: A shared page tells no other site its address, and is never indexed.
+SHARED_HEADERS = {
+    "Referrer-Policy": "no-referrer",
+    "X-Robots-Tag": "noindex, nofollow",
+    "Cache-Control": "private, no-store",
+}
+
+
+def shared_or_404(secret: str) -> Wiki:
+    wiki = sharing.shared_wiki(secret)
+
+    if wiki is None:
+        raise Http404
+
+    return wiki
+
+
+class WikiSharedView(TemplateView):
+    """A wiki's page from its public link (generic.wiki.sharing), for
+    anyone: read-only, its menu and its text, nothing else."""
+
+    template_name = "generic/wiki/shared.html"
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        self.wiki = wiki = shared_or_404(kwargs["secret"])
+        slug = kwargs.get("slug")
+        pages = WikiPage.objects.filter(wiki=wiki)
+
+        if slug is None:
+            self.page = (
+                pages.filter(parent__isnull=True)
+                .order_by("position", "title")
+                .first()
+            )
+        else:
+            self.page = pages.filter(slug=slug).first()
+
+            if self.page is None:
+                moved = WikiRedirect.objects.filter(
+                    wiki=wiki, slug=slug, page__deleted_at__isnull=True
+                ).first()
+
+                # A page moved to another wiki is not shared with it.
+                if moved is None or moved.page.wiki_id != wiki.pk:
+                    raise Http404
+
+                return redirect(sharing.link_of(wiki, moved.page.slug))
+
+        response = super().get(request, *args, **kwargs)
+
+        for header, value in SHARED_HEADERS.items():
+            response[header] = value
+
+        return response
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        wiki, page = self.wiki, self.page
+        pages = list(
+            WikiPage.objects.filter(wiki=wiki)
+            .only("id", "title", "slug", "parent_id", "position")
+            .order_by("position", "title")
+        )
+        content, headings = with_anchors(
+            sharing.rewrite(safe_html(page.content), wiki) if page else ""
+        )
+        context.update(
+            wiki=wiki,
+            page=page,
+            content=content,
+            contents=table_of_contents(headings),
+            menu=build_menu(
+                pages,
+                page,
+                url=lambda entry: sharing.link_of(wiki, entry.slug),
+            ),
+            home=sharing.link_of(wiki),
+        )
+
+        return context
+
+
+class WikiSharedImageView(View):
+    """An image a page of a shared wiki shows, from under its link."""
+
+    def get(self, request: Any, secret: str, pk: int) -> Any:
+        wiki = shared_or_404(secret)
+        image = get_object_or_404(WikiImage, pk=pk)
+
+        if not sharing.shows(wiki, image):
+            raise Http404
+
+        response = serve_image(image)
+        response["Referrer-Policy"] = "no-referrer"
+
+        return response
+
+
+class WikiSharedFileView(View):
+    """A file a page of a shared wiki links to, from under its link."""
+
+    def get(self, request: Any, secret: str, pk: int) -> Any:
+        wiki = shared_or_404(secret)
+        attachment = get_object_or_404(WikiFile, pk=pk)
+
+        if not sharing.shows(wiki, attachment):
+            raise Http404
+
+        response = serve_file(attachment)
+        response["Referrer-Policy"] = "no-referrer"
+
+        return response

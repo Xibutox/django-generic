@@ -812,6 +812,98 @@
    * role - found by name and saved together. Resolves true once saved.
    */
   /**
+   * The wiki's public link, in the members dialog: read-only, for anyone
+   * holding it. Made, replaced or taken away at once. Hidden where the
+   * site does not allow public links.
+   */
+  function sharePart(base) {
+    var part = el("div", "stack wiki-share");
+
+    part.hidden = true;
+
+    function draw(data) {
+      part.textContent = "";
+      part.hidden = !data.enabled;
+
+      if (!data.enabled) {
+        return;
+      }
+
+      part.appendChild(el("h3", "wiki-members__title", t("Public link")));
+
+      if (!data.url) {
+        var make = el("button", "button button--sm", t("Make a public link"));
+
+        make.type = "button";
+        make.addEventListener("click", function () {
+          change("post");
+        });
+        part.append(
+          el("p", "sf-help", t("Anyone holding a public link reads the wiki's pages, without signing in. Nothing else: no history, no editing.")),
+          make
+        );
+        return;
+      }
+
+      var row = el("div", "wiki-invitations__new");
+      var link = el("input", "input input--sm");
+      var copy = el("button", "button button--sm", t("Copy"));
+      var renew = el("button", "button button--ghost button--sm", t("New link"));
+      var remove = el("button", "button button--danger-ghost button--sm", t("Remove"));
+
+      link.type = "text";
+      link.readOnly = true;
+      link.value = data.url;
+      link.setAttribute("aria-label", t("Public link"));
+      link.addEventListener("focus", function () {
+        link.select();
+      });
+      [copy, renew, remove].forEach(function (button) {
+        button.type = "button";
+      });
+      copy.addEventListener("click", function () {
+        link.select();
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(data.url).then(function () {
+            Generic.toast(t("The link was copied."), "success");
+          });
+        }
+      });
+      renew.addEventListener("click", function () {
+        change("post");
+      });
+      remove.addEventListener("click", function () {
+        change("delete");
+      });
+      row.append(link, copy);
+      part.append(
+        row,
+        el("p", "sf-help", t("Anyone holding this link reads the wiki's pages, without signing in. A new link ends this one.")),
+        el("div", "wiki-share__actions")
+      );
+      part.lastChild.append(renew, remove);
+    }
+
+    function change(method) {
+      Generic.api[method](base + "share/", method === "post" ? {} : undefined)
+        .then(draw)
+        .catch(function (error) {
+          Generic.toast(errorText(error) || t("The public link could not be changed."), "error");
+        });
+    }
+
+    Generic.api
+      .get(base + "share/")
+      .then(draw)
+      .catch(function () {
+        part.hidden = true;
+      });
+
+    return part;
+  }
+
+  /**
    * Inviting by e-mail, in the members dialog: an address and a role, sent
    * at once, and the invitations not yet accepted, each to withdraw.
    */
@@ -1068,6 +1160,7 @@
         form.appendChild(list);
         form.appendChild(addField);
         form.appendChild(invitationsPart(base));
+        form.appendChild(sharePart(base));
         dialog.body.appendChild(form);
         draw();
 

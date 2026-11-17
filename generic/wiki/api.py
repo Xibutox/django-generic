@@ -17,6 +17,9 @@
 ``POST   wikis/<id>/invitations/`` invite by e-mail: ``{"email",
                                    "role"}``
 ``POST   wikis/<id>/uninvite/``    withdraw one: ``{"invitation"}``
+``GET    wikis/<id>/share/``       its public link, if it has one
+``POST   wikis/<id>/share/``       a new public link; the old one ends
+``DELETE wikis/<id>/share/``       no public link any more
 ``GET    wikis/trash/``            the wikis in the trash
 ``POST   wikis/<id>/undelete/``    out of the trash
 ``POST   wikis/<id>/purge/``       deleted for good
@@ -85,6 +88,7 @@ from generic.api.body import ObjectBodyMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.search import text_lookup
+from generic.wiki import sharing
 from generic.wiki.access import (
     has_perm,
     page_rights,
@@ -182,6 +186,9 @@ PAGE_ACTIONS = {
 #: Actions for any reader, though POSTed: a comparison changes
 #: nothing, a watch is the reader's own.
 READ_ACTIONS = frozenset({"diff", "watch"})
+
+#: A wiki's actions for whoever says who its members are.
+MEMBER_ACTIONS = frozenset({"members", "invitations", "uninvite", "share"})
 
 #: A wiki's actions for whoever may delete it.
 WIKI_DELETE_ACTIONS = frozenset({"destroy", "undelete", "purge"})
@@ -296,7 +303,7 @@ class WikiPermission(BasePermission):
         if view.action in WIKI_DELETE_ACTIONS:
             return rights["delete"]
 
-        if view.action in ("members", "invitations", "uninvite"):
+        if view.action in MEMBER_ACTIONS:
             return rights["members"]
 
         return rights["change"]
@@ -591,6 +598,44 @@ class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
         ).delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["get", "post", "delete"])
+    def share(self, request: Any, pk: Any = None) -> Response:
+        """Its public link, read-only, for anyone holding it
+        (generic.wiki.sharing): ``{"enabled", "url"}``. ``POST`` makes
+        a new one, ``DELETE`` takes it away."""
+        wiki = self.get_object()
+
+        if not wiki_rights(request.user, wiki)["members"]:
+            raise PermissionDenied(
+                gettext("You may not manage this wiki's members.")
+            )
+
+        if not sharing.enabled():
+            if request.method != "GET":
+                raise PermissionDenied(
+                    gettext("Public links are not enabled on this site.")
+                )
+
+            return Response({"enabled": False, "url": ""})
+
+        if request.method == "POST":
+            wiki.share_token = sharing.new_secret()
+            wiki.save(update_fields=["share_token"])
+        elif request.method == "DELETE":
+            wiki.share_token = None
+            wiki.save(update_fields=["share_token"])
+
+        return Response(
+            {
+                "enabled": True,
+                "url": (
+                    request.build_absolute_uri(sharing.link_of(wiki))
+                    if wiki.share_token
+                    else ""
+                ),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def candidates(self, request: Any, pk: Any = None) -> Response:
