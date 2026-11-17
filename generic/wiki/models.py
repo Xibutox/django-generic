@@ -4,6 +4,7 @@ through."""
 from __future__ import annotations
 
 import re
+from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
@@ -29,7 +30,7 @@ def plain_text(html: str | None) -> str:
 MAX_REVISIONS = 50
 
 #: Addresses of the wiki's own routes: no wiki may take them.
-RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files"})
+RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files", "invitations"})
 
 #: The wiki the pages written before there were several land in.
 DEFAULT_WIKI_SLUG = "main"
@@ -450,6 +451,74 @@ class WikiPage(Trashed):
         return self.revisions.filter(
             title=self.title, content=self.content
         ).first()
+
+
+class WikiInvitationQuerySet(models.QuerySet):
+    def pending(self) -> "WikiInvitationQuerySet":
+        """Neither accepted nor too old to be."""
+        days = generic_settings.WIKI_INVITATION_DAYS
+        since = timezone.now() - timedelta(days=days)
+
+        return self.filter(accepted_at__isnull=True, created_at__gte=since)
+
+
+class WikiInvitation(models.Model):
+    """Someone asked by e-mail to join a wiki, with a role.
+
+    The e-mail holds a link with a secret; only its digest is kept
+    (``token``). Whoever opens the link, signed in with that e-mail
+    address, becomes a member - once, and within
+    ``GENERIC["WIKI_INVITATION_DAYS"]``.
+    """
+
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="invitations",
+    )
+    email = models.EmailField(_("e-mail address"))
+    role = models.CharField(
+        _("role"),
+        max_length=20,
+        choices=WikiMember.ROLE_CHOICES,
+        default=ROLE_READER,
+    )
+    token = models.CharField(_("token"), max_length=64, unique=True)
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("invited by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+    accepted_at = models.DateTimeField(_("accepted at"), null=True, blank=True)
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("accepted by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+
+    objects = WikiInvitationQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        verbose_name = _("wiki invitation")
+        verbose_name_plural = _("wiki invitations")
+
+    def __str__(self) -> str:
+        return f"{self.email} -> {self.wiki_id} ({self.role})"
+
+    @property
+    def expires_at(self) -> Any:
+        return self.created_at + timedelta(
+            days=generic_settings.WIKI_INVITATION_DAYS
+        )
 
 
 class WikiRedirect(models.Model):

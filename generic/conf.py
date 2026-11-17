@@ -131,6 +131,9 @@ DEFAULTS: dict[str, Any] = {
     # The largest wiki archive (``export.zip``) an import takes, in
     # bytes: the upload, and everything it holds once unpacked.
     "WIKI_ARCHIVE_MAX_SIZE": 100 * 1024 * 1024,
+    # How long an invitation to join a wiki, sent by e-mail, may be
+    # accepted, in days.
+    "WIKI_INVITATION_DAYS": 14,
     # --- Search ------------------------------------------------------
     # Results per resource in the command palette.
     "SEARCH_RESULTS_PER_RESOURCE": 5,

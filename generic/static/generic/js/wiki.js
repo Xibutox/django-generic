@@ -811,6 +811,121 @@
    * it: its access, and its members - people and groups, each with a
    * role - found by name and saved together. Resolves true once saved.
    */
+  /**
+   * Inviting by e-mail, in the members dialog: an address and a role, sent
+   * at once, and the invitations not yet accepted, each to withdraw.
+   */
+  function invitationsPart(base) {
+    var part = el("div", "stack wiki-invitations");
+    var list = el("ul", "wiki-members__list");
+    var row = el("div", "wiki-invitations__new");
+    var email = el("input", "input input--sm");
+    var role = select(ROLES, "reader");
+    var send = el("button", "button button--sm", t("Invite"));
+    var label = el("label", "sf-label", t("Invite by e-mail"));
+
+    function draw(rows) {
+      list.textContent = "";
+
+      (rows || []).forEach(function (invitation) {
+        var item = el("li", "wiki-members__item");
+        var name = el("span", "wiki-members__name");
+        var withdraw = el("button", "icon-button icon-button--sm");
+        var roleName = (ROLES.find(function (option) {
+          return option[0] === invitation.role;
+        }) || [invitation.role, invitation.role])[1];
+
+        name.appendChild(smallIcon("mail"));
+        name.appendChild(el("span", "", invitation.email));
+        name.appendChild(
+          el(
+            "span",
+            "muted",
+            Generic.format(t("%(role)s, until %(date)s"), { role: t(roleName), date: when(invitation.expires_at) })
+          )
+        );
+        withdraw.type = "button";
+        withdraw.title = t("Withdraw the invitation");
+        withdraw.setAttribute("aria-label", t("Withdraw the invitation"));
+        withdraw.appendChild(smallIcon("close"));
+        withdraw.addEventListener("click", function () {
+          Generic.api
+            .post(base + "uninvite/", { invitation: invitation.id })
+            .then(load)
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The invitation could not be withdrawn."), "error");
+            });
+        });
+        item.append(name, withdraw);
+        list.appendChild(item);
+      });
+    }
+
+    function load() {
+      return Generic.api
+        .get(base + "invitations/")
+        .then(draw)
+        .catch(function () {
+          draw([]);
+        });
+    }
+
+    function invite() {
+      var address = email.value.trim();
+
+      if (!address) {
+        email.focus();
+        return;
+      }
+
+      send.disabled = true;
+      Generic.api
+        .post(base + "invitations/", { email: address, role: role.value })
+        .then(function (data) {
+          email.value = "";
+
+          if (data.sent) {
+            Generic.toast(Generic.format(t("An invitation was sent to %(email)s."), { email: data.email }), "success");
+          } else {
+            Generic.toast(t("The invitation is saved, but its e-mail could not be sent."), "warning");
+          }
+
+          return load();
+        })
+        .catch(function (error) {
+          Generic.toast(errorText(error) || t("The invitation could not be sent."), "error");
+        })
+        .then(function () {
+          send.disabled = false;
+        });
+    }
+
+    email.type = "email";
+    email.id = "wiki-invitations-email";
+    email.placeholder = t("name@example.com");
+    email.autocomplete = "off";
+    label.htmlFor = email.id;
+    role.setAttribute("aria-label", t("Role"));
+    send.type = "button";
+    send.addEventListener("click", invite);
+    email.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        invite();
+      }
+    });
+    row.append(email, role, send);
+    part.append(
+      label,
+      row,
+      el("p", "sf-help", t("Whoever accepts the link signed in with this address becomes a member. Sent at once, whatever Save does.")),
+      list
+    );
+    load();
+
+    return part;
+  }
+
   function membersDialog(api, wiki) {
     var base = api + wiki.id + "/";
 
@@ -952,6 +1067,7 @@
         form.appendChild(el("h3", "wiki-members__title", t("Members")));
         form.appendChild(list);
         form.appendChild(addField);
+        form.appendChild(invitationsPart(base));
         dialog.body.appendChild(form);
         draw();
 

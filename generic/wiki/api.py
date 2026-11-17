@@ -13,6 +13,10 @@
 ``PUT    wikis/<id>/members/``     replace them: ``{"access",
                                    "members", "owner"}``
 ``GET    wikis/<id>/candidates/``  people and groups for ``?q=``
+``GET    wikis/<id>/invitations/`` the invitations not yet accepted
+``POST   wikis/<id>/invitations/`` invite by e-mail: ``{"email",
+                                   "role"}``
+``POST   wikis/<id>/uninvite/``    withdraw one: ``{"invitation"}``
 ``GET    wikis/trash/``            the wikis in the trash
 ``POST   wikis/<id>/undelete/``    out of the trash
 ``POST   wikis/<id>/purge/``       deleted for good
@@ -61,6 +65,8 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -86,6 +92,7 @@ from generic.wiki.access import (
     wiki_rights,
     writes_somewhere,
 )
+from generic.wiki.invitations import invitation_json, invite
 from generic.wiki.models import (
     ROLES,
     Wiki,
@@ -289,7 +296,7 @@ class WikiPermission(BasePermission):
         if view.action in WIKI_DELETE_ACTIONS:
             return rights["delete"]
 
-        if view.action == "members":
+        if view.action in ("members", "invitations", "uninvite"):
             return rights["members"]
 
         return rights["change"]
@@ -533,6 +540,57 @@ class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                     )
                     for (kind, pk), role in wanted.items()
                 )
+
+    @action(detail=True, methods=["get", "post"])
+    def invitations(self, request: Any, pk: Any = None) -> Response:
+        """The invitations not yet accepted; ``POST {"email", "role"}``
+        sends one (generic.wiki.invitations)."""
+        wiki = self.get_object()
+
+        if not wiki_rights(request.user, wiki)["members"]:
+            raise PermissionDenied(
+                gettext("You may not manage this wiki's members.")
+            )
+
+        if request.method == "POST":
+            email = str(request.data.get("email") or "").strip()
+            role = request.data.get("role") or ROLES[0]
+
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                raise ValidationError(
+                    {"email": gettext("Enter a valid e-mail address.")}
+                ) from None
+
+            if role not in ROLES:
+                raise ValidationError({"role": gettext("Unknown role.")})
+
+            invitation, sent = invite(wiki, email, role, request.user, request)
+            data = invitation_json(invitation)
+            data["sent"] = sent
+
+            return Response(data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            [
+                invitation_json(invitation)
+                for invitation in wiki.invitations.pending().select_related(
+                    "invited_by"
+                )
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def uninvite(self, request: Any, pk: Any = None) -> Response:
+        """An invitation withdrawn: its link no longer works."""
+        wiki = self.get_object()
+        get_object_or_404(
+            wiki.invitations.filter(accepted_at__isnull=True),
+            pk=as_id(request.data.get("invitation")),
+        ).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["get"])
     def candidates(self, request: Any, pk: Any = None) -> Response:

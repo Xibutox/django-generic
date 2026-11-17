@@ -13,6 +13,7 @@ import tempfile
 from pathlib import PurePath
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse
@@ -29,7 +30,7 @@ from generic.sites import site
 from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki import archive, pdf
+from generic.wiki import archive, invitations, pdf
 from generic.wiki.access import (
     may_open,
     page_rights,
@@ -49,7 +50,11 @@ from generic.wiki.models import (
 )
 from generic.wiki.sanitize import safe_html
 from generic.wiki.search import search_pages_of
-from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
+from generic.wiki.serializers import (
+    WikiPageSerializer,
+    WikiSerializer,
+    display_name,
+)
 from generic.wiki.watching import is_watching
 
 
@@ -690,3 +695,56 @@ class WikiFileView(View):
         response["Cache-Control"] = "private, max-age=86400"
 
         return response
+
+
+class WikiInvitationView(SiteViewMixin, TemplateView):
+    """An invitation to join a wiki, from the link of its e-mail: who
+    sent it, for which role, and the button to accept it."""
+
+    site = site
+    template_name = "generic/wiki/invitation.html"
+
+    def get_page_title(self) -> str:
+        return gettext("Invitation")
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [
+            Breadcrumb(
+                label=gettext("Wiki"), url=reverse("generic_wiki:index")
+            ),
+            Breadcrumb(label=gettext("Invitation")),
+        ]
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        invitation = invitations.find(kwargs["secret"])
+        context.update(
+            invitation=invitation,
+            problem=invitations.problem(invitation, self.request.user),
+            role=(
+                invitations.role_label(invitation.role) if invitation else ""
+            ),
+            invited_by=(
+                display_name(invitation.invited_by)
+                if invitation and invitation.invited_by_id
+                else ""
+            ),
+        )
+
+        return context
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        invitation = invitations.find(kwargs["secret"])
+
+        try:
+            wiki = invitations.accept(invitation, request.user)
+        except invitations.InvitationError:
+            return self.get(request, *args, **kwargs)
+
+        messages.success(
+            request,
+            gettext("Welcome to the wiki \u201c%(name)s\u201d.")
+            % {"name": wiki.name},
+        )
+
+        return redirect(wiki.get_absolute_url())

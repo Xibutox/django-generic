@@ -7,7 +7,8 @@ page, ``wiki/<wiki>/<page>/`` is a page,
 ``wiki/<wiki>/<page>/versions/<id>/`` one of its versions, read-only,
 ``wiki/<wiki>/export.pdf`` the whole wiki as a PDF and
 ``wiki/<wiki>/export.zip`` as an archive to import elsewhere
-(``api/wikis/import/``).
+(``api/wikis/import/``), ``wiki/invitations/<secret>/`` an invitation
+to join a wiki, sent by e-mail.
 
 The editor uploads its images to ``api/generic/wiki/images/``, in
 ``generic.urls``; they are shown from ``images/<id>/`` here, so their
@@ -31,6 +32,11 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("images/<int:pk>/", views.WikiImageView.as_view(), name="image"),
     path("files/<int:pk>/", views.WikiFileView.as_view(), name="file"),
+    path(
+        "invitations/<str:secret>/",
+        views.WikiInvitationView.as_view(),
+        name="invitation",
+    ),
     # A page's address never holds a dot: this is never a page.
     path("<str:wiki>/export.pdf", views.WikiPdfView.as_view(), name="pdf"),
     path(
