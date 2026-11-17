@@ -56,6 +56,10 @@ of each row of a status API's answer.
 | A button on the list page, or on the record's page; optionally an entry of each row's menu, or of the navigation | |
 | A declaration that could not work is refused when the resource is registered | |
 
+A page that is a form - over no model, a few of the record's fields,
+or several models at once - is a `ResourceFormPageView`, declared the
+same way: [Form pages](form-pages.md).
+
 ## Three ways to write one
 
 From the least code to the most.

@@ -249,6 +249,7 @@ class ResourceAutoSchema(AutoSchema):
             parameters += [
                 query("column", STRING, "The column whose values to list."),
                 query("q", STRING, "Only values whose label contains it."),
+                query("page", INTEGER, "The page of values, from 1."),
                 query("ids", STRING, "Label these values, comma separated."),
             ]
         elif action == "autocomplete":
