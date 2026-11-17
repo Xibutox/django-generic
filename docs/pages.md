@@ -56,6 +56,10 @@ of each row of a status API's answer.
 | A button on the list page, or on the record's page; optionally an entry of each row's menu, or of the navigation | |
 | A declaration that could not work is refused when the resource is registered | |
 
+A page that is a form - over no model, a few of the record's fields,
+or several models at once - is a `ResourceFormPageView`, declared the
+same way: [Form pages](form-pages.md).
+
 ## Three ways to write one
 
 From the least code to the most.
@@ -137,6 +141,13 @@ the name being the method's (underscores become dashes).
 
 A subclass replaces a parent's page by declaring a method of the same
 name, and removes it by redefining the method without `@page`.
+
+A record's page names its record in the address by the resource's
+`page_object_argument`, read through `page_object_converter`: `"pk"`
+and `"path"` on a `ModelResource`, `"key"` and `"str"` on a
+`DataResource`. A view that is not a `ResourcePageView` receives the
+record's key under that name. They are the resource's to set, and
+seldom need to be.
 
 ## Permissions
 

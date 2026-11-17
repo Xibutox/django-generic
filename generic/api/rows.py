@@ -48,7 +48,13 @@ from generic.api.columns import (
     IntegerColumn,
 )
 from generic.api.exports import localize_for_export
-from generic.api.facets import IDS_PARAM, SEARCH_PARAM, coerce_keys, plain
+from generic.api.facets import (
+    IDS_PARAM,
+    SEARCH_PARAM,
+    coerce_keys,
+    facet_page,
+    plain,
+)
 from generic.api.filters import (
     FALSE_VALUES,
     TRUE_VALUES,
@@ -648,13 +654,24 @@ class RowsDataTableViewSet(DataTableViewSet):
 
             entries.append(entry)
 
-        entries.sort(key=lambda item: (-item["count"], item["label"]))
+        # The value breaks ties between equal labels, so pages never
+        # overlap.
+        entries.sort(
+            key=lambda item: (
+                -item["count"],
+                item["label"],
+                str(item["value"]),
+            )
+        )
         limit = self.facet_limit
+        page = facet_page(request)
+        offset = (page - 1) * limit
 
         return {
             "kind": "values",
-            "values": entries[:limit],
-            "more": len(entries) > limit,
+            "values": entries[offset : offset + limit],
+            "more": len(entries) > offset + limit,
+            "page": page,
         }
 
 

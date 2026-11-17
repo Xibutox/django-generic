@@ -161,8 +161,11 @@
   SchemaForm.prototype.load = function () {
     var self = this;
     var config = this.config;
+    // A form page carries its schema: there is no endpoint to ask.
     var requests = [
-      Generic.api.get(Generic.api.buildUrl(config.schemaUrl, { mode: this.mode }))
+      config.schema
+        ? Promise.resolve(config.schema)
+        : Generic.api.get(Generic.api.buildUrl(config.schemaUrl, { mode: this.mode }))
     ];
 
     if (this.mode === "update" && config.objectUrl) {
@@ -1043,6 +1046,11 @@
       })
     );
 
+    if (config.formPage) {
+      this.submitted(data);
+      return;
+    }
+
     if (config.popup) {
       this.notifyOpener({ id: id, label: data._label || "" });
       return;
@@ -1083,6 +1091,27 @@
     }
 
     this.leave(target || config.listUrl || window.location.href, message);
+  };
+
+  /**
+   * A form page's answer: its message, and where to go - or the form
+   * again, on the values the server says are now true.
+   */
+  SchemaForm.prototype.submitted = function (data) {
+    var message = data._message || t("Done.");
+    var target = data._redirect;
+
+    if (target && Generic.isSafeUrl(target)) {
+      this.leave(target, message);
+      return;
+    }
+
+    this.config.initial = data._initial || {};
+    this.config.initialDisplay = data._initialDisplay || {};
+    this.objectData = {};
+    this.populate();
+    this.snapshot();
+    Generic.toast(message, "success");
   };
 
   /** Show what the server now holds, and start counting changes anew. */

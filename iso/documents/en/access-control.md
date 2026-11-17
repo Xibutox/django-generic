@@ -156,6 +156,8 @@ superuser:
 | Adding a group, or a permission, that grants something they do not hold | Refused, naming the permission |
 | Giving a group a permission they do not hold | Refused |
 | Opening a superuser's form, to edit or delete it | Refused: setting their password would make them that superuser |
+| Opening the form of an account granted a permission they do not hold, or of a staff account without being staff | Refused, for the same reason |
+| Switching such an account back on with *Activate* | Left alone |
 
 For everybody, superusers included: nobody deletes or deactivates the
 account they are signed in as.

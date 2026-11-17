@@ -164,6 +164,8 @@ n'est pas super-utilisateur :
 | Ajouter un groupe, ou une permission, qui accorde ce que l'on n'a pas | Refusé, avec le nom de la permission |
 | Donner à un groupe une permission que l'on n'a pas | Refusé |
 | Ouvrir le formulaire d'un super-utilisateur, pour le modifier ou le supprimer | Refusé : changer son mot de passe ferait de soi ce super-utilisateur |
+| Ouvrir le formulaire d'un compte qui détient une permission que l'on n'a pas, ou d'un compte *équipe* sans l'être soi-même | Refusé, pour la même raison |
+| Réactiver un tel compte avec *Activer* | Laissé tel quel |
 
 Pour tous, super-utilisateurs compris : personne ne supprime ni ne
 désactive le compte avec lequel il est connecté.

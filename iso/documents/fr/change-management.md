@@ -60,7 +60,7 @@ d'être déployé.
 3. **Tester** : l'intégration continue tourne à chaque envoi. Celle de
    django-generic (`.github/workflows/ci.yml`) passe black, isort,
    flake8, bandit, pip-audit, mypy, les tests avec un seuil de
-   couverture de 80 %, l'intégration PostgreSQL et Redis, les tests dans
+   couverture de 88 %, l'intégration PostgreSQL et Redis, les tests dans
    le navigateur, la construction du paquet et les piles Docker ; celle
    d'un projet passe au moins ses tests et les mêmes linters.
    [La protection de branche exige une intégration continue au vert

@@ -107,14 +107,14 @@ Build its wheel from this repository, keep it in the project's
 
 ```bash
 git clone https://github.com/Xibutox/django-generic.git
-cd django-generic && git checkout v1.5.0
+cd django-generic && git checkout v1.6.0
 python -m pip wheel --no-deps --wheel-dir dist .
-mkdir -p ../mysite/vendor && cp dist/django_generic-1.5.0-py3-none-any.whl ../mysite/vendor/
+mkdir -p ../mysite/vendor && cp dist/django_generic-1.6.0-py3-none-any.whl ../mysite/vendor/
 ```
 
 ```text
 # mysite/requirements.txt
-./vendor/django_generic-1.5.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
+./vendor/django_generic-1.6.0-py3-none-any.whl[export,events,tasks,wiki,postgres]
 ```
 
 ```bash
@@ -224,6 +224,7 @@ See [Pages of a resource's own](docs/pages.md).
 - [Pages from the model](docs/auto.md) — `auto()`: the five pages of a model from one line, and what is worked out
 - [Rows from elsewhere](docs/data.md) — `DataResource`: a list and a page per row for data that is not a model's, an external API's answer
 - [Pages of a resource's own](docs/pages.md) — `@page` / `ResourcePage`: a map, a timeline, a gallery, a report, JSON… declared on the resource, any content
+- [Form pages](docs/form-pages.md) — `FormPageView`, `ResourceFormPageView`: forms that are not a resource's add page, over no model, one model, or several at once (`ModelsForm`), drawn and validated like every form
 - [Sites and resources](docs/sites.md) — resources, tags, summary pages, related tables, inlines, actions, navigation, accounts, appearance
 - [Charts](docs/charts.md) — declaring charts, where they are drawn, the chart each reader draws above a list (`chart_builder`), computed charts, the payload
 - [Key figures and cards](docs/dashboard.md) — `Kpi(...)`, `Cards(...)`: numbers and records on the dashboard, each a filter over the list it opens, coloured by thresholds, live

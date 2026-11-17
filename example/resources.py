@@ -22,6 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext, pgettext_lazy
 
 from example import external
+from example.form_pages import NewCustomerPage, TicketReassignPage
 from example.models import (
     Agent,
     Article,
@@ -514,6 +515,17 @@ class TicketResource(ModelResource):
             title=_("Timeline"),
             icon="timeline",
             row_menu=True,
+        ),
+        # A form page of each ticket (example/form_pages.py): four of
+        # its fields, saved under the ticket's change permission.
+        ResourcePage(
+            "reassign",
+            view=TicketReassignPage,
+            detail=True,
+            title=_("Reassign"),
+            icon="swap_horiz",
+            row_menu=True,
+            permission="change",
         ),
     )
 
@@ -1052,6 +1064,17 @@ class CustomerResource(ModelResource):
     # Who opened which customer: History > Access log, and a link on
     # each customer's page (docs/trash.md).
     access_log = True
+    # One form writing two records: the customer and its first ticket,
+    # both or neither (example/form_pages.py, docs/form-pages.md).
+    pages = (
+        ResourcePage(
+            "new-with-ticket",
+            view=NewCustomerPage,
+            title=_("New customer with a ticket"),
+            icon="person_add",
+            permission="add",
+        ),
+    )
 
     list_display = (
         "name",
@@ -1954,6 +1977,14 @@ site.add_link(
     group=_("Support"),
     order=5,
     permission="example.view_ticket",
+)
+site.add_link(
+    _("Send a notice"),
+    route="example:notice",
+    icon="campaign",
+    group=_("Support"),
+    order=6,
+    permission="example.change_ticket",
 )
 site.add_link(
     _("Live updates"),
