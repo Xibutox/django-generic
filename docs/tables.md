@@ -317,7 +317,16 @@ every *other* condition applied — with their counts:
 A number or a date answers with its range: `{"kind": "range", "min",
 "max", "empty"}`. `q` searches the labels — for a relation, the related
 record's label — and `ids=1,2` asks for the labels of known values. A
-tag column adds each value's `tag`, colours included. Only columns that
+tag column adds each value's `tag`, colours included.
+
+Values come a page at a time, the most held first: `facet_limit` of them
+(50, a class attribute of the viewset), `more` saying another page
+follows and `page=2`, `page=3`... asking for it (the answer echoes
+`page`). The filter editor lists the first page and loads the next ones
+as its list is scrolled to the end — or at once, when a page is too
+short to scroll — so every value is within reach, searched or not; a
+relation picked from its model's autocomplete pages the same way. `ids`
+ignores `page`. Only columns that
 are filterable and facetable answer; an `AggregatedDataTableViewSet` has
 no facets (`facets_enabled = False`).
 

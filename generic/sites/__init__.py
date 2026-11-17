@@ -75,6 +75,17 @@ A list may unfold into its related records, level after level, edited
 where they stand (``generic.sites.outlines``)::
 
     outline = ("equipment", "maintenances")
+
+A form that is not a resource's add or change page - no model, or
+several models at once (``generic.api.ModelsForm``) - is a form page
+(``generic.sites.form_pages``), drawn like any other form::
+
+    class NoticePage(FormPageView):
+        serializer_class = NoticeForm
+        page_title = _("Send a notice")
+
+        def form_valid(self, serializer):
+            ...
 """
 
 from generic.api.tags import TagStyle
@@ -87,6 +98,11 @@ from generic.sites.dashboard import Cards, Kpi
 from generic.sites.data import DataResource, RelatedRows, RowLink
 from generic.sites.decorators import action, display
 from generic.sites.duplicates import Duplicate
+from generic.sites.form_pages import (
+    FormPageView,
+    FormViewMixin,
+    ResourceFormPageView,
+)
 from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
@@ -119,6 +135,8 @@ __all__ = [
     "ChartBuilder",
     "DataResource",
     "Duplicate",
+    "FormPageView",
+    "FormViewMixin",
     "GenericSite",
     "Grid",
     "Import",
@@ -129,6 +147,7 @@ __all__ = [
     "RelatedRows",
     "RelatedTable",
     "ResourceAction",
+    "ResourceFormPageView",
     "ResourcePage",
     "ResourcePageView",
     "RowLink",

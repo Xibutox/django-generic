@@ -270,3 +270,48 @@ def test_a_column_declared_centred_is_centred(page, desk, admin, sign_in):
         "left",
         "start",
     )
+
+
+def test_the_values_past_the_first_page_load_as_the_list_scrolls(
+    page, desk, admin, sign_in, monkeypatch
+):
+    from example.models import Agent
+    from generic.api.facets import FacetMixin
+
+    # Every ticket its own assignee: 25 values, five to a page.
+    for index, ticket in enumerate(Ticket.objects.order_by("pk"), 1):
+        ticket.assignee = Agent.objects.create(
+            name=f"Agent {index:02d}",
+            email=f"agent{index}@example.test",
+            team=desk["teams"][0],
+        )
+        ticket.save()
+
+    monkeypatch.setattr(FacetMixin, "facet_limit", 5)
+    sign_in(admin)
+    page.goto(LIST)
+    expect(references(page)).to_have_count(10)
+    page.locator(
+        ".dt-filter-field__picker[aria-label='Filter Assignee']"
+    ).click()
+    editor = page.locator(".dt-editor")
+    values = editor.locator(".dt-choices__list")
+    choices = editor.locator(".dt-choice")
+
+    # A first page too short to scroll is followed by the next at once.
+    expect(choices.nth(5)).to_be_attached()
+
+    for _ in range(10):
+        if choices.count() == 25:
+            break
+
+        values.evaluate("node => { node.scrollTop = node.scrollHeight; }")
+        page.wait_for_timeout(300)
+
+    expect(choices).to_have_count(25)
+    last = Ticket.objects.order_by("-assignee__pk").first().assignee.name
+    expect(editor.get_by_text(last, exact=True)).to_be_attached()
+
+    # A search starts over from its own first page.
+    editor.locator(".dt-choices input[type=search]").fill("Agent 0")
+    expect(choices).to_have_count(9)
