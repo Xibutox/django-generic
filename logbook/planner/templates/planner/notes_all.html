@@ -1,0 +1,50 @@
+{% extends "generic/resource/page.html" %}
+{% load i18n static %}
+
+{# Every note one under the other, each with its own editor            #}
+{# (planner/static/planner/note.js): written here as on its own page.  #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'planner/note.css' %}">
+{% endblock %}
+
+{% block components %}
+  {{ block.super }}
+  <script src="{% static 'planner/note-clipboard.js' %}" defer></script>
+  <script src="{% static 'planner/note.js' %}" defer></script>
+{% endblock %}
+
+{% block page_content %}
+<form class="notes-all__search" method="get" role="search">
+  <input class="input" type="search" name="q" value="{{ term }}"
+         placeholder="{% translate 'Notes whose title holds...' %}"
+         aria-label="{% translate 'Search the notes by title' %}">
+  <button class="button" type="submit">{% translate "Search" %}</button>
+</form>
+
+{% for entry in notes %}
+<article class="notes-all__note" aria-label="{{ entry.note.title }}">
+  <p class="notes-all__meta muted">
+    {% if entry.note.pinned %}<span>{% translate "Pinned" %}</span> &middot;{% endif %}
+    {% if entry.note.project %}<span>{{ entry.note.project }}</span> &middot;{% endif %}
+    <span>{% blocktranslate with when=entry.note.updated_at|date:"SHORT_DATETIME_FORMAT" %}Written {{ when }}{% endblocktranslate %}</span>
+    &middot; <a href="{{ entry.url }}">{% translate "Open the note" %}</a>
+  </p>
+  <section class="card note-editor"
+           aria-label="{{ entry.note.title }}"
+           data-url="{{ entry.document }}"
+           data-attach-url="{{ entry.attach }}">
+    <p class="note-editor__loading muted">{% translate "Loading the note..." %}</p>
+  </section>
+</article>
+{% empty %}
+<p class="muted">{% translate "No note." %}</p>
+{% endfor %}
+
+{% if more %}
+<p class="muted notes-all__more">
+  {% blocktranslate %}The first {{ limit }} only: search by title for the others.{% endblocktranslate %}
+</p>
+{% endif %}
+{% endblock %}

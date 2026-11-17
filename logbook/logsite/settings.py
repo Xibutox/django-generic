@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",  # the framework's
     "generic",  # the framework's
+    # Every search sets accents aside: "deploiement" finds "Déploiement".
+    "generic.search",
     "planner",
 ]
 
