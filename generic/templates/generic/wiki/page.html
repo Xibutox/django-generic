@@ -60,14 +60,18 @@
         </details>
       {% endif %}
       <div class="wiki__menu-head">
-        <label class="input-with-icon">
+        {# Typing filters the menu by title; Enter searches the pages' text. #}
+        <form class="input-with-icon" method="get" action="{% url 'generic_wiki:index' %}" role="search">
           {% icon "search" "icon--sm" %}
           <input type="search"
                  class="input input--sm"
+                 name="q"
                  x-model="filter"
-                 placeholder="{% translate 'Filter pages' %}"
-                 aria-label="{% translate 'Filter pages' %}">
-        </label>
+                 placeholder="{% translate 'Filter, or Enter to search' %}"
+                 title="{% translate 'Typing filters the menu; Enter searches the text of this wiki' %}"
+                 aria-label="{% translate 'Filter pages, or search this wiki' %}">
+          <input type="hidden" name="wiki" value="{{ wiki.slug }}">
+        </form>
         {% if can.add %}
           <button type="button"
                   class="icon-button"
@@ -180,6 +184,22 @@
               {% endif %}
             </div>
           </header>
+
+          {# The page's headings, for a page with a few: each an anchor. #}
+          {% if contents %}
+            <nav class="wiki-toc" aria-labelledby="wiki-toc-title">
+              <details open>
+                <summary class="wiki-toc__title" id="wiki-toc-title">{% translate "Contents" %}</summary>
+                <ol class="wiki-toc__list">
+                  {% for entry in contents %}
+                    <li class="wiki-toc__item" style="--toc-depth: {{ entry.depth }}">
+                      <a href="#{{ entry.id }}">{{ entry.text }}</a>
+                    </li>
+                  {% endfor %}
+                </ol>
+              </details>
+            </nav>
+          {% endif %}
 
           {# Cleaned by the server, and left alone by Alpine: whatever the #}
           {# page holds, it is never read as a directive.                  #}

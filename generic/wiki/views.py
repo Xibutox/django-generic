@@ -37,6 +37,7 @@ from generic.wiki.access import (
     wiki_rights,
 )
 from generic.wiki.api import IMAGE_TYPES, can, readable_pages
+from generic.wiki.headings import table_of_contents, with_anchors
 from generic.wiki.models import (
     Wiki,
     WikiFile,
@@ -46,6 +47,7 @@ from generic.wiki.models import (
     attachments_in,
 )
 from generic.wiki.sanitize import safe_html
+from generic.wiki.search import search_pages_of
 from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
 
 
@@ -159,6 +161,9 @@ class WikiListView(SiteViewMixin, TemplateView):
     template_name = "generic/wiki/index.html"
 
     def get_page_title(self) -> str:
+        if getattr(self, "term", ""):
+            return gettext("Search the wikis")
+
         return gettext("Wikis")
 
     def get_breadcrumbs(self) -> list[Breadcrumb]:
@@ -166,8 +171,14 @@ class WikiListView(SiteViewMixin, TemplateView):
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         wikis = list(self.wikis())
+        #: ``?q=``: the pages holding these words, in ``?wiki=`` or all.
+        self.term = (request.GET.get("q") or "").strip()[:200]
 
-        if len(wikis) == 1 and not can(request.user, "add", "wiki"):
+        if (
+            not self.term
+            and len(wikis) == 1
+            and not can(request.user, "add", "wiki")
+        ):
             return redirect(wikis[0].get_absolute_url())
 
         self.wiki_list = wikis
@@ -201,7 +212,22 @@ class WikiListView(SiteViewMixin, TemplateView):
             if wiki_rights(user, wiki, roles)["delete"]
         ]
 
+        scope = None
+
+        if self.term and request.GET.get("wiki"):
+            scope = next(
+                (w for w in self.wiki_list if w.slug == request.GET["wiki"]),
+                None,
+            )
+
         context.update(
+            term=self.term,
+            scope=scope,
+            results=(
+                search_pages_of(request.user, self.term, wiki=scope)
+                if self.term
+                else None
+            ),
             wikis=self.wiki_list,
             can=rights,
             trash_count=len(trashed),
@@ -277,7 +303,13 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
         excluded = descendants_of(pages, page) if page is not None else set()
         others = Wiki.objects.readable_by(request.user).exclude(pk=wiki.pk)
 
+        content, headings = with_anchors(
+            safe_html(page.content) if page else ""
+        )
+
         context.update(
+            content=content,
+            contents=table_of_contents(headings),
             wiki=wiki,
             other_wikis=list(others.order_by("position", "name")),
             pdf_url=wiki.get_pdf_url() if pdf.available() else "",
@@ -286,7 +318,6 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             ),
             page=page,
             menu=build_menu(pages, page),
-            content=safe_html(page.content) if page else "",
             attachments=page.attachments() if page else [],
             can=rights,
             can_wiki=manages,
@@ -421,6 +452,7 @@ class WikiRevisionView(WikiPageView):
         current = self.page.current_revision()
         author = revision.author
 
+        content, headings = with_anchors(safe_html(revision.content))
         context.update(
             revision=revision,
             revision_author=(
@@ -430,7 +462,9 @@ class WikiRevisionView(WikiPageView):
             ),
             revision_is_current=current is not None
             and current.pk == revision.pk,
-            content=safe_html(revision.content),
+            content=content,
+            # This version's headings, not the page's.
+            contents=table_of_contents(headings),
             attachments=attachments_in(revision.content),
         )
         # A version is read, not edited.

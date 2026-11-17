@@ -220,9 +220,12 @@ class TestEverySearch:
 
         groups = search_pages(request, "reglement")
 
+        # The pages, then the way to every page holding the words.
         assert [item["label"] for item in groups[0]["items"]] == [
-            "Réglement intérieur"
+            "Réglement intérieur",
+            "Search the wikis for: reglement",
         ]
+        assert groups[0]["items"][-1]["url"] == "/wiki/?q=reglement"
 
 
 class TestRowsThatAreNotInTheDatabase:

@@ -40,6 +40,45 @@
     {% if can.import %}
       <input type="file" accept=".zip,application/zip" hidden x-ref="archive" @change="importArchive($event)">
     {% endif %}
+    {# The pages holding some words, in every wiki or in one. #}
+    <form class="wiki-search" method="get" action="{% url 'generic_wiki:index' %}" role="search">
+      <label class="input-with-icon wiki-search__field">
+        {% icon "search" "icon--sm" %}
+        <input type="search" class="input" name="q" value="{{ term }}"
+               placeholder="{% translate 'Search the pages of every wiki' %}"
+               aria-label="{% translate 'Search the pages of every wiki' %}">
+      </label>
+      {% if scope %}<input type="hidden" name="wiki" value="{{ scope.slug }}">{% endif %}
+      <button type="submit" class="button">{% translate "Search" %}</button>
+    </form>
+
+    {% if term %}
+      <section class="card wiki-results" aria-labelledby="wiki-results-title">
+        <h2 class="wiki-results__title" id="wiki-results-title">
+          {% if scope %}
+            {% blocktranslate count counter=results|length with name=scope.name %}{{ counter }} page found in {{ name }}{% plural %}{{ counter }} pages found in {{ name }}{% endblocktranslate %}
+            <a class="wiki-results__all" href="?q={{ term|urlencode }}">{% translate "Search every wiki" %}</a>
+          {% else %}
+            {% blocktranslate count counter=results|length %}{{ counter }} page found{% plural %}{{ counter }} pages found{% endblocktranslate %}
+          {% endif %}
+        </h2>
+        {% if results %}
+          <ol class="wiki-results__list">
+            {% for found in results %}
+              <li class="wiki-results__item">
+                <a class="wiki-results__link" href="{{ found.page.get_absolute_url }}">{{ found.page.title }}</a>
+                <span class="muted">{{ found.page.wiki.name }}</span>
+                {# Text runs, the words found marked: escaped, never HTML. #}
+                <p class="wiki-results__excerpt">{% for piece, hit in found.excerpt %}{% if hit %}<mark>{{ piece }}</mark>{% else %}{{ piece }}{% endif %}{% endfor %}</p>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="muted">{% translate "No page holds these words." %}</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
     {% if wikis %}
       <div class="wiki-list">
         {% for wiki in wikis %}

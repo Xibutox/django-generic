@@ -17,6 +17,14 @@ from django.utils.translation import gettext_lazy as _
 from generic.conf import generic_settings
 from generic.wiki.sanitize import clean_html
 
+
+def plain_text(html: str | None) -> str:
+    """A page's words, a line per block: what a search matches."""
+    from generic.wiki.diff import lines_of
+
+    return "\n".join(lines_of(html))
+
+
 #: Versions kept per page; older ones are dropped as new ones come.
 MAX_REVISIONS = 50
 
@@ -332,6 +340,9 @@ class WikiPage(Trashed):
     )
     #: Clean HTML: see sanitize.py.
     content = models.TextField(_("content"), blank=True, default="")
+    #: The content's words, without its HTML: what a search reads, and
+    #: where an excerpt is cut from. Written by ``save``.
+    text = models.TextField(_("text"), blank=True, default="", editable=False)
     show_on_dashboard = models.BooleanField(
         _("show on the dashboard"),
         default=False,
@@ -389,6 +400,13 @@ class WikiPage(Trashed):
         # Whatever the way in - the API, the admin, a script - only
         # clean HTML is stored.
         self.content = clean_html(self.content)
+        self.text = plain_text(self.content)
+
+        update_fields = kwargs.get("update_fields")
+
+        if update_fields is not None and "content" in update_fields:
+            kwargs["update_fields"] = {*update_fields, "text"}
+
         super().save(*args, **kwargs)
 
     def get_ancestors(self) -> list["WikiPage"]:
