@@ -54,6 +54,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from generic.api.body import ObjectBodyMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.wiki.models import (
@@ -180,7 +181,7 @@ class WikiPermission(BasePermission):
         return may_write_in(request.user, obj.wiki_id)
 
 
-class WikiViewSet(viewsets.ModelViewSet):
+class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
     """The wikis: each a menu of pages of its own."""
 
     permission_classes = (WikiPermission,)
@@ -289,7 +290,7 @@ class WikiViewSet(viewsets.ModelViewSet):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
-class WikiPageViewSet(viewsets.ModelViewSet):
+class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
     permission_classes = (WikiPermission,)
     pagination_class = None
 

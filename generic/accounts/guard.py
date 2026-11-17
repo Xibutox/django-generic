@@ -10,8 +10,9 @@ rule:
 
 So a desk supervisor who may edit accounts can add people to the groups
 they are in themselves and no others, can never tick a flag they do not
-carry, and can never touch a superuser - whose password they could
-otherwise set and then sign in as.
+carry, and can never touch a superuser - nor any account holding a
+permission they lack - whose password they could otherwise set and
+then sign in as.
 
 A superuser is exempt, holding everything by definition. The rule is
 checked on the way in, before anything is written, so a refusal names
@@ -157,18 +158,67 @@ def check_group(request: Any, serializer: Any) -> None:
     )
 
 
+def outranks(actor: Any, obj: Any) -> bool:
+    """Whether ``obj`` may do something ``actor`` may not.
+
+    A superuser outranks everyone but a superuser; a staff account
+    outranks one that is not; and so does an account granted - by its
+    groups or directly - a permission ``actor`` lacks. Read from what
+    the account is granted, not from what it may do now: an inactive
+    account may do nothing, and is switched back on in one click.
+    """
+    if actor.is_superuser:
+        return False
+
+    if getattr(obj, "is_superuser", False):
+        return True
+
+    if getattr(obj, "is_staff", False) and not getattr(
+        actor, "is_staff", False
+    ):
+        return True
+
+    granted = permissions_of(
+        obj.groups.all() if hasattr(obj, "groups") else (),
+        (
+            obj.user_permissions.all()
+            if hasattr(obj, "user_permissions")
+            else ()
+        ),
+    )
+
+    return any(not actor.has_perm(name) for name in sorted(granted))
+
+
 def may_manage(request: Any, obj: Any) -> bool:
     """Whether ``request.user`` may edit or delete this account.
 
-    A superuser can be edited only by a superuser: whoever may change
-    an account may set its password, and therefore becomes it.
+    Whoever may change an account may set its password, and therefore
+    becomes it: so an account is managed only by somebody who already
+    holds everything it does. A superuser is edited only by a
+    superuser, and an account holding a permission its editor lacks is
+    out of that editor's reach, as granting that permission would be.
+    One's own account is always in reach - the form's own rules decide
+    what may be changed on it.
     """
     user = getattr(request, "user", None)
 
     if obj is None or user is None:
         return True
 
-    return bool(user.is_superuser or not getattr(obj, "is_superuser", False))
+    if user.is_superuser or obj.pk == user.pk:
+        return True
+
+    if obj.pk is None:
+        return not getattr(obj, "is_superuser", False)
+
+    # Asked once per row of a list, and again by each of its buttons.
+    cache = request.__dict__.setdefault("_generic_may_manage", {})
+
+    if obj.pk not in cache:
+        cache[obj.pk] = not outranks(user, obj)
+
+    return cache[obj.pk]
 
 
 __all__ = [
@@ -176,5 +226,6 @@ __all__ = [
     "check_user",
     "codename_of",
     "may_manage",
+    "outranks",
     "permissions_of",
 ]

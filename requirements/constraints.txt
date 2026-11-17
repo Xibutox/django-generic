@@ -250,8 +250,10 @@ nh3==0.3.7
     # via django-generic
 nodeenv==1.11.0
     # via pre-commit
-oauthlib==4.0.0
-    # via django-allauth
+oauthlib==4.0.1
+    # via
+    #   -r requirements/constraints.in
+    #   django-allauth
 openpyxl==3.1.5
     # via django-generic
 packageurl-python==0.17.6
@@ -404,8 +406,10 @@ tomli==2.5.0
     # via pip-audit
 tomli-w==1.2.0
     # via pip-audit
-twisted==26.4.0
-    # via daphne
+twisted==26.10.0
+    # via
+    #   -r requirements/constraints.in
+    #   daphne
 txaio==26.6.1
     # via autobahn
 types-pyyaml==6.0.12.20260906

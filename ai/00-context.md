@@ -56,7 +56,7 @@ pages, charts, filters, exports or permissions.
 | Tests | pytest, pytest-django, factory-boy; Playwright for the opt-in browser tests |
 | Style | black + isort (line length **79**), flake8 |
 
-Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.5.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.5,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
+Not on PyPI - and `django-generic` there is an unrelated package: never `pip install django-generic` by name. Install in a project from its wheel, built from a checkout (`python -m pip wheel --no-deps --wheel-dir dist .`), kept in the project's `vendor/` and named by path in `requirements.txt`: `./vendor/django_generic-1.6.0-py3-none-any.whl[export,events,tasks,postgres,wiki]` (the core needs only Django and DRF); a project with `pyproject.toml` lists `django-generic[...]>=1.5,<2` there and keeps the wheel line plus `-e .` in `requirements.txt`. From a checkout of the framework: `pip install -e ".[export,events,tasks,postgres,wiki,dev]"`. New project, existing project, Docker, updating: `docs/installation.md`.
 
 ---
 
@@ -85,8 +85,12 @@ generic/
 │   ├── pagination.py       DataTables envelope {draw, recordsTotal, recordsFiltered, data}
 │   ├── renderers.py        ?format=datatables and DataTables-shaped errors
 │   ├── exports.py          ExportMixin: streaming Excel and CSV of the filtered rows
-│   ├── autocomplete.py     AutocompleteView (Select2)
+│   ├── autocomplete.py     AutocompleteView (Select2); read_page (bounded)
+│   ├── body.py             ObjectBodyMixin / require_object: a write's body is an object
+│   │                       (400 otherwise); clean_keys: values that can be primary keys
 │   ├── forms.py            FormModelSerializer: serializer -> JSON form schema
+│   ├── form_parts.py       ModelsForm, FormPart: one form over several models, saved
+│   │                       together, fields <part>__<field> (§5.28)
 │   ├── files.py            FormFileField, FileValueMixin: a stored file as {name, url, size}
 │   ├── parsers.py          MultiPartJSONParser: _payload (JSON) + one part per file
 │   ├── inlines.py          InlineProcessor: nested rows in one transaction
@@ -97,6 +101,7 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
+│   │                       FormPageView, ResourceFormPageView,
 │   │                       RelatedTable, Grid, Tree, Outline, Level, Calendar, Kpi,
 │   │                       Cards, Chart,
 │   │                       TagStyle, TabularInline,
@@ -107,6 +112,8 @@ generic/
 │   ├── auto.py             AutoResource, auto(): a resource worked out from the model
 │   ├── pages.py            @page, ResourcePage, ResourcePageView, PagesMixin: pages of a
 │   │                       resource's own (any content) at its address, guarded, framed
+│   ├── form_pages.py       FormPageView, ResourceFormPageView, FormViewMixin: any
+│   │                       serializer drawn as a form, posted back to the page (§5.28)
 │   ├── data.py             DataResource, register_data: a list and a page per row for
 │   │                       rows that are not a model's (an external API's answer)
 │   ├── serializers.py      list_display/fields -> generated table and form serializers
@@ -271,6 +278,9 @@ generic/
     ├── js/tree.js          Generic.tree: a tree unfolded a level at a time (§5.18)
     ├── js/values.js        Generic.values.render(entry): a summary-typed value as an
     │                       element (tree, cards, calendar); loaded by base.html
+    ├── js/table_frame.js   Generic.tableFrame: a data table's, tree's or outline's
+    │                       rows scroll in a frame sized so its card fits the
+    │                       window; header sticky; data-table-frame="false" opts out
     ├── js/dashboard.js     key figures and cards filled from their endpoints (§5.19)
     ├── js/calendar.js      Generic.calendar: month, week, day, list; hours; drag to move,
     │                       resize either edge, allocate, Shift+click to copy (§5.20)
@@ -596,7 +606,8 @@ without `MAILERS`, `W007` `search_rank` without `generic.search`,
 drf-spectacular, `W010` a model with a file field - or the wiki - and
 no `MEDIA_ROOT`, `W011`/`W012` `django_celery_results` with another
 result backend / results not extended, `W013` a resource open to custom
-fields without history, `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
+fields without history, `W014` a key of `GENERIC` that is no setting
+(misspelled: nothing reads it), `I001`; with `--deploy`, `W009` `ADMINS` empty). `site.urls`
 may be mounted under a prefix (`path("app/", site.urls)`) in a project
 whose root is taken; keep the namespace `site`. Without the `events`
 extra the pages open no WebSocket.
@@ -929,7 +940,9 @@ words. Operators per type include *any of / none of / has all of*,
 *contains / is / starts with*, comparisons and *between*, relative dates
 (this month, last 30 days, more than N days ago), *is empty*; conditions
 combine with *all*/*any* and groups. The editor lists a column's values
-with counts from `facets/`; once searched, *Select the N values found*
+with counts from `facets/`, a page at a time: scrolling to the list's
+end loads the next page (`page=`, `more`), so every value is reachable
+without a search; once searched, *Select the N values found* (those listed)
 ticks them all, and on a relation *Contains "..."* filters by the words
 instead (`contains`/`not_contains` on a multiselect column whose
 `search_field` differs from its filter path: `FilterSpec.text_field`,
@@ -1373,7 +1386,10 @@ several, or `callable(user)`; object rules: override
 record page - its form when no summary), `row_menu` (record pages),
 `navigation` (resource pages), `methods` (`("get","post")` for a form).
 Routes `site:<app>_<model>_<name>` / `site:data_<name>_<name>`, before
-the record's route; `resource.get_page_url(name, obj=None)`. Checked at
+the record's route; `resource.get_page_url(name, obj=None)`. A record
+page's address names its record by `page_object_argument` /
+`page_object_converter` on the resource (`"pk"` / `"path"`; a
+`DataResource`: `"key"` / `"str"`), found by `get_page_object`. Checked at
 registration (`check_pages`). In templates: `{% include
 "generic/components/table.html" with config=... id=... %}` for a table,
 `{% generic_chart %}` for a chart, `.prose` for long text; styles in
@@ -2076,6 +2092,76 @@ once per request (`definitions.definitions`, `forget(request)`);
 (`display.summary_section`). Not yet: grids, bulk edit, imports,
 compare, chart builder, outlines, the OpenAPI schema.
 
+### 5.28 Form pages (`FormPageView`, `ResourceFormPageView`, `ModelsForm`)
+
+A form that is **not a resource's add/change page** - no model (send a
+notice), a few fields of one model, several models saved together - is
+a form page. Same schema, widgets, sections, errors, theme and catalog
+as every form; never a hand-written `<form>`, template form or schema
+endpoint.
+
+```python
+from generic.api import FormModelSerializer, FormPart, FormSerializer, ModelsForm
+from generic.sites import FormPageView, ResourceFormPageView, ResourcePage
+
+class NoticeForm(FormSerializer):                 # no model
+    title = serializers.CharField(max_length=120)
+    form_overrides = {"title": {"placeholder": "..."}}
+
+class NoticePage(FormPageView):                   # urls.py: NoticePage.as_view(site=site)
+    serializer_class = NoticeForm
+    page_title = _("Send a notice")
+    permission_required = "example.change_ticket"
+    def form_valid(self, serializer):             # in a transaction
+        send(**serializer.validated_data)
+        return _("Sent.")                         # the message; or anything + get_success_url
+
+class NewCustomerForm(ModelsForm):                # several models, all or none
+    parts = (
+        FormPart("customer", Customer, fields=("name", "code"), title=_("Customer")),
+        FormPart("ticket", Ticket, fields=("title", "team"),
+                 links={"customer": "customer"}),   # set from the earlier part, not asked
+    )
+    def get_save_kwargs(self, part, saved):       # extra values per part
+        return {"reference": next_reference()} if part.name == "ticket" else {}
+
+class NewCustomerPage(ResourceFormPageView):      # a page of a resource
+    serializer_class = NewCustomerForm
+    def get_success_url(self, result):            # result: {"customer": obj, "ticket": obj}
+        return self.resource.get_detail_url(result["customer"].pk)
+
+class CustomerResource(ModelResource):
+    pages = (ResourcePage("new-with-ticket", view=NewCustomerPage, permission="add"),)
+```
+
+The page carries the schema (`form_config.schema`, `formPage: true`)
+and posts JSON (or `_payload` multipart) to its own address: 400 with
+DRF errors by field, 200 `{"_message", "_redirect", "_initial",
+"_initialDisplay"}`. No `_redirect`: the form stays, opened again
+(empty after a create, new values after an edit). `form_valid` defaults
+to `serializer.save()` and refuses a plain `FormSerializer` without
+`create`; a `ValidationError` raised in it shows on the form and rolls
+back. Attributes / hooks: `serializer_class`, `page_title`,
+`description`, `icon`, `submit_label`, `cancel_url`, `initial`,
+`success_message`, `success_url`, `permission_required`;
+`get_instance()`, `get_initial()`, `form_valid()`,
+`get_success_message(result)`, `get_success_url(result)`,
+`get_required_permissions()`. Permissions: `permission_required` + add
+(create) / change (edit) of every model written; on a resource, its
+view + page permission, and its own `has_add_permission` /
+`has_change_permission(request, obj)` for its own model. On a record's
+page (`detail=True`) a model form of the resource's model edits the
+record. `ModelsForm`: fields `<part>__<field>` in sections named after
+the parts; each part validated by its own model serializer (unique
+checks included, errors prefixed); saved in order in one transaction;
+`instance={"part": obj}` edits; own declared fields are questions of
+the form; `validate(attrs)` sees each part's values under its name;
+`save_part(part, serializer, saved)` to save differently. Declaration
+errors raise `ImproperlyConfigured` at class definition. Template
+`generic/form_page.html` (blocks `form_intro`, `form_after`). Example:
+`example/form_pages.py` (notice, customer + first ticket, reassign a
+ticket), `docs/form-pages.md`.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -2091,14 +2177,14 @@ API (route names `site:api_<app>_<model>-<action>`):
 | Request | Does |
 | --- | --- |
 | `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `columns[i][data]`, `order[i][column|dir]`, `filters` JSON tree, `_related`); `table.js` drops the rest of DataTables' request to keep the URL short |
-| `GET .../facets/?column=<name>` | a column's values with counts under the other filters (`q=` search, `ids=` labels), or `{"kind": "range", min, max, empty}` |
+| `GET .../facets/?column=<name>` | a column's values with counts under the other filters, `facet_limit` (50) a page (`q=` search, `page=` from 1, `more`, `ids=` labels), or `{"kind": "range", min, max, empty}` |
 | `POST api/<app>/<model>/` | create (JSON, `_inlines`; or multipart `_payload` + a part per file, §5.17) |
 | `GET/PATCH/DELETE api/<app>/<model>/<pk>/` | read (with `_display`, `_label`, `_inlines`), update, delete (refused with reason when protected) |
 | `GET .../<pk>/summary/` | summary JSON |
 | `GET .../<pk>/files/<field>/` | one of the record's files, permission-checked (§5.17) |
 | `GET .../<pk>/history/` | the record's versions, newest first (`limit`, `offset`); 404 where the model keeps none |
 | `GET .../form-schema/` | form schema |
-| `GET .../<pk>/deletion-preview/` | cascade preview |
+| `GET .../<pk>/deletion-preview/` | cascade preview: delete permission (class and record); a record the reader may not view is counted, `hidden`, unnamed (`may_name_in_deletion`) |
 | `GET .../export/`, `.../export-csv/` | every filtered row |
 | `POST .../actions/` | `{"action", "ids": [...]}` or `{"action", "all": true}`; the answer may carry `undo` |
 | `POST .../undo/` | `{"token"}` from an answer's `undo`: what it did, put back (§13c) |
@@ -2315,6 +2401,9 @@ write (also a *Write a message* button on the notifications page),
 ## 9. Settings (`GENERIC = {...}`)
 
 `SITE_TITLE`, `SITE_HEADER`, `SITE_ICON`, `SITE_URL`, `SHOW_ADMIN_LINK`,
+`DJANGO_ADMIN` (True; False: every page of the default admin site is a
+404, sign-in form included, mounted or not, and the link goes - read
+when the URLconf is; `GenericConfig.arm_django_admin`),
 `THEME` (`{"--ui-hue": "150", "--ui-colorfulness": "1", "--ui-tint": "0.35",
 "--ui-contrast": "0", "--ui-stripes": "0.6"}`), `NAVIGATION`,
 `SEARCH_RESULTS_PER_RESOURCE`, `TABLE_PAGE_SIZE`, `TABLE_DATETIME_FORMAT`
@@ -2322,6 +2411,7 @@ write (also a *Write a message* button on the notifications page),
 `datatables/core.js formatStamp` draws them in `<html lang>`; a
 strftime string fixes the text),
 `TABLE_MAX_PAGE_SIZE`, `TABLE_ALLOW_UNLIMITED_PAGE_SIZE`,
+`TABLE_COUNT_LIMIT` (reserved: read by nothing, every total is counted),
 `EXPORT_CHUNK_SIZE`, `EXPORT_MAX_ROWS`, `EXPORT_DATE_FORMAT`,
 `EXPORT_DATETIME_FORMAT`, `IMPORT_MAX_ROWS`, `IMPORT_MAX_FILE_SIZE`,
 `IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `UNDO_SECONDS` (600; None:
@@ -2336,7 +2426,9 @@ no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`,
 `WIKI_ARCHIVE_MAX_SIZE` (100 MB), `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
-`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off),
+`LOGIN_MAX_ATTEMPTS` (5; None turns the lock off; the site's
+sign-in form and the default admin site's, `ThrottledSignInMixin` for
+another password form),
 `LOGIN_LOCKOUT_MINUTES` (15), `SECURITY_LOG` (True),
 `SECURITY_LOG_RETENTION_DAYS` (None), `SESSION_IDLE_MINUTES` (None),
 `CONTENT_SECURITY_POLICY` (None; "recommended" or directives),
@@ -2395,7 +2487,7 @@ Read them via `from generic.conf import generic_settings`.
 - Build explicit, named fixture data (not random) so assertions name rows.
 - One behaviour per test, named as a sentence.
 - Quality gates: `black --check .`, `isort --check-only .`, `flake8`,
-  `pytest` (coverage ≥ 80%). CI summarises each test job - counts,
+  `pytest` (coverage ≥ 88%, branches counted). CI summarises each test job - counts,
   time, areas, slowest tests, coverage per package - with
   `scripts/ci_report.py` (JUnit + coverage XML -> Markdown/JSON) and
   keeps `junit.xml`, `coverage.xml` and `htmlcov/` as artifacts;
@@ -2484,7 +2576,8 @@ announce_restart(scheduled_at=when, duration_minutes=10, is_manual=False,
   `generic.add_restartannouncement`. See `docs/maintenance.md`.
 - **Help and changelog**: pages `site:help` and `site:changelog` read
   files the project already keeps — `LICENSE` and `CHANGELOG.md` at its
-  root (`GENERIC["LICENSE_FILE"]`, `["CHANGELOG_FILES"]`,
+  root (`GENERIC["LICENSE_FILE"]`, `["LICENSE_TEXT"]` when there is
+  no file, `["CHANGELOG_FILES"]`,
   `["HELP_LINKS"]`, `["HELP_TEXT"]`, `["VERSION"]`). The changelog is
   parsed as Keep a Changelog and rendered escaped, never as HTML -
   only its `backquoted` parts become `<code>` (`inline_code` filter). Both
@@ -2794,9 +2887,14 @@ site.add_sso_provider(_("Entra ID"), route="oidc_authentication_init",
 - **What you grant, you must already have** (`accounts/guard.py`): a
   non-superuser cannot tick *superuser*, cannot tick *staff* unless
   they are, cannot add a group or a permission granting anything they
-  lack, and cannot open a superuser's form at all. Nobody can delete
-  or deactivate the account they are signed in as - including through
-  a bulk action, which goes through the same `delete_model`.
+  lack, and cannot open a superuser's form at all - nor that of any
+  account that may do more than they may (`guard.may_manage`,
+  `guard.outranks`: granted a permission they lack, or staff while
+  they are not), since changing an account is setting its password;
+  the bulk *Activate* and *Deactivate* skip those accounts too. Nobody
+  can delete or deactivate the account they are signed in as -
+  including through a bulk action, which goes through the same
+  `delete_model`.
 - Nothing is declared against a field a custom user model may not have:
   columns, fieldsets, search and the members tab are computed in
   `register_screens`. `history_exclude = ("password", "last_login")`.
@@ -3222,6 +3320,14 @@ def payments():                                # quick: runs on every refresh
 - `QuerySet.update()` fires no signal: `announce(resource, "bulk")`
   for the live tables (the history records it by itself).
 - After changing JS/CSS, browsers cache static files: hard reload.
+- **A sticky header and collapsed borders**: with `border-collapse:
+  collapse` a border is the table's, not the cell's - it stays behind
+  when the header sticks and the rows show through it. Under a sticky
+  header draw lines as `box-shadow: inset 0 -1px 0` on the cells
+  (`datatables.css`, `tree.css`), and stick it at `top: -1px` so a
+  fractional scale leaves no seam above it. A box with `overflow-x:
+  auto` scrolls both ways: a sticky header sticks to it, not the page -
+  hence the frame (`table_frame.js`).
 - **"System" theme sets no `data-theme`**: a colour keyed on
   `[data-theme="dark"]` alone stays light on a dark system. Use
   `light-dark()` (it follows `color-scheme`, set for all three choices);

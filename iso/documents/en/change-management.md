@@ -58,7 +58,7 @@ before it is deployed.
 2. **Review**: a pull request, read by [someone other than its author].
 3. **Test**: the CI runs on every push. django-generic's own
    (`.github/workflows/ci.yml`) runs black, isort, flake8, bandit,
-   pip-audit, mypy, the tests with an 80 % coverage gate, PostgreSQL
+   pip-audit, mypy, the tests with an 88 % coverage gate, PostgreSQL
    and Redis integration, the browser tests, the package build and the
    Docker stacks; a project's CI runs at least its tests and the same
    linters. [Branch protection requires a green CI to merge.]

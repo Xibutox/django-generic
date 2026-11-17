@@ -31,8 +31,11 @@
   font-size: var(--font-size-sm);
 }
 
+/* Down as well as sideways: a long tree scrolls in a frame of the
+   window's height (table_frame.js), its header pinned at the top. */
 .tree__scroll {
   overflow-x: auto;
+  overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
 }
@@ -45,15 +48,17 @@
 
 .tree-table th {
   position: sticky;
-  top: 0;
-  z-index: 1;
+  top: -1px;
+  z-index: 2;
   padding: var(--space-2) var(--space-3);
   font-weight: 600;
   color: var(--text-secondary);
   text-align: start;
   white-space: nowrap;
   background: var(--surface-sunken);
-  border-bottom: 1px solid var(--border-color);
+  /* Drawn by the cell, not a collapsed border, which would stay behind
+     when the header sticks and let the rows show through it. */
+  box-shadow: inset 0 -1px 0 var(--border-color);
 }
 
 .tree-table td {
@@ -410,6 +415,14 @@ div.dt-container.is-outline .dt-edit-toggle {
   z-index: 1;
   background: var(--surface-raised);
   box-shadow: -1px 0 0 var(--border-color);
+}
+
+/* Its header cell sticks both ways, over the column and the rows. */
+.outline-table th.tree-table__tools {
+  z-index: 3;
+  box-shadow:
+    -1px 0 0 var(--border-color),
+    inset 0 -1px 0 var(--border-color);
 }
 
 .outline-table .tree-row:not(.tree-row--foot):hover td.tree-table__tools {

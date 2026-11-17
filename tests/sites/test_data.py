@@ -322,6 +322,24 @@ class TestTheEndpoint:
         assert counts["operational"] == 9
         assert body["values"][0]["tag"]["color"] == "#16a34a"
 
+    def test_facets_come_a_page_at_a_time(self, admin_client, monkeypatch):
+        from generic.api.facets import FacetMixin
+
+        def facets(**params):
+            return admin_client.get(
+                f"{API}facets/", {"column": "status", **params}
+            ).json()
+
+        whole = facets()["values"]
+        monkeypatch.setattr(FacetMixin, "facet_limit", 1)
+        pages = [facets(page=page) for page in range(1, len(whole) + 1)]
+
+        assert len(whole) > 1
+        assert [body["values"][0] for body in pages] == whole
+        assert [body["more"] for body in pages] == [True] * (
+            len(whole) - 1
+        ) + [False]
+
     def test_a_number_facets_as_a_range(self, admin_client):
         body = admin_client.get(
             f"{API}facets/", {"column": "response_ms"}

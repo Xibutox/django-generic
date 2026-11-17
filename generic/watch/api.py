@@ -22,6 +22,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from generic.api.body import KEY_ERRORS, ObjectBodyMixin
 from generic.watch.models import (
     Watch,
     clean_channels,
@@ -91,6 +92,7 @@ class WatchSerializer(serializers.ModelSerializer):
 
 
 class WatchViewSet(
+    ObjectBodyMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
@@ -164,7 +166,11 @@ class WatchViewSet(
         if not object_id:
             return content_type, None, ""
 
-        obj = queryset.filter(pk=object_id).first()
+        try:
+            obj = queryset.filter(pk=object_id).first()
+        except KEY_ERRORS:
+            # "abc" where the key is a number: no such record.
+            obj = None
 
         if obj is None:
             raise Http404

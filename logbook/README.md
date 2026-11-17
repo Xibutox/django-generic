@@ -14,7 +14,11 @@ WSGI, SQLite.
   evolution) or an **AUT** (anything else: a meeting, support given to
   someone), each numbered on its own - FNC-0001, DM-0001, AUT-0001. The
   line is the task's title; its status, a ticket's criticality and a
-  timer sit beside it. The note saves itself as you type.
+  timer sit beside it. The note saves itself as you type. A task line
+  removed takes its task with it while the task is no more than that
+  line - no description, no time logged, not started; whoever may
+  write the note may do so, without the tasks' delete permission. A
+  task that is more than its line stays, in the tasks' list.
 - **Writing a note**: the buttons above the lines add a line of any
   kind, the + beside a line adds one under it. A line moves by its
   handle (drag it) or with Alt+Shift+Up/Down, taking the lines indented

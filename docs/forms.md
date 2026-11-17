@@ -112,6 +112,13 @@ rather than producing a dead button.
 Overrides merge along the MRO, so a subclass restates only what it
 changes.
 
+## Forms that are not a record's
+
+A form writing no model, a few fields of a record on a page of their
+own, or several models at once (`ModelsForm`, `FormPart`) is a **form
+page**: the same schema and widgets, posted to the page's own address.
+See [Form pages](form-pages.md).
+
 ## Questions that are not fields
 
 A form may ask something the record does not keep - why a file was
@@ -263,6 +270,15 @@ take with it, using Django's own cascade collector:
 `canDelete` is `false` when a `PROTECT` or `RESTRICT` relation stands in
 the way, so the confirmation dialog can say why instead of failing on
 submit.
+
+The cascade crosses models, and whoever may delete a book is not
+thereby allowed to read everything hanging off it. A record of a model
+the reader may neither view nor change is counted but not named: its
+node keeps `model` and `modelLabel`, with `"id": null`, `"label": ""`
+and `"hidden": true`. Override `may_name_in_deletion(request, record)`
+on the viewset for another rule. On a site, the endpoint asks the
+resource's delete permission - on the record too - and a record with
+pages of its own is named by its resource's `has_view_permission`.
 
 ## Files
 

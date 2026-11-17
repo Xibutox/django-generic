@@ -37,6 +37,10 @@ DEFAULTS: dict[str, Any] = {
     "SITE_URL": None,
     # Offer staff a link to the Django admin in the account menu.
     "SHOW_ADMIN_LINK": True,
+    # Whether Django's admin answers at all. False takes every page of
+    # the default admin site away - its sign-in form included - even
+    # where the URLconf still mounts it, and the link with them.
+    "DJANGO_ADMIN": True,
     # Design token overrides injected into every page, for a project
     # that wants its own colours without a stylesheet of its own:
     # {"--color-accent": "#7c3aed"}.
@@ -56,8 +60,9 @@ DEFAULTS: dict[str, Any] = {
     # ``length=-1`` is the DataTables idiom for "all rows". Allowing it
     # is convenient on small tables and dangerous on large ones.
     "TABLE_ALLOW_UNLIMITED_PAGE_SIZE": False,
-    # Counting a large filtered set on every draw is expensive. Above
-    # this many rows the total is estimated rather than counted.
+    # Reserved, and read by nothing yet: the row count above which a
+    # total would be estimated rather than counted. Every total is
+    # counted today.
     "TABLE_COUNT_LIMIT": None,
     # How a timestamp column is rendered in a cell.
     # None: a date-and-time cell travels as ISO in the active time zone

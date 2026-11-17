@@ -9,7 +9,9 @@ pytest tests/browser -m browser --no-cov   # in a real browser: opt-in
 ```
 
 The suite is self-contained: SQLite and an in-memory channel layer, no
-services to start. About 1700 tests, a minute or two with coverage,
+services to start. About 4,700 tests: a quarter of an hour with
+coverage on four processes (`pip install pytest-xdist`, then
+`pytest -n 4`), several times that on one,
 from a checkout with the `dev` extra:
 
 ```bash
@@ -447,7 +449,7 @@ black --check .            # line length 79
 isort --check-only .
 flake8 generic tests example example_project minimal docmanager logbook iso scripts debug.py
 bandit -r generic example docmanager logbook iso minimal -ll --skip B101
-pip-audit --skip-editable --ignore-vuln CVE-2026-106454 --ignore-vuln CVE-2026-115774 --ignore-vuln CVE-2026-115778 --ignore-vuln CVE-2026-115775 --ignore-vuln CVE-2026-115776 --ignore-vuln CVE-2026-115877 --ignore-vuln CVE-2026-83813   # see SECURITY.md
+pip-audit --skip-editable   # see SECURITY.md
 python scripts/compile_messages.py --check   # the .mo match the .po
 python scripts/mypy_baseline.py   # mypy: no error beyond scripts/mypy-baseline.txt
 python scripts/lock.py --check     # requirements/constraints.txt matches constraints.in
@@ -463,7 +465,8 @@ SQLite, once more against Postgres 16 and 17 and Redis - with
 django-celery-beat and django-celery-results installed as the images
 ship them, so the schedule and Celery results tests run there - the
 browser tests, and the package job above. Coverage must stay at or
-above 80%; it sits at 93%. mypy fails the build on a new error
+above 88%, branches counted
+(`branch = true` in `pyproject.toml`); it sits at 91%. mypy fails the build on a new error
 only: the ones carried today - django-stubs trails the Django versions
 the framework runs on, and most of what it says is that - are listed in
 `scripts/mypy-baseline.txt`, by file and message, not by line. Fixing

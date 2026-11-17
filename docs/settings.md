@@ -33,6 +33,7 @@ once instead of silently reading `None`.
 | `SITE_ICON` | `"dataset"` | Brand icon, a Material Symbols name |
 | `SITE_URL` | `None` | Where the brand links; the dashboard by default |
 | `SHOW_ADMIN_LINK` | `True` | Link staff to the Django admin, when it is mounted |
+| `DJANGO_ADMIN` | `True` | Whether Django's admin answers at all. `False`: every page of the default admin site is a 404, its sign-in form included, even where `urls.py` mounts it, and the link goes ([Security](security.md#the-django-admin)) |
 | `THEME` | `{}` | Appearance parameters or tokens: `{"--ui-hue": "150", "--ui-contrast": "0.2"}` — see [Appearance](sites.md#appearance) |
 | `NAVIGATION` | `[]` | Extra sidebar groups — see [Sites](sites.md#navigation-and-the-dashboard) |
 | `SEARCH_RESULTS_PER_RESOURCE` | `5` | Records per resource in the command palette |
@@ -45,7 +46,7 @@ once instead of silently reading `None`.
 | `TABLE_DATETIME_FORMAT` | `None` | Dates and times in tables. `None`: they travel as ISO in the active time zone and are drawn in the reader's language - `26/09/2026 09:51` in French, `09/26/2026, 09:51 AM` in English - while sorting, filters and edited cells keep the ISO value. A strftime format (`"%d.%m.%Y %H:%M"`) fixes the text for every language |
 | `TABLE_MAX_PAGE_SIZE` | `500` | Upper bound on `length` |
 | `TABLE_ALLOW_UNLIMITED_PAGE_SIZE` | `False` | Whether `length=-1` means "all" |
-| `TABLE_COUNT_LIMIT` | `None` | Reserved for estimated counts |
+| `TABLE_COUNT_LIMIT` | `None` | Reserved for estimated counts: read by nothing yet, every total is counted |
 
 `TABLE_ALLOW_UNLIMITED_PAGE_SIZE` is off by default deliberately.
 `length=-1` is the DataTables idiom for "every row", which is convenient
