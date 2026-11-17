@@ -89,6 +89,7 @@ from generic.wiki.models import (
     WikiImage,
     WikiMember,
     WikiPage,
+    WikiRedirect,
     WikiRevision,
 )
 from generic.wiki.serializers import (
@@ -723,8 +724,21 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             updated_by_id=page.updated_by_id,
         )
 
+        old_slug = page.slug
+
         with transaction.atomic():
             saved = serializer.save(updated_by=self.request.user)
+
+            # Its old address keeps leading to it.
+            if saved.slug != old_slug:
+                WikiRedirect.objects.filter(
+                    wiki=saved.wiki, slug=saved.slug
+                ).delete()
+                WikiRedirect.objects.update_or_create(
+                    wiki=saved.wiki,
+                    slug=old_slug,
+                    defaults={"page": saved},
+                )
 
             # A version is kept when the words change, not when the page
             # only moves in the menu.

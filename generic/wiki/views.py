@@ -43,13 +43,14 @@ from generic.wiki.models import (
     WikiFile,
     WikiImage,
     WikiPage,
+    WikiRedirect,
     WikiRevision,
     attachments_in,
 )
 from generic.wiki.sanitize import safe_html
 from generic.wiki.search import search_pages_of
-from generic.wiki.watching import is_watching
 from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
+from generic.wiki.watching import is_watching
 
 
 def upload_url(name: str) -> str:
@@ -411,13 +412,40 @@ class WikiIndexView(WikiViewMixin):
 class WikiPageView(WikiViewMixin):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         self.wiki = self.get_wiki(kwargs["wiki"])
-        self.page = get_object_or_404(
-            WikiPage.objects.select_related("wiki", "parent", "updated_by"),
-            wiki=self.wiki,
-            slug=kwargs["slug"],
+        self.page = (
+            WikiPage.objects.select_related("wiki", "parent", "updated_by")
+            .filter(wiki=self.wiki, slug=kwargs["slug"])
+            .first()
         )
 
+        if self.page is None:
+            # An address the page had before it was renamed.
+            moved = (
+                WikiRedirect.objects.filter(
+                    wiki=self.wiki,
+                    slug=kwargs["slug"],
+                    page__deleted_at__isnull=True,
+                )
+                .select_related("page__wiki")
+                .first()
+            )
+
+            if moved is None:
+                raise Http404
+
+            return redirect(moved.page.get_absolute_url(), permanent=True)
+
         return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        readable = Wiki.objects.readable_by(self.request.user)
+        # The pages linking here, of the wikis the reader reads.
+        context["backlinks"] = list(
+            self.page.backlinks().filter(wiki__in=readable)[:50]
+        )
+
+        return context
 
 
 class WikiRevisionView(WikiPageView):

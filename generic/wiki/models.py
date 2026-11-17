@@ -432,12 +432,57 @@ class WikiPage(Trashed):
         """
         return attachments_in(self.content)
 
+    def backlinks(self) -> Any:
+        """The live pages of the wikis linking to this one - by its
+        address, with or without an anchor after it."""
+        address = self.get_absolute_url()
+
+        return (
+            WikiPage.objects.filter(content__contains=f'href="{address}')
+            .exclude(pk=self.pk)
+            .select_related("wiki")
+            .order_by("wiki__position", "wiki__name", "title")
+        )
+
     def current_revision(self) -> "WikiRevision | None":
         """The version in the history holding the page's text as it
         stands - the one a restore brought back - if any."""
         return self.revisions.filter(
             title=self.title, content=self.content
         ).first()
+
+
+class WikiRedirect(models.Model):
+    """An address a page had: kept when the page takes another, so
+    that links, bookmarks and e-mails keep leading to it. A page at
+    that address again takes precedence."""
+
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    slug = models.SlugField(_("address"), max_length=120, allow_unicode=True)
+    page = models.ForeignKey(
+        "WikiPage",
+        verbose_name=_("page"),
+        on_delete=models.CASCADE,
+        related_name="redirects",
+    )
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+
+    class Meta:
+        verbose_name = _("wiki redirect")
+        verbose_name_plural = _("wiki redirects")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("wiki", "slug"), name="generic_wiki_redirect_slug"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.slug} -> {self.page_id}"
 
 
 class WikiRevision(models.Model):

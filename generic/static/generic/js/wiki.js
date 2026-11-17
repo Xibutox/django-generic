@@ -86,7 +86,7 @@
     ["bold", "italic", "underline", "strike", "code"],
     [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-    ["blockquote", "code-block", "link", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
+    ["blockquote", "code-block", "link", "pageLink", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
     ["table", { tableEdit: TABLE_ACTIONS }],
     [{ align: [] }],
     ["moveUp", "moveDown"],
@@ -96,6 +96,7 @@
   //: The toolbar's own buttons, named, with the icon Quill has none for.
   var BUTTONS = {
     attach: { icon: "attach_file", label: "Attach a file" },
+    pageLink: { icon: "article_shortcut", label: "Link to a page of the wiki" },
     table: { label: "Insert a table (Ctrl+Alt+T)" },
     moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
     moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
@@ -671,7 +672,8 @@
     }
   }
 
-  function icon(name) {
+  /** A small icon: in the dialogs' rows. */
+  function smallIcon(name) {
     var node = el("span", "icon icon--sm material-symbols-outlined", name);
 
     node.setAttribute("aria-hidden", "true");
@@ -848,7 +850,7 @@
             var role = select(ROLES, member.role);
             var remove = el("button", "icon-button icon-button--sm");
 
-            name.appendChild(icon(member.kind === "group" ? "group" : "person"));
+            name.appendChild(smallIcon(member.kind === "group" ? "group" : "person"));
             name.appendChild(el("span", "", member.name));
             name.appendChild(el("span", "muted", member.detail || ""));
             role.setAttribute("aria-label", t("Role"));
@@ -858,7 +860,7 @@
             remove.type = "button";
             remove.title = t("Remove");
             remove.setAttribute("aria-label", t("Remove"));
-            remove.appendChild(icon("close"));
+            remove.appendChild(smallIcon("close"));
             remove.addEventListener("click", function () {
               members.splice(index, 1);
               draw();
@@ -890,7 +892,7 @@
                   var add = el("button", "wiki-members__candidate");
 
                   add.type = "button";
-                  add.appendChild(icon(candidate.kind === "group" ? "group" : "person"));
+                  add.appendChild(smallIcon(candidate.kind === "group" ? "group" : "person"));
                   add.appendChild(el("span", "", candidate.name));
                   add.appendChild(el("span", "muted", candidate.detail || ""));
                   add.addEventListener("click", function () {
@@ -1269,6 +1271,9 @@
                   },
                   attach: function () {
                     self.chooseFiles();
+                  },
+                  pageLink: function () {
+                    self.linkPage();
                   },
                   table: function () {
                     insertTable(editor);
@@ -2233,6 +2238,84 @@
           }
 
           return this.watching.page ? t("Stop being told when this page changes") : t("Be told when this page changes");
+        },
+
+        /**
+         * A link to another page of the wiki, chosen by its title: on
+         * the selected text, or as the page's title where the cursor is.
+         */
+        linkPage: function () {
+          var range = quill.getSelection(true) || { index: quill.getLength() - 1, length: 0 };
+
+          Generic.api
+            .get(config.api + "?wiki=" + config.wiki)
+            .then(function (pages) {
+              var dialog = Generic.dialogs.open({ title: t("Link to a page"), icon: "article_shortcut" });
+              var filter = el("input", "input");
+              var list = el("ul", "wiki-members__found wiki-link-picker");
+              var cancel = el("button", "button button--ghost", t("Cancel"));
+
+              function draw() {
+                var term = filter.value.trim().toLowerCase();
+
+                list.textContent = "";
+                (pages || [])
+                  .filter(function (page) {
+                    return !term || page.title.toLowerCase().indexOf(term) !== -1;
+                  })
+                  .slice(0, 50)
+                  .forEach(function (page) {
+                    var item = el("li", "");
+                    var choose = el("button", "wiki-members__candidate");
+
+                    choose.type = "button";
+                    choose.appendChild(smallIcon("article"));
+                    choose.appendChild(el("span", "", page.title));
+                    choose.addEventListener("click", function () {
+                      dialog.close(page);
+                    });
+                    item.appendChild(choose);
+                    list.appendChild(item);
+                  });
+
+                if (!list.childNodes.length) {
+                  list.appendChild(el("li", "muted", t("No page found.")));
+                }
+              }
+
+              filter.type = "search";
+              filter.placeholder = t("A title\u2026");
+              filter.setAttribute("aria-label", t("A title\u2026"));
+              filter.addEventListener("input", draw);
+              cancel.type = "button";
+              cancel.addEventListener("click", function () {
+                dialog.close(null);
+              });
+              dialog.body.append(filter, list);
+              dialog.footer.appendChild(cancel);
+              draw();
+              filter.focus();
+
+              return dialog.closed;
+            })
+            .then(function (page) {
+              if (!page || !page.url) {
+                return;
+              }
+
+              quill.focus();
+
+              if (range.length) {
+                quill.formatText(range.index, range.length, "link", page.url, "user");
+                quill.setSelection(range.index + range.length, 0, "user");
+              } else {
+                quill.insertText(range.index, page.title, "link", page.url, "user");
+                quill.setSelection(range.index + page.title.length, 0, "user");
+              }
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The pages could not be loaded."), "error");
+            });
         },
 
         /** Start or stop being told when the page - or the wiki - changes. */

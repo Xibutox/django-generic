@@ -228,6 +228,23 @@
             {% endif %}
           </div>
 
+          {# The pages linking to this one. #}
+          {% if backlinks %}
+            <section class="wiki-attachments" aria-labelledby="wiki-backlinks-title">
+              <h2 class="wiki-attachments__title" id="wiki-backlinks-title">
+                {% icon "link" "icon--sm" %} {% translate "Linked from" %}
+              </h2>
+              <ul class="wiki-attachments__list">
+                {% for linking in backlinks %}
+                  <li class="wiki-attachments__item">
+                    <a href="{{ linking.get_absolute_url }}">{{ linking.title }}</a>
+                    {% if linking.wiki_id != wiki.pk %}<span class="muted">{{ linking.wiki.name }}</span>{% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endif %}
+
           {# The images and files the page shows, in its order. #}
           {% if attachments %}
             <section class="wiki-attachments" aria-labelledby="wiki-attachments-title">
