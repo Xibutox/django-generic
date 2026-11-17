@@ -48,6 +48,7 @@ from generic.wiki.models import (
 )
 from generic.wiki.sanitize import safe_html
 from generic.wiki.search import search_pages_of
+from generic.wiki.watching import is_watching
 from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
 
 
@@ -327,6 +328,13 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                 "wikiName": wiki.name,
                 "trashDays": generic_settings.TRASH_DAYS,
                 "canWiki": manages,
+                # Whether the reader is told when this page, or any page
+                # of the wiki, changes.
+                "watching": {
+                    "page": page is not None
+                    and is_watching(request.user, page),
+                    "wiki": is_watching(request.user, wiki),
+                },
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None

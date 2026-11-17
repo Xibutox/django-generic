@@ -1102,6 +1102,7 @@
         filter: "",
         form: {},
         original: "",
+        watching: config.watching || { page: false, wiki: false },
         //: The version the text being written started from: what a
         //: save is checked against.
         base: "",
@@ -2212,6 +2213,102 @@
             })
             .catch(function (error) {
               Generic.toast(errorText(error) || t("The history could not be loaded."), "error");
+            });
+        },
+
+        /** The watch buttons' words: the page's, the wiki's. */
+        watchLabel: function (what) {
+          if (what === "wiki") {
+            return this.watching.wiki ? t("Watching the wiki") : t("Watch the wiki");
+          }
+
+          return this.watching.page ? t("Watching") : t("Watch");
+        },
+
+        watchTitle: function (what) {
+          if (what === "wiki") {
+            return this.watching.wiki
+              ? t("Stop being told when a page of this wiki changes")
+              : t("Be told when any page of this wiki is written, changed or deleted");
+          }
+
+          return this.watching.page ? t("Stop being told when this page changes") : t("Be told when this page changes");
+        },
+
+        /** Start or stop being told when the page - or the wiki - changes. */
+        watch: function (what) {
+          var self = this;
+          var url = what === "wiki" ? config.wikiApi + config.wiki + "/watch/" : this.pageUrl(this.page.id) + "watch/";
+
+          Generic.api
+            .post(url, {})
+            .then(function (data) {
+              self.watching[what] = Boolean(data && data.watching);
+              Generic.toast(
+                self.watching[what]
+                  ? what === "wiki"
+                    ? t("You will be told when a page of this wiki changes.")
+                    : t("You will be told when this page changes.")
+                  : t("You will no longer be told."),
+                "success"
+              );
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The watch could not be changed."), "error");
+            });
+        },
+
+        /** The pages of the wiki last written, newest first. */
+        recent: function () {
+          Generic.api
+            .get(config.api + "recent/?wiki=" + config.wiki)
+            .then(function (rows) {
+              var dialog = Generic.dialogs.open({ title: t("Recent changes"), icon: "update" });
+              var list = el("ul", "wiki-history");
+              var close = el("button", "button button--ghost", t("Close"));
+
+              (rows || []).forEach(function (row) {
+                var item = el("li", "wiki-history__item");
+                var text = el("div", "wiki-history__text");
+                var link = el("a", "", row.title);
+                var actions = el("div", "wiki-history__actions");
+                var changes = el("button", "button button--ghost button--sm", t("Changes"));
+
+                link.href = row.url;
+                text.appendChild(link);
+                text.appendChild(
+                  el(
+                    "span",
+                    "wiki-history__meta",
+                    Generic.format(t("%(date)s, by %(name)s"), {
+                      date: when(row.updated_at),
+                      name: row.updated_by_name || t("someone")
+                    })
+                  )
+                );
+                changes.type = "button";
+                changes.addEventListener("click", function () {
+                  showDiff(config.api + row.id + "/diff/");
+                });
+                actions.appendChild(changes);
+                item.append(text, actions);
+                list.appendChild(item);
+              });
+
+              if (!list.childNodes.length) {
+                list.appendChild(el("li", "muted", t("No page yet.")));
+              }
+
+              dialog.dialog.classList.add("dialog--wide");
+              dialog.body.appendChild(list);
+              close.type = "button";
+              close.addEventListener("click", function () {
+                dialog.close(false);
+              });
+              dialog.footer.appendChild(close);
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The recent changes could not be loaded."), "error");
             });
         },
 

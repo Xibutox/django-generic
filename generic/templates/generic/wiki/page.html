@@ -91,9 +91,19 @@
         <p class="wiki__menu-empty">{% translate "No page yet." %}</p>
       {% endif %}
 
-      {# The wiki's people and its deleted pages, for who may see to them. #}
-      {% if can_wiki.members or can.delete %}
+      {# What changed lately, being told of it; the wiki's people and its #}
+      {# deleted pages, for who may see to them.                           #}
         <div class="wiki__menu-tools">
+          <button type="button" class="button button--ghost button--sm" @click="recent()">
+            {% icon "update" "icon--sm" %} {% translate "Recent changes" %}
+          </button>
+          <button type="button" class="button button--ghost button--sm"
+                  :aria-pressed="watching.wiki.toString()"
+                  @click="watch('wiki')"
+                  :title="watchTitle('wiki')">
+            <span class="icon icon--sm material-symbols-outlined" aria-hidden="true" x-text="watching.wiki ? 'notifications_active' : 'notifications'"></span>
+            <span x-text="watchLabel('wiki')">{% translate "Watch the wiki" %}</span>
+          </button>
           {% if can_wiki.members %}
             <button type="button" class="button button--ghost button--sm" @click="members()">
               {% icon "group" "icon--sm" %} {% translate "Members" %}
@@ -105,7 +115,6 @@
             </button>
           {% endif %}
         </div>
-      {% endif %}
     </aside>
 
     <article class="card wiki__page">
@@ -161,6 +170,14 @@
                 {% icon "history" "icon--sm" %} {% translate "History" %}
               </button>
               {% if not revision %}
+              {# Told when it changes: a notification, an e-mail. #}
+              <button type="button" class="button button--ghost button--sm"
+                      :aria-pressed="watching.page.toString()"
+                      @click="watch('page')"
+                      :title="watchTitle('page')">
+                <span class="icon icon--sm material-symbols-outlined" aria-hidden="true" x-text="watching.page ? 'notifications_active' : 'notifications'"></span>
+                <span x-text="watchLabel('page')">{% translate "Watch" %}</span>
+              </button>
               {% if can.add %}
                 <button type="button" class="button button--sm" @click="create(page.id)">
                   {% icon "note_add" "icon--sm" %} {% translate "Subpage" %}

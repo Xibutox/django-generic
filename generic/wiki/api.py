@@ -98,6 +98,12 @@ from generic.wiki.serializers import (
     WikiSerializer,
     display_name,
 )
+from generic.wiki.watching import (
+    announce,
+    is_watching,
+    recent_changes,
+    toggle,
+)
 
 #: The images a page may show: what their first bytes are, the name
 #: they are stored under, and the names they may arrive with. Nothing
@@ -157,8 +163,9 @@ PAGE_ACTIONS = {
     "purge": "delete",
 }
 
-#: Actions that answer a question and change nothing, though POSTed.
-READ_ACTIONS = frozenset({"diff"})
+#: Actions for any reader, though POSTed: a comparison changes
+#: nothing, a watch is the reader's own.
+READ_ACTIONS = frozenset({"diff", "watch"})
 
 #: A wiki's actions for whoever may delete it.
 WIKI_DELETE_ACTIONS = frozenset({"destroy", "undelete", "purge"})
@@ -344,6 +351,17 @@ class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
         """To the trash, with its pages as they are: restored whole, or
         deleted for good from there."""
         to_trash(instance, self.request.user)
+
+    @action(detail=True, methods=["get", "post"])
+    def watch(self, request: Any, pk: Any = None) -> Response:
+        """Whether the reader watches every page of the wiki; ``POST``
+        starts or stops it. For any reader."""
+        wiki = self.get_object()
+
+        if request.method == "POST":
+            return Response({"watching": toggle(request.user, wiki)})
+
+        return Response({"watching": is_watching(request.user, wiki)})
 
     @action(detail=False, methods=["get"])
     def trash(self, request: Any) -> Response:
@@ -693,6 +711,8 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                     gettext("You may not write in this wiki.")
                 )
 
+            announce(page, "created", user)
+
     def perform_update(self, serializer: Any) -> None:
         page = serializer.instance
         before = WikiPage(
@@ -710,6 +730,8 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             # only moves in the menu.
             if (saved.title, saved.content) != (before.title, before.content):
                 WikiRevision.keep(before)
+                # News when the words change, not when a page moves.
+                announce(saved, "updated", self.request.user)
 
     def perform_destroy(self, instance: WikiPage) -> None:
         """To the trash, with its history; its subpages move up a
@@ -719,6 +741,48 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                 parent=instance.parent_id
             )
             to_trash(instance, self.request.user)
+            announce(instance, "deleted", self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def recent(self, request: Any) -> Response:
+        """The pages last written - in ``?wiki=<id>``, or in every wiki
+        the user reads - newest first, each with its last author."""
+        wiki = None
+
+        if request.query_params.get("wiki"):
+            wiki = get_object_or_404(
+                Wiki.objects.readable_by(request.user),
+                pk=as_id(request.query_params.get("wiki")),
+            )
+
+        return Response(
+            [
+                {
+                    "id": page.pk,
+                    "title": page.title,
+                    "url": page.get_absolute_url(),
+                    "wiki": page.wiki.name,
+                    "updated_at": page.updated_at,
+                    "updated_by_name": (
+                        display_name(page.updated_by)
+                        if page.updated_by_id
+                        else ""
+                    ),
+                }
+                for page in recent_changes(request.user, wiki)
+            ]
+        )
+
+    @action(detail=True, methods=["get", "post"])
+    def watch(self, request: Any, pk: Any = None) -> Response:
+        """Whether the reader watches the page; ``POST`` starts or stops
+        it. For any reader."""
+        page = self.get_object()
+
+        if request.method == "POST":
+            return Response({"watching": toggle(request.user, page)})
+
+        return Response({"watching": is_watching(request.user, page)})
 
     @action(detail=False, methods=["get"])
     def trash(self, request: Any) -> Response:
