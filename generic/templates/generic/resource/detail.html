@@ -39,6 +39,15 @@
   <div class="summary" x-data="recordSummary('record-summary')">
     <div id="datatable-error" class="callout callout--danger" role="alert" hidden></div>
 
+    {# A record a lock holds (generic.sites.locks): why it cannot be   #}
+    {# changed, before anything else.                                   #}
+    <template x-if="data.lock">
+      <div class="callout callout--warning summary__lock" role="status">
+        {% icon "lock" "icon--sm" %}
+        <span x-text="data.lock.message"></span>
+      </div>
+    </template>
+
     {# One line under the title: the state buttons, the actions and   #}
     {# the last change share it, wrapping only when they must, so the #}
     {# figures and fields start as high as they can.                  #}

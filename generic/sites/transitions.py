@@ -243,6 +243,11 @@ def may_take(
     if not resource.has_change_permission(request, obj):
         return False
 
+    # A lock freezing the state holds its transitions too - not the
+    # lock's own field: undoing it is a transition like another.
+    if resource.get_record_lock(request, obj).freezes(info.field):
+        return False
+
     return bool(meta.has_transition_perm(obj, state, request.user))
 
 
@@ -346,6 +351,11 @@ def take(
             raise TransitionRefused(
                 403, gettext("You may not do this to this record.")
             )
+
+        lock = resource.get_record_lock(request, obj)
+
+        if lock.freezes(info.field):
+            raise TransitionRefused(403, lock.message)
 
         if info.fields:
             written = {

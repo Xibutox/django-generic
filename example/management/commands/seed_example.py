@@ -271,6 +271,9 @@ FAMILIES = [
     ("Coatings", "Materials"),
 ]
 
+#: Articles released, so locked with their bills (ArticleResource.lock).
+RELEASED = ("BK-200",)
+
 #: Articles: (reference, name, kind, unit, unit cost, family).
 ARTICLES = [
     ("BK-100", "City bicycle", "product", "pcs", "0", "City bikes"),
@@ -771,6 +774,7 @@ class Command(BaseCommand):
                     "unit": unit,
                     "unit_cost": Decimal(cost),
                     "family": families[family],
+                    "released": reference in RELEASED,
                 },
             )
 

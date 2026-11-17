@@ -213,6 +213,13 @@ class ModelResource(PagesMixin):
     #: copy with it. False - the default - offers nothing. See
     #: ``generic.sites.duplicates``.
     duplicate: Any = False
+    #: A record that locks: ``Lock("is_locked")`` or ``Lock("status",
+    #: values=, fields=, exclude=, related=, delete=, permission=,
+    #: message=)``. While its field says so, the fields it freezes - and
+    #: the records of its ``related`` relations - are refused by every
+    #: write, and it is not deleted. None - the default - never locks.
+    #: See ``generic.sites.locks``.
+    lock: Any = None
     #: Labels to print, each with a QR code leading to its record:
     #: ``True`` (the list's first columns) or ``Labels(fields=...,
     #: size=...)``. The selection bar gains *Print labels*, a record's
@@ -731,8 +738,55 @@ class ModelResource(PagesMixin):
             "view": self.has_view_permission(request, obj),
             "add": self.has_add_permission(request),
             "change": self.has_change_permission(request, obj),
-            "delete": self.has_delete_permission(request, obj),
+            "delete": self.may_delete(request, obj),
         }
+
+    # -- locks --------------------------------------------------------------
+
+    def get_lock(self) -> Any:
+        """``lock`` resolved and checked once per process
+        (``generic.sites.locks.BoundLock``), or None."""
+        if "_lock" not in self.__dict__:
+            from generic.sites.locks import resolve
+
+            self.__dict__["_lock"] = resolve(self)
+
+        return self.__dict__["_lock"]
+
+    def get_record_lock(self, request: Any, obj: Any) -> Any:
+        """The locks holding ``obj`` for this reader, now
+        (``generic.sites.locks.LockState``, false when none): its own
+        ``lock``, and a parent's whose ``related`` names its relation."""
+        from generic.sites.locks import state
+
+        return state(self, request, obj)
+
+    def is_locked(self, request: Any, obj: Any) -> bool:
+        """Whether a lock holds ``obj`` back from this reader."""
+        return bool(self.get_record_lock(request, obj))
+
+    def may_delete(self, request: Any, obj: Any = None) -> bool:
+        """``has_delete_permission``, and not a record its lock keeps.
+        What every delete asks."""
+        if not self.has_delete_permission(request, obj):
+            return False
+
+        if obj is None:
+            return True
+
+        from generic.sites.locks import refused_delete
+
+        return not refused_delete(self, request, obj)
+
+    def unlocked(
+        self, request: Any, queryset: QuerySet, delete: bool = False
+    ) -> QuerySet:
+        """``queryset`` without the records a lock holds for this reader
+        (with ``delete``: the ones it keeps from being deleted). For a
+        bulk action of the project's own writing with ``update()``."""
+        from generic.sites.locks import unlocked
+
+        return unlocked(self, request, queryset, delete=delete)
 
     def topic_permission(
         self,
@@ -1909,10 +1963,15 @@ class ModelResource(PagesMixin):
                 declared.section,
             )
 
-        return restricted(
-            serializer,
-            self.get_hidden_fields(request),
-            self.get_locked_fields(request),
+        from generic.sites.locks import guarded
+
+        return guarded(
+            restricted(
+                serializer,
+                self.get_hidden_fields(request),
+                self.get_locked_fields(request),
+            ),
+            self,
         )
 
     def get_form_serializer_class(self) -> Any:
@@ -2193,7 +2252,18 @@ class ModelResource(PagesMixin):
         the answer names what stands in the way. With a trash, the rows
         go to it - and from it, for good.
         """
+        from generic.sites.locks import delete_refusal
         from generic.trash import in_trash
+
+        # A locked record stays, and so does the rest of the selection:
+        # the answer says how many stood in the way.
+        held = (
+            queryset.count()
+            - self.unlocked(request, queryset, delete=True).count()
+        )
+
+        if held:
+            return {"level": "error", "message": delete_refusal(held)}
 
         collector = NestedObjects(using=router.db_for_write(self.model))
         collector.collect(list(queryset))
@@ -2442,6 +2512,13 @@ class ModelResource(PagesMixin):
         """``can_edit_column``, and not a field this reader may not
         change (``field_permissions``). What every write asks."""
         if column.split("__")[0] in self.get_locked_fields(request):
+            return False
+
+        # A locked record's frozen fields; a column of a record it points
+        # at obeys that record's own lock (``editable.may_edit``).
+        if "__" not in column and self.get_record_lock(request, obj).freezes(
+            column
+        ):
             return False
 
         return self.can_edit_column(request, column, obj)
