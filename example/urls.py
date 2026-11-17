@@ -7,6 +7,7 @@ The REST endpoints live in ``example/api_urls.py`` under their own
 from django.urls import path
 
 from example import views
+from example.form_pages import NoticePage
 from generic.sites import site
 
 app_name = "example"
@@ -91,6 +92,9 @@ urlpatterns = [
         views.TriageView.as_view(site=site),
         name="team-triage",
     ),
+    # A form that writes nothing: its answer sends notifications
+    # (example/form_pages.py).
+    path("notice/", NoticePage.as_view(site=site), name="notice"),
     # Where the sign-in page's provider button leads, in this demo.
     path("sso/", views.SsoDemoView.as_view(), name="sso"),
 ]

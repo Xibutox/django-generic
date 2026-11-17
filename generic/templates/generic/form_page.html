@@ -1,0 +1,38 @@
+{% extends "generic/base.html" %}
+{% load i18n generic_ui %}
+
+{# A form page (generic.sites.form_pages): any serializer, drawn in the #}
+{# browser from its schema - which travels in form_config - and posted   #}
+{# back as JSON to this page's own address.                              #}
+
+{% block bodyclass %}page-form page-form-page{% if page %} page-{{ page.name }}{% endif %}{% if opts %} app-{{ opts.app_label }} model-{{ opts.model_name }}{% endif %}{% endblock %}
+
+{% block page_eyebrow %}
+  <div class="page-header__eyebrow">
+    {% if resource %}
+      {% icon resource.get_icon "icon--sm" %}
+      <span>{% if object %}{{ resource.get_label }}{% else %}{{ resource.get_label_plural }}{% endif %}</span>
+    {% else %}
+      {% icon form_icon "icon--sm" %}
+      <span>{% translate "Form" %}</span>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  {% block form_intro %}
+    {% if form_description %}
+      <p class="lead">{{ form_description }}</p>
+    {% endif %}
+  {% endblock %}
+  {{ form_config|json_script:"form-page-config" }}
+  <div class="js-schema-form" data-config="form-page-config">
+    <div class="loading"><span class="spinner"></span> {% translate "Loading" %}&hellip;</div>
+  </div>
+  {% block form_after %}{% endblock %}
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  {% include "generic/includes/form_scripts.html" %}
+{% endblock %}

@@ -89,6 +89,8 @@ generic/
 │   ├── body.py             ObjectBodyMixin / require_object: a write's body is an object
 │   │                       (400 otherwise); clean_keys: values that can be primary keys
 │   ├── forms.py            FormModelSerializer: serializer -> JSON form schema
+│   ├── form_parts.py       ModelsForm, FormPart: one form over several models, saved
+│   │                       together, fields <part>__<field> (§5.28)
 │   ├── files.py            FormFileField, FileValueMixin: a stored file as {name, url, size}
 │   ├── parsers.py          MultiPartJSONParser: _payload (JSON) + one part per file
 │   ├── inlines.py          InlineProcessor: nested rows in one transaction
@@ -99,6 +101,7 @@ generic/
 │   ├── __init__.py         public API: ModelResource, AutoResource, auto, register, site,
 │   │                       DataResource, RelatedRows, RowLink, register_data,
 │   │                       page, ResourcePage, ResourcePageView,
+│   │                       FormPageView, ResourceFormPageView,
 │   │                       RelatedTable, Grid, Tree, Outline, Level, Calendar, Kpi,
 │   │                       Cards, Chart,
 │   │                       TagStyle, TabularInline,
@@ -109,6 +112,8 @@ generic/
 │   ├── auto.py             AutoResource, auto(): a resource worked out from the model
 │   ├── pages.py            @page, ResourcePage, ResourcePageView, PagesMixin: pages of a
 │   │                       resource's own (any content) at its address, guarded, framed
+│   ├── form_pages.py       FormPageView, ResourceFormPageView, FormViewMixin: any
+│   │                       serializer drawn as a form, posted back to the page (§5.28)
 │   ├── data.py             DataResource, register_data: a list and a page per row for
 │   │                       rows that are not a model's (an external API's answer)
 │   ├── serializers.py      list_display/fields -> generated table and form serializers
@@ -922,7 +927,9 @@ words. Operators per type include *any of / none of / has all of*,
 *contains / is / starts with*, comparisons and *between*, relative dates
 (this month, last 30 days, more than N days ago), *is empty*; conditions
 combine with *all*/*any* and groups. The editor lists a column's values
-with counts from `facets/`; once searched, *Select the N values found*
+with counts from `facets/`, a page at a time: scrolling to the list's
+end loads the next page (`page=`, `more`), so every value is reachable
+without a search; once searched, *Select the N values found* (those listed)
 ticks them all, and on a relation *Contains "..."* filters by the words
 instead (`contains`/`not_contains` on a multiselect column whose
 `search_field` differs from its filter path: `FilterSpec.text_field`,
@@ -2067,6 +2074,76 @@ once per request (`definitions.definitions`, `forget(request)`);
 (`display.summary_section`). Not yet: grids, bulk edit, imports,
 compare, chart builder, outlines, the OpenAPI schema.
 
+### 5.28 Form pages (`FormPageView`, `ResourceFormPageView`, `ModelsForm`)
+
+A form that is **not a resource's add/change page** - no model (send a
+notice), a few fields of one model, several models saved together - is
+a form page. Same schema, widgets, sections, errors, theme and catalog
+as every form; never a hand-written `<form>`, template form or schema
+endpoint.
+
+```python
+from generic.api import FormModelSerializer, FormPart, FormSerializer, ModelsForm
+from generic.sites import FormPageView, ResourceFormPageView, ResourcePage
+
+class NoticeForm(FormSerializer):                 # no model
+    title = serializers.CharField(max_length=120)
+    form_overrides = {"title": {"placeholder": "..."}}
+
+class NoticePage(FormPageView):                   # urls.py: NoticePage.as_view(site=site)
+    serializer_class = NoticeForm
+    page_title = _("Send a notice")
+    permission_required = "example.change_ticket"
+    def form_valid(self, serializer):             # in a transaction
+        send(**serializer.validated_data)
+        return _("Sent.")                         # the message; or anything + get_success_url
+
+class NewCustomerForm(ModelsForm):                # several models, all or none
+    parts = (
+        FormPart("customer", Customer, fields=("name", "code"), title=_("Customer")),
+        FormPart("ticket", Ticket, fields=("title", "team"),
+                 links={"customer": "customer"}),   # set from the earlier part, not asked
+    )
+    def get_save_kwargs(self, part, saved):       # extra values per part
+        return {"reference": next_reference()} if part.name == "ticket" else {}
+
+class NewCustomerPage(ResourceFormPageView):      # a page of a resource
+    serializer_class = NewCustomerForm
+    def get_success_url(self, result):            # result: {"customer": obj, "ticket": obj}
+        return self.resource.get_detail_url(result["customer"].pk)
+
+class CustomerResource(ModelResource):
+    pages = (ResourcePage("new-with-ticket", view=NewCustomerPage, permission="add"),)
+```
+
+The page carries the schema (`form_config.schema`, `formPage: true`)
+and posts JSON (or `_payload` multipart) to its own address: 400 with
+DRF errors by field, 200 `{"_message", "_redirect", "_initial",
+"_initialDisplay"}`. No `_redirect`: the form stays, opened again
+(empty after a create, new values after an edit). `form_valid` defaults
+to `serializer.save()` and refuses a plain `FormSerializer` without
+`create`; a `ValidationError` raised in it shows on the form and rolls
+back. Attributes / hooks: `serializer_class`, `page_title`,
+`description`, `icon`, `submit_label`, `cancel_url`, `initial`,
+`success_message`, `success_url`, `permission_required`;
+`get_instance()`, `get_initial()`, `form_valid()`,
+`get_success_message(result)`, `get_success_url(result)`,
+`get_required_permissions()`. Permissions: `permission_required` + add
+(create) / change (edit) of every model written; on a resource, its
+view + page permission, and its own `has_add_permission` /
+`has_change_permission(request, obj)` for its own model. On a record's
+page (`detail=True`) a model form of the resource's model edits the
+record. `ModelsForm`: fields `<part>__<field>` in sections named after
+the parts; each part validated by its own model serializer (unique
+checks included, errors prefixed); saved in order in one transaction;
+`instance={"part": obj}` edits; own declared fields are questions of
+the form; `validate(attrs)` sees each part's values under its name;
+`save_part(part, serializer, saved)` to save differently. Declaration
+errors raise `ImproperlyConfigured` at class definition. Template
+`generic/form_page.html` (blocks `form_intro`, `form_after`). Example:
+`example/form_pages.py` (notice, customer + first ticket, reassign a
+ticket), `docs/form-pages.md`.
+
 ## 6. URLs and endpoints (generated)
 
 Pages (namespace `site`): `site:index`, `site:login`, `site:logout`,
@@ -2082,7 +2159,7 @@ API (route names `site:api_<app>_<model>-<action>`):
 | Request | Does |
 | --- | --- |
 | `GET api/<app>/<model>/` | rows, DataTables protocol (`draw`, `start`, `length`, `search[value]`, `columns[i][data]`, `order[i][column|dir]`, `filters` JSON tree, `_related`); `table.js` drops the rest of DataTables' request to keep the URL short |
-| `GET .../facets/?column=<name>` | a column's values with counts under the other filters (`q=` search, `ids=` labels), or `{"kind": "range", min, max, empty}` |
+| `GET .../facets/?column=<name>` | a column's values with counts under the other filters, `facet_limit` (50) a page (`q=` search, `page=` from 1, `more`, `ids=` labels), or `{"kind": "range", min, max, empty}` |
 | `POST api/<app>/<model>/` | create (JSON, `_inlines`; or multipart `_payload` + a part per file, §5.17) |
 | `GET/PATCH/DELETE api/<app>/<model>/<pk>/` | read (with `_display`, `_label`, `_inlines`), update, delete (refused with reason when protected) |
 | `GET .../<pk>/summary/` | summary JSON |

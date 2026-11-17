@@ -2143,3 +2143,89 @@ msgstr "Chaque ticket à l'heure où il a été ouvert."
 
 msgid "Tickets and time"
 msgstr "Tickets et temps passé"
+
+#: example/form_pages.py
+msgid "Message"
+msgstr "Message"
+
+#: example/form_pages.py
+msgid "Link"
+msgstr "Lien"
+
+#: example/form_pages.py
+msgid "A page of this site the notice points to."
+msgstr "Une page de ce site vers laquelle l’avis renvoie."
+
+#: example/form_pages.py
+msgid "Notice"
+msgstr "Avis"
+
+#: example/form_pages.py
+msgid "Options"
+msgstr "Options"
+
+#: example/form_pages.py
+msgid "Maintenance tonight"
+msgstr "Maintenance ce soir"
+
+#: example/form_pages.py
+msgid "A link of this site starts with /."
+msgstr "Un lien de ce site commence par /."
+
+#: example/form_pages.py example/resources.py
+msgid "Send a notice"
+msgstr "Envoyer un avis"
+
+#: example/form_pages.py
+msgid ""
+"Each recipient finds it in their notifications, at once if they are "
+"connected."
+msgstr ""
+"Chaque destinataire le trouve dans ses notifications, aussitôt s’il "
+"est connecté."
+
+#: example/form_pages.py
+msgid "Send"
+msgstr "Envoyer"
+
+#: example/form_pages.py
+msgid "The notice was sent to %(count)d person."
+msgid_plural "The notice was sent to %(count)d people."
+msgstr[0] "L’avis a été envoyé à %(count)d personne."
+msgstr[1] "L’avis a été envoyé à %(count)d personnes."
+
+#: example/form_pages.py
+msgid "Customer"
+msgstr "Client"
+
+#: example/form_pages.py
+msgid "First ticket"
+msgstr "Premier ticket"
+
+#: example/form_pages.py
+msgid "Create both"
+msgstr "Créer les deux"
+
+#: example/form_pages.py
+msgid ""
+"The customer and its first ticket are created together: if either is "
+"refused, neither is written."
+msgstr ""
+"Le client et son premier ticket sont créés ensemble : si l’un est "
+"refusé, aucun n’est enregistré."
+
+#: example/form_pages.py
+msgid "%(customer)s was added, with ticket %(ticket)s."
+msgstr "%(customer)s a été ajouté, avec le ticket %(ticket)s."
+
+#: example/form_pages.py example/resources.py
+msgid "Reassign"
+msgstr "Réaffecter"
+
+#: example/form_pages.py
+msgid "The ticket was reassigned."
+msgstr "Le ticket a été réaffecté."
+
+#: example/resources.py
+msgid "New customer with a ticket"
+msgstr "Nouveau client avec un ticket"

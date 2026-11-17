@@ -31,6 +31,12 @@ It is **not** custom — declare it instead — when it is:
   timeline, a gallery, a report, a JSON feed - → a page of that resource,
   `@page` or `ResourcePage` (`00-context.md` §5.13, `docs/pages.md`): the
   content is yours, the address, permission, record and frame are not.
+- a form that is not a resource's add or change page - over no model
+  (send a notice), a few of a record's fields, or several models saved
+  together - → a form page, `FormPageView` / `ResourceFormPageView`
+  with a `FormSerializer`, `FormModelSerializer` or `ModelsForm`
+  (`00-context.md` §5.28, `docs/form-pages.md`); never a hand-written
+  `<form>` or schema endpoint.
 
 Say which of these you checked, then go on.
 
