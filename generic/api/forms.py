@@ -222,6 +222,20 @@ def resolve_related_editor_url(
     return result
 
 
+def narrow_relations(
+    fields: Any,
+    request: Any,
+) -> None:
+    """Narrow every writable relation of ``fields`` to what the related
+    resource lets ``request`` reach (``scope_relations``)."""
+    if request is None:
+        return
+
+    for field in fields.values():
+        if is_related_field(field) and not field.read_only:
+            narrow_relation(field, request)
+
+
 class FormSerializerMixin:
     """Expose frontend form metadata for a DRF serializer."""
 
@@ -233,6 +247,14 @@ class FormSerializerMixin:
     #: section name. A section may set ``collapsed`` to start closed and
     #: ``tab`` to be drawn as a tab rather than a card.
     form_sections: tuple[dict[str, Any], ...] = (DEFAULT_SECTION,)
+
+    def get_fields(self) -> dict[str, serializers.Field]:
+        # A plain form's relation is narrowed like a model form's: what
+        # a form page offers, and accepts, is what the reader may reach.
+        fields = super().get_fields()  # type: ignore[misc]
+        narrow_relations(fields, self.context.get("request"))  # type: ignore
+
+        return fields
 
     @classmethod
     def get_merged_form_overrides(cls) -> dict[str, dict[str, Any]]:
@@ -546,17 +568,6 @@ class FormModelSerializer(
 
     def update(self, instance: Any, validated_data: dict[str, Any]) -> Any:
         return super().update(instance, self.without_extra(validated_data))
-
-    def get_fields(self) -> dict[str, serializers.Field]:
-        fields = super().get_fields()
-        request = self.context.get("request")
-
-        if request is not None:
-            for field in fields.values():
-                if is_related_field(field) and not field.read_only:
-                    narrow_relation(field, request)
-
-        return fields
 
     def build_standard_field(
         self,

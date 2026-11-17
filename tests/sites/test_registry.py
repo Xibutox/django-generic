@@ -96,7 +96,7 @@ class TestNavigation:
         # them, as the tickets' calendar and board are right after the
         # tickets; the
         # Triage grid is a page added to the group, and the external
-        # services rows that are no model's.
+        # services rows that are no model's, then the notice form page.
         assert [item["label"] for item in support["items"]] == [
             "Tickets",
             "Due dates",
@@ -106,6 +106,7 @@ class TestNavigation:
             "Time entries",
             "Triage",
             "External services",
+            "Send a notice",
         ]
 
     def test_the_dashboard_comes_first(self, rf, admin_user):

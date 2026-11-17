@@ -4877,3 +4877,15 @@ msgstr "Textes d'aide"
 #, python-format
 msgid "At most %(count)d records at once."
 msgstr "Au plus %(count)d enregistrements à la fois."
+
+#: generic/sites/form_pages.py
+msgid "Submit"
+msgstr "Valider"
+
+#: generic/sites/form_pages.py
+msgid "Done."
+msgstr "C’est fait."
+
+#: generic/templates/generic/form_page.html
+msgid "Form"
+msgstr "Formulaire"
