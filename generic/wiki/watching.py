@@ -14,6 +14,7 @@ Telling happens after the save commits, and never breaks it.
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import Any
 
 from django.contrib.contenttypes.models import ContentType
@@ -126,16 +127,7 @@ def _announce(page: WikiPage, change: str, actor: Any) -> int:
             delivery.deliver(
                 [user],
                 channels=watch.resolve_channels(),
-                message=lambda watch=watch: (
-                    sentence(change, page, actor),
-                    _("You are watching %(what)s.")
-                    % {"what": watch.target_label},
-                    (
-                        NotificationLevel.WARNING
-                        if change == "deleted"
-                        else NotificationLevel.INFO
-                    ),
-                ),
+                message=partial(_message, change, page, actor, watch),
                 url=url,
                 content_object=None,
                 context=f"wiki watch {watch.pk}",
@@ -144,6 +136,18 @@ def _announce(page: WikiPage, change: str, actor: Any) -> int:
             logger.exception("Could not deliver wiki watch %s", watch.pk)
 
     return len(told)
+
+
+def _message(
+    change: str, page: WikiPage, actor: Any, watch: Any
+) -> tuple[str, str, int]:
+    title = sentence(change, page, actor)
+    body = _("You are watching %(what)s.") % {"what": watch.target_label}
+
+    if change == "deleted":
+        return title, body, NotificationLevel.WARNING
+
+    return title, body, NotificationLevel.INFO
 
 
 def recent_changes(user: Any, wiki: Wiki | None = None, limit: int = 30):

@@ -106,7 +106,7 @@ class _Markdown(HTMLParser):
             self.lists.append([tag, 0])
         elif tag == "li":
             self.flush(blank=False)
-            kind = self.lists[-1] if self.lists else ["ul", 0]
+            kind: list[Any] = self.lists[-1] if self.lists else ["ul", 0]
             kind[1] += 1
             self.write(f"{kind[1]}. " if kind[0] == "ol" else "- ")
         elif tag == "blockquote":
@@ -428,7 +428,7 @@ def blocks(lines: list[str]) -> list[str]:
             out.append(html + "</tbody></table>")
             continue
 
-        paragraph = []
+        paragraph: list[str] = []
 
         while index < len(lines) and lines[index].strip():
             current = lines[index].strip()

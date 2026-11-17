@@ -34,12 +34,41 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   shows what it would overwrite, to keep writing, take their version
   or save over it.
 
+- Wiki, finding pages: a table of contents and anchors for a page's
+  headings; search by words in the pages' text, with excerpts
+  (`wiki/?q=`, `WikiPage.text`, `generic/wiki/search.py`); a link
+  picker in the editor, *Linked from* under a page, and a renamed page
+  redirecting from its old address (`WikiRedirect`).
+- Wiki, watching: *Watch* a page or a whole wiki, told by notification
+  or e-mail when someone else changes it; *Recent changes*
+  (`generic/wiki/watching.py`, `pages/recent/`, `<id>/watch/`).
+- Wiki, moving pages: drag them in the menu (`pages/<id>/place/`);
+  *Move* a page and its subpages to another wiki, the old addresses
+  redirecting (`pages/<id>/move/`, `generic/wiki/moving.py`).
+- Wiki, invitations by e-mail: a manager invites an address with a
+  role; the link works once, signed in with that address, for
+  `WIKI_INVITATION_DAYS` (`WikiInvitation`, `wiki/invitations/<secret>/`).
+- Wiki, public links: where `WIKI_PUBLIC_LINKS` allows it, a manager
+  gives a wiki a read-only link for anyone (`wiki/shared/<secret>/`,
+  `generic/wiki/sharing.py`).
+- Wiki, comments under a page (`WikiComment`, `pages/<id>/comments/`),
+  and who else is editing it, live through `generic.events`
+  (`generic/wiki/presence.py`, topic `wiki.page.{page_id}`).
+- Wiki, Markdown and templates: a page exported as Markdown or alone
+  as a PDF (`<page>/export.md`, `export.pdf`), a Markdown file imported
+  as a page (`pages/import/`), pages offered as templates for new ones
+  (`WikiPage.is_template`); the history's size is `WIKI_MAX_REVISIONS`.
+- `Generic.dialogs.fields` takes a field with `choices`, a list to pick
+  from.
+
 ### Changed
 - Whoever creates, copies or imports a wiki owns it and writes its
   pages: copying a wiki's pages and importing an archive need
   `add_wiki` only, no longer `add_wikipage` too.
 - A deleted page's subpages move under the page it was under, not to
   the top of the menu.
+- `invitations` and `shared` are reserved: no wiki takes them as its
+  address.
 
 ### Security
 - An image or a file of the wiki is read by the readers of the wiki

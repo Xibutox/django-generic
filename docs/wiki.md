@@ -266,7 +266,7 @@ is one already, so it can be undone like any other change; the
 restored version is not written again: it is marked current where it
 stands in the history. A text is in the history once
 (`WikiRevision.keep` returns its entry; `page.current_revision()` is
-the one the page holds). The last 50 versions of a page are kept.
+the one the page holds). The last 50 versions of a page are kept (`WIKI_MAX_REVISIONS`).
 
 **Deleting** a page moves it to the trash with its history; its
 subpages move up a level - under the page it was under - rather than
@@ -311,6 +311,116 @@ what this text would change in the page as it now stands, struck
 through what it would take out: *Keep writing*, *Take their version*
 (the page is loaded again), or *Save mine* (saved over theirs, which
 stays in the history).
+
+## Finding pages
+
+**Contents.** A page with three headings or more opens with their list,
+each a link: headings of levels 1 to 4 get an `id` (`h-<words>`), so a
+link to `#h-installation` lands on its section (`generic/wiki/headings.py`).
+
+**Search.** `WikiPage.text` holds a page's words without their HTML,
+written on every save (migration 0010 fills it for existing pages). The
+menu's filter still narrows the menu by title as one types; Enter
+searches the text of the wiki - `wiki/?q=words&wiki=<slug>`, or without
+`wiki` every wiki the user reads (`generic/wiki/search.py`). Every word
+must be in the title or the text; title matches come first; each result
+shows an excerpt with the words marked. The command palette ends its
+wiki results with *Search the wikis for: ...*.
+
+**Links between pages.** The editor's *Link to a page* button finds a
+page of the wiki by title and links the selection to it, or writes its
+title as a link. A page lists the pages linking to it under *Linked
+from*. A page given another address keeps its old one: `WikiRedirect`
+answers it with a permanent redirect (migration 0011); a page taking
+that address again wins.
+
+## Watching and recent changes
+
+*Watch* on a page, and *Watch the wiki* under the menu, tell the user -
+by notification or e-mail, as their preferences say - when someone else
+changes it (`generic/wiki/watching.py`, on `generic.watch`). A wiki's
+watchers hear of every page written, changed or deleted; a page's, of
+its changes and its comments. Nobody is told of their own change, nor
+of a wiki they no longer read. A save that only moves a page in the menu
+is no news. *Recent changes* lists the pages last written.
+
+## Moving pages
+
+Whoever changes pages drags them in the menu: dropped on the upper or
+lower edge of a page, beside it; on its middle, under it
+(`POST pages/<id>/place/`). Its new siblings are numbered again; no
+version is kept. The editor's *Parent page* and *Position* do the same
+from the keyboard.
+
+*Move* (for whoever deletes pages in the wiki and adds pages in
+another) sends the page and its subpages to the end of another wiki's
+menu, with their history (`generic/wiki/moving.py`). An address the
+other wiki uses gets a number, and the old addresses redirect to the
+new ones. Images and files stay where they were uploaded: whoever reads
+a page showing one opens it.
+
+## Invitations
+
+Under *Members*, whoever manages a wiki invites someone by e-mail, with
+a role (`generic/wiki/invitations.py`, `WikiInvitation`, migration
+0012). The e-mail holds a link to `wiki/invitations/<secret>/`; only a
+digest of the secret is stored. Whoever opens it signed in with that
+address - their account's e-mail - and accepts becomes a member, or
+keeps a higher role they hold. A link works once, for
+`WIKI_INVITATION_DAYS` (14) days; inviting the address again replaces
+it, and *Withdraw* ends it. Someone without an account asks for one
+first: how accounts are made is the project's to say.
+
+## Public links
+
+With `GENERIC["WIKI_PUBLIC_LINKS"] = True` (off by default), whoever
+manages a wiki gives it a read-only link for anyone, signed in or not,
+under *Members* (`generic/wiki/sharing.py`, `Wiki.share_token`,
+migration 0013). `wiki/shared/<secret>/` shows the wiki's first page,
+`wiki/shared/<secret>/<page>/` each page: the menu and the text, no
+history, no editor, no comments. Links between the wiki's pages lead to
+their shared addresses; the images and files a live page shows are
+served from under the link - and only those. The pages say `noindex`
+and send no referrer. *New link* ends the old one; *Remove* ends both.
+A wiki in the trash is not shown.
+
+The files of a shared wiki are downloaded by anyone holding the link,
+whatever `ACCESS_ON_REQUEST` says for signed-in users: share a wiki
+only when what it shows may leave the site.
+
+## Comments and who is editing
+
+Below a page, its readers comment, in plain text (`WikiComment`,
+migration 0014); its author or the wiki's manager deletes one. The
+page's watchers are told.
+
+An open editor tells the server every 20 seconds (`POST
+pages/<id>/editing/`); someone else opening it sees who already writes
+there, and the page's readers see it too (`generic/wiki/presence.py`).
+They hear of it, and of new comments, as it happens on the
+`wiki.page.{page_id}` topic of `generic.events`; without Channels the
+page says what it knew when it was opened. The editors are kept in
+Django's cache: give the workers a shared one (Redis, Memcached, the
+database). The save's version check still stops one writer from
+overwriting another.
+
+## Markdown and templates
+
+*Export* on a page downloads it as a PDF - in portrait or landscape,
+the page alone (`wiki/<wiki>/<page>/export.pdf`) - or as Markdown
+(`export.md`). The icon beside *New page* imports a Markdown file as a
+new page: its first `# heading` is the title, else the file's name
+(`generic/wiki/markdown.py`). Headings, paragraphs, bold, italic,
+struck and inline code, links, images, lists, quotes, code blocks,
+rules and tables come across; HTML in the file stays text, and the
+page is cleaned like any other.
+
+A page marked *Offer as a template for new pages* in the editor is
+offered by *New page*, under *Start from*: the new page starts with its
+text (`WikiPage.is_template`, migration 0015).
+
+The history keeps `WIKI_MAX_REVISIONS` (50) versions of each page;
+`None` keeps every one.
 
 ## The HTML
 
@@ -373,6 +483,19 @@ Under `wiki/api/`, JSON, like every other screen:
 | `POST pages/<id>/restore/` | Bring one back: `{"revision": <id>}` |
 | `POST pages/<id>/duplicate/` | A copy beside it: `{"title", "subpages"}` ([Duplicating](#duplicating)) |
 | `POST wikis/<id>/duplicate/` | A copy of the wiki: `{"name", "description", "pages"}` |
+| `GET`, `POST wikis/<id>/watch/` | Whether the user watches the wiki; `POST` turns it on or off ([Watching and recent changes](#watching-and-recent-changes)) |
+| `GET wikis/<id>/invitations/` | The invitations not yet accepted, for whoever manages the wiki |
+| `POST wikis/<id>/invitations/` | Invite by e-mail: `{"email", "role"}` ([Invitations](#invitations)) |
+| `POST wikis/<id>/uninvite/` | Withdraw one: `{"invitation"}` |
+| `GET`, `POST`, `DELETE wikis/<id>/share/` | Its public link, a new one, none ([Public links](#public-links)) |
+| `GET pages/recent/?wiki=<id>` | The pages last written, in one wiki or every one the user reads |
+| `GET`, `POST pages/<id>/watch/` | Whether the user watches the page; `POST` turns it on or off |
+| `GET`, `POST pages/<id>/comments/` | Its comments, oldest first; a new one, `{"body"}`, by any reader ([Comments](#comments-and-who-is-editing)) |
+| `POST pages/<id>/uncomment/` | A comment taken away by its author or the wiki's manager: `{"comment"}` |
+| `POST pages/<id>/editing/` | The editor is open, `{"active": false}` closed: answers `{"editors"}`, the others |
+| `POST pages/<id>/place/` | Elsewhere in the menu: `{"parent", "before"}` ([Moving pages](#moving-pages)) |
+| `POST pages/<id>/move/` | To another wiki, with its subpages: `{"wiki"}` |
+| `POST pages/import/` | A new page from Markdown: `{"markdown", "name", "wiki", "parent"}` ([Markdown](#markdown-and-templates)) |
 
 A page carries its `wiki`; naming another one in a `PATCH`, or a
 `parent` from another wiki, answers `400`, and so does an address

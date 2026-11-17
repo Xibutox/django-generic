@@ -1558,7 +1558,7 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   page links to, in order; `attachments` in the page's API and the
   page's context (listed under the text). See `docs/wiki.md#files`.
 - Several wikis: `generic_wiki.Wiki` (`name`, `slug` unique, not
-  `api`/`images`/`files`, `description`, `position`); `WikiPage.wiki`
+  `api`/`images`/`files`/`invitations`/`shared`, `description`, `position`); `WikiPage.wiki`
   (FK, CASCADE; `(wiki, slug)` unique; saved without one: the parent's,
   else `Wiki.objects.default()`, the first - migration 0005 made
   "Wiki" at `main` and put every old page in it). Routes: `wiki/`
@@ -1618,6 +1618,34 @@ attachment = models.FileField(_("attachment"), upload_to="tickets/%Y/%m/", blank
   Editor: draft in `localStorage` (`generic.wiki.draft.<id>`), a 409
   opens the conflict dialog (`wikiPage.conflict`). See
   `docs/wiki.md#access-owner-and-members`, `#the-trash`.
+- Wiki collaboration (`generic/wiki/`): `headings.py` (`with_anchors`
+  ids `h-<slug>` on h1-h4, `table_of_contents` from 3); `search.py`
+  (`search_pages_of(user, term, wiki=)` on `WikiPage.text`, written by
+  `save()`; `wiki/?q=&wiki=<slug>`); `WikiRedirect` (old slug -> page,
+  301 from `WikiPageView`; `page.backlinks()`); `watching.py`
+  (`toggle`, `announce(page, "created"|"updated"|"deleted"|"commented",
+  actor)` on commit, through `delivery.deliver`; `pages/recent/`,
+  `pages|wikis/<id>/watch/`); `moving.py` (`place(page, parent,
+  before)`, `move_to_wiki(page, wiki)` - subpages, unique slugs,
+  redirects; `pages/<id>/place/` needs change, `move/` delete here and
+  add there); `invitations.py` (`WikiInvitation`, sha256 digest in
+  `token`, `invite` mails `wiki/invitations/<secret>/`, accepted signed
+  in with that e-mail, once, within `WIKI_INVITATION_DAYS`; never lowers
+  a role); `sharing.py` (`Wiki.share_token`, `WIKI_PUBLIC_LINKS` False
+  by default, `wiki/shared/<secret>/[<page>/]`, `images|files/<id>/`
+  under it only for uploads a live page shows, `rewrite()` the links,
+  no-referrer + noindex; `wikis/<id>/share/` GET/POST/DELETE);
+  `WikiComment` (`pages/<id>/comments/`, `uncomment/`: author or
+  manager); `presence.py` (cache-held editors, `POST pages/<id>/editing/`
+  every `BEAT` 20 s, `TTL` 45 s, events `wiki.editing` /
+  `wiki.comments` on topic `wiki.page.{page_id}`, registered in
+  `WikiConfig.ready`); `markdown.py` (`to_markdown`, `from_markdown` ->
+  `(title, html)`; `<page>/export.md`, `pages/import/`);
+  `WikiPage.is_template` (`templates` in the page config, *Start from*);
+  `pdf.render(wiki, page=)` one page (`<page>/export.pdf`);
+  `WIKI_MAX_REVISIONS` (`models.max_revisions()`). Reserved wiki slugs:
+  `api`, `images`, `files`, `invitations`, `shared`. See
+  `docs/wiki.md#finding-pages` to `#markdown-and-templates`.
 - Wiki PDF: `generic.wiki.pdf.render(wiki, base_url=,
   orientation="portrait"|"landscape")` -> bytes, A4 (`?orientation=`
   on `export.pdf`, anything else portrait; the button is a menu,
@@ -2507,7 +2535,8 @@ no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `API_TOKEN_MAX_DAYS`, `API_TOKEN_LIMIT_PER_USER`,
 `MAILING_MAX_ATTACHMENT_SIZE`, `HISTORY`, `OPERATION_FALLBACK`,
 `WIKI_ACCESS`, `WIKI_EDIT_ACCESS`, `WIKI_PDF_FONTS`,
-`WIKI_ARCHIVE_MAX_SIZE` (100 MB), `TRASH_DAYS` (30;
+`WIKI_ARCHIVE_MAX_SIZE` (100 MB), `WIKI_INVITATION_DAYS` (14),
+`WIKI_PUBLIC_LINKS` (False), `WIKI_MAX_REVISIONS` (50; None keeps all), `TRASH_DAYS` (30;
 None keeps everything), `ACCESS_LOG_RETENTION_DAYS` (None),
 `LOGIN_MAX_ATTEMPTS` (5; None turns the lock off; the site's
 sign-in form and the default admin site's, `ThrottledSignInMixin` for

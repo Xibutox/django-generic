@@ -515,8 +515,10 @@ class WikiPageView(WikiViewMixin):
         context = super().get_context_data(**kwargs)
         readable = Wiki.objects.readable_by(self.request.user)
         # The pages linking here, of the wikis the reader reads.
-        context["backlinks"] = list(
-            self.page.backlinks().filter(wiki__in=readable)[:50]
+        context["backlinks"] = (
+            list(self.page.backlinks().filter(wiki__in=readable)[:50])
+            if self.page is not None
+            else []
         )
 
         return context

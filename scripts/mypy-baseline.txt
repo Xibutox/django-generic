@@ -254,6 +254,8 @@ generic/wiki/pdf.py: Incompatible types in assignment (expression has type "type
 generic/wiki/pdf.py: Item "None" of "FontFace | None" has no attribute "replace"  [union-attr]
 generic/wiki/pdf.py: Unused "type: ignore" comment  [unused-ignore]
 generic/wiki/serializers.py: "Field[Any, Any, Any, Any]" has no attribute "queryset"  [attr-defined]
+generic/wiki/watching.py: Incompatible return value type (got "tuple[str, str, tuple[int, _StrPromise]]", expected "tuple[str, str, int]")  [return-value]
+generic/wiki/watching.py: Incompatible return value type (got "tuple[str, str, tuple[int, _StrPromise]]", expected "tuple[str, str, int]")  [return-value]
 iso/access_reviews/models.py: Incompatible types in assignment (expression has type "tuple[str, _StrPromise]", variable has type "str | int | Combinable")  [assignment]
 iso/assets/models.py: Incompatible types in assignment (expression has type "tuple[str, _StrPromise]", variable has type "str | int | Combinable")  [assignment]
 iso/risks/models.py: Incompatible return value type (got "tuple[str, _StrPromise]", expected "str")  [return-value]

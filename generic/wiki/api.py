@@ -105,18 +105,18 @@ from generic.wiki.access import (
     writes_somewhere,
 )
 from generic.wiki.invitations import invitation_json, invite
+from generic.wiki.markdown import from_markdown
 from generic.wiki.models import (
     ROLES,
     Wiki,
-    WikiFile,
     WikiComment,
+    WikiFile,
     WikiImage,
     WikiMember,
     WikiPage,
     WikiRedirect,
     WikiRevision,
 )
-from generic.wiki.markdown import from_markdown
 from generic.wiki.moving import MoveError, move_to_wiki, place
 from generic.wiki.serializers import (
     WikiPageListSerializer,

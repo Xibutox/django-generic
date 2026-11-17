@@ -114,6 +114,9 @@ See [Undo](undo.md).
 | `WIKI_EDIT_ACCESS` | `None` | Which of the wikis a user reads they may write in - pages created, changed, moved, deleted, restored: a function `(user, wikis) -> wikis`, or its dotted path. `None`: every wiki they read ([Who writes in which wiki](wiki.md#who-writes-in-which-wiki)) |
 | `WIKI_PDF_FONTS` | `None` | The TrueType fonts a wiki's PDF is written with, `{"regular", "bold", "italic", "bold_italic", "mono": path}`. `None` looks for DejaVu, Liberation or Arial on the system, then falls back on Latin-1 ([PDF](wiki.md#pdf)) |
 | `WIKI_ARCHIVE_MAX_SIZE` | `100 * 1024 * 1024` | The largest wiki archive an import takes, in bytes: the upload, and what it holds once unpacked ([Export and import](wiki.md#export-and-import)) |
+| `WIKI_INVITATION_DAYS` | `14` | How long an invitation to join a wiki, sent by e-mail, may be accepted ([Invitations](wiki.md#invitations)) |
+| `WIKI_PUBLIC_LINKS` | `False` | Whether a wiki's managers may give it a read-only link for anyone, signed in or not ([Public links](wiki.md#public-links)) |
+| `WIKI_MAX_REVISIONS` | `50` | The versions kept of each wiki page; `None` keeps every one ([Markdown and templates](wiki.md#markdown-and-templates)) |
 
 ## Events
 
