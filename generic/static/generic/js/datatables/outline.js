@@ -469,7 +469,7 @@
     child.parent = parent;
 
     // Found again: it stays open, its rows kept.
-    if (before && before.expanded && child.count) {
+    if (before && before.expanded && this.opens(child)) {
       child.expanded = true;
       child.loaded = before.loaded;
       child.items = before.items;
@@ -713,9 +713,24 @@
     this.fill(cell.holder, cell.column, node.row);
   };
 
+  /** The address adding a record to the level below `parent`, its
+   * `{parent}` filled in; "" for the top or a level adding nothing. */
+  OutlineView.prototype.addUrlBelow = function (parent) {
+    var level = this.levels[parent.depth + 1];
+    var url = level && level.addUrl && parent !== this.top ? level.addUrl.replace("{parent}", encodeURIComponent(parent.id)) : "";
+
+    return url && core.isSafeUrl(url) ? url : "";
+  };
+
+  /** Whether `node` unfolds: it holds records, or - none yet - the
+   * level below can be added to, its foot offering the first one. */
+  OutlineView.prototype.opens = function (node) {
+    return node.count > 0 || Boolean(this.addUrlBelow(node));
+  };
+
   OutlineView.prototype.updateRow = function (node) {
     var toggle = node.toggleButton;
-    var expandable = node.count > 0;
+    var expandable = this.opens(node);
 
     toggle.textContent = "";
     toggle.disabled = !expandable;
@@ -729,7 +744,7 @@
       node.element.setAttribute("aria-expanded", node.expanded ? "true" : "false");
       node.countBadge.textContent = number(node.count);
       node.countBadge.title = this.levels[node.depth + 1] ? this.levels[node.depth + 1].title : "";
-      node.countBadge.hidden = false;
+      node.countBadge.hidden = !node.count;
     } else {
       toggle.removeAttribute("aria-label");
       node.element.removeAttribute("aria-expanded");
@@ -806,11 +821,7 @@
     var level = this.levels[parent.depth + 1];
     var shown = parent.items.length;
     var more = parent.total - shown;
-    var addUrl = level && level.addUrl && parent !== this.top ? level.addUrl.replace("{parent}", encodeURIComponent(parent.id)) : "";
-
-    if (addUrl && !core.isSafeUrl(addUrl)) {
-      addUrl = "";
-    }
+    var addUrl = this.addUrlBelow(parent);
 
     if (!parent.loading && !parent.failed && more <= 0 && shown && !addUrl) {
       return null;
@@ -946,7 +957,7 @@
   };
 
   OutlineView.prototype.toggle = function (node, open) {
-    if (!node.count) {
+    if (!this.opens(node)) {
       return;
     }
 
@@ -1787,7 +1798,7 @@
         this.focus(rows[rows.length - 1]);
         break;
       case "ArrowRight":
-        if (node.count && !node.expanded) {
+        if (this.opens(node) && !node.expanded) {
           this.toggle(node, true);
         } else if (node.expanded && node.items.length) {
           this.focus(node.items[0].element);

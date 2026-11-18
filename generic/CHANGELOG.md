@@ -9,6 +9,14 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
+## [Unreleased]
+
+### Fixed
+- Outlines: a record without records of the next level unfolds when
+  the reader may add them, its foot offering *Add …* for the first
+  one; before, the add row only showed under a record holding at
+  least one (docs/outlines.md).
+
 ## [1.6.0] - 2026-11-11
 
 ### Added

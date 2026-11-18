@@ -2051,6 +2051,8 @@ JS `js/datatables/outline.js` (feature `outline`, loaded by
 hides the rows, count and pages (and the table's `.dt-edit-toggle`);
 the view (`OutlineView`, tree.css classes, `outline-row`,
 `outline-head` per unfolded level, a foot with *Show more* / *Add ...*;
+`opens(node)` = children, or none but an `addUrlBelow(node)`, so an
+empty record unfolds to a foot offering its first child;
 toolbar `.dt-outline-expand`: *Expand first level* / *Expand next
 level*, `nextLevel()` = the folded records with children at the
 shallowest depth shown, in drawn order, at most `UNFOLD_AT_ONCE` (50)

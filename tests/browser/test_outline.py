@@ -8,6 +8,8 @@ outline=("equipment", "maintenances"))``); the list itself has an
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from playwright.sync_api import expect
 
@@ -73,6 +75,42 @@ def test_the_list_unfolds_level_after_level(page, admin, sign_in, stock):
     expect(page.locator(".dt-outline")).to_be_visible()
     page.locator(".dt-outline-toggle").click()
     expect(page.locator("#datatable")).to_be_visible()
+
+
+def test_a_record_without_children_takes_a_first_one(
+    page, admin, sign_in, stock
+):
+    """A row holding nothing yet still unfolds where the level below
+    can be added to: its foot offers the first record."""
+    screen = Equipment.objects.get(serial_number="S-1")
+    sign_in(admin)
+    page.goto(LIST + "?outline=1")
+
+    unfold(page, 0, "Acme")
+    row = unfold(page, 1, "S-1")
+    expect(row.locator(".tree-row__count")).to_be_hidden()
+    foot = page.locator(".tree-row--foot[data-depth='2']")
+    expect(foot).to_contain_text("Nothing here.")
+    add = foot.get_by_role("link", name="Add maintenance visit")
+    expect(add).to_have_attribute("href", re.compile(f"={screen.pk}"))
+
+    # Folded again, and a supplier without equipment too.
+    row.locator(".tree-row__toggle").click()
+    expect(page.locator(".tree-row--foot[data-depth='2']")).to_have_count(0)
+    unfold(page, 0, "Bolt")
+    expect(
+        page.locator(".tree-row--foot[data-depth='1']").get_by_role(
+            "link", name="Add equipment"
+        )
+    ).to_be_visible()
+
+
+def test_a_reader_cannot_unfold_an_empty_record(page, viewer, sign_in, stock):
+    sign_in(viewer)
+    page.goto(LIST + "?outline=1")
+
+    toggle = rows(page, 0).filter(has_text="Bolt").locator(".tree-row__toggle")
+    expect(toggle).to_be_disabled()
 
 
 def test_a_level_unfolds_at_once(page, admin, sign_in, stock):
