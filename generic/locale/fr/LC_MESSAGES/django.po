@@ -5021,3 +5021,287 @@ msgstr "C’est fait."
 #: generic/templates/generic/form_page.html
 msgid "Form"
 msgstr "Formulaire"
+
+#: generic/wiki
+msgid "%(name)s changed “%(title)s” in %(wiki)s."
+msgstr "%(name)s a modifié « %(title)s » dans %(wiki)s."
+
+#: generic/wiki
+msgid "%(name)s commented on “%(title)s” in %(wiki)s."
+msgstr "%(name)s a commenté « %(title)s » dans %(wiki)s."
+
+#: generic/wiki
+msgid "%(name)s deleted “%(title)s” from %(wiki)s."
+msgstr "%(name)s a supprimé « %(title)s » de %(wiki)s."
+
+#: generic/wiki
+msgid "%(name)s invites you to join it as %(role)s."
+msgstr "%(name)s vous invite à le rejoindre en tant que %(role)s."
+
+#: generic/wiki
+msgid "%(name)s invites you to join the wiki “%(wiki)s” as %(role)s."
+msgstr "%(name)s vous invite à rejoindre le wiki « %(wiki)s » en tant que %(role)s."
+
+#: generic/wiki
+msgid "%(name)s wrote “%(title)s” in %(wiki)s."
+msgstr "%(name)s a écrit « %(title)s » dans %(wiki)s."
+
+#: generic/wiki
+msgid "A new page from a Markdown file"
+msgstr "Une nouvelle page à partir d’un fichier Markdown"
+
+#: generic/wiki
+msgid "Accept the invitation"
+msgstr "Accepter l’invitation"
+
+#: generic/wiki
+msgid "Add a comment"
+msgstr "Ajouter un commentaire"
+
+#: generic/wiki
+msgid "Changed %(date)s"
+msgstr "Modifiée le %(date)s"
+
+#: generic/wiki
+msgid "Changed %(date)s by %(name)s"
+msgstr "Modifiée le %(date)s par %(name)s"
+
+#: generic/wiki
+msgid "Comment"
+msgstr "Commenter"
+
+#: generic/wiki
+msgid "Comments"
+msgstr "Commentaires"
+
+#: generic/wiki
+msgid "Delete the comment"
+msgstr "Supprimer le commentaire"
+
+#: generic/wiki
+msgid "Enter a valid e-mail address."
+msgstr "Saisissez une adresse e-mail valide."
+
+#: generic/wiki
+msgid "Export"
+msgstr "Exporter"
+
+#: generic/wiki
+msgid "Filter pages, or search this wiki"
+msgstr "Filtrer les pages, ou chercher dans ce wiki"
+
+#: generic/wiki
+msgid "Filter, or Enter to search"
+msgstr "Filtrer, ou Entrée pour chercher"
+
+#: generic/wiki
+msgid "Go to the wikis"
+msgstr "Aller aux wikis"
+
+#: generic/wiki
+msgid "If you have no account on this site yet, ask %(name)s for one first."
+msgstr "Si vous n’avez pas encore de compte sur ce site, demandez-en d’abord un à %(name)s."
+
+#: generic/wiki
+msgid "Import a Markdown file"
+msgstr "Importer un fichier Markdown"
+
+#: generic/wiki
+msgid "Imported page"
+msgstr "Page importée"
+
+#: generic/wiki
+msgid "Invitation"
+msgstr "Invitation"
+
+#: generic/wiki
+msgid "Join the wiki &ldquo;%(wiki)s&rdquo;"
+msgstr "Rejoindre le wiki &laquo;&nbsp;%(wiki)s&nbsp;&raquo;"
+
+#: generic/wiki
+msgid "Join the wiki “%(wiki)s”"
+msgstr "Rejoindre le wiki « %(wiki)s »"
+
+#: generic/wiki
+msgid "Linked from"
+msgstr "Pages qui y renvoient"
+
+#: generic/wiki
+msgid "Markdown"
+msgstr "Markdown"
+
+#: generic/wiki
+msgid "Move"
+msgstr "Déplacer"
+
+#: generic/wiki
+msgid "No page holds these words."
+msgstr "Aucune page ne contient ces mots."
+
+#: generic/wiki
+msgid "Offer as a template for new pages"
+msgstr "Proposer comme modèle pour les nouvelles pages"
+
+#: generic/wiki
+msgid "Offered as the start of a new page of its wiki."
+msgstr "Proposée comme point de départ d’une nouvelle page de son wiki."
+
+#: generic/wiki
+msgid "PDF, landscape"
+msgstr "PDF, paysage"
+
+#: generic/wiki
+msgid "PDF, portrait"
+msgstr "PDF, portrait"
+
+#: generic/wiki
+msgid "Public links are not enabled on this site."
+msgstr "Les liens publics ne sont pas activés sur ce site."
+
+#: generic/wiki
+msgid "Recent changes"
+msgstr "Modifications récentes"
+
+#: generic/wiki
+msgid "Search every wiki"
+msgstr "Chercher dans tous les wikis"
+
+#: generic/wiki
+msgid "Search the pages of every wiki"
+msgstr "Chercher dans les pages de tous les wikis"
+
+#: generic/wiki
+msgid "Search the wikis"
+msgstr "Chercher dans les wikis"
+
+#: generic/wiki
+msgid "Search the wikis for: %(term)s"
+msgstr "Chercher dans les wikis : %(term)s"
+
+#: generic/wiki
+msgid "The file is too large."
+msgstr "Le fichier est trop volumineux."
+
+#: generic/wiki
+msgid "The link works once, until %(date)s."
+msgstr "Le lien ne sert qu’une fois, jusqu’au %(date)s."
+
+#: generic/wiki
+msgid "The page is already in this wiki."
+msgstr "La page est déjà dans ce wiki."
+
+#: generic/wiki
+msgid "This comment is too long."
+msgstr "Ce commentaire est trop long."
+
+#: generic/wiki
+msgid "This invitation does not exist, or was replaced."
+msgstr "Cette invitation n’existe pas, ou a été remplacée."
+
+#: generic/wiki
+msgid "This invitation has expired. Ask for a new one."
+msgstr "Cette invitation a expiré. Demandez-en une nouvelle."
+
+#: generic/wiki
+msgid "This invitation was already accepted."
+msgstr "Cette invitation a déjà été acceptée."
+
+#: generic/wiki
+msgid "This invitation was sent to %(email)s. Sign in with the account of that address to accept it."
+msgstr "Cette invitation a été envoyée à %(email)s. Connectez-vous avec le compte de cette adresse pour l’accepter."
+
+#: generic/wiki
+msgid "To accept, open this link and sign in with this e-mail address:"
+msgstr "Pour accepter, ouvrez ce lien et connectez-vous avec cette adresse e-mail :"
+
+#: generic/wiki
+msgid "Typing filters the menu; Enter searches the text of this wiki"
+msgstr "La saisie filtre le menu ; Entrée cherche dans le texte de ce wiki"
+
+#: generic/wiki
+msgid "Unknown role."
+msgstr "Rôle inconnu."
+
+#: generic/wiki
+msgid "Watch the wiki"
+msgstr "Suivre le wiki"
+
+#: generic/wiki
+msgid "Welcome to the wiki “%(name)s”."
+msgstr "Bienvenue dans le wiki « %(name)s »."
+
+#: generic/wiki
+msgid "You are invited to join it as %(role)s."
+msgstr "Vous êtes invité à le rejoindre en tant que %(role)s."
+
+#: generic/wiki
+msgid "You may not delete this comment."
+msgstr "Vous ne pouvez pas supprimer ce commentaire."
+
+#: generic/wiki
+msgid "Your comment"
+msgstr "Votre commentaire"
+
+#: generic/wiki
+msgid "accepted at"
+msgstr "acceptée le"
+
+#: generic/wiki
+msgid "accepted by"
+msgstr "acceptée par"
+
+#: generic/wiki
+msgid "comment"
+msgstr "commentaire"
+
+#: generic/wiki
+msgid "e-mail address"
+msgstr "adresse e-mail"
+
+#: generic/wiki
+msgid "invited by"
+msgstr "invité par"
+
+#: generic/wiki
+msgid "public link"
+msgstr "lien public"
+
+#: generic/wiki
+msgid "template"
+msgstr "modèle"
+
+#: generic/wiki
+msgid "wiki comment"
+msgstr "commentaire de wiki"
+
+#: generic/wiki
+msgid "wiki comments"
+msgstr "commentaires de wiki"
+
+#: generic/wiki
+msgid "wiki invitation"
+msgstr "invitation à un wiki"
+
+#: generic/wiki
+msgid "wiki invitations"
+msgstr "invitations à un wiki"
+
+#: generic/wiki
+msgid "wiki redirect"
+msgstr "redirection de wiki"
+
+#: generic/wiki
+msgid "wiki redirects"
+msgstr "redirections de wiki"
+
+#: generic/wiki
+msgid "%(counter)s page found in %(name)s"
+msgid_plural "%(counter)s pages found in %(name)s"
+msgstr[0] "%(counter)s page trouvée dans %(name)s"
+msgstr[1] "%(counter)s pages trouvées dans %(name)s"
+
+#: generic/wiki
+msgid "%(counter)s page found"
+msgid_plural "%(counter)s pages found"
+msgstr[0] "%(counter)s page trouvée"
+msgstr[1] "%(counter)s pages trouvées"

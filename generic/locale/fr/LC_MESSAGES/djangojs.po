@@ -2790,3 +2790,223 @@ msgstr "Effacer"
 #: generic/static/generic/js/calendar.js
 msgid "Work week"
 msgstr "Semaine de travail"
+
+#: generic/static/generic/js/wiki.js
+msgid "%(names)s are editing this page."
+msgstr "%(names)s modifient cette page."
+
+#: generic/static/generic/js/wiki.js
+msgid "%(names)s is editing this page."
+msgstr "%(names)s modifie cette page."
+
+#: generic/static/generic/js/wiki.js
+msgid "%(role)s, until %(date)s"
+msgstr "%(role)s, jusqu’au %(date)s"
+
+#: generic/static/generic/js/wiki.js
+msgid "A blank page"
+msgstr "Une page vierge"
+
+#: generic/static/generic/js/wiki.js
+msgid "A title…"
+msgstr "Un titre…"
+
+#: generic/static/generic/js/wiki.js
+msgid "An invitation was sent to %(email)s."
+msgstr "Une invitation a été envoyée à %(email)s."
+
+#: generic/static/generic/js/wiki.js
+msgid "Anyone holding a public link reads the wiki's pages, without signing in. Nothing else: no history, no editing."
+msgstr "Quiconque détient un lien public lit les pages du wiki, sans se connecter. Rien d’autre : ni historique, ni modification."
+
+#: generic/static/generic/js/wiki.js
+msgid "Anyone holding this link reads the wiki's pages, without signing in. A new link ends this one."
+msgstr "Quiconque détient ce lien lit les pages du wiki, sans se connecter. Un nouveau lien met fin à celui-ci."
+
+#: generic/static/generic/js/wiki.js
+msgid "Be told when any page of this wiki is written, changed or deleted"
+msgstr "Être averti quand une page de ce wiki est écrite, modifiée ou supprimée"
+
+#: generic/static/generic/js/wiki.js
+msgid "Be told when this page changes"
+msgstr "Être averti quand cette page change"
+
+#: generic/static/generic/js/wiki.js
+msgid "Delete this comment?"
+msgstr "Supprimer ce commentaire ?"
+
+#: generic/static/generic/js/wiki.js
+msgid "Invite"
+msgstr "Inviter"
+
+#: generic/static/generic/js/wiki.js
+msgid "Invite by e-mail"
+msgstr "Inviter par e-mail"
+
+#: generic/static/generic/js/wiki.js
+msgid "It is deleted for good."
+msgstr "Il est supprimé définitivement."
+
+#: generic/static/generic/js/wiki.js
+msgid "Link to a page"
+msgstr "Lien vers une page"
+
+#: generic/static/generic/js/wiki.js
+msgid "Link to a page of the wiki"
+msgstr "Lien vers une page du wiki"
+
+#: generic/static/generic/js/wiki.js
+msgid "Make a public link"
+msgstr "Créer un lien public"
+
+#: generic/static/generic/js/wiki.js
+msgid "Move"
+msgstr "Déplacer"
+
+#: generic/static/generic/js/wiki.js
+msgid "Move this page to another wiki"
+msgstr "Déplacer cette page dans un autre wiki"
+
+#: generic/static/generic/js/wiki.js
+msgid "New link"
+msgstr "Nouveau lien"
+
+#: generic/static/generic/js/wiki.js
+msgid "No page found."
+msgstr "Aucune page trouvée."
+
+#: generic/static/generic/js/wiki.js
+msgid "No page yet."
+msgstr "Pas encore de page."
+
+#: generic/static/generic/js/wiki.js
+msgid "Public link"
+msgstr "Lien public"
+
+#: generic/static/generic/js/wiki.js
+msgid "Recent changes"
+msgstr "Modifications récentes"
+
+#: generic/static/generic/js/wiki.js
+msgid "Save or cancel your changes before moving pages in the menu."
+msgstr "Enregistrez ou annulez vos modifications avant de déplacer des pages dans le menu."
+
+#: generic/static/generic/js/wiki.js
+msgid "Someone"
+msgstr "Quelqu’un"
+
+#: generic/static/generic/js/wiki.js
+msgid "Start from"
+msgstr "Partir de"
+
+#: generic/static/generic/js/wiki.js
+msgid "Stop being told when a page of this wiki changes"
+msgstr "Ne plus être averti quand une page de ce wiki change"
+
+#: generic/static/generic/js/wiki.js
+msgid "Stop being told when this page changes"
+msgstr "Ne plus être averti quand cette page change"
+
+#: generic/static/generic/js/wiki.js
+msgid "The comment could not be deleted."
+msgstr "Le commentaire n’a pas pu être supprimé."
+
+#: generic/static/generic/js/wiki.js
+msgid "The comment could not be saved."
+msgstr "Le commentaire n’a pas pu être enregistré."
+
+#: generic/static/generic/js/wiki.js
+msgid "The file could not be imported."
+msgstr "Le fichier n’a pas pu être importé."
+
+#: generic/static/generic/js/wiki.js
+msgid "The file is too large."
+msgstr "Le fichier est trop volumineux."
+
+#: generic/static/generic/js/wiki.js
+msgid "The invitation could not be sent."
+msgstr "L’invitation n’a pas pu être envoyée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The invitation could not be withdrawn."
+msgstr "L’invitation n’a pas pu être retirée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The invitation is saved, but its e-mail could not be sent."
+msgstr "L’invitation est enregistrée, mais son e-mail n’a pas pu être envoyé."
+
+#: generic/static/generic/js/wiki.js
+msgid "The link was copied."
+msgstr "Le lien a été copié."
+
+#: generic/static/generic/js/wiki.js
+msgid "The page could not be moved."
+msgstr "La page n’a pas pu être déplacée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The page was imported."
+msgstr "La page a été importée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The page was moved."
+msgstr "La page a été déplacée."
+
+#: generic/static/generic/js/wiki.js
+msgid "The pages could not be loaded."
+msgstr "Les pages n’ont pas pu être chargées."
+
+#: generic/static/generic/js/wiki.js
+msgid "The public link could not be changed."
+msgstr "Le lien public n’a pas pu être modifié."
+
+#: generic/static/generic/js/wiki.js
+msgid "The recent changes could not be loaded."
+msgstr "Les modifications récentes n’ont pas pu être chargées."
+
+#: generic/static/generic/js/wiki.js
+msgid "The watch could not be changed."
+msgstr "Le suivi n’a pas pu être modifié."
+
+#: generic/static/generic/js/wiki.js
+msgid "Watch the wiki"
+msgstr "Suivre le wiki"
+
+#: generic/static/generic/js/wiki.js
+msgid "Watching the wiki"
+msgstr "Wiki suivi"
+
+#: generic/static/generic/js/wiki.js
+msgid "Whoever accepts the link signed in with this address becomes a member. Sent at once, whatever Save does."
+msgstr "Quiconque accepte le lien, connecté avec cette adresse, devient membre. Envoyée aussitôt, quoi que fasse Enregistrer."
+
+#: generic/static/generic/js/wiki.js
+msgid "Wiki"
+msgstr "Wiki"
+
+#: generic/static/generic/js/wiki.js
+msgid "Withdraw the invitation"
+msgstr "Retirer l’invitation"
+
+#: generic/static/generic/js/wiki.js
+msgid "You will be told when a page of this wiki changes."
+msgstr "Vous serez averti quand une page de ce wiki change."
+
+#: generic/static/generic/js/wiki.js
+msgid "You will be told when this page changes."
+msgstr "Vous serez averti quand cette page change."
+
+#: generic/static/generic/js/wiki.js
+msgid "You will no longer be told."
+msgstr "Vous ne serez plus averti."
+
+#: generic/static/generic/js/wiki.js
+msgid "name@example.com"
+msgstr "nom@exemple.fr"
+
+#: generic/static/generic/js/wiki.js
+msgid "“%(title)s” and its subpages (%(count)s) go to the end of the other wiki's menu, with their history. Their old addresses lead to them."
+msgstr "« %(title)s » et ses sous-pages (%(count)s) vont à la fin du menu de l’autre wiki, avec leur historique. Leurs anciennes adresses y mènent."
+
+#: generic/static/generic/js/wiki.js
+msgid "“%(title)s” goes to the end of the other wiki's menu, with its history. Its old address leads to it."
+msgstr "« %(title)s » va à la fin du menu de l’autre wiki, avec son historique. Son ancienne adresse y mène."

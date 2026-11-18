@@ -13,6 +13,13 @@
 ``PUT    wikis/<id>/members/``     replace them: ``{"access",
                                    "members", "owner"}``
 ``GET    wikis/<id>/candidates/``  people and groups for ``?q=``
+``GET    wikis/<id>/invitations/`` the invitations not yet accepted
+``POST   wikis/<id>/invitations/`` invite by e-mail: ``{"email",
+                                   "role"}``
+``POST   wikis/<id>/uninvite/``    withdraw one: ``{"invitation"}``
+``GET    wikis/<id>/share/``       its public link, if it has one
+``POST   wikis/<id>/share/``       a new public link; the old one ends
+``DELETE wikis/<id>/share/``       no public link any more
 ``GET    wikis/trash/``            the wikis in the trash
 ``POST   wikis/<id>/undelete/``    out of the trash
 ``POST   wikis/<id>/purge/``       deleted for good
@@ -32,6 +39,18 @@
 ``POST   pages/<id>/restore/``     bring one back: ``{"revision"}``
 ``POST   pages/<id>/duplicate/``   a copy beside it: ``{"title",
                                    "subpages"}``
+``GET    pages/<id>/comments/``    its comments, oldest first
+``POST   pages/<id>/comments/``    a comment: ``{"body"}``
+``POST   pages/<id>/uncomment/``   one taken away: ``{"comment"}``
+``POST   pages/<id>/editing/``     the editor is open - or closed:
+                                   ``{"active"}``; answers the others
+``POST   pages/import/``           a new page from Markdown:
+                                   ``{"markdown", "name", "wiki",
+                                   "parent"}``
+``POST   pages/<id>/place/``       elsewhere in the menu: ``{"parent",
+                                   "before"}``
+``POST   pages/<id>/move/``        to another wiki, with its subpages:
+                                   ``{"wiki"}``
 ================================  ====================================
 
 Reading is for any signed-in user, in the wikis
@@ -57,6 +76,8 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -75,6 +96,7 @@ from generic.api.body import ObjectBodyMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.search import text_lookup
+from generic.wiki import presence, sharing
 from generic.wiki.access import (
     has_perm,
     page_rights,
@@ -82,21 +104,32 @@ from generic.wiki.access import (
     wiki_rights,
     writes_somewhere,
 )
+from generic.wiki.invitations import invitation_json, invite
+from generic.wiki.markdown import from_markdown
 from generic.wiki.models import (
     ROLES,
     Wiki,
+    WikiComment,
     WikiFile,
     WikiImage,
     WikiMember,
     WikiPage,
+    WikiRedirect,
     WikiRevision,
 )
+from generic.wiki.moving import MoveError, move_to_wiki, place
 from generic.wiki.serializers import (
     WikiPageListSerializer,
     WikiPageSerializer,
     WikiRevisionSerializer,
     WikiSerializer,
     display_name,
+)
+from generic.wiki.watching import (
+    announce,
+    is_watching,
+    recent_changes,
+    toggle,
 )
 
 #: The images a page may show: what their first bytes are, the name
@@ -153,12 +186,27 @@ WRITE_PERMISSIONS = {
 PAGE_ACTIONS = {
     "restore": "change",
     "duplicate": "add",
+    "place": "change",
+    "editing": "change",
+    # It leaves its wiki: as good as deleted there.
+    "move": "delete",
     "undelete": "delete",
     "purge": "delete",
 }
 
-#: Actions that answer a question and change nothing, though POSTed.
-READ_ACTIONS = frozenset({"diff"})
+#: Actions for any reader, though POSTed: a comparison changes
+#: nothing, a watch is the reader's own, a comment is the reader's to
+#: write - and to take away, or the wiki's manager's.
+READ_ACTIONS = frozenset({"diff", "watch", "comments", "uncomment"})
+
+#: The longest Markdown file a page is imported from, in characters.
+MARKDOWN_MAX_LENGTH = 1_000_000
+
+#: The longest comment, in characters.
+COMMENT_MAX_LENGTH = 5000
+
+#: A wiki's actions for whoever says who its members are.
+MEMBER_ACTIONS = frozenset({"members", "invitations", "uninvite", "share"})
 
 #: A wiki's actions for whoever may delete it.
 WIKI_DELETE_ACTIONS = frozenset({"destroy", "undelete", "purge"})
@@ -273,7 +321,7 @@ class WikiPermission(BasePermission):
         if view.action in WIKI_DELETE_ACTIONS:
             return rights["delete"]
 
-        if view.action == "members":
+        if view.action in MEMBER_ACTIONS:
             return rights["members"]
 
         return rights["change"]
@@ -315,6 +363,31 @@ def member_json(member: WikiMember) -> dict[str, Any]:
     }
 
 
+def may_remove_comment(
+    user: Any, comment: WikiComment, wiki: Wiki, roles: Any = None
+) -> bool:
+    """Its author, the wiki's manager, or whoever may change any wiki."""
+    return bool(
+        (comment.author_id is not None and comment.author_id == user.pk)
+        or wiki_rights(user, wiki, roles)["members"]
+    )
+
+
+def comment_json(
+    comment: WikiComment, user: Any, wiki: Wiki, roles: Any = None
+) -> dict[str, Any]:
+    return {
+        "id": comment.pk,
+        "body": comment.body,
+        "author_name": (
+            display_name(comment.author) if comment.author_id else ""
+        ),
+        "created_at": comment.created_at,
+        "mine": comment.author_id is not None and comment.author_id == user.pk,
+        "can_delete": may_remove_comment(user, comment, wiki, roles),
+    }
+
+
 class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
     """The wikis: each a menu of pages of its own."""
 
@@ -344,6 +417,17 @@ class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
         """To the trash, with its pages as they are: restored whole, or
         deleted for good from there."""
         to_trash(instance, self.request.user)
+
+    @action(detail=True, methods=["get", "post"])
+    def watch(self, request: Any, pk: Any = None) -> Response:
+        """Whether the reader watches every page of the wiki; ``POST``
+        starts or stops it. For any reader."""
+        wiki = self.get_object()
+
+        if request.method == "POST":
+            return Response({"watching": toggle(request.user, wiki)})
+
+        return Response({"watching": is_watching(request.user, wiki)})
 
     @action(detail=False, methods=["get"])
     def trash(self, request: Any) -> Response:
@@ -506,6 +590,95 @@ class WikiViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                     )
                     for (kind, pk), role in wanted.items()
                 )
+
+    @action(detail=True, methods=["get", "post"])
+    def invitations(self, request: Any, pk: Any = None) -> Response:
+        """The invitations not yet accepted; ``POST {"email", "role"}``
+        sends one (generic.wiki.invitations)."""
+        wiki = self.get_object()
+
+        if not wiki_rights(request.user, wiki)["members"]:
+            raise PermissionDenied(
+                gettext("You may not manage this wiki's members.")
+            )
+
+        if request.method == "POST":
+            email = str(request.data.get("email") or "").strip()
+            role = request.data.get("role") or ROLES[0]
+
+            try:
+                validate_email(email)
+            except DjangoValidationError:
+                raise ValidationError(
+                    {"email": gettext("Enter a valid e-mail address.")}
+                ) from None
+
+            if role not in ROLES:
+                raise ValidationError({"role": gettext("Unknown role.")})
+
+            invitation, sent = invite(wiki, email, role, request.user, request)
+            data = invitation_json(invitation)
+            data["sent"] = sent
+
+            return Response(data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            [
+                invitation_json(invitation)
+                for invitation in wiki.invitations.pending().select_related(
+                    "invited_by"
+                )
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def uninvite(self, request: Any, pk: Any = None) -> Response:
+        """An invitation withdrawn: its link no longer works."""
+        wiki = self.get_object()
+        get_object_or_404(
+            wiki.invitations.filter(accepted_at__isnull=True),
+            pk=as_id(request.data.get("invitation")),
+        ).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["get", "post", "delete"])
+    def share(self, request: Any, pk: Any = None) -> Response:
+        """Its public link, read-only, for anyone holding it
+        (generic.wiki.sharing): ``{"enabled", "url"}``. ``POST`` makes
+        a new one, ``DELETE`` takes it away."""
+        wiki = self.get_object()
+
+        if not wiki_rights(request.user, wiki)["members"]:
+            raise PermissionDenied(
+                gettext("You may not manage this wiki's members.")
+            )
+
+        if not sharing.enabled():
+            if request.method != "GET":
+                raise PermissionDenied(
+                    gettext("Public links are not enabled on this site.")
+                )
+
+            return Response({"enabled": False, "url": ""})
+
+        if request.method == "POST":
+            wiki.share_token = sharing.new_secret()
+            wiki.save(update_fields=["share_token"])
+        elif request.method == "DELETE":
+            wiki.share_token = None
+            wiki.save(update_fields=["share_token"])
+
+        return Response(
+            {
+                "enabled": True,
+                "url": (
+                    request.build_absolute_uri(sharing.link_of(wiki))
+                    if wiki.share_token
+                    else ""
+                ),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def candidates(self, request: Any, pk: Any = None) -> Response:
@@ -693,6 +866,8 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                     gettext("You may not write in this wiki.")
                 )
 
+            announce(page, "created", user)
+
     def perform_update(self, serializer: Any) -> None:
         page = serializer.instance
         before = WikiPage(
@@ -703,13 +878,28 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
             updated_by_id=page.updated_by_id,
         )
 
+        old_slug = page.slug
+
         with transaction.atomic():
             saved = serializer.save(updated_by=self.request.user)
+
+            # Its old address keeps leading to it.
+            if saved.slug != old_slug:
+                WikiRedirect.objects.filter(
+                    wiki=saved.wiki, slug=saved.slug
+                ).delete()
+                WikiRedirect.objects.update_or_create(
+                    wiki=saved.wiki,
+                    slug=old_slug,
+                    defaults={"page": saved},
+                )
 
             # A version is kept when the words change, not when the page
             # only moves in the menu.
             if (saved.title, saved.content) != (before.title, before.content):
                 WikiRevision.keep(before)
+                # News when the words change, not when a page moves.
+                announce(saved, "updated", self.request.user)
 
     def perform_destroy(self, instance: WikiPage) -> None:
         """To the trash, with its history; its subpages move up a
@@ -719,6 +909,48 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
                 parent=instance.parent_id
             )
             to_trash(instance, self.request.user)
+            announce(instance, "deleted", self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def recent(self, request: Any) -> Response:
+        """The pages last written - in ``?wiki=<id>``, or in every wiki
+        the user reads - newest first, each with its last author."""
+        wiki = None
+
+        if request.query_params.get("wiki"):
+            wiki = get_object_or_404(
+                Wiki.objects.readable_by(request.user),
+                pk=as_id(request.query_params.get("wiki")),
+            )
+
+        return Response(
+            [
+                {
+                    "id": page.pk,
+                    "title": page.title,
+                    "url": page.get_absolute_url(),
+                    "wiki": page.wiki.name,
+                    "updated_at": page.updated_at,
+                    "updated_by_name": (
+                        display_name(page.updated_by)
+                        if page.updated_by_id
+                        else ""
+                    ),
+                }
+                for page in recent_changes(request.user, wiki)
+            ]
+        )
+
+    @action(detail=True, methods=["get", "post"])
+    def watch(self, request: Any, pk: Any = None) -> Response:
+        """Whether the reader watches the page; ``POST`` starts or stops
+        it. For any reader."""
+        page = self.get_object()
+
+        if request.method == "POST":
+            return Response({"watching": toggle(request.user, page)})
+
+        return Response({"watching": is_watching(request.user, page)})
 
     @action(detail=False, methods=["get"])
     def trash(self, request: Any) -> Response:
@@ -755,7 +987,9 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
 
         if (
             page.parent_id is not None
-            and not WikiPage.objects.filter(pk=page.parent_id).exists()
+            and not WikiPage.objects.filter(
+                pk=page.parent_id, wiki_id=page.wiki_id
+            ).exists()
         ):
             page.parent = None
             page.save(update_fields=["parent"])
@@ -912,6 +1146,164 @@ class WikiPageViewSet(ObjectBodyMixin, viewsets.ModelViewSet):
         return Response(
             WikiPageSerializer(copy, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=False, methods=["post"], url_path="import", url_name="import"
+    )
+    def import_markdown(self, request: Any) -> Response:
+        """A new page from a Markdown file's text (generic.wiki.markdown):
+        its first ``# heading`` is the title - else ``name``, the file's
+        name -, in ``wiki`` under ``parent``. Opened in the editor."""
+        text = request.data.get("markdown")
+
+        if not isinstance(text, str) or not text.strip():
+            raise ValidationError({"markdown": gettext("The file is empty.")})
+
+        if len(text) > MARKDOWN_MAX_LENGTH:
+            raise ValidationError(
+                {"markdown": gettext("The file is too large.")}
+            )
+
+        title, content = from_markdown(text)
+        name = PurePath(str(request.data.get("name") or "")).stem
+        title = (title or name.replace("-", " ").replace("_", " ")).strip()
+        serializer = WikiPageSerializer(
+            data={
+                "title": title[:TITLE_MAX_LENGTH] or gettext("Imported page"),
+                "content": content,
+                "wiki": request.data.get("wiki"),
+                "parent": request.data.get("parent") or None,
+            },
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get", "post"])
+    def comments(self, request: Any, pk: Any = None) -> Response:
+        """Its comments, oldest first; ``POST {"body"}`` writes one,
+        for anyone reading the page."""
+        page = self.get_object()
+
+        if request.method == "POST":
+            body = str(request.data.get("body") or "").strip()
+
+            if not body:
+                raise ValidationError(
+                    {"body": gettext("This field is required.")}
+                )
+
+            if len(body) > COMMENT_MAX_LENGTH:
+                raise ValidationError(
+                    {"body": gettext("This comment is too long.")}
+                )
+
+            comment = WikiComment.objects.create(
+                page=page, author=request.user, body=body
+            )
+            announce(page, "commented", request.user)
+            presence.tell(page, "wiki.comments", {})
+
+            return Response(
+                comment_json(comment, request.user, page.wiki),
+                status=status.HTTP_201_CREATED,
+            )
+
+        roles = roles_of(request.user)
+
+        return Response(
+            [
+                comment_json(comment, request.user, page.wiki, roles)
+                for comment in page.comments.select_related("author")
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def uncomment(self, request: Any, pk: Any = None) -> Response:
+        """A comment taken away, by its author or the wiki's manager."""
+        page = self.get_object()
+        comment = get_object_or_404(
+            page.comments, pk=as_id(request.data.get("comment"))
+        )
+
+        if not may_remove_comment(request.user, comment, page.wiki):
+            raise PermissionDenied(gettext("You may not delete this comment."))
+
+        comment.delete()
+        presence.tell(page, "wiki.comments", {})
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"])
+    def editing(self, request: Any, pk: Any = None) -> Response:
+        """The editor is open on the page - ``{"active": false}``: it
+        closed. Answers who else has it open (generic.wiki.presence)."""
+        page = self.get_object()
+        others = presence.beat(
+            page,
+            request.user,
+            active=as_bool(request.data.get("active", True)),
+        )
+
+        return Response({"editors": others})
+
+    @action(detail=True, methods=["post"])
+    def place(self, request: Any, pk: Any = None) -> Response:
+        """Elsewhere in its wiki's menu: under ``parent`` (none: the
+        top), before the sibling ``before`` (none: last). Answers the
+        new siblings, ``[{"id", "position"}]``."""
+        page = self.get_object()
+        pages = WikiPage.objects.filter(wiki_id=page.wiki_id)
+
+        def one(key: str) -> WikiPage | None:
+            value = request.data.get(key)
+
+            if value in (None, ""):
+                return None
+
+            return get_object_or_404(pages, pk=as_id(value))
+
+        try:
+            siblings = place(page, one("parent"), one("before"))
+        except MoveError as error:
+            return Response(
+                {"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            [
+                {"id": sibling.pk, "position": sibling.position}
+                for sibling in siblings
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def move(self, request: Any, pk: Any = None) -> Response:
+        """To another wiki, with its subpages: ``{"wiki"}``, one the
+        user adds pages in. Answers the page, at its new address."""
+        page = self.get_object()
+        wiki = get_object_or_404(
+            Wiki.objects.readable_by(request.user),
+            pk=as_id(request.data.get("wiki")),
+        )
+
+        if not page_rights(request.user, wiki)["add"]:
+            raise PermissionDenied(gettext("You may not write in this wiki."))
+
+        try:
+            move_to_wiki(page, wiki)
+        except MoveError as error:
+            return Response(
+                {"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        announce(page, "updated", request.user)
+
+        return Response(
+            WikiPageSerializer(page, context={"request": request}).data
         )
 
     @action(detail=True, methods=["get"])

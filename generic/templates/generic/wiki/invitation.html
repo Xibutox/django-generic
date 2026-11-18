@@ -1,0 +1,45 @@
+{% extends "generic/base.html" %}
+{% load i18n static generic_ui %}
+
+{# An invitation to join a wiki, from the link of its e-mail. Override #}
+{# per project with a template of the same name.                        #}
+
+{% block bodyclass %}page-wiki-invitation{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'generic/css/wiki.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="card wiki-invitation">
+    {% if problem %}
+      <div class="callout callout--warning" role="alert">
+        {% icon "error" "icon--sm" %}
+        <p>{{ problem }}</p>
+      </div>
+      <p><a href="{% url 'generic_wiki:index' %}">{% translate "Go to the wikis" %}</a></p>
+    {% else %}
+      <h2 class="wiki-invitation__title">
+        {% icon "group_add" %}
+        {% blocktranslate with wiki=invitation.wiki.name %}Join the wiki &ldquo;{{ wiki }}&rdquo;{% endblocktranslate %}
+      </h2>
+      <p>
+        {% if invited_by %}
+          {% blocktranslate with name=invited_by role=role|lower %}{{ name }} invites you to join it as {{ role }}.{% endblocktranslate %}
+        {% else %}
+          {% blocktranslate with role=role|lower %}You are invited to join it as {{ role }}.{% endblocktranslate %}
+        {% endif %}
+      </p>
+      {% if invitation.wiki.description %}
+        <p class="muted">{{ invitation.wiki.description }}</p>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="button button--primary">
+          {% icon "check" "icon--sm" %} {% translate "Accept the invitation" %}
+        </button>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

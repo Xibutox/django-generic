@@ -7,7 +7,11 @@ page, ``wiki/<wiki>/<page>/`` is a page,
 ``wiki/<wiki>/<page>/versions/<id>/`` one of its versions, read-only,
 ``wiki/<wiki>/export.pdf`` the whole wiki as a PDF and
 ``wiki/<wiki>/export.zip`` as an archive to import elsewhere
-(``api/wikis/import/``).
+(``api/wikis/import/``), ``wiki/<wiki>/<page>/export.pdf`` and
+``export.md`` one page as a PDF and as Markdown,
+``wiki/invitations/<secret>/`` an invitation to join a wiki, sent by
+e-mail, and ``wiki/shared/<secret>/`` a wiki's
+public link, read-only (``generic.wiki.sharing``).
 
 The editor uploads its images to ``api/generic/wiki/images/``, in
 ``generic.urls``; they are shown from ``images/<id>/`` here, so their
@@ -31,12 +35,47 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("images/<int:pk>/", views.WikiImageView.as_view(), name="image"),
     path("files/<int:pk>/", views.WikiFileView.as_view(), name="file"),
+    path(
+        "shared/<str:secret>/",
+        views.WikiSharedView.as_view(),
+        name="shared",
+    ),
+    path(
+        "shared/<str:secret>/images/<int:pk>/",
+        views.WikiSharedImageView.as_view(),
+        name="shared-image",
+    ),
+    path(
+        "shared/<str:secret>/files/<int:pk>/",
+        views.WikiSharedFileView.as_view(),
+        name="shared-file",
+    ),
+    path(
+        "shared/<str:secret>/<str:slug>/",
+        views.WikiSharedView.as_view(),
+        name="shared-page",
+    ),
+    path(
+        "invitations/<str:secret>/",
+        views.WikiInvitationView.as_view(),
+        name="invitation",
+    ),
     # A page's address never holds a dot: this is never a page.
     path("<str:wiki>/export.pdf", views.WikiPdfView.as_view(), name="pdf"),
     path(
         "<str:wiki>/export.zip",
         views.WikiArchiveView.as_view(),
         name="archive",
+    ),
+    path(
+        "<str:wiki>/<str:slug>/export.pdf",
+        views.WikiPdfView.as_view(),
+        name="page-pdf",
+    ),
+    path(
+        "<str:wiki>/<str:slug>/export.md",
+        views.WikiMarkdownView.as_view(),
+        name="page-markdown",
     ),
     path("<str:wiki>/", views.WikiIndexView.as_view(), name="wiki"),
     path("<str:wiki>/<str:slug>/", views.WikiPageView.as_view(), name="page"),

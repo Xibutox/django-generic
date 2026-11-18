@@ -559,4 +559,7 @@ GENERIC = {
     # apply_retention (docs/history.md#retention). The history is kept
     # whole: it is the desk's record of what was done.
     "ACCESS_LOG_RETENTION_DAYS": 365,
+    # A wiki's managers may give it a read-only link for anyone: a
+    # handbook shown to customers, say (docs/wiki.md#public-links).
+    "WIKI_PUBLIC_LINKS": True,
 }

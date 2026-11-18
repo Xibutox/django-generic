@@ -1,7 +1,9 @@
 {# One level of the wiki menu; subpages come from the same template. #}
+{# Whoever changes pages drags them: onto a page, between two.       #}
 {% for entry in entries %}
   <li class="wiki-tree__item{% if entry.is_current %} is-current{% endif %}"
       data-search="{{ entry.search }}"
+      data-page="{{ entry.id }}"{% if can.change %} draggable="true"{% endif %}
       x-show="matches($el.dataset.search)">
     <a class="wiki-tree__link"
        href="{{ entry.url }}"{% if entry.is_current %} aria-current="page"{% endif %}>{{ entry.title }}</a>

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlencode
 
 from django.db.models import Q
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from generic.conf import generic_settings
@@ -51,11 +53,12 @@ def search_pages(request: Any, term: str) -> list[dict[str, Any]]:
     if not getattr(request.user, "is_authenticated", False):
         return []
 
+    # Its words, not its HTML: "strong" does not find every bold page.
     pages = (
         readable(request.user)
         .filter(
             Q(**{text_lookup("title"): term})
-            | Q(**{text_lookup("content"): term})
+            | Q(**{text_lookup("text"): term})
         )
         .select_related("wiki")
         .order_by("wiki__position", "wiki__name", "position", "title")
@@ -74,6 +77,15 @@ def search_pages(request: Any, term: str) -> list[dict[str, Any]]:
 
     if not items:
         return []
+
+    # Every page holding it, with excerpts: the wiki's own search.
+    items.append(
+        {
+            "label": _("Search the wikis for: %(term)s") % {"term": term},
+            "url": f"{reverse('generic_wiki:index')}?{urlencode({'q': term})}",
+            "icon": "search",
+        }
+    )
 
     return [{"label": _("Wiki"), "icon": "auto_stories", "items": items}]
 

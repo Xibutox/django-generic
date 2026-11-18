@@ -4,6 +4,7 @@ through."""
 from __future__ import annotations
 
 import re
+from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
@@ -17,11 +18,30 @@ from django.utils.translation import gettext_lazy as _
 from generic.conf import generic_settings
 from generic.wiki.sanitize import clean_html
 
-#: Versions kept per page; older ones are dropped as new ones come.
+
+def plain_text(html: str | None) -> str:
+    """A page's words, a line per block: what a search matches."""
+    from generic.wiki.diff import lines_of
+
+    return "\n".join(lines_of(html))
+
+
+#: Versions kept per page, unless ``GENERIC["WIKI_MAX_REVISIONS"]``
+#: says otherwise; older ones are dropped as new ones come.
 MAX_REVISIONS = 50
 
+
+def max_revisions() -> int | None:
+    """Versions kept per page: the setting; None keeps every one."""
+    value = generic_settings.WIKI_MAX_REVISIONS
+
+    return None if value is None else max(int(value), 1)
+
+
 #: Addresses of the wiki's own routes: no wiki may take them.
-RESERVED_WIKI_SLUGS = frozenset({"api", "images", "files"})
+RESERVED_WIKI_SLUGS = frozenset(
+    {"api", "images", "files", "invitations", "shared"}
+)
 
 #: The wiki the pages written before there were several land in.
 DEFAULT_WIKI_SLUG = "main"
@@ -205,6 +225,16 @@ class Wiki(Trashed):
     access = models.CharField(
         _("access"), max_length=20, choices=ACCESS, default=ACCESS_OPEN
     )
+    #: The secret of its read-only link for anyone, signed in or not
+    #: (generic.wiki.sharing); none: not shared.
+    share_token = models.CharField(
+        _("public link"),
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
     #: Whoever made it: reads it, writes in it, manages its members and
     #: may delete it, whatever the groups say.
     owner = models.ForeignKey(
@@ -332,6 +362,15 @@ class WikiPage(Trashed):
     )
     #: Clean HTML: see sanitize.py.
     content = models.TextField(_("content"), blank=True, default="")
+    #: The content's words, without its HTML: what a search reads, and
+    #: where an excerpt is cut from. Written by ``save``.
+    text = models.TextField(_("text"), blank=True, default="", editable=False)
+    #: Offered as the start of a new page of its wiki.
+    is_template = models.BooleanField(
+        _("template"),
+        default=False,
+        help_text=_("Offered as the start of a new page of its wiki."),
+    )
     show_on_dashboard = models.BooleanField(
         _("show on the dashboard"),
         default=False,
@@ -389,6 +428,13 @@ class WikiPage(Trashed):
         # Whatever the way in - the API, the admin, a script - only
         # clean HTML is stored.
         self.content = clean_html(self.content)
+        self.text = plain_text(self.content)
+
+        update_fields = kwargs.get("update_fields")
+
+        if update_fields is not None and "content" in update_fields:
+            kwargs["update_fields"] = {*update_fields, "text"}
+
         super().save(*args, **kwargs)
 
     def get_ancestors(self) -> list["WikiPage"]:
@@ -414,12 +460,154 @@ class WikiPage(Trashed):
         """
         return attachments_in(self.content)
 
+    def backlinks(self) -> Any:
+        """The live pages of the wikis linking to this one - by its
+        address, with or without an anchor after it."""
+        address = self.get_absolute_url()
+
+        return (
+            WikiPage.objects.filter(content__contains=f'href="{address}')
+            .exclude(pk=self.pk)
+            .select_related("wiki")
+            .order_by("wiki__position", "wiki__name", "title")
+        )
+
     def current_revision(self) -> "WikiRevision | None":
         """The version in the history holding the page's text as it
         stands - the one a restore brought back - if any."""
         return self.revisions.filter(
             title=self.title, content=self.content
         ).first()
+
+
+class WikiInvitationQuerySet(models.QuerySet):
+    def pending(self) -> "WikiInvitationQuerySet":
+        """Neither accepted nor too old to be."""
+        days = generic_settings.WIKI_INVITATION_DAYS
+        since = timezone.now() - timedelta(days=days)
+
+        return self.filter(accepted_at__isnull=True, created_at__gte=since)
+
+
+class WikiInvitation(models.Model):
+    """Someone asked by e-mail to join a wiki, with a role.
+
+    The e-mail holds a link with a secret; only its digest is kept
+    (``token``). Whoever opens the link, signed in with that e-mail
+    address, becomes a member - once, and within
+    ``GENERIC["WIKI_INVITATION_DAYS"]``.
+    """
+
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="invitations",
+    )
+    email = models.EmailField(_("e-mail address"))
+    role = models.CharField(
+        _("role"),
+        max_length=20,
+        choices=WikiMember.ROLE_CHOICES,
+        default=ROLE_READER,
+    )
+    token = models.CharField(_("token"), max_length=64, unique=True)
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("invited by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+    accepted_at = models.DateTimeField(_("accepted at"), null=True, blank=True)
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("accepted by"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+
+    objects = WikiInvitationQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        verbose_name = _("wiki invitation")
+        verbose_name_plural = _("wiki invitations")
+
+    def __str__(self) -> str:
+        return f"{self.email} -> {self.wiki_id} ({self.role})"
+
+    @property
+    def expires_at(self) -> Any:
+        return self.created_at + timedelta(
+            days=generic_settings.WIKI_INVITATION_DAYS
+        )
+
+
+class WikiRedirect(models.Model):
+    """An address a page had: kept when the page takes another, so
+    that links, bookmarks and e-mails keep leading to it. A page at
+    that address again takes precedence."""
+
+    wiki = models.ForeignKey(
+        Wiki,
+        verbose_name=_("wiki"),
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    slug = models.SlugField(_("address"), max_length=120, allow_unicode=True)
+    page = models.ForeignKey(
+        "WikiPage",
+        verbose_name=_("page"),
+        on_delete=models.CASCADE,
+        related_name="redirects",
+    )
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+
+    class Meta:
+        verbose_name = _("wiki redirect")
+        verbose_name_plural = _("wiki redirects")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("wiki", "slug"), name="generic_wiki_redirect_slug"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.slug} -> {self.page_id}"
+
+
+class WikiComment(models.Model):
+    """A word on a page, below it: plain text, by whoever reads it."""
+
+    page = models.ForeignKey(
+        "WikiPage",
+        verbose_name=_("page"),
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("author"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    body = models.TextField(_("comment"))
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = _("wiki comment")
+        verbose_name_plural = _("wiki comments")
+
+    def __str__(self) -> str:
+        return self.body[:50]
 
 
 class WikiRevision(models.Model):
@@ -487,10 +675,15 @@ class WikiRevision(models.Model):
             created_at=page.updated_at or timezone.now(),
             author_id=page.updated_by_id,
         )
-        stale = list(
-            cls.objects.filter(page=page).values_list("pk", flat=True)[
-                MAX_REVISIONS:
-            ]
+        limit = max_revisions()
+        stale = (
+            list(
+                cls.objects.filter(page=page).values_list("pk", flat=True)[
+                    limit:
+                ]
+            )
+            if limit is not None
+            else []
         )
 
         if stale:

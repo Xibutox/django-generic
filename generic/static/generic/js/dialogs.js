@@ -221,8 +221,10 @@
 
   /**
    * A few values asked for at once - a transition's resolution note:
-   * `fields` = [{name, label, value, required, multiline, maxLength}]. Resolves
-   * to {name: value}, or null when cancelled.
+   * `fields` = [{name, label, value, required, multiline, maxLength}]; a
+   * field with `choices` ([{value, label}]) is a list to pick from, and one
+   * of `type: "checkbox"` a box to tick. Resolves to {name: value}, or null
+   * when cancelled.
    */
   function fields(options) {
     options = options || {};
@@ -257,15 +259,27 @@
 
       var field = el("div", "sf-field");
       var label = el("label", "sf-label", spec.label || spec.name);
-      var input = el(spec.multiline ? "textarea" : "input", "input");
+      var input = el(spec.choices ? "select" : spec.multiline ? "textarea" : "input", "input");
+
+      (spec.choices || []).forEach(function (choice) {
+        var option = document.createElement("option");
+
+        option.value = String(choice.value);
+        option.textContent = choice.label;
+        input.appendChild(option);
+      });
 
       label.htmlFor = id;
       input.id = id;
       input.name = spec.name;
       input.required = Boolean(spec.required);
-      input.value = spec.value || "";
+      input.value = spec.value === undefined || spec.value === null ? "" : String(spec.value);
 
-      if (spec.multiline) {
+      if (spec.choices) {
+        if (!input.value && spec.choices.length) {
+          input.value = String(spec.choices[0].value);
+        }
+      } else if (spec.multiline) {
         input.rows = 4;
       } else {
         input.type = "text";

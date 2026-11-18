@@ -1,0 +1,70 @@
+{% load i18n static generic_ui %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+{# A wiki from its public link: read-only, for anyone holding it. No  #}
+{# script, no site chrome - the menu, the page and its contents.      #}
+{# Override per project with a template of the same name.             #}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>{% if page %}{{ page.title }} &middot; {% endif %}{{ wiki.name }}</title>
+  {% include "generic/includes/favicon.html" %}
+  <link rel="stylesheet" href="{% static 'generic/vendor/material-symbols/material-symbols.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'generic/css/wiki.css' %}">
+</head>
+<body class="page-wiki-shared">
+  <main class="wiki-shared">
+    <div class="wiki">
+      <aside class="card wiki__menu" aria-label="{% translate 'Wiki pages' %}">
+        <div class="wiki__menu-wiki">
+          <a class="wiki__menu-name" href="{{ home }}">
+            {% icon "menu_book" "icon--sm" %} {{ wiki.name }}
+          </a>
+        </div>
+        {% if menu %}
+          <ul class="wiki-tree">
+            {% include "generic/wiki/includes/tree.html" with entries=menu %}
+          </ul>
+        {% else %}
+          <p class="wiki__menu-empty">{% translate "No page yet." %}</p>
+        {% endif %}
+      </aside>
+
+      <article class="card wiki__page">
+        {% if page %}
+          <header class="wiki__header">
+            <h1 class="wiki__title">{{ page.title }}</h1>
+            <p class="wiki__meta muted">
+              {% blocktranslate with date=page.updated_at|date:"DATE_FORMAT" %}Changed {{ date }}{% endblocktranslate %}
+            </p>
+          </header>
+
+          {% if contents %}
+            <nav class="wiki-toc" aria-labelledby="wiki-toc-title">
+              <details open>
+                <summary class="wiki-toc__title" id="wiki-toc-title">{% translate "Contents" %}</summary>
+                <ol class="wiki-toc__list">
+                  {% for entry in contents %}
+                    <li class="wiki-toc__item" style="--toc-depth: {{ entry.depth }}">
+                      <a href="#{{ entry.id }}">{{ entry.text }}</a>
+                    </li>
+                  {% endfor %}
+                </ol>
+              </details>
+            </nav>
+          {% endif %}
+
+          <div class="wiki-content">{{ content }}</div>
+        {% else %}
+          <p class="muted">{% translate "This wiki has no page yet." %}</p>
+        {% endif %}
+      </article>
+    </div>
+  </main>
+</body>
+</html>

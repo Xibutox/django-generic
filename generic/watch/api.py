@@ -75,7 +75,15 @@ class WatchSerializer(serializers.ModelSerializer):
         resource = site.get_resource(model) if model else None
 
         if resource is None:
-            return ""
+            # A record no resource shows - a wiki, a wiki page - that
+            # still says where it lives.
+            if model is None or watch.is_whole_model:
+                return ""
+
+            found = model._default_manager.filter(pk=watch.object_id).first()
+            address = getattr(found, "get_absolute_url", None)
+
+            return address() if callable(address) else ""
 
         if watch.is_whole_model:
             return resource.get_list_url()

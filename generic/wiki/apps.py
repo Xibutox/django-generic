@@ -12,6 +12,9 @@ class WikiConfig(AppConfig):
         # The sidebar link, the pinned pages on the dashboard and the
         # command palette results.
         from generic.sites import site
+        from generic.wiki import presence
         from generic.wiki.integration import connect
 
         connect(site)
+        # Who edits a page, and its comments, as they happen.
+        presence.register()

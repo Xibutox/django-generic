@@ -853,10 +853,15 @@ def write_beside(
 
 
 def render(
-    wiki: Any, *, base_url: str = "", orientation: str = "portrait"
+    wiki: Any,
+    *,
+    base_url: str = "",
+    orientation: str = "portrait",
+    page: WikiPage | None = None,
 ) -> bytes:
     """``wiki`` as a PDF: a cover, a table of contents, its pages, on
-    A4 paper in ``orientation``, ``"portrait"`` or ``"landscape"``."""
+    A4 paper in ``orientation``, ``"portrait"`` or ``"landscape"``. With
+    ``page``, that page alone: no cover, no contents."""
     if FPDF is None:  # pragma: no cover - the extra is installed in tests
         raise RuntimeError("fpdf2 is needed to write a wiki as a PDF.")
 
@@ -898,6 +903,14 @@ def render(
     pdf.set_title(wiki.name)
     pdf.set_creator("django-generic")
     text = pdf.say
+
+    if page is not None:
+        pdf.set_title(page.title)
+        pdf.add_page()
+        write_pages(pdf, [(page, 0)], base_url, family, mono)
+
+        return bytes(pdf.output())
+
     pages = ordered_pages(wiki)
 
     # The cover.
@@ -974,6 +987,21 @@ def render(
         draw_contents, pages=1 + len(pages) // 40, allow_extra_pages=True
     )
 
+    write_pages(pdf, pages, base_url, family, mono)
+
+    return bytes(pdf.output())
+
+
+def write_pages(
+    pdf: Any,
+    pages: list[tuple[WikiPage, int]],
+    base_url: str,
+    family: str,
+    mono: str,
+) -> None:
+    """The pages, each from a new sheet but the first, at their
+    depth's title size; the first starts where the document is."""
+    text = pdf.say
     tag_styles = {
         "a": FontFace(color="#1d4ed8", emphasis="UNDERLINE"),
         "code": FontFace(family=mono),
@@ -1100,5 +1128,3 @@ def render(
                     new_x="LMARGIN",
                     new_y="NEXT",
                 )
-
-    return bytes(pdf.output())

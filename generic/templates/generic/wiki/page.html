@@ -60,14 +60,18 @@
         </details>
       {% endif %}
       <div class="wiki__menu-head">
-        <label class="input-with-icon">
+        {# Typing filters the menu by title; Enter searches the pages' text. #}
+        <form class="input-with-icon" method="get" action="{% url 'generic_wiki:index' %}" role="search">
           {% icon "search" "icon--sm" %}
           <input type="search"
                  class="input input--sm"
+                 name="q"
                  x-model="filter"
-                 placeholder="{% translate 'Filter pages' %}"
-                 aria-label="{% translate 'Filter pages' %}">
-        </label>
+                 placeholder="{% translate 'Filter, or Enter to search' %}"
+                 title="{% translate 'Typing filters the menu; Enter searches the text of this wiki' %}"
+                 aria-label="{% translate 'Filter pages, or search this wiki' %}">
+          <input type="hidden" name="wiki" value="{{ wiki.slug }}">
+        </form>
         {% if can.add %}
           <button type="button"
                   class="icon-button"
@@ -76,6 +80,14 @@
             {% translate "New page" as new_label %}
             {% icon "add" "" new_label %}
           </button>
+          <button type="button"
+                  class="icon-button"
+                  title="{% translate 'A new page from a Markdown file' %}"
+                  @click="chooseMarkdown()">
+            {% translate "Import a Markdown file" as import_label %}
+            {% icon "upload_file" "" import_label %}
+          </button>
+          <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden x-ref="markdown" @change="importMarkdown($event)">
         {% endif %}
       </div>
 
@@ -87,9 +99,19 @@
         <p class="wiki__menu-empty">{% translate "No page yet." %}</p>
       {% endif %}
 
-      {# The wiki's people and its deleted pages, for who may see to them. #}
-      {% if can_wiki.members or can.delete %}
+      {# What changed lately, being told of it; the wiki's people and its #}
+      {# deleted pages, for who may see to them.                           #}
         <div class="wiki__menu-tools">
+          <button type="button" class="button button--ghost button--sm" @click="recent()">
+            {% icon "update" "icon--sm" %} {% translate "Recent changes" %}
+          </button>
+          <button type="button" class="button button--ghost button--sm"
+                  :aria-pressed="watching.wiki.toString()"
+                  @click="watch('wiki')"
+                  :title="watchTitle('wiki')">
+            <span class="icon icon--sm material-symbols-outlined" aria-hidden="true" x-text="watching.wiki ? 'notifications_active' : 'notifications'"></span>
+            <span x-text="watchLabel('wiki')">{% translate "Watch the wiki" %}</span>
+          </button>
           {% if can_wiki.members %}
             <button type="button" class="button button--ghost button--sm" @click="members()">
               {% icon "group" "icon--sm" %} {% translate "Members" %}
@@ -101,7 +123,6 @@
             </button>
           {% endif %}
         </div>
-      {% endif %}
     </aside>
 
     <article class="card wiki__page">
@@ -156,7 +177,43 @@
               <button type="button" class="button button--ghost button--sm" @click="history()">
                 {% icon "history" "icon--sm" %} {% translate "History" %}
               </button>
+              {% if not revision and page_markdown_url %}
+                {# The page alone: a PDF, in portrait or landscape; Markdown. #}
+                <div class="dropdown wiki-pdf"
+                     x-data="{ open: false }"
+                     @keydown.escape.window="open = false"
+                     @click.outside="open = false">
+                  <button type="button" class="button button--ghost button--sm"
+                          @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="menu">
+                    {% icon "download" "icon--sm" %} {% translate "Export" %}
+                  </button>
+                  <div class="dropdown__menu" role="menu" x-show="open" x-transition.origin.top.right x-cloak style="min-width: 13rem;">
+                    {% if page_pdf_url %}
+                      <a class="menu-item" role="menuitem" href="{{ page_pdf_url }}">
+                        {% icon "picture_as_pdf" %}
+                        <span class="menu-item__label">{% translate "PDF, portrait" %}</span>
+                      </a>
+                      <a class="menu-item" role="menuitem" href="{{ page_pdf_url }}?orientation=landscape">
+                        {% icon "crop_landscape" %}
+                        <span class="menu-item__label">{% translate "PDF, landscape" %}</span>
+                      </a>
+                    {% endif %}
+                    <a class="menu-item" role="menuitem" href="{{ page_markdown_url }}">
+                      {% icon "markdown" %}
+                      <span class="menu-item__label">{% translate "Markdown" %}</span>
+                    </a>
+                  </div>
+                </div>
+              {% endif %}
               {% if not revision %}
+              {# Told when it changes: a notification, an e-mail. #}
+              <button type="button" class="button button--ghost button--sm"
+                      :aria-pressed="watching.page.toString()"
+                      @click="watch('page')"
+                      :title="watchTitle('page')">
+                <span class="icon icon--sm material-symbols-outlined" aria-hidden="true" x-text="watching.page ? 'notifications_active' : 'notifications'"></span>
+                <span x-text="watchLabel('page')">{% translate "Watch" %}</span>
+              </button>
               {% if can.add %}
                 <button type="button" class="button button--sm" @click="create(page.id)">
                   {% icon "note_add" "icon--sm" %} {% translate "Subpage" %}
@@ -165,6 +222,11 @@
               {% if can.add %}
                 <button type="button" class="button button--ghost button--sm" @click="duplicate()">
                   {% icon "content_copy" "icon--sm" %} {% translate "Duplicate" %}
+                </button>
+              {% endif %}
+              {% if can.delete and move_targets %}
+                <button type="button" class="button button--ghost button--sm" @click="moveToWiki()">
+                  {% icon "drive_file_move" "icon--sm" %} {% translate "Move" %}
                 </button>
               {% endif %}
               {% if can.delete %}
@@ -181,6 +243,28 @@
             </div>
           </header>
 
+          {% if not revision %}
+            <p class="wiki__editing muted" x-show="editors.length" x-cloak>
+              {% icon "edit_note" "icon--sm" %} <span x-text="editorsText()"></span>
+            </p>
+          {% endif %}
+
+          {# The page's headings, for a page with a few: each an anchor. #}
+          {% if contents %}
+            <nav class="wiki-toc" aria-labelledby="wiki-toc-title">
+              <details open>
+                <summary class="wiki-toc__title" id="wiki-toc-title">{% translate "Contents" %}</summary>
+                <ol class="wiki-toc__list">
+                  {% for entry in contents %}
+                    <li class="wiki-toc__item" style="--toc-depth: {{ entry.depth }}">
+                      <a href="#{{ entry.id }}">{{ entry.text }}</a>
+                    </li>
+                  {% endfor %}
+                </ol>
+              </details>
+            </nav>
+          {% endif %}
+
           {# Cleaned by the server, and left alone by Alpine: whatever the #}
           {# page holds, it is never read as a directive.                  #}
           <div class="wiki-content" x-ignore>
@@ -190,6 +274,23 @@
               <p class="wiki__blank">{% translate "This page is still empty." %}</p>
             {% endif %}
           </div>
+
+          {# The pages linking to this one. #}
+          {% if backlinks %}
+            <section class="wiki-attachments" aria-labelledby="wiki-backlinks-title">
+              <h2 class="wiki-attachments__title" id="wiki-backlinks-title">
+                {% icon "link" "icon--sm" %} {% translate "Linked from" %}
+              </h2>
+              <ul class="wiki-attachments__list">
+                {% for linking in backlinks %}
+                  <li class="wiki-attachments__item">
+                    <a href="{{ linking.get_absolute_url }}">{{ linking.title }}</a>
+                    {% if linking.wiki_id != wiki.pk %}<span class="muted">{{ linking.wiki.name }}</span>{% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endif %}
 
           {# The images and files the page shows, in its order. #}
           {% if attachments %}
@@ -213,10 +314,53 @@
               </ul>
             </section>
           {% endif %}
+
+          {# What its readers say about it, below it. #}
+          {% if not revision %}
+            <section class="wiki-comments" aria-labelledby="wiki-comments-title">
+              <h2 class="wiki-attachments__title" id="wiki-comments-title">
+                {% icon "forum" "icon--sm" %} {% translate "Comments" %}
+                <span class="muted" x-show="comments.length" x-text="'(' + comments.length + ')'"></span>
+              </h2>
+              <ul class="wiki-comments__list">
+                <template x-for="comment in comments" :key="comment.id">
+                  <li class="wiki-comments__item">
+                    <div class="wiki-comments__meta">
+                      <strong x-text="comment.author_name"></strong>
+                      <span class="muted" x-text="commentDate(comment)"></span>
+                      <button type="button" class="icon-button icon-button--sm wiki-comments__delete"
+                              x-show="comment.can_delete"
+                              @click="uncomment(comment)"
+                              title="{% translate 'Delete the comment' %}" aria-label="{% translate 'Delete the comment' %}">
+                        {% icon "close" "icon--sm" %}
+                      </button>
+                    </div>
+                    <p class="wiki-comments__body" x-text="comment.body"></p>
+                  </li>
+                </template>
+              </ul>
+              <form class="wiki-comments__form" @submit.prevent="comment()">
+                <label class="sr-only" for="wiki-comment-body">{% translate "Your comment" %}</label>
+                <textarea id="wiki-comment-body" class="input" rows="2" maxlength="5000"
+                          placeholder="{% translate 'Add a comment' %}"
+                          x-model="commentBody"
+                          @keydown.ctrl.enter.prevent="comment()"
+                          @keydown.meta.enter.prevent="comment()"></textarea>
+                <button type="submit" class="button button--sm" :disabled="!commentBody.trim() || commenting">
+                  {% translate "Comment" %}
+                </button>
+              </form>
+            </section>
+          {% endif %}
         </div>
 
         {% if can.change and not revision %}
           <div class="wiki__editor" x-show="editing" x-cloak>
+            {# Someone else has this page open in the editor too. #}
+            <div class="callout callout--warning wiki__others" role="status" x-show="editors.length" x-cloak>
+              {% icon "edit_note" "icon--sm" %}
+              <p x-text="editorsText()"></p>
+            </div>
             <div class="wiki__editor-fields">
               <label class="field wiki__field-title">
                 <span class="field__label">{% translate "Title" %}</span>
@@ -242,6 +386,10 @@
               <label class="checkbox wiki__field-pin">
                 <input type="checkbox" x-model="form.show_on_dashboard">
                 <span>{% translate "Show on the dashboard" %}</span>
+              </label>
+              <label class="checkbox wiki__field-pin">
+                <input type="checkbox" x-model="form.is_template">
+                <span>{% translate "Offer as a template for new pages" %}</span>
               </label>
             </div>
 

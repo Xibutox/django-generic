@@ -13,6 +13,7 @@ import tempfile
 from pathlib import PurePath
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse
@@ -29,7 +30,7 @@ from generic.sites import site
 from generic.sites.files import is_stored, may_download, protect
 from generic.sites.views import SiteViewMixin
 from generic.views.toolbar import Breadcrumb
-from generic.wiki import archive, pdf
+from generic.wiki import archive, invitations, pdf, presence, sharing
 from generic.wiki.access import (
     may_open,
     page_rights,
@@ -37,16 +38,25 @@ from generic.wiki.access import (
     wiki_rights,
 )
 from generic.wiki.api import IMAGE_TYPES, can, readable_pages
+from generic.wiki.headings import table_of_contents, with_anchors
+from generic.wiki.markdown import to_markdown
 from generic.wiki.models import (
     Wiki,
     WikiFile,
     WikiImage,
     WikiPage,
+    WikiRedirect,
     WikiRevision,
     attachments_in,
 )
 from generic.wiki.sanitize import safe_html
-from generic.wiki.serializers import WikiPageSerializer, WikiSerializer
+from generic.wiki.search import search_pages_of
+from generic.wiki.serializers import (
+    WikiPageSerializer,
+    WikiSerializer,
+    display_name,
+)
+from generic.wiki.watching import is_watching
 
 
 def upload_url(name: str) -> str:
@@ -71,8 +81,13 @@ def page_url(page: WikiPage) -> str:
     )
 
 
-def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
-    """The page tree as nested dicts, the current branch open."""
+def build_menu(
+    pages: list[WikiPage],
+    current: WikiPage | None,
+    url: Any = page_url,
+) -> list:
+    """The page tree as nested dicts, the current branch open; ``url``
+    gives each page's address."""
     children: dict[Any, list[WikiPage]] = {}
 
     for page in pages:
@@ -101,7 +116,7 @@ def build_menu(pages: list[WikiPage], current: WikiPage | None) -> list:
                 {
                     "id": page.pk,
                     "title": page.title,
-                    "url": page_url(page),
+                    "url": url(page),
                     "depth": depth,
                     "is_current": current is not None
                     and page.pk == current.pk,
@@ -139,6 +154,20 @@ def descendants_of(pages: list[WikiPage], root: WikiPage) -> set[Any]:
     return found
 
 
+def move_targets_of(user: Any, wiki: Wiki) -> list[Wiki]:
+    """The other wikis ``user`` adds pages in: where a page of ``wiki``
+    may move to."""
+    roles = roles_of(user)
+
+    return [
+        other
+        for other in Wiki.objects.writable_by(user)
+        .exclude(pk=wiki.pk)
+        .order_by("position", "name")
+        if page_rights(user, other, roles, writable=True)["add"]
+    ]
+
+
 def list_rights(user: Any) -> dict[str, bool]:
     """What ``user`` may do on the list of wikis: make one, import one.
     What they may do to each wiki is the wiki's ``rights``."""
@@ -159,6 +188,9 @@ class WikiListView(SiteViewMixin, TemplateView):
     template_name = "generic/wiki/index.html"
 
     def get_page_title(self) -> str:
+        if getattr(self, "term", ""):
+            return gettext("Search the wikis")
+
         return gettext("Wikis")
 
     def get_breadcrumbs(self) -> list[Breadcrumb]:
@@ -166,8 +198,14 @@ class WikiListView(SiteViewMixin, TemplateView):
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         wikis = list(self.wikis())
+        #: ``?q=``: the pages holding these words, in ``?wiki=`` or all.
+        self.term = (request.GET.get("q") or "").strip()[:200]
 
-        if len(wikis) == 1 and not can(request.user, "add", "wiki"):
+        if (
+            not self.term
+            and len(wikis) == 1
+            and not can(request.user, "add", "wiki")
+        ):
             return redirect(wikis[0].get_absolute_url())
 
         self.wiki_list = wikis
@@ -201,7 +239,22 @@ class WikiListView(SiteViewMixin, TemplateView):
             if wiki_rights(user, wiki, roles)["delete"]
         ]
 
+        scope = None
+
+        if self.term and request.GET.get("wiki"):
+            scope = next(
+                (w for w in self.wiki_list if w.slug == request.GET["wiki"]),
+                None,
+            )
+
         context.update(
+            term=self.term,
+            scope=scope,
+            results=(
+                search_pages_of(request.user, self.term, wiki=scope)
+                if self.term
+                else None
+            ),
             wikis=self.wiki_list,
             can=rights,
             trash_count=len(trashed),
@@ -277,7 +330,19 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
         excluded = descendants_of(pages, page) if page is not None else set()
         others = Wiki.objects.readable_by(request.user).exclude(pk=wiki.pk)
 
+        move_targets = (
+            move_targets_of(request.user, wiki)
+            if page is not None and rights["delete"]
+            else []
+        )
+
+        content, headings = with_anchors(
+            safe_html(page.content) if page else ""
+        )
+
         context.update(
+            content=content,
+            contents=table_of_contents(headings),
             wiki=wiki,
             other_wikis=list(others.order_by("position", "name")),
             pdf_url=wiki.get_pdf_url() if pdf.available() else "",
@@ -286,16 +351,60 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
             ),
             page=page,
             menu=build_menu(pages, page),
-            content=safe_html(page.content) if page else "",
             attachments=page.attachments() if page else [],
             can=rights,
             can_wiki=manages,
+            move_targets=move_targets,
+            page_pdf_url=(
+                reverse(
+                    "generic_wiki:page-pdf",
+                    kwargs={"wiki": wiki.slug, "slug": page.slug},
+                )
+                if page is not None and pdf.available()
+                else ""
+            ),
+            page_markdown_url=(
+                reverse(
+                    "generic_wiki:page-markdown",
+                    kwargs={"wiki": wiki.slug, "slug": page.slug},
+                )
+                if page is not None
+                else ""
+            ),
             wiki_config={
                 "wiki": wiki.pk,
                 "wikiApi": reverse("generic_wiki:wiki-list"),
                 "wikiName": wiki.name,
                 "trashDays": generic_settings.TRASH_DAYS,
                 "canWiki": manages,
+                # Whether the reader is told when this page, or any page
+                # of the wiki, changes.
+                "watching": {
+                    "page": page is not None
+                    and is_watching(request.user, page),
+                    "wiki": is_watching(request.user, wiki),
+                },
+                # Who reads it hears who edits it, and its comments.
+                "me": request.user.pk,
+                "topic": (
+                    presence.TOPIC.format(page_id=page.pk)
+                    if page is not None
+                    else ""
+                ),
+                "editors": (
+                    presence.editors(page, exclude=request.user.pk)
+                    if page is not None
+                    else []
+                ),
+                "editingBeat": presence.BEAT,
+                # What a new page may start from.
+                "templates": [
+                    {"id": entry.pk, "title": entry.title}
+                    for entry in WikiPage.objects.filter(
+                        wiki=wiki, is_template=True
+                    ).order_by("title")
+                ],
+                "importUrl": reverse("generic_wiki:page-import"),
                 "page": (
                     WikiPageSerializer(page, context={"request": request}).data
                     if page is not None
@@ -320,6 +429,11 @@ class WikiViewMixin(SiteViewMixin, TemplateView):
                 ],
                 # What a copy of the page may take along.
                 "subpages": len(excluded) - 1 if page is not None else 0,
+                # The wikis the page may move to.
+                "moveTargets": [
+                    {"id": other.pk, "name": other.name}
+                    for other in move_targets
+                ],
                 # A new page opens straight in the editor.
                 "edit": request.GET.get("edit") == "1" and rights["change"],
             },
@@ -372,13 +486,42 @@ class WikiIndexView(WikiViewMixin):
 class WikiPageView(WikiViewMixin):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         self.wiki = self.get_wiki(kwargs["wiki"])
-        self.page = get_object_or_404(
-            WikiPage.objects.select_related("wiki", "parent", "updated_by"),
-            wiki=self.wiki,
-            slug=kwargs["slug"],
+        self.page = (
+            WikiPage.objects.select_related("wiki", "parent", "updated_by")
+            .filter(wiki=self.wiki, slug=kwargs["slug"])
+            .first()
         )
 
+        if self.page is None:
+            # An address the page had before it was renamed.
+            moved = (
+                WikiRedirect.objects.filter(
+                    wiki=self.wiki,
+                    slug=kwargs["slug"],
+                    page__deleted_at__isnull=True,
+                )
+                .select_related("page__wiki")
+                .first()
+            )
+
+            if moved is None:
+                raise Http404
+
+            return redirect(moved.page.get_absolute_url(), permanent=True)
+
         return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        readable = Wiki.objects.readable_by(self.request.user)
+        # The pages linking here, of the wikis the reader reads.
+        context["backlinks"] = (
+            list(self.page.backlinks().filter(wiki__in=readable)[:50])
+            if self.page is not None
+            else []
+        )
+
+        return context
 
 
 class WikiRevisionView(WikiPageView):
@@ -421,6 +564,7 @@ class WikiRevisionView(WikiPageView):
         current = self.page.current_revision()
         author = revision.author
 
+        content, headings = with_anchors(safe_html(revision.content))
         context.update(
             revision=revision,
             revision_author=(
@@ -430,24 +574,29 @@ class WikiRevisionView(WikiPageView):
             ),
             revision_is_current=current is not None
             and current.pk == revision.pk,
-            content=safe_html(revision.content),
+            content=content,
+            # This version's headings, not the page's.
+            contents=table_of_contents(headings),
             attachments=attachments_in(revision.content),
         )
         # A version is read, not edited.
         context["wiki_config"]["edit"] = False
+        # A version is not commented, nor edited.
+        context["wiki_config"]["topic"] = ""
 
         return context
 
 
 class WikiPdfView(View):
-    """A whole wiki as one PDF, for whoever may read it.
+    """A whole wiki as one PDF, for whoever may read it - or one of its
+    pages, under the page's address.
 
     Downloaded, never cached by a shared cache, and written each time:
     it is the wiki as it stands. ``?orientation=landscape`` turns the
     paper; anything else is portrait.
     """
 
-    def get(self, request: Any, wiki: str) -> Any:
+    def get(self, request: Any, wiki: str, slug: str = "") -> Any:
         if not request.user.is_authenticated:
             return redirect_to_login(
                 request.get_full_path(), site.get_login_url()
@@ -459,6 +608,12 @@ class WikiPdfView(View):
         found = get_object_or_404(
             Wiki.objects.readable_by(request.user), slug=wiki
         )
+        # ``wiki/<wiki>/<page>/export.pdf``: that page alone.
+        page = (
+            get_object_or_404(WikiPage, wiki=found, slug=slug)
+            if slug
+            else None
+        )
         orientation = request.GET.get("orientation", "")
 
         if orientation not in pdf.ORIENTATIONS:
@@ -468,10 +623,37 @@ class WikiPdfView(View):
             found,
             base_url=request.build_absolute_uri("/"),
             orientation=orientation,
+            page=page,
         )
         response = HttpResponse(content, content_type="application/pdf")
         response["Content-Disposition"] = content_disposition_header(
-            True, f"{found.slug}.pdf"
+            True, f"{page.slug if page else found.slug}.pdf"
+        )
+        protect(response)
+        response["Cache-Control"] = "private, no-cache"
+
+        return response
+
+
+class WikiMarkdownView(View):
+    """A page as Markdown (``generic.wiki.markdown``), downloaded, for
+    whoever may read it."""
+
+    def get(self, request: Any, wiki: str, slug: str) -> Any:
+        if not request.user.is_authenticated:
+            return redirect_to_login(
+                request.get_full_path(), site.get_login_url()
+            )
+
+        page = get_object_or_404(
+            readable_pages(request.user), wiki__slug=wiki, slug=slug
+        )
+        response = HttpResponse(
+            to_markdown(page.content, page.title),
+            content_type="text/markdown; charset=utf-8",
+        )
+        response["Content-Disposition"] = content_disposition_header(
+            True, f"{page.slug}.md"
         )
         protect(response)
         response["Cache-Control"] = "private, no-cache"
@@ -516,6 +698,45 @@ class WikiArchiveView(View):
         return response
 
 
+def serve_image(image: WikiImage) -> FileResponse:
+    """An image, shown in the page (``inline``) as the type its bytes
+    were found to be when uploaded, never sniffed as anything else."""
+    name = file_name(image.file)
+    content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
+
+    if content_type is None or not is_stored(image.file):
+        raise Http404
+
+    response = FileResponse(
+        image.file.open("rb"),
+        filename=name,
+        content_type=content_type,
+    )
+    protect(response)
+    response["Cache-Control"] = "private, max-age=86400"
+
+    return response
+
+
+def serve_file(attachment: WikiFile) -> FileResponse:
+    """A file, always downloaded, under the name it was uploaded with."""
+    if not is_stored(attachment.file):
+        raise Http404
+
+    name = attachment.original_name or file_name(attachment.file)
+    response = FileResponse(
+        attachment.file.open("rb"),
+        as_attachment=True,
+        filename=name,
+        content_type=mimetypes.guess_type(name)[0]
+        or "application/octet-stream",
+    )
+    protect(response)
+    response["Cache-Control"] = "private, max-age=86400"
+
+    return response
+
+
 class WikiImageView(View):
     """An image of a wiki, for whoever may read that wiki - or a page
     showing it (``generic.wiki.access.may_open``).
@@ -538,21 +759,7 @@ class WikiImageView(View):
         if not may_open(request.user, image):
             raise Http404
 
-        name = file_name(image.file)
-        content_type = IMAGE_TYPES.get(PurePath(name).suffix.lstrip("."))
-
-        if content_type is None or not is_stored(image.file):
-            raise Http404
-
-        response = FileResponse(
-            image.file.open("rb"),
-            filename=name,
-            content_type=content_type,
-        )
-        protect(response)
-        response["Cache-Control"] = "private, max-age=86400"
-
-        return response
+        return serve_image(image)
 
 
 class WikiFileView(View):
@@ -577,20 +784,174 @@ class WikiFileView(View):
 
         attachment = get_object_or_404(WikiFile, pk=pk)
 
-        if not may_open(request.user, attachment) or not is_stored(
-            attachment.file
-        ):
+        if not may_open(request.user, attachment):
             raise Http404
 
-        name = attachment.original_name or file_name(attachment.file)
-        response = FileResponse(
-            attachment.file.open("rb"),
-            as_attachment=True,
-            filename=name,
-            content_type=mimetypes.guess_type(name)[0]
-            or "application/octet-stream",
+        return serve_file(attachment)
+
+
+class WikiInvitationView(SiteViewMixin, TemplateView):
+    """An invitation to join a wiki, from the link of its e-mail: who
+    sent it, for which role, and the button to accept it."""
+
+    site = site
+    template_name = "generic/wiki/invitation.html"
+
+    def get_page_title(self) -> str:
+        return gettext("Invitation")
+
+    def get_breadcrumbs(self) -> list[Breadcrumb]:
+        return [
+            Breadcrumb(
+                label=gettext("Wiki"), url=reverse("generic_wiki:index")
+            ),
+            Breadcrumb(label=gettext("Invitation")),
+        ]
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        invitation = invitations.find(kwargs["secret"])
+        context.update(
+            invitation=invitation,
+            problem=invitations.problem(invitation, self.request.user),
+            role=(
+                invitations.role_label(invitation.role) if invitation else ""
+            ),
+            invited_by=(
+                display_name(invitation.invited_by)
+                if invitation and invitation.invited_by_id
+                else ""
+            ),
         )
-        protect(response)
-        response["Cache-Control"] = "private, max-age=86400"
+
+        return context
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        invitation = invitations.find(kwargs["secret"])
+
+        try:
+            wiki = invitations.accept(invitation, request.user)
+        except invitations.InvitationError:
+            return self.get(request, *args, **kwargs)
+
+        messages.success(
+            request,
+            gettext("Welcome to the wiki \u201c%(name)s\u201d.")
+            % {"name": wiki.name},
+        )
+
+        return redirect(wiki.get_absolute_url())
+
+
+#: A shared page tells no other site its address, and is never indexed.
+SHARED_HEADERS = {
+    "Referrer-Policy": "no-referrer",
+    "X-Robots-Tag": "noindex, nofollow",
+    "Cache-Control": "private, no-store",
+}
+
+
+def shared_or_404(secret: str) -> Wiki:
+    wiki = sharing.shared_wiki(secret)
+
+    if wiki is None:
+        raise Http404
+
+    return wiki
+
+
+class WikiSharedView(TemplateView):
+    """A wiki's page from its public link (generic.wiki.sharing), for
+    anyone: read-only, its menu and its text, nothing else."""
+
+    template_name = "generic/wiki/shared.html"
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        self.wiki = wiki = shared_or_404(kwargs["secret"])
+        slug = kwargs.get("slug")
+        pages = WikiPage.objects.filter(wiki=wiki)
+
+        if slug is None:
+            self.page = (
+                pages.filter(parent__isnull=True)
+                .order_by("position", "title")
+                .first()
+            )
+        else:
+            self.page = pages.filter(slug=slug).first()
+
+            if self.page is None:
+                moved = WikiRedirect.objects.filter(
+                    wiki=wiki, slug=slug, page__deleted_at__isnull=True
+                ).first()
+
+                # A page moved to another wiki is not shared with it.
+                if moved is None or moved.page.wiki_id != wiki.pk:
+                    raise Http404
+
+                return redirect(sharing.link_of(wiki, moved.page.slug))
+
+        response = super().get(request, *args, **kwargs)
+
+        for header, value in SHARED_HEADERS.items():
+            response[header] = value
+
+        return response
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        wiki, page = self.wiki, self.page
+        pages = list(
+            WikiPage.objects.filter(wiki=wiki)
+            .only("id", "title", "slug", "parent_id", "position")
+            .order_by("position", "title")
+        )
+        content, headings = with_anchors(
+            sharing.rewrite(safe_html(page.content), wiki) if page else ""
+        )
+        context.update(
+            wiki=wiki,
+            page=page,
+            content=content,
+            contents=table_of_contents(headings),
+            menu=build_menu(
+                pages,
+                page,
+                url=lambda entry: sharing.link_of(wiki, entry.slug),
+            ),
+            home=sharing.link_of(wiki),
+        )
+
+        return context
+
+
+class WikiSharedImageView(View):
+    """An image a page of a shared wiki shows, from under its link."""
+
+    def get(self, request: Any, secret: str, pk: int) -> Any:
+        wiki = shared_or_404(secret)
+        image = get_object_or_404(WikiImage, pk=pk)
+
+        if not sharing.shows(wiki, image):
+            raise Http404
+
+        response = serve_image(image)
+        response["Referrer-Policy"] = "no-referrer"
+
+        return response
+
+
+class WikiSharedFileView(View):
+    """A file a page of a shared wiki links to, from under its link."""
+
+    def get(self, request: Any, secret: str, pk: int) -> Any:
+        wiki = shared_or_404(secret)
+        attachment = get_object_or_404(WikiFile, pk=pk)
+
+        if not sharing.shows(wiki, attachment):
+            raise Http404
+
+        response = serve_file(attachment)
+        response["Referrer-Policy"] = "no-referrer"
 
         return response

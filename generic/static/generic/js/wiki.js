@@ -86,7 +86,7 @@
     ["bold", "italic", "underline", "strike", "code"],
     [{ color: [false].concat(TEXT_COLORS) }],
     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-    ["blockquote", "code-block", "link", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
+    ["blockquote", "code-block", "link", "pageLink", "image", { imageFloat: [false].concat(IMAGE_FLOATS) }, "attach"],
     ["table", { tableEdit: TABLE_ACTIONS }],
     [{ align: [] }],
     ["moveUp", "moveDown"],
@@ -96,6 +96,7 @@
   //: The toolbar's own buttons, named, with the icon Quill has none for.
   var BUTTONS = {
     attach: { icon: "attach_file", label: "Attach a file" },
+    pageLink: { icon: "article_shortcut", label: "Link to a page of the wiki" },
     table: { label: "Insert a table (Ctrl+Alt+T)" },
     moveUp: { icon: "arrow_upward", label: "Move up (Alt+Up)" },
     moveDown: { icon: "arrow_downward", label: "Move down (Alt+Down)" }
@@ -671,7 +672,8 @@
     }
   }
 
-  function icon(name) {
+  /** A small icon: in the dialogs' rows. */
+  function smallIcon(name) {
     var node = el("span", "icon icon--sm material-symbols-outlined", name);
 
     node.setAttribute("aria-hidden", "true");
@@ -809,6 +811,213 @@
    * it: its access, and its members - people and groups, each with a
    * role - found by name and saved together. Resolves true once saved.
    */
+  /**
+   * The wiki's public link, in the members dialog: read-only, for anyone
+   * holding it. Made, replaced or taken away at once. Hidden where the
+   * site does not allow public links.
+   */
+  function sharePart(base) {
+    var part = el("div", "stack wiki-share");
+
+    part.hidden = true;
+
+    function draw(data) {
+      part.textContent = "";
+      part.hidden = !data.enabled;
+
+      if (!data.enabled) {
+        return;
+      }
+
+      part.appendChild(el("h3", "wiki-members__title", t("Public link")));
+
+      if (!data.url) {
+        var make = el("button", "button button--sm", t("Make a public link"));
+
+        make.type = "button";
+        make.addEventListener("click", function () {
+          change("post");
+        });
+        part.append(
+          el("p", "sf-help", t("Anyone holding a public link reads the wiki's pages, without signing in. Nothing else: no history, no editing.")),
+          make
+        );
+        return;
+      }
+
+      var row = el("div", "wiki-invitations__new");
+      var link = el("input", "input input--sm");
+      var copy = el("button", "button button--sm", t("Copy"));
+      var renew = el("button", "button button--ghost button--sm", t("New link"));
+      var remove = el("button", "button button--danger-ghost button--sm", t("Remove"));
+
+      link.type = "text";
+      link.readOnly = true;
+      link.value = data.url;
+      link.setAttribute("aria-label", t("Public link"));
+      link.addEventListener("focus", function () {
+        link.select();
+      });
+      [copy, renew, remove].forEach(function (button) {
+        button.type = "button";
+      });
+      copy.addEventListener("click", function () {
+        link.select();
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(data.url).then(function () {
+            Generic.toast(t("The link was copied."), "success");
+          });
+        }
+      });
+      renew.addEventListener("click", function () {
+        change("post");
+      });
+      remove.addEventListener("click", function () {
+        change("delete");
+      });
+      row.append(link, copy);
+      part.append(
+        row,
+        el("p", "sf-help", t("Anyone holding this link reads the wiki's pages, without signing in. A new link ends this one.")),
+        el("div", "wiki-share__actions")
+      );
+      part.lastChild.append(renew, remove);
+    }
+
+    function change(method) {
+      Generic.api[method](base + "share/", method === "post" ? {} : undefined)
+        .then(draw)
+        .catch(function (error) {
+          Generic.toast(errorText(error) || t("The public link could not be changed."), "error");
+        });
+    }
+
+    Generic.api
+      .get(base + "share/")
+      .then(draw)
+      .catch(function () {
+        part.hidden = true;
+      });
+
+    return part;
+  }
+
+  /**
+   * Inviting by e-mail, in the members dialog: an address and a role, sent
+   * at once, and the invitations not yet accepted, each to withdraw.
+   */
+  function invitationsPart(base) {
+    var part = el("div", "stack wiki-invitations");
+    var list = el("ul", "wiki-members__list");
+    var row = el("div", "wiki-invitations__new");
+    var email = el("input", "input input--sm");
+    var role = select(ROLES, "reader");
+    var send = el("button", "button button--sm", t("Invite"));
+    var label = el("label", "sf-label", t("Invite by e-mail"));
+
+    function draw(rows) {
+      list.textContent = "";
+
+      (rows || []).forEach(function (invitation) {
+        var item = el("li", "wiki-members__item");
+        var name = el("span", "wiki-members__name");
+        var withdraw = el("button", "icon-button icon-button--sm");
+        var roleName = (ROLES.find(function (option) {
+          return option[0] === invitation.role;
+        }) || [invitation.role, invitation.role])[1];
+
+        name.appendChild(smallIcon("mail"));
+        name.appendChild(el("span", "", invitation.email));
+        name.appendChild(
+          el(
+            "span",
+            "muted",
+            Generic.format(t("%(role)s, until %(date)s"), { role: t(roleName), date: when(invitation.expires_at) })
+          )
+        );
+        withdraw.type = "button";
+        withdraw.title = t("Withdraw the invitation");
+        withdraw.setAttribute("aria-label", t("Withdraw the invitation"));
+        withdraw.appendChild(smallIcon("close"));
+        withdraw.addEventListener("click", function () {
+          Generic.api
+            .post(base + "uninvite/", { invitation: invitation.id })
+            .then(load)
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The invitation could not be withdrawn."), "error");
+            });
+        });
+        item.append(name, withdraw);
+        list.appendChild(item);
+      });
+    }
+
+    function load() {
+      return Generic.api
+        .get(base + "invitations/")
+        .then(draw)
+        .catch(function () {
+          draw([]);
+        });
+    }
+
+    function invite() {
+      var address = email.value.trim();
+
+      if (!address) {
+        email.focus();
+        return;
+      }
+
+      send.disabled = true;
+      Generic.api
+        .post(base + "invitations/", { email: address, role: role.value })
+        .then(function (data) {
+          email.value = "";
+
+          if (data.sent) {
+            Generic.toast(Generic.format(t("An invitation was sent to %(email)s."), { email: data.email }), "success");
+          } else {
+            Generic.toast(t("The invitation is saved, but its e-mail could not be sent."), "warning");
+          }
+
+          return load();
+        })
+        .catch(function (error) {
+          Generic.toast(errorText(error) || t("The invitation could not be sent."), "error");
+        })
+        .then(function () {
+          send.disabled = false;
+        });
+    }
+
+    email.type = "email";
+    email.id = "wiki-invitations-email";
+    email.placeholder = t("name@example.com");
+    email.autocomplete = "off";
+    label.htmlFor = email.id;
+    role.setAttribute("aria-label", t("Role"));
+    send.type = "button";
+    send.addEventListener("click", invite);
+    email.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        invite();
+      }
+    });
+    row.append(email, role, send);
+    part.append(
+      label,
+      row,
+      el("p", "sf-help", t("Whoever accepts the link signed in with this address becomes a member. Sent at once, whatever Save does.")),
+      list
+    );
+    load();
+
+    return part;
+  }
+
   function membersDialog(api, wiki) {
     var base = api + wiki.id + "/";
 
@@ -848,7 +1057,7 @@
             var role = select(ROLES, member.role);
             var remove = el("button", "icon-button icon-button--sm");
 
-            name.appendChild(icon(member.kind === "group" ? "group" : "person"));
+            name.appendChild(smallIcon(member.kind === "group" ? "group" : "person"));
             name.appendChild(el("span", "", member.name));
             name.appendChild(el("span", "muted", member.detail || ""));
             role.setAttribute("aria-label", t("Role"));
@@ -858,7 +1067,7 @@
             remove.type = "button";
             remove.title = t("Remove");
             remove.setAttribute("aria-label", t("Remove"));
-            remove.appendChild(icon("close"));
+            remove.appendChild(smallIcon("close"));
             remove.addEventListener("click", function () {
               members.splice(index, 1);
               draw();
@@ -890,7 +1099,7 @@
                   var add = el("button", "wiki-members__candidate");
 
                   add.type = "button";
-                  add.appendChild(icon(candidate.kind === "group" ? "group" : "person"));
+                  add.appendChild(smallIcon(candidate.kind === "group" ? "group" : "person"));
                   add.appendChild(el("span", "", candidate.name));
                   add.appendChild(el("span", "muted", candidate.detail || ""));
                   add.addEventListener("click", function () {
@@ -950,6 +1159,8 @@
         form.appendChild(el("h3", "wiki-members__title", t("Members")));
         form.appendChild(list);
         form.appendChild(addField);
+        form.appendChild(invitationsPart(base));
+        form.appendChild(sharePart(base));
         dialog.body.appendChild(form);
         draw();
 
@@ -1086,6 +1297,129 @@
   }
 
   document.addEventListener("alpine:init", function () {
+  /**
+   * The menu's pages dragged and dropped: onto the top or the bottom edge
+   * of a page, beside it; onto its middle, under it. `drop(id, target)`
+   * is told where, `{parent, before}` - page ids, or null for the top of
+   * the menu and for last.
+   */
+  function sortableMenu(menu, drop) {
+    var dragged = null;
+    var marked = null;
+
+    function itemOf(node) {
+      var item = node && node.closest ? node.closest("li[data-page]") : null;
+
+      return item && menu.contains(item) ? item : null;
+    }
+
+    function idOf(item) {
+      return item ? Number(item.dataset.page) : null;
+    }
+
+    function parentOf(item) {
+      return itemOf(item.parentElement);
+    }
+
+    function nextOf(item) {
+      var next = item.nextElementSibling;
+
+      while (next && !next.matches("li[data-page]")) {
+        next = next.nextElementSibling;
+      }
+
+      return next;
+    }
+
+    function where(item, event) {
+      var box = item.querySelector(".wiki-tree__link").getBoundingClientRect();
+      var offset = (event.clientY - box.top) / (box.height || 1);
+
+      return offset < 0.25 ? "before" : offset > 0.75 ? "after" : "inside";
+    }
+
+    function unmark() {
+      if (marked) {
+        marked.classList.remove("is-drop-before", "is-drop-after", "is-drop-inside");
+        marked = null;
+      }
+    }
+
+    menu.addEventListener("dragstart", function (event) {
+      var item = itemOf(event.target);
+
+      if (!item || item.getAttribute("draggable") !== "true") {
+        return;
+      }
+
+      dragged = item;
+      item.classList.add("is-dragged");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.dataset.page);
+    });
+
+    menu.addEventListener("dragover", function (event) {
+      var item = itemOf(event.target);
+
+      // Never into itself or one of its subpages.
+      if (!dragged || !item || dragged.contains(item)) {
+        unmark();
+        return;
+      }
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      unmark();
+      marked = item;
+      item.classList.add("is-drop-" + where(item, event));
+    });
+
+    menu.addEventListener("dragleave", function (event) {
+      if (!menu.contains(event.relatedTarget)) {
+        unmark();
+      }
+    });
+
+    menu.addEventListener("dragend", function () {
+      unmark();
+
+      if (dragged) {
+        dragged.classList.remove("is-dragged");
+      }
+
+      dragged = null;
+    });
+
+    menu.addEventListener("drop", function (event) {
+      var item = itemOf(event.target);
+
+      if (!dragged || !item || dragged.contains(item)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      var spot = where(item, event);
+      var target;
+
+      if (spot === "inside") {
+        target = { parent: idOf(item), before: null };
+      } else {
+        var next = spot === "before" ? item : nextOf(item);
+
+        // Dropped just after itself, or just before: it stays put.
+        if (next === dragged) {
+          next = nextOf(dragged);
+        }
+
+        target = { parent: idOf(parentOf(item)), before: idOf(next) };
+      }
+
+      unmark();
+      drop(idOf(dragged), target);
+    });
+  }
+
     window.Alpine.data("wikiPage", function (configId) {
       var config = readJson(configId) || {};
       var quill = null;
@@ -1102,6 +1436,12 @@
         filter: "",
         form: {},
         original: "",
+        watching: config.watching || { page: false, wiki: false },
+        //: Who else has the page open in the editor.
+        editors: config.editors || [],
+        comments: [],
+        commentBody: "",
+        commenting: false,
         //: The version the text being written started from: what a
         //: save is checked against.
         base: "",
@@ -1113,6 +1453,54 @@
           this.$watch("form.title", function () {
             self.draftSoon();
           });
+
+          var menu = this.$root.querySelector(".wiki__menu");
+          var beating = null;
+
+          if (this.page && config.topic) {
+            this.loadComments();
+
+            // Who edits the page, and its comments, as they happen.
+            if (Generic.events) {
+              Generic.events.subscribe(config.topic);
+              Generic.events.on("wiki.editing", function (payload) {
+                if (payload.page === self.page.id) {
+                  self.editors = (payload.editors || []).filter(function (editor) {
+                    return editor.id !== config.me;
+                  });
+                }
+              });
+              Generic.events.on("wiki.comments", function (payload) {
+                if (payload.page === self.page.id) {
+                  self.loadComments();
+                }
+              });
+            }
+
+            // An open editor says so, now and then, and when it closes.
+            this.$watch("editing", function (open) {
+              window.clearInterval(beating);
+              beating = null;
+
+              if (!self.config.can.change) {
+                return;
+              }
+
+              self.beat(open);
+
+              if (open) {
+                beating = window.setInterval(function () {
+                  self.beat(true);
+                }, (config.editingBeat || 20) * 1000);
+              }
+            });
+          }
+
+          if (menu && config.can && config.can.change) {
+            sortableMenu(menu, function (id, target) {
+              self.place(id, target);
+            });
+          }
 
           // A page just created opens straight in the editor.
           if (this.page && config.edit) {
@@ -1127,6 +1515,125 @@
               event.returnValue = "";
             }
           });
+        },
+
+        /** Who else edits the page, in a sentence. */
+        editorsText: function () {
+          var names = this.editors.map(function (editor) {
+            return editor.name;
+          });
+
+          if (!names.length) {
+            return "";
+          }
+
+          return Generic.format(
+            names.length === 1
+              ? t("%(names)s is editing this page.")
+              : t("%(names)s are editing this page."),
+            { names: names.join(", ") }
+          );
+        },
+
+        beat: function (active) {
+          var self = this;
+
+          Generic.api
+            .post(this.pageUrl(this.page.id) + "editing/", { active: Boolean(active) })
+            .then(function (data) {
+              self.editors = (data && data.editors) || [];
+            })
+            .catch(function () {
+              /* Telling is a courtesy: the save's version check is the guard. */
+            });
+        },
+
+        loadComments: function () {
+          var self = this;
+
+          Generic.api
+            .get(this.pageUrl(this.page.id) + "comments/")
+            .then(function (rows) {
+              self.comments = (rows || []).map(function (row) {
+                row.author_name = row.author_name || t("Someone");
+
+                return row;
+              });
+            })
+            .catch(function () {
+              /* The page reads without its comments. */
+            });
+        },
+
+        commentDate: function (comment) {
+          return when(comment.created_at);
+        },
+
+        comment: function () {
+          var self = this;
+          var body = this.commentBody.trim();
+
+          if (!body || this.commenting) {
+            return;
+          }
+
+          this.commenting = true;
+          Generic.api
+            .post(this.pageUrl(this.page.id) + "comments/", { body: body })
+            .then(function () {
+              self.commentBody = "";
+              self.loadComments();
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The comment could not be saved."), "error");
+            })
+            .then(function () {
+              self.commenting = false;
+            });
+        },
+
+        uncomment: function (comment) {
+          var self = this;
+
+          Generic.dialogs
+            .confirm({
+              title: t("Delete this comment?"),
+              message: t("It is deleted for good."),
+              confirmLabel: t("Delete"),
+              variant: "danger"
+            })
+            .then(function (confirmed) {
+              if (!confirmed) {
+                return;
+              }
+
+              Generic.api
+                .post(self.pageUrl(self.page.id) + "uncomment/", { comment: comment.id })
+                .then(function () {
+                  self.loadComments();
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The comment could not be deleted."), "error");
+                });
+            });
+        },
+
+        /** A page dropped elsewhere in the menu: `{parent, before}`. */
+        place: function (id, target) {
+          if (this.isDirty()) {
+            Generic.toast(t("Save or cancel your changes before moving pages in the menu."), "warning");
+            return;
+          }
+
+          Generic.api
+            .post(this.pageUrl(id) + "place/", target)
+            .then(function () {
+              // The menu, and the parent list of the editor, as they are now.
+              window.location.reload();
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The page could not be moved."), "error");
+            });
         },
 
         matches: function (text) {
@@ -1153,7 +1660,8 @@
             slug: page.slug,
             parent: page.parent === null || page.parent === undefined ? "" : String(page.parent),
             position: page.position || 0,
-            show_on_dashboard: Boolean(page.show_on_dashboard)
+            show_on_dashboard: Boolean(page.show_on_dashboard),
+            is_template: Boolean(page.is_template)
           };
           this.editing = true;
 
@@ -1268,6 +1776,9 @@
                   },
                   attach: function () {
                     self.chooseFiles();
+                  },
+                  pageLink: function () {
+                    self.linkPage();
                   },
                   table: function () {
                     insertTable(editor);
@@ -1840,7 +2351,8 @@
             form.slug !== page.slug ||
             String(form.parent) !== parent ||
             Number(form.position) !== Number(page.position) ||
-            Boolean(form.show_on_dashboard) !== Boolean(page.show_on_dashboard)
+            Boolean(form.show_on_dashboard) !== Boolean(page.show_on_dashboard) ||
+            Boolean(form.is_template) !== Boolean(page.is_template)
           );
         },
 
@@ -1937,6 +2449,7 @@
             parent: form.parent === "" ? null : Number(form.parent),
             position: Number(form.position) || 0,
             show_on_dashboard: Boolean(form.show_on_dashboard),
+            is_template: Boolean(form.is_template),
             content: htmlOf(quill),
             // Refused if someone saved in between.
             version: this.base || page.version
@@ -1966,26 +2479,55 @@
             });
         },
 
+        /**
+         * A new page: its title asked - and, where the wiki has templates,
+         * what it starts from - then opened in the editor.
+         */
         create: function (parent) {
+          var templates = config.templates || [];
+          var fields = [{ name: "title", label: t("Title"), required: true, maxLength: 200 }];
+
+          if (templates.length) {
+            fields.push({
+              name: "template",
+              label: t("Start from"),
+              value: "",
+              choices: [{ value: "", label: t("A blank page") }].concat(
+                templates.map(function (template) {
+                  return { value: template.id, label: template.title };
+                })
+              )
+            });
+          }
+
           Generic.dialogs
-            .prompt({
+            .fields({
               title: parent ? t("New subpage") : t("New page"),
-              label: t("Title"),
-              confirmLabel: t("Create")
+              icon: "note_add",
+              confirmLabel: t("Create"),
+              fields: fields
             })
-            .then(function (result) {
-              var title = result && result.value ? String(result.value).trim() : "";
+            .then(function (values) {
+              var title = values && values.title ? String(values.title).trim() : "";
 
               if (!title) {
                 return;
               }
 
-              Generic.api
-                .post(config.api, {
-                  title: title,
-                  wiki: config.wiki,
-                  parent: parent || null,
-                  content: ""
+              var start = values.template
+                ? Generic.api.get(config.api + values.template + "/").then(function (template) {
+                    return template.content || "";
+                  })
+                : Promise.resolve("");
+
+              start
+                .then(function (content) {
+                  return Generic.api.post(config.api, {
+                    title: title,
+                    wiki: config.wiki,
+                    parent: parent || null,
+                    content: content
+                  });
                 })
                 .then(function (data) {
                   window.location.assign(data.url + "?edit=1");
@@ -1993,6 +2535,46 @@
                 .catch(function (error) {
                   Generic.toast(errorText(error) || t("The page could not be created."), "error");
                 });
+            });
+        },
+
+        /** The file chooser for a Markdown file to make a page of. */
+        chooseMarkdown: function () {
+          if (this.$refs.markdown) {
+            this.$refs.markdown.value = "";
+            this.$refs.markdown.click();
+          }
+        },
+
+        /** A new page from the Markdown file chosen, opened in the editor. */
+        importMarkdown: function (event) {
+          var file = event.target.files && event.target.files[0];
+
+          if (!file) {
+            return;
+          }
+
+          if (file.size > 1000000) {
+            Generic.toast(t("The file is too large."), "error");
+            return;
+          }
+
+          file
+            .text()
+            .then(function (text) {
+              return Generic.api.post(config.importUrl, {
+                markdown: text,
+                name: file.name,
+                wiki: config.wiki,
+                parent: null
+              });
+            })
+            .then(function (data) {
+              Generic.flash(t("The page was imported."), "success");
+              window.location.assign(data.url + "?edit=1");
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The file could not be imported."), "error");
             });
         },
 
@@ -2046,6 +2628,58 @@
                 })
                 .catch(function (error) {
                   Generic.toast(errorText(error) || t("The page could not be duplicated."), "error");
+                });
+            });
+        },
+
+        /** The page and its subpages, to another wiki the reader writes in. */
+        moveToWiki: function () {
+          var self = this;
+          var page = this.page;
+          var targets = config.moveTargets || [];
+
+          if (!targets.length) {
+            return;
+          }
+
+          Generic.dialogs
+            .fields({
+              title: t("Move this page to another wiki"),
+              icon: "drive_file_move",
+              message: config.subpages
+                ? Generic.format(
+                    t("\u201c%(title)s\u201d and its subpages (%(count)s) go to the end of the other wiki's menu, with their history. Their old addresses lead to them."),
+                    { title: page.title, count: config.subpages }
+                  )
+                : Generic.format(
+                    t("\u201c%(title)s\u201d goes to the end of the other wiki's menu, with its history. Its old address leads to it."),
+                    { title: page.title }
+                  ),
+              confirmLabel: t("Move"),
+              fields: [
+                {
+                  name: "wiki",
+                  label: t("Wiki"),
+                  required: true,
+                  choices: targets.map(function (target) {
+                    return { value: target.id, label: target.name };
+                  })
+                }
+              ]
+            })
+            .then(function (values) {
+              if (!values) {
+                return;
+              }
+
+              Generic.api
+                .post(self.pageUrl(page.id) + "move/", { wiki: Number(values.wiki) })
+                .then(function (data) {
+                  Generic.flash(t("The page was moved."), "success");
+                  window.location.assign(data.url);
+                })
+                .catch(function (error) {
+                  Generic.toast(errorText(error) || t("The page could not be moved."), "error");
                 });
             });
         },
@@ -2212,6 +2846,180 @@
             })
             .catch(function (error) {
               Generic.toast(errorText(error) || t("The history could not be loaded."), "error");
+            });
+        },
+
+        /** The watch buttons' words: the page's, the wiki's. */
+        watchLabel: function (what) {
+          if (what === "wiki") {
+            return this.watching.wiki ? t("Watching the wiki") : t("Watch the wiki");
+          }
+
+          return this.watching.page ? t("Watching") : t("Watch");
+        },
+
+        watchTitle: function (what) {
+          if (what === "wiki") {
+            return this.watching.wiki
+              ? t("Stop being told when a page of this wiki changes")
+              : t("Be told when any page of this wiki is written, changed or deleted");
+          }
+
+          return this.watching.page ? t("Stop being told when this page changes") : t("Be told when this page changes");
+        },
+
+        /**
+         * A link to another page of the wiki, chosen by its title: on
+         * the selected text, or as the page's title where the cursor is.
+         */
+        linkPage: function () {
+          var range = quill.getSelection(true) || { index: quill.getLength() - 1, length: 0 };
+
+          Generic.api
+            .get(config.api + "?wiki=" + config.wiki)
+            .then(function (pages) {
+              var dialog = Generic.dialogs.open({ title: t("Link to a page"), icon: "article_shortcut" });
+              var filter = el("input", "input");
+              var list = el("ul", "wiki-members__found wiki-link-picker");
+              var cancel = el("button", "button button--ghost", t("Cancel"));
+
+              function draw() {
+                var term = filter.value.trim().toLowerCase();
+
+                list.textContent = "";
+                (pages || [])
+                  .filter(function (page) {
+                    return !term || page.title.toLowerCase().indexOf(term) !== -1;
+                  })
+                  .slice(0, 50)
+                  .forEach(function (page) {
+                    var item = el("li", "");
+                    var choose = el("button", "wiki-members__candidate");
+
+                    choose.type = "button";
+                    choose.appendChild(smallIcon("article"));
+                    choose.appendChild(el("span", "", page.title));
+                    choose.addEventListener("click", function () {
+                      dialog.close(page);
+                    });
+                    item.appendChild(choose);
+                    list.appendChild(item);
+                  });
+
+                if (!list.childNodes.length) {
+                  list.appendChild(el("li", "muted", t("No page found.")));
+                }
+              }
+
+              filter.type = "search";
+              filter.placeholder = t("A title\u2026");
+              filter.setAttribute("aria-label", t("A title\u2026"));
+              filter.addEventListener("input", draw);
+              cancel.type = "button";
+              cancel.addEventListener("click", function () {
+                dialog.close(null);
+              });
+              dialog.body.append(filter, list);
+              dialog.footer.appendChild(cancel);
+              draw();
+              filter.focus();
+
+              return dialog.closed;
+            })
+            .then(function (page) {
+              if (!page || !page.url) {
+                return;
+              }
+
+              quill.focus();
+
+              if (range.length) {
+                quill.formatText(range.index, range.length, "link", page.url, "user");
+                quill.setSelection(range.index + range.length, 0, "user");
+              } else {
+                quill.insertText(range.index, page.title, "link", page.url, "user");
+                quill.setSelection(range.index + page.title.length, 0, "user");
+              }
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The pages could not be loaded."), "error");
+            });
+        },
+
+        /** Start or stop being told when the page - or the wiki - changes. */
+        watch: function (what) {
+          var self = this;
+          var url = what === "wiki" ? config.wikiApi + config.wiki + "/watch/" : this.pageUrl(this.page.id) + "watch/";
+
+          Generic.api
+            .post(url, {})
+            .then(function (data) {
+              self.watching[what] = Boolean(data && data.watching);
+              Generic.toast(
+                self.watching[what]
+                  ? what === "wiki"
+                    ? t("You will be told when a page of this wiki changes.")
+                    : t("You will be told when this page changes.")
+                  : t("You will no longer be told."),
+                "success"
+              );
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The watch could not be changed."), "error");
+            });
+        },
+
+        /** The pages of the wiki last written, newest first. */
+        recent: function () {
+          Generic.api
+            .get(config.api + "recent/?wiki=" + config.wiki)
+            .then(function (rows) {
+              var dialog = Generic.dialogs.open({ title: t("Recent changes"), icon: "update" });
+              var list = el("ul", "wiki-history");
+              var close = el("button", "button button--ghost", t("Close"));
+
+              (rows || []).forEach(function (row) {
+                var item = el("li", "wiki-history__item");
+                var text = el("div", "wiki-history__text");
+                var link = el("a", "", row.title);
+                var actions = el("div", "wiki-history__actions");
+                var changes = el("button", "button button--ghost button--sm", t("Changes"));
+
+                link.href = row.url;
+                text.appendChild(link);
+                text.appendChild(
+                  el(
+                    "span",
+                    "wiki-history__meta",
+                    Generic.format(t("%(date)s, by %(name)s"), {
+                      date: when(row.updated_at),
+                      name: row.updated_by_name || t("someone")
+                    })
+                  )
+                );
+                changes.type = "button";
+                changes.addEventListener("click", function () {
+                  showDiff(config.api + row.id + "/diff/");
+                });
+                actions.appendChild(changes);
+                item.append(text, actions);
+                list.appendChild(item);
+              });
+
+              if (!list.childNodes.length) {
+                list.appendChild(el("li", "muted", t("No page yet.")));
+              }
+
+              dialog.dialog.classList.add("dialog--wide");
+              dialog.body.appendChild(list);
+              close.type = "button";
+              close.addEventListener("click", function () {
+                dialog.close(false);
+              });
+              dialog.footer.appendChild(close);
+            })
+            .catch(function (error) {
+              Generic.toast(errorText(error) || t("The recent changes could not be loaded."), "error");
             });
         },
 

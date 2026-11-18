@@ -46,6 +46,12 @@ ALWAYS_SKIPPED = {
 
 #: What the framework's own pages answer a superuser, where not 200.
 ALWAYS_EXPECTED: dict[str, tuple[int, ...]] = {
+    # A wiki's public link answers only where the project allows them
+    # (WIKI_PUBLIC_LINKS), and an upload only when a page shows it.
+    "generic_wiki:shared": (200, 404),
+    "generic_wiki:shared-page": (200, 404),
+    "generic_wiki:shared-image": (200, 404),
+    "generic_wiki:shared-file": (200, 404),
     # Already signed in, so it sends you where you were going.
     "site:login": (200, 302),
     # A run and a history entry are records of something that happened,
@@ -220,6 +226,7 @@ class PageSweep:
         "key",
         "wiki",
         "revision",
+        "secret",
     )
     urlconf: Any = None
     site: Any = None
@@ -375,13 +382,42 @@ class PageSweep:
             if revision is not None:
                 return revision.pk
 
-        if url_name in ("generic_wiki:image", "generic_wiki:file"):
+        if (
+            url_name
+            in (
+                "generic_wiki:image",
+                "generic_wiki:file",
+                "generic_wiki:shared-image",
+                "generic_wiki:shared-file",
+            )
+            and argument == "pk"
+        ):
             upload = records.get(
-                "generic_wiki.wiki" + url_name.rpartition(":")[2]
+                "generic_wiki.wiki"
+                + url_name.rpartition(":")[2].rpartition("-")[2]
             )
 
             if upload is not None:
                 return upload.pk
+
+        # An invitation's link: an unknown one says so.
+        if url_name == "generic_wiki:invitation":
+            return "page-sweep"
+
+        # A public link: the wiki page's own wiki, shared.
+        if argument == "secret" and url_name.startswith("generic_wiki:shared"):
+            page = records.get("generic_wiki.wikipage")
+
+            if page is not None:
+                from generic.wiki.sharing import new_secret
+
+                wiki = page.wiki
+
+                if not wiki.share_token:
+                    wiki.share_token = new_secret()
+                    wiki.save(update_fields=["share_token"])
+
+                return wiki.share_token
 
         # A row that is no model's: the first its resource lists.
         if argument == "key":
