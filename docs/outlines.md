@@ -53,7 +53,10 @@ class CustomerResource(ModelResource):
   row opens it too.
 - **Under each unfolded level, *Add …***, when the level is reached by
   a foreign key and the reader may add its records: the add form, the
-  parent filled in, back to the list once saved.
+  parent filled in, back to the list once saved. A record holding
+  nothing yet unfolds too, so its first record is added the same way
+  (*Nothing here.*, then *Add …*); for a reader who may not add, it
+  stays a leaf.
 - **Kept**: the outline is remembered for the table (in the browser,
   and in the address as `?outline=1`, so a link opens it). *Collapse
   all* folds everything, *Refresh* reads every open level again; a

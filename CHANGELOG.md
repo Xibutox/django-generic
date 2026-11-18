@@ -70,6 +70,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 - `invitations` and `shared` are reserved: no wiki takes them as its
   address.
 
+### Fixed
+- Outlines: a record without records of the next level unfolds when
+  the reader may add them, its foot offering *Add …* for the first
+  one; before, the add row only showed under a record holding at
+  least one (docs/outlines.md).
+
 ### Security
 - An image or a file of the wiki is read by the readers of the wiki
   it was uploaded into - or of a page showing it - instead of by
