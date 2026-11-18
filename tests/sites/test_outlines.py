@@ -16,6 +16,7 @@ from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
 
 from example.models import Equipment, Maintenance, Supplier
+from generic.api.tags import PALETTE
 from generic.sites import AutoResource, Level, ModelResource, Outline, site
 from generic.sites.outlines import as_outline
 from tests.testapp.models import Author, Document
@@ -510,6 +511,76 @@ class TestTheConfiguration:
         levels = resource.get_outline_config(request)["levels"]
 
         assert not any("editable" in level for level in levels)
+
+
+class TestColours:
+    """Each model of an outline its colour: the rows of one told from
+    another's at a glance."""
+
+    def levels(self, resource, rf, admin_user) -> list[dict]:
+        request = rf.get("/")
+        request.user = admin_user
+
+        return resource.get_outline_config(request)["levels"]
+
+    def test_each_model_gets_the_palettes_next(self, admin_client):
+        outline = admin_client.get(SUPPLIERS).context["table_config"][
+            "options"
+        ]["outline"]
+
+        assert [level["color"] for level in outline["levels"]] == list(
+            PALETTE[:3]
+        )
+
+    def test_a_model_reached_again_keeps_its_colour(
+        self, other_site, rf, admin_user
+    ):
+        other_site.auto(Author, outline=("documents", "authors"))
+        other_site.complete_auto()
+        levels = self.levels(other_site.get_resource(Author), rf, admin_user)
+
+        assert [level["color"] for level in levels] == [
+            PALETTE[0],
+            PALETTE[1],
+            PALETTE[0],
+        ]
+
+    def test_declared_or_none(self, redeclare, rf, admin_user):
+        resource = redeclare(
+            Outline(
+                Level("equipment", color="teal"),
+                Level("maintenances", color=False),
+                color="#ff0000",
+            )
+        )
+
+        assert [
+            level["color"] for level in self.levels(resource, rf, admin_user)
+        ] == ["#ff0000", "teal", None]
+
+        resource = redeclare(Outline("equipment", colors=False))
+
+        assert [
+            level["color"] for level in self.levels(resource, rf, admin_user)
+        ] == [None, None]
+
+    def test_what_is_not_a_colour_is_refused(self, other_site):
+        with pytest.raises(ImproperlyConfigured, match="CSS colour"):
+            other_site.auto(
+                Supplier,
+                outline=(Level("equipment", color="red; display: none"),),
+            )
+
+    def test_a_tab_keeps_the_colours_it_is_given(self, admin_client, stock):
+        url = f"{SUPPLIERS}{stock['acme'].pk}/"
+        (table,) = [
+            table
+            for table in admin_client.get(url).context["related_tables"]
+            if table["name"] == "equipment"
+        ]
+        levels = table["config"]["options"]["outline"]["levels"]
+
+        assert [level["color"] for level in levels] == list(PALETTE[:2])
 
 
 class TestManyToMany:

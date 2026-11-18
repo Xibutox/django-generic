@@ -38,6 +38,19 @@ COLOR_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+#: Colours given in turn to what must be told apart - a field's
+#: choices, an outline's models: eight, then round again.
+PALETTE = (
+    "#2563eb",
+    "#16a34a",
+    "#d97706",
+    "#dc2626",
+    "#7c3aed",
+    "#0891b2",
+    "#db2777",
+    "#64748b",
+)
+
 #: An attribute name, or a callable taking the value.
 Reader = Union[str, Callable[[Any], Any], None]
 

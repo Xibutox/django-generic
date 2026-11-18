@@ -2005,11 +2005,12 @@ auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
 class CustomerResource(ModelResource):
     outline = Outline(
         Level("tickets", columns=("reference", "title", "assignee"),
-              title=None, editable=True),
+              title=None, editable=True, color=None),
         "time_entries",                      # a plain name is Level(name)
         title=_("Tickets and time"),         # button label; default "Outline"
         columns=("name", "segment"),         # the top level's; default visible list columns
-        page_size=25, editable=True, max_columns=6, icon="account_tree")
+        page_size=25, editable=True, max_columns=6, icon="account_tree",
+        color=None, colors=True)             # the top's colour; False: none
 ```
 
 Each name is a relation of the level above holding rows (reverse FK or
@@ -2022,6 +2023,11 @@ column). The list page (`get_list_table_config`) puts
 `options.outline = bound.get_config(request)` - `url`, `title`,
 `icon`, `pageSize`, `topics`, `levels: [{name, resource, title, label,
 columns (the level resource's own table columns, editable=False),
+color (`get_colors`: declared `Level.color` / `Outline.color` for the
+top, checked by `clean_color` in `resolve`; else `PALETTE`
+(`generic.api.tags`, shared with `auto`'s choice tags) in turn per
+distinct model, a model reached again keeping its own; `False` or
+`Outline(colors=False)`: None; `tail` carries both),
 addUrl ("{parent}" token; FK levels with add permission), editable,
 editableUrl}]` - None (no button) when the reader cannot view below the
 top (`get_levels`: down to the first level without view permission).
@@ -2054,6 +2060,10 @@ the view (`OutlineView`, tree.css classes, `outline-row`,
 `outline-head` per unfolded level, a foot with *Show more* / *Add ...*;
 `opens(node)` = children, or none but an `addUrlBelow(node)`, so an
 empty record unfolds to a foot offering its first child;
+a level's rows, heading and foot `tr.has-tint` with `--outline-tint`
+(`tint()`, the colour checked again; tree.css: an inset bar on the first
+cell, a 7% `color-mix` wash on records' cells over the stripes, the
+heading's level name and arrow in the colour);
 toolbar `.dt-outline-expand`: *Expand first level* / *Expand next
 level*, `nextLevel()` = the folded records with children at the
 shallowest depth shown, in drawn order, at most `UNFOLD_AT_ONCE` (50)

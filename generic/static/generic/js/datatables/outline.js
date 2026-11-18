@@ -78,6 +78,23 @@
     );
   }
 
+  /** A CSS colour, and nothing else: what the server sends, checked
+   * again before it is written into a style. */
+  var COLOR = /^(#[0-9a-f]{3,8}|[a-z]{3,30}|(rgba?|hsla?|hwb|lab|lch|oklab|oklch)\([0-9a-z .,%\/+-]{1,80}\))$/i;
+
+  /** A level's rows marked with its colour (`level.color`): the records
+   * of one model told from another's at a glance. */
+  function tint(row, level) {
+    var color = level && level.color;
+
+    if (color && COLOR.test(String(color))) {
+      row.classList.add("has-tint");
+      row.style.setProperty("--outline-tint", String(color));
+    }
+
+    return row;
+  }
+
   function focusWithin(node) {
     return Boolean(node && node.contains(document.activeElement));
   }
@@ -167,6 +184,8 @@
     // Opened in a dialog while editing, and dragged into another order.
     this.changeUrl = config.changeUrl || "";
     this.movable = Boolean(config.movable);
+    // Its rows' colour, told from the other models' (tint()).
+    this.color = config.color || "";
   }
 
   Level.prototype.writes = function (column) {
@@ -585,6 +604,7 @@
     row.setAttribute("data-depth", String(node.depth));
     row.tabIndex = -1;
     row.outlineNode = node;
+    tint(row, level);
 
     for (var index = 0; index < this.width; index += 1) {
       var column = level.columns[index];
@@ -759,6 +779,7 @@
     var inner = el("div", "tree-row__inner tree-foot");
 
     row.setAttribute("data-depth", String(parent.depth + 1));
+    tint(row, this.levels[parent.depth + 1]);
     cell.colSpan = this.width + 1;
     inner.style.paddingInlineStart = (parent.depth + 1) * 1.25 + "rem";
     cell.appendChild(inner);
@@ -782,6 +803,7 @@
     var row = el("tr", "tree-row tree-row--head outline-head");
 
     row.setAttribute("data-depth", String(parent.depth + 1));
+    tint(row, level);
 
     for (var index = 0; index < this.width; index += 1) {
       var column = level.columns[index];

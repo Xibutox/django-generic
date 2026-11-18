@@ -359,6 +359,33 @@ def test_the_rows_alternate_their_colour(page, admin, sign_in, desk):
     assert all(a != b for a, b in zip(stripes, stripes[1:]))
 
 
+def test_each_model_has_its_colour(page, admin, sign_in, stock):
+    """The suppliers, their equipment, its visits: three models, three
+    colours, on the rows, the level's heading and its foot."""
+    sign_in(admin)
+    page.goto(LIST + "?outline=1")
+    unfold(page, 0, "Acme")
+    unfold(page, 1, "L-1")
+
+    def tint(selector):
+        return page.locator(selector).first.evaluate(
+            "(row) => row.style.getPropertyValue('--outline-tint')"
+        )
+
+    colours = [tint(f"tr.outline-row[data-depth='{d}']") for d in range(3)]
+    assert colours == ["#2563eb", "#16a34a", "#d97706"]
+    assert tint(".outline-head[data-depth='1']") == "#16a34a"
+    assert tint(".tree-row--foot[data-depth='2']") == "#d97706"
+
+    # A bar before the first column, in the level's colour.
+    shadow = (
+        rows(page, 1)
+        .first.locator("td")
+        .first.evaluate("(td) => getComputedStyle(td).boxShadow")
+    )
+    assert "22, 163, 74" in shadow
+
+
 def test_a_refused_frame_opens_a_window(
     page, admin, sign_in, desk, monkeypatch, console
 ):

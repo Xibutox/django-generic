@@ -65,6 +65,13 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   straight to the record's form, for whoever may change the records
   (the `change` row action gains `inline: True`). Off by default; the
   example's tickets have it (docs/sites.md, Row menu).
+- Outlines, a colour a model: the rows of each level are marked with
+  their model's colour - a bar before the first column, a light wash
+  over the record, its heading's name - so a ticket is told from a time
+  entry at a glance. The palette's colours in turn, a model reached
+  twice keeping its own; `Level(color="teal")` or `Outline(color=...)`
+  (the top) names one, `color=False` none, `Outline(colors=False)`
+  turns them off (docs/outlines.md, Each model its colour).
 
 ### Changed
 - Whoever creates, copies or imports a wiki owns it and writes its

@@ -119,6 +119,35 @@ same way.
 The rows alternate their colour as a table's do, counted down the
 page whatever their level.
 
+## Each model its colour
+
+The records of each level are marked with their model's colour: a bar
+before the first column of its rows, its heading and its foot, a light
+wash over its records, and the level's name in the heading. A customer,
+its tickets and their time entries are three colours, so a ticket is
+told from a time entry at a glance however deep the outline is open.
+
+![Customers, tickets and time entries, each its colour](screenshots/outline-colours.png)
+
+Nothing to declare: the models get the colours of the palette in turn
+(the one choices' tags get with `auto()`), top first; a model reached
+twice - authors > documents > authors - keeps the colour it was given.
+To choose:
+
+```python
+outline = Outline(
+    Level("tickets", color="#7c3aed"),     # any CSS colour
+    Level("time_entries", color=False),    # this level, none
+    color="teal",                          # the top level's
+)
+
+outline = Outline("tickets", "time_entries", colors=False)  # none at all
+```
+
+A colour that is not one (`"red; display: none"`) is refused at
+registration. The wash is light enough for the stripes, the tags and
+the controls of edit mode to read through it, in either theme.
+
 `auto()` works `editable_fields` out (see below), so an `auto` outline
 is editable without a word more. On a hand-declared resource the
 levels are as editable as their resources say.
@@ -177,6 +206,8 @@ or an `Outline`:
 | `editable` | `True` | `False`: nothing edited at any level |
 | `max_columns` | `6` | columns a level shows at most, when none are named |
 | `icon` | `account_tree` | the button's icon |
+| `color` | the palette's | the top level's rows' colour, a CSS colour; `False`: none |
+| `colors` | `True` | `False`: no level coloured |
 
 | `Level(...)` | Default | Means |
 | --- | --- | --- |
@@ -185,6 +216,7 @@ or an `Outline`:
 | `title` | the model's plural name | the heading above its records |
 | `editable` | `True` | `False`: this level read only |
 | `position` | the integer field its ordering starts with | the field keeping the records in order among their parent's, dragged in edit mode; `False`: none |
+| `color` | the palette's next one for a model not seen above | its rows' colour, a CSS colour; `False`: none |
 
 A name is what `related` takes ([auto](auto.md#related-rows-the-one-thing-to-say)):
 a reverse foreign key's `related_name` or a many-to-many, either side.
@@ -300,3 +332,5 @@ editable_fields=("country",))`, or `list_editable=False` for no button.
   per level; the ticket's assignee, priority and due date and the time
   entry's date, agent, hours and note are the editable ones - what
   those resources declare.
+- Every outline colours its levels by model, nothing declared: a
+  customer blue, its tickets green, their time entries amber.
