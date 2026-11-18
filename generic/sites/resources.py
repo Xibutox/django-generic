@@ -1207,22 +1207,18 @@ class ModelResource(PagesMixin):
 
         # With a summary page, a read-only form adds nothing to "Open".
         if url and (can_change or not detail):
-            actions.append(
-                {
-                    "name": "change",
-                    "label": (
-                        gettext("Edit") if can_change else gettext("View")
-                    ),
-                    "icon": "edit" if can_change else "visibility",
-                    "url": url,
-                    # Drawn as an icon of its own on each row too.
-                    **(
-                        {"inline": True}
-                        if can_change and self.list_edit_link
-                        else {}
-                    ),
-                }
-            )
+            change: dict[str, Any] = {
+                "name": "change",
+                "label": gettext("Edit") if can_change else gettext("View"),
+                "icon": "edit" if can_change else "visibility",
+                "url": url,
+            }
+
+            # Drawn as an icon of its own on each row too.
+            if can_change and self.list_edit_link:
+                change["inline"] = True
+
+            actions.append(change)
 
         # The record's pages of the project's own, where asked for.
         actions.extend(self.get_page_row_actions(request, row))
