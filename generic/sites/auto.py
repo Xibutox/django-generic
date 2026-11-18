@@ -50,7 +50,7 @@ from typing import Any, Sequence
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import models
 
-from generic.api.tags import TagStyle
+from generic.api.tags import PALETTE, TagStyle
 from generic.sites.inlines import TabularInline
 from generic.sites.related import RelatedTable
 from generic.sites.resources import ModelResource
@@ -58,19 +58,6 @@ from generic.sites.serializers import (
     default_form_fields,
     flatten_fieldsets,
     label_field_for,
-)
-
-#: Colours given to a field's choices, in the order they are declared:
-#: enough to tell eight apart, then round again.
-PALETTE = (
-    "#2563eb",
-    "#16a34a",
-    "#d97706",
-    "#dc2626",
-    "#7c3aed",
-    "#0891b2",
-    "#db2777",
-    "#64748b",
 )
 
 #: A column named like this is left out of the list and of the search:

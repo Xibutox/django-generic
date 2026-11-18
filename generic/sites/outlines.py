@@ -61,6 +61,8 @@ from rest_framework.exceptions import (
     ValidationError,
 )
 
+from generic.api.tags import PALETTE, clean_color
+
 #: The most levels below the top an outline walks.
 MAX_LEVELS = 5
 
@@ -104,6 +106,9 @@ class Level:
     #: ordering starts with (its key back up aside), when it is an
     #: ascending integer field. ``False``: never dragged.
     position: Any = None
+    #: The colour marking its rows, a CSS colour. Default: one of the
+    #: palette's, a colour a model of the outline. ``False``: none.
+    color: Any = None
 
 
 class Outline:
@@ -122,6 +127,8 @@ class Outline:
         editable: bool = True,
         max_columns: int = 6,
         icon: str = "account_tree",
+        color: Any = None,
+        colors: bool = True,
     ) -> None:
         #: The levels below the top, in order.
         self.levels = tuple(
@@ -145,6 +152,11 @@ class Outline:
         #: Columns a level shows at most, when none are declared.
         self.max_columns = max_columns
         self.icon = icon
+        #: The top level's colour, as ``Level.color``.
+        self.color = color
+        #: Rows coloured by their model when True: the records of one
+        #: model told from another's at a glance.
+        self.colors = colors
 
     def __repr__(self) -> str:
         names = ", ".join(repr(level.name) for level in self.levels)
@@ -323,6 +335,19 @@ def resolve(
                 f"column names, in a tuple."
             )
 
+    for level in levels:
+        color = (
+            outline.color if level.declared is None else level.declared.color
+        )
+
+        if color in (None, False) or clean_color(color):
+            continue
+
+        raise ImproperlyConfigured(
+            f"{where}: the colour of '{level.name or 'the top'}' is "
+            f"{color!r}, which is not a CSS colour ('#2563eb', 'teal')."
+        )
+
     for level in levels[1:]:
         position = level.declared.position if level.declared else None
 
@@ -389,6 +414,8 @@ def tail(outline: Outline, levels: list[OutlineLevel]) -> Outline | None:
         editable=outline.editable and first.editable,
         max_columns=outline.max_columns,
         icon=outline.icon,
+        color=first.color,
+        colors=outline.colors,
     )
 
 
@@ -632,6 +659,35 @@ class BoundOutline:
 
         return self.resource_of(level).get_label_plural()
 
+    def get_colors(self) -> list[str | None]:
+        """The colour of each level's rows, top first: the one declared,
+        else the palette's next one for a model not seen above - a
+        model reached twice keeps its colour. None for no colour."""
+        if not self.outline.colors:
+            return [None] * len(self.levels)
+
+        given: dict[Any, str] = {}
+        colors: list[str | None] = []
+
+        for level in self.levels:
+            declared = (
+                self.outline.color
+                if level.declared is None
+                else level.declared.color
+            )
+
+            if declared is False:
+                colors.append(None)
+            elif declared is not None:
+                colors.append(clean_color(declared))
+            else:
+                if level.model not in given:
+                    given[level.model] = PALETTE[len(given) % len(PALETTE)]
+
+                colors.append(given[level.model])
+
+        return colors
+
     # -- the browser's configuration ----------------------------------
 
     def get_url(self) -> str:
@@ -655,6 +711,7 @@ class BoundOutline:
 
         described = []
         topics = []
+        colors = self.get_colors()
 
         for level in levels:
             resource = self.resource_of(level)
@@ -667,6 +724,7 @@ class BoundOutline:
                 "columns": columns,
                 "addUrl": self.get_add_url(request, level, back),
                 "rowKey": "_pk",
+                "color": colors[level.index],
             }
             entry.update(self.get_editing(request, level, columns))
             described.append(entry)
