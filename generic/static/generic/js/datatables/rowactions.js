@@ -159,6 +159,12 @@
     },
 
     prepare: function (controller) {
+      // Actions the resource also wants as an icon on each row (the
+      // resource's `list_edit_link`: Edit), before the menu.
+      var inline = controller.options.rowActions.filter(function (action) {
+        return action.inline && action.url;
+      });
+
       controller.columns.push({
         synthetic: "actions",
         data: null,
@@ -168,14 +174,39 @@
         searchable: false,
         visible: true,
         className: "dt-row-actions",
-        width: "3rem",
+        width: inline.length ? 3 + 2.25 * inline.length + "rem" : "3rem",
         defaultContent: "",
-        render: function (data, type) {
+        render: function (data, type, row) {
           if (type !== "display") {
             return "";
           }
 
+          var links = inline
+            .map(function (action) {
+              var url = core.fillTemplate(action.url, row || {});
+
+              if (!url) {
+                return "";
+              }
+
+              return (
+                '<a class="icon-button icon-button--sm dt-row-link" href="' +
+                core.escapeHtml(url) +
+                '" title="' +
+                core.escapeHtml(action.label) +
+                '" aria-label="' +
+                core.escapeHtml(action.label) +
+                '" data-action="' +
+                core.escapeHtml(action.name) +
+                '"><span class="icon material-symbols-outlined" aria-hidden="true">' +
+                core.escapeHtml(action.icon || "arrow_forward") +
+                "</span></a>"
+              );
+            })
+            .join("");
+
           return (
+            links +
             '<button type="button" class="icon-button icon-button--sm dt-row-menu" ' +
             'aria-haspopup="menu" aria-label="' +
             core.escapeHtml(t("Actions")) +

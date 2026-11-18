@@ -186,6 +186,12 @@ class ModelResource(PagesMixin):
     #: the grid and back (``?edit=1``) - what ``AutoResource`` does
     #: once it has worked out ``editable_fields``.
     list_editable: bool | str = False
+    #: An edit icon on every row of the list, before its menu, leading
+    #: straight to the record's change form - one click where the row
+    #: menu takes two, and where a double-click opens the summary
+    #: page. Shown only to readers who may change the records. False -
+    #: the default - leaves *Edit* in the row menu alone.
+    list_edit_link: bool = False
     #: Grids over sets of this resource's rows chosen by the project:
     #: ``Grid("triage", scope=..., columns=..., editable=...)``, each
     #: shown by a ``GridView``. See ``generic.sites.grids``.
@@ -1201,16 +1207,18 @@ class ModelResource(PagesMixin):
 
         # With a summary page, a read-only form adds nothing to "Open".
         if url and (can_change or not detail):
-            actions.append(
-                {
-                    "name": "change",
-                    "label": (
-                        gettext("Edit") if can_change else gettext("View")
-                    ),
-                    "icon": "edit" if can_change else "visibility",
-                    "url": url,
-                }
-            )
+            change: dict[str, Any] = {
+                "name": "change",
+                "label": gettext("Edit") if can_change else gettext("View"),
+                "icon": "edit" if can_change else "visibility",
+                "url": url,
+            }
+
+            # Drawn as an icon of its own on each row too.
+            if can_change and self.list_edit_link:
+                change["inline"] = True
+
+            actions.append(change)
 
         # The record's pages of the project's own, where asked for.
         actions.extend(self.get_page_row_actions(request, row))

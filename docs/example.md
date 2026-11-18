@@ -298,7 +298,9 @@ inside a filter.
 *Columns*, save the layout under *Views*, mark it as your default and
 reload. Try the *Open work* preset. Export to Excel: the file holds **every matching
 row**, not the page on screen. Tick two rows and *Close* them.
-Right-click a row for its menu; double-click opens its summary.
+Right-click a row for its menu; double-click opens its summary. The
+pencil beside the menu's button opens a ticket's form directly
+(`list_edit_link`); signed in as `viewer`, there is none.
 
 **Live.** Open the ticket list in two windows and edit a ticket in
 one: the other refreshes by itself, and so does the ticket's summary

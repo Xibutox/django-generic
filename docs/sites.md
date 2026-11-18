@@ -172,6 +172,7 @@ model nobody declared pages of its own. See
 | `view_on_site` | Link to `get_absolute_url()` on the record's pages |
 | `editable_fields` | Columns that *may* be edited in a table; a name may walk relations (`"customer__name"`). Turns nothing on by itself: a table asks ([Editing in the table](editable.md)) |
 | `list_editable` | `False`. Whether this resource's own list page offers those cells: `True` for good, `"toggle"` behind an *Edit* button in its toolbar ([Editing in the table](editable.md#an-edit-button-on-the-list)) |
+| `list_edit_link` | `False`. An *Edit* icon on each row of the list, before its menu, for who may change the records ([Row menu](#row-menu)) |
 | `grids` | `Grid` declarations: sets of rows corrected many at once, each shown by a `GridView` ([Editing in the table](editable.md#any-set-of-records-declared-grids)) |
 | `form_field_kwargs` | Serializer options per field, as DRF's `extra_kwargs`: `{"token": {"write_only": True}}`. What the field does, where `form_overrides` is how it is drawn |
 | `realtime` | Publish every change so open tables and summaries refresh |
@@ -549,6 +550,19 @@ def mark_billable(self, request, queryset): ...
 Each row has a menu — also on right-click — with *Open* (the summary
 page), *Edit* and *Delete* as the user's permissions allow. A
 double-click opens the row.
+
+`list_edit_link = True` also puts *Edit* on each row as an icon of its
+own, a pencil before the menu's button, leading straight to the
+record's form:
+
+```python
+class TicketResource(ModelResource):
+    list_edit_link = True    # off by default
+```
+
+Only readers holding the change permission see it - the others keep
+*View* in the menu. A double-click still opens the summary page, and a
+grid (an editable table) has neither.
 
 ### Live updates
 
