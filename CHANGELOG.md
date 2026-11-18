@@ -60,6 +60,11 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   (`WikiPage.is_template`); the history's size is `WIKI_MAX_REVISIONS`.
 - `Generic.dialogs.fields` takes a field with `choices`, a list to pick
   from.
+- An edit icon on each row of a list: `list_edit_link = True` on a
+  resource draws *Edit* as a pencil before the row menu's button,
+  straight to the record's form, for whoever may change the records
+  (the `change` row action gains `inline: True`). Off by default; the
+  example's tickets have it (docs/sites.md, Row menu).
 
 ### Changed
 - Whoever creates, copies or imports a wiki owns it and writes its

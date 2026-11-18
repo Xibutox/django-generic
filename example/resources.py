@@ -260,6 +260,11 @@ class TicketResource(ModelResource):
     # come along - the reference left to fill in (it is unique).
     duplicate = True
 
+    # A pencil on each row of the list, before its menu: the ticket's
+    # form in one click, for whoever may change tickets. A double-click
+    # still opens its summary page.
+    list_edit_link = True
+
     # A set of tickets of the project's choosing, corrected many at
     # once: the open ones, to assign and prioritise in one sitting. It
     # is shown by a GridView (example/urls.py) at /demo/triage/, and at

@@ -315,3 +315,26 @@ def test_the_values_past_the_first_page_load_as_the_list_scrolls(
     # A search starts over from its own first page.
     editor.locator(".dt-choices input[type=search]").fill("Agent 0")
     expect(choices).to_have_count(9)
+
+
+def test_the_pencil_on_a_row_opens_its_form(ticket_list):
+    # TicketResource.list_edit_link: Edit as an icon of its own.
+    page = ticket_list
+    ticket = Ticket.objects.get(reference="SD-1001")
+    pencil = row(page, "SD-1001").locator("a.dt-row-link")
+
+    expect(pencil).to_have_attribute("aria-label", "Edit")
+    pencil.click()
+
+    expect(page).to_have_url(
+        re.compile(rf"/example/ticket/{ticket.pk}/change/$")
+    )
+
+
+def test_no_pencil_for_who_may_only_read(page, desk, viewer, sign_in):
+    sign_in(viewer)
+    page.goto(LIST)
+    expect(references(page)).to_have_count(10)
+
+    expect(page.locator("#datatable a.dt-row-link")).to_have_count(0)
+    expect(page.locator("#datatable .dt-row-menu").first).to_be_visible()

@@ -285,6 +285,24 @@ table.dataTable td.dt-row-actions,
 table.dataTable th.dt-row-actions {
   width: 3rem;
   text-align: right !important;
+  /* An edit icon (list_edit_link) stays beside the menu's. */
+  white-space: nowrap;
+}
+
+/* The edit icon draws like the menu's button beside it, not like the
+   links of the row's cells. */
+table.dataTable td.dt-row-actions .icon-button {
+  vertical-align: middle;
+}
+
+table.dataTable tbody td a.dt-row-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+table.dataTable tbody td a.dt-row-link:hover,
+table.dataTable tbody td a.dt-row-link:focus-visible {
+  color: var(--text-primary);
 }
 
 .dt-check-all,

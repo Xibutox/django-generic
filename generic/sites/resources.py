@@ -186,6 +186,12 @@ class ModelResource(PagesMixin):
     #: the grid and back (``?edit=1``) - what ``AutoResource`` does
     #: once it has worked out ``editable_fields``.
     list_editable: bool | str = False
+    #: An edit icon on every row of the list, before its menu, leading
+    #: straight to the record's change form - one click where the row
+    #: menu takes two, and where a double-click opens the summary
+    #: page. Shown only to readers who may change the records. False -
+    #: the default - leaves *Edit* in the row menu alone.
+    list_edit_link: bool = False
     #: Grids over sets of this resource's rows chosen by the project:
     #: ``Grid("triage", scope=..., columns=..., editable=...)``, each
     #: shown by a ``GridView``. See ``generic.sites.grids``.
@@ -1209,6 +1215,12 @@ class ModelResource(PagesMixin):
                     ),
                     "icon": "edit" if can_change else "visibility",
                     "url": url,
+                    # Drawn as an icon of its own on each row too.
+                    **(
+                        {"inline": True}
+                        if can_change and self.list_edit_link
+                        else {}
+                    ),
                 }
             )
 
