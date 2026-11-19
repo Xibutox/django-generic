@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 from playwright.sync_api import expect
 
-from example.models import TicketComment
+from example.models import Team, TicketComment
 
 LIST = "/example/ticket/"
 
@@ -163,3 +163,44 @@ def test_a_toast_icon_and_dismiss_sit_on_its_first_line(signed_in):
 
     assert middles["icon"] == pytest.approx(middles["text"], abs=0.5)
     assert middles["button"] == pytest.approx(middles["text"], abs=0.5)
+
+
+def middle(locator):
+    found = box(locator)
+
+    return found["y"] + found["height"] / 2
+
+
+def test_a_switch_sits_level_with_the_input_beside_it(signed_in):
+    """A switch has its label beside it, not on top: its box keeps a
+    label's room so the switch is level with its neighbour's input."""
+    page = signed_in
+    ticket = TicketComment.objects.first().ticket
+    page.goto(f"/example/ticket/{ticket.pk}/change/")
+
+    billable = page.locator('.sf-field[data-field="is_billable"]')
+    hours = page.locator('.sf-field[data-field="estimated_hours"]')
+    # The section starts folded.
+    billable.locator("xpath=ancestor::fieldset[1]").evaluate(
+        "element => element.classList.remove('is-collapsed')"
+    )
+    expect(billable.locator(".switch")).to_be_visible()
+
+    assert middle(billable.locator(".switch input")) == pytest.approx(
+        middle(hours.locator("input").first), abs=1
+    )
+
+
+def test_a_switch_on_an_inline_card_sits_level_with_its_row(signed_in):
+    page = signed_in
+    team = Team.objects.get(code="FO")
+    page.goto(f"/example/team/{team.pk}/change/")
+
+    card = page.locator(".inline-card").first
+    expect(card.locator(".switch")).to_be_visible()
+    switch = card.locator(".sf-field--boolean")
+    neighbour = switch.locator("xpath=following-sibling::div[1]")
+
+    assert middle(switch.locator(".switch input")) == pytest.approx(
+        middle(neighbour.locator("input").first), abs=1
+    )

@@ -510,7 +510,11 @@
 
     var isSwitch = !readOnly && field.type === "boolean";
 
-    if (!isSwitch) {
+    if (isSwitch) {
+      // The switch carries its own label: the box keeps the room a label
+      // takes, so the switch lines up with the inputs beside it.
+      box.classList.add("sf-field--boolean");
+    } else {
       var label = el("label", "sf-label", field.label || field.name);
       label.htmlFor = id;
 

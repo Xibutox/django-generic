@@ -89,6 +89,11 @@ Inferred from the DRF field: `boolean`, `integer`, `decimal`, `float`,
 A relation becomes `select`, a many-relation `multiselect`, and both
 carry `"relation": true`.
 
+A `boolean` is a switch with its label beside it, not above. Its box
+(`.sf-field--boolean`, on the form and on a stacked inline's card)
+keeps a label's room on top, so the switch sits level with the inputs
+on its row; on a phone, one field to a row, that room goes.
+
 ## Override options
 
 | Key | Meaning |
