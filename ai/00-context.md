@@ -817,7 +817,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `table_serializer`, `table_options` | None, `{}` | hand-written table serializer; client options |
 | `tag_fields` | `{}` | fields drawn as coloured tags (table + summary + chart colours) |
 | `fields`, `exclude`, `fieldsets`, `readonly_fields` | all editable | form, admin style; a tuple in `fields` or a fieldset shares a row |
-| `form_overrides` | `{}` | per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText`, `widget` (`textarea`, `select`, `json`, `color`, `password`) |
+| `form_overrides` | `{}` | per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText`, `widget` (`textarea`, `select`, `json`, `color`, `password`). A boolean is a switch labelled beside it; its box (`.sf-field--boolean`, forms and stacked inlines) keeps a label's room so it sits level with its row |
 | `form_field_kwargs` | `{}` | per field, DRF `extra_kwargs`: `{"token": {"write_only": True, "required": False}}`. What the field does; `form_overrides` is how it is drawn |
 | `form_extra_fields` | `{}` | questions the form asks that are not model fields (`{"note": serializers.CharField(required=False)}`): write only, placed by `fieldsets`, stripped before the save, read in `save_model` as `serializer.extra_values` |
 | `form_serializer` | None | hand-written `FormModelSerializer` |

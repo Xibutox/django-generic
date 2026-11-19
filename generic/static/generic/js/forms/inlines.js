@@ -345,7 +345,9 @@
 
         var isSwitch = !readOnly && field.type === "boolean";
 
-        if (!isSwitch) {
+        if (isSwitch) {
+          box.classList.add("sf-field--boolean");
+        } else {
           var label = el("label", "sf-label", field.label || field.name);
           label.htmlFor = id;
           box.appendChild(label);

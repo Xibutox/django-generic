@@ -157,6 +157,24 @@
   }
 }
 
+/*
+ * A switch carries its own label beside it, so its box has no label on
+ * top: an empty line of label type takes that room, and the switch
+ * lines up with the inputs on its row. One column on a phone has no row
+ * to line up with, so the room goes.
+ */
+.sf-field--boolean::before {
+  content: "\00a0";
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 760px) {
+  .sf-field--boolean::before {
+    content: none;
+  }
+}
+
 /* -- Labels and inputs ------------------------------------------------- */
 
 .generic-form label,
