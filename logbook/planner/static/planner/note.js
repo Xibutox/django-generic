@@ -69,6 +69,7 @@
     ["Ctrl+Z", t("Undo a paste, a move, a removal")],
     ["Ctrl+Enter", t("Tick or untick a to-do")],
     ["Ctrl+S", t("Save now")],
+    ["Ctrl+click", t("Open the link under the pointer, in a new tab")],
     ["Escape", t("Let go of the selection")]
   ];
 
@@ -108,6 +109,66 @@
     node.appendChild(icon(name));
 
     return node;
+  }
+
+  // An address in a line's text: http(s)://... or www...., up to a
+  // space; the punctuation that ends a sentence is left out.
+  var URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
+  var URL_TRAIL = /[.,;:!?'"\u00bb\u2019\u201d]+$/;
+
+  /** The addresses in a text: [{start, end, url, label}], each one an
+   * http(s) URL a link may point to. A closing bracket that does not
+   * close one of the address's own is left out, as in "(see
+   * https://example.org)". */
+  function findLinks(text) {
+    var found = [];
+    var match;
+
+    URL_PATTERN.lastIndex = 0;
+
+    while ((match = URL_PATTERN.exec(text || ""))) {
+      var raw = match[0];
+
+      for (;;) {
+        var trimmed = raw.replace(URL_TRAIL, "");
+        var last = trimmed.charAt(trimmed.length - 1);
+        var pairs = { ")": "(", "]": "[", "}": "{" };
+
+        if (pairs[last] && trimmed.split(pairs[last]).length < trimmed.split(last).length) {
+          trimmed = trimmed.slice(0, -1);
+        }
+
+        if (trimmed === raw) {
+          break;
+        }
+
+        raw = trimmed;
+      }
+
+      var url = /^www\./i.test(raw) ? "https://" + raw : raw;
+
+      if (raw.length > 4 && /^https?:\/\/[^/?#]/i.test(url) && Generic.isSafeUrl(url)) {
+        found.push({ start: match.index, end: match.index + raw.length, url: url, label: linkLabel(url) });
+      }
+    }
+
+    return found;
+  }
+
+  /** What a link chip says: the host, without www. */
+  function linkLabel(url) {
+    var host = url.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+
+    return host.replace(/^www\./i, "") || url;
+  }
+
+  /** Open an address in a new tab, the page unable to reach back. */
+  function openLink(url) {
+    var opened = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (opened) {
+      opened.opener = null;
+    }
   }
 
   function key() {
@@ -508,10 +569,17 @@
     text.addEventListener("focus", function () {
       self.current = line;
     });
+    // Ctrl+click (Cmd+click) on an address opens it; a plain click does
+    // too where the line cannot be written.
+    text.addEventListener("click", function (event) {
+      self.linkClicked(line, event);
+    });
 
     row.appendChild(kind);
     row.appendChild(check);
     row.appendChild(text);
+    line.linkBox = el("span", "note-line__links");
+    row.appendChild(line.linkBox);
     line.taskBox = el("span", "note-line__task");
     row.appendChild(line.taskBox);
     this.paint(line);
@@ -796,6 +864,66 @@
 
     input.style.height = "auto";
     input.style.height = input.scrollHeight + "px";
+    this.paintLinks(line);
+  };
+
+  /* -- Links: an address in a line opens in a new tab -------------------- */
+
+  /** A chip beside the line for each address in its text. */
+  NoteEditor.prototype.paintLinks = function (line) {
+    var box = line.linkBox;
+    var links = findLinks(line.input.value);
+    var signature = links
+      .map(function (link) {
+        return link.url;
+      })
+      .join("\n");
+
+    if (!box || box.signature === signature) {
+      return;
+    }
+
+    box.signature = signature;
+    box.textContent = "";
+    links.forEach(function (link) {
+      var anchor = el("a", "note-line__link");
+
+      anchor.href = link.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.title = Generic.format(t("Open %(url)s in a new tab"), { url: link.url });
+      anchor.appendChild(icon("open_in_new"));
+      anchor.appendChild(el("span", "note-line__link-label", link.label));
+      box.appendChild(anchor);
+    });
+  };
+
+  /** The address in the line's text around this offset, if any. */
+  NoteEditor.prototype.linkAt = function (line, offset) {
+    var links = findLinks(line.input.value);
+
+    for (var index = 0; index < links.length; index += 1) {
+      if (offset >= links[index].start && offset <= links[index].end) {
+        return links[index];
+      }
+    }
+
+    return null;
+  };
+
+  NoteEditor.prototype.linkClicked = function (line, event) {
+    var input = line.input;
+
+    if (!(event.ctrlKey || event.metaKey || input.readOnly) || input.selectionStart !== input.selectionEnd) {
+      return;
+    }
+
+    var link = this.linkAt(line, input.selectionStart);
+
+    if (link) {
+      event.preventDefault();
+      openLink(link.url);
+    }
   };
 
   /** A line under this one: a list goes on, anything else is text. */

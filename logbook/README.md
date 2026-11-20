@@ -29,6 +29,11 @@ WSGI, SQLite.
   headings, to-dos, tables, the bullets of plain text - comes in as
   lines of the note. A paste, a move or a removal is undone from its
   toast, or with Ctrl+Z right after. The keyboard button lists the keys.
+  An address in a line (`https://...`, `www....`, typed or pasted - a
+  pasted link whose text is not its address keeps it in brackets)
+  gets a chip beside the line that opens it in a new tab; Ctrl+click
+  (Cmd+click) on it in the text opens it too, a plain click where the
+  note cannot be written.
 - **Attach to a task**: selected lines (or the current one) added to
   the specification of a task that already exists, under the note's
   title and the day - the task picked in a dialog, searched by

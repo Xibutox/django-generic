@@ -172,6 +172,47 @@
   display: none;
 }
 
+/* The addresses in a line: a chip each, opening it in a new tab. */
+.note-line__links {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 40%;
+  padding-top: calc((var(--line-box) - 1.5rem) / 2);
+}
+
+.note-line__links:empty {
+  display: none;
+}
+
+.note-line__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 14rem;
+  height: 1.5rem;
+  padding: 0 0.45rem;
+  color: var(--text-link);
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-accent-border);
+  border-radius: 999px;
+}
+
+.note-line__link:hover,
+.note-line__link:focus-visible {
+  text-decoration: underline;
+}
+
+.note-line__link-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .note-line__task-kind {
   font-weight: 700;
 }
@@ -255,6 +296,11 @@
 
   .note-line {
     flex-wrap: wrap;
+  }
+
+  .note-line__links {
+    max-width: none;
+    padding-inline-start: 2rem;
   }
 
   .note-line__task {

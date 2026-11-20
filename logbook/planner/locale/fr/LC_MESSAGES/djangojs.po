@@ -60,6 +60,12 @@ msgstr "nouvelle tâche, bientôt enregistrée"
 msgid "Open the task"
 msgstr "Ouvrir la tâche"
 
+msgid "Open %(url)s in a new tab"
+msgstr "Ouvrir %(url)s dans un nouvel onglet"
+
+msgid "Open the link under the pointer, in a new tab"
+msgstr "Ouvrir le lien sous le pointeur, dans un nouvel onglet"
+
 msgid "Status"
 msgstr "Statut"
 

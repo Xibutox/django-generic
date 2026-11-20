@@ -431,7 +431,12 @@ indent, move), undoes a paste, move or removal, and reads and writes
 the clipboard through `planner/static/planner/note-clipboard.js`
 (HTML first - OneNote/Word lists and depth, headings, to-dos, tables -
 then plain text with its markers; written back as HTML lists carrying
-`data-line-kind`/`data-line-indent`, and text). `@page attach` lists
+`data-line-kind`/`data-line-indent`, and text). An http(s) or `www.`
+address in a line's text (`findLinks`, trailing punctuation and an
+unmatched bracket left out, `Generic.isSafeUrl`) gets a chip beside the
+line (`note-line__links`, `target="_blank"`, `rel="noopener
+noreferrer"`), and Ctrl/Cmd+click on it in the textarea - a plain click
+when read only - opens it in a new tab. `@page attach` lists
 tasks to attach to (`?q=`, the note's own first) and, posted `{task,
 text}`, appends the text to that task's specification under the note's
 title and the date (`change` on the task). A task line posted with
