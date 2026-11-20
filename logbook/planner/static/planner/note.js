@@ -69,6 +69,8 @@
     ["Ctrl+Z", t("Undo a paste, a move, a removal")],
     ["Ctrl+Enter", t("Tick or untick a to-do")],
     ["Ctrl+S", t("Save now")],
+    ["Ctrl+click", t("On a link being written: open it in a new tab")],
+    [t("Paste an address"), t("On selected text: makes it a link, [text](address)")],
     ["Escape", t("Let go of the selection")]
   ];
 
@@ -108,6 +110,15 @@
     node.appendChild(icon(name));
 
     return node;
+  }
+
+  /** Open an address in a new tab, the page unable to reach back. */
+  function openLink(url) {
+    var opened = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (opened) {
+      opened.opener = null;
+    }
   }
 
   function key() {
@@ -311,7 +322,7 @@
         el(
           "p",
           "note-editor__help muted",
-          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents.")
+          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents. An address pasted on selected text makes it a link: [text](address).")
         )
       );
     }
@@ -507,11 +518,33 @@
     });
     text.addEventListener("focus", function () {
       self.current = line;
+      // A line with links shows them until it is written in.
+      if (line.row.classList.contains("has-links")) {
+        self.grow(line);
+      }
+    });
+    // Ctrl+click (Cmd+click) on an address opens it; a plain click does
+    // too where the line cannot be written.
+    text.addEventListener("click", function (event) {
+      self.linkClicked(line, event);
     });
 
     row.appendChild(kind);
     row.appendChild(check);
     row.appendChild(text);
+    // The line read: its links by their alias, opening in a new tab.
+    line.view = el("div", "note-line__view");
+    line.view.addEventListener("click", function (event) {
+      if (event.target.closest("a")) {
+        event.stopPropagation();
+        return;
+      }
+
+      if (self.canEdit) {
+        self.focus(line, null);
+      }
+    });
+    row.appendChild(line.view);
     line.taskBox = el("span", "note-line__task");
     row.appendChild(line.taskBox);
     this.paint(line);
@@ -796,6 +829,75 @@
 
     input.style.height = "auto";
     input.style.height = input.scrollHeight + "px";
+    this.paintLinks(line);
+  };
+
+  /* -- Links: an address in a line opens in a new tab -------------------- */
+
+  /** The line as it reads: its text, its links by their alias. */
+  NoteEditor.prototype.paintLinks = function (line) {
+    var view = line.view;
+    var value = line.input.value;
+
+    if (!view || view.painted === value) {
+      return;
+    }
+
+    var pieces = clipboard.links(value);
+    var linked = pieces.some(function (piece) {
+      return piece.url;
+    });
+
+    view.painted = value;
+    view.textContent = "";
+    line.row.classList.toggle("has-links", linked);
+
+    if (!linked) {
+      return;
+    }
+
+    pieces.forEach(function (piece) {
+      if (!piece.url) {
+        view.appendChild(document.createTextNode(piece.text));
+        return;
+      }
+
+      var anchor = el("a", "note-line__link", piece.text);
+
+      anchor.href = piece.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.title = Generic.format(t("Open %(url)s in a new tab"), { url: piece.url });
+      view.appendChild(anchor);
+    });
+  };
+
+  /** The address in the line's text around this offset, if any. */
+  NoteEditor.prototype.linkAt = function (line, offset) {
+    var pieces = clipboard.links(line.input.value);
+
+    for (var index = 0; index < pieces.length; index += 1) {
+      if (pieces[index].url && offset >= pieces[index].start && offset <= pieces[index].end) {
+        return pieces[index];
+      }
+    }
+
+    return null;
+  };
+
+  NoteEditor.prototype.linkClicked = function (line, event) {
+    var input = line.input;
+
+    if (!(event.ctrlKey || event.metaKey || input.readOnly) || input.selectionStart !== input.selectionEnd) {
+      return;
+    }
+
+    var link = this.linkAt(line, input.selectionStart);
+
+    if (link) {
+      event.preventDefault();
+      openLink(link.url);
+    }
   };
 
   /** A line under this one: a list goes on, anything else is text. */
@@ -1237,6 +1339,19 @@
 
     var pasted = clipboard.read(data);
     var plain = data.getData("text/plain");
+    var input = line.input;
+    var url = clipboard.onlyAddress(plain);
+
+    // An address pasted on selected text: the text becomes its link.
+    if (url && input.selectionStart !== input.selectionEnd) {
+      var selected = input.value.slice(input.selectionStart, input.selectionEnd);
+
+      if (selected.indexOf("\n") === -1) {
+        event.preventDefault();
+        insertText(input, clipboard.linkText(selected, url));
+        return;
+      }
+    }
 
     if (!pasted.length) {
       return;
