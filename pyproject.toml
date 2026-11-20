@@ -109,7 +109,7 @@ api = [
 # writing a wiki as a PDF - fpdf2, pure Python (with Pillow, which has
 # wheels everywhere): nothing to install on the system, Windows
 # included.
-wiki = ["nh3>=0.2.17", "fpdf2>=2.8"]
+wiki = ["nh3>=0.3.8", "fpdf2>=2.8"]
 
 # QR codes on printed labels (generic.sites.labels), drawn by segno -
 # pure Python, no dependency. Without it, labels print the address.
@@ -118,7 +118,7 @@ labels = ["segno>=1.6"]
 dev = [
     "argon2-cffi>=23.1",
     "segno>=1.6",
-    "nh3>=0.2.17",
+    "nh3>=0.3.8",
     "fpdf2>=2.8",
     "defusedxml>=0.7",
     "django-rest-knox>=5.1.1",
