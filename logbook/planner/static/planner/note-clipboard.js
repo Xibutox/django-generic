@@ -6,6 +6,7 @@
  *   Generic.noteClipboard.fromHtml(html)       -> the same, from HTML
  *   Generic.noteClipboard.fromText(text)       -> the same, from plain text
  *   Generic.noteClipboard.write(lines)         -> {text, html}
+ *   Generic.noteClipboard.links(text)          -> [{text}, {text, url, start, end}]
  *
  * OneNote, Word, Outlook and the browsers put HTML on the clipboard
  * beside the plain text, and the HTML is what still knows the lists,
@@ -496,15 +497,25 @@
       return;
     }
 
-    // Inline: its text, and a link's address when the text is not it.
+    // Inline: its text; a link's, [its text](its address).
+    var line = this.current;
+    var start = line ? line.text.length : 0;
+
     this.children(element, context);
 
-    if (tag === "A") {
-      var href = element.getAttribute("href") || "";
-      var text = squeeze(element.textContent).trim();
+    if (tag === "A" && this.current) {
+      var href = address((element.getAttribute("href") || "").trim());
 
-      if (/^https?:\/\//i.test(href) && text && text !== href && this.current) {
-        this.current.text += " (" + href + ")";
+      if (this.current !== line) {
+        start = 0;
+      }
+
+      var label = this.current.text.slice(start);
+      var lead = label.match(/^\s*/)[0];
+      var tail = label.match(/\s*$/)[0];
+
+      if (href && label.trim()) {
+        this.current.text = this.current.text.slice(0, start) + lead + linkText(label, href) + tail;
       }
     }
   };
@@ -572,6 +583,98 @@
     return lines;
   }
 
+  /* -- Links ---------------------------------------------------------------- */
+
+  // [alias](address), as Markdown writes a link, or an address alone:
+  // http(s)://... or www...., up to a space.
+  var LINK = /\[([^\[\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s()]*(?:\([^\s()]*\)[^\s()]*)*)\)|\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
+  var TRAIL = /[.,;:!?'"\u00bb\u2019\u201d]+$/;
+  var PAIRS = { ")": "(", "]": "[", "}": "{" };
+
+  /** An address alone, without the punctuation that ends a sentence
+   * or a closing bracket that is not its own: "(see https://a.org)". */
+  function trimAddress(raw) {
+    for (;;) {
+      var trimmed = raw.replace(TRAIL, "");
+      var last = trimmed.charAt(trimmed.length - 1);
+
+      if (PAIRS[last] && trimmed.split(PAIRS[last]).length < trimmed.split(last).length) {
+        trimmed = trimmed.slice(0, -1);
+      }
+
+      if (trimmed === raw) {
+        return raw;
+      }
+
+      raw = trimmed;
+    }
+  }
+
+  /** The address a link may point to, or "" (http and https only). */
+  function address(raw) {
+    var url = /^www\./i.test(raw) ? "https://" + raw : raw;
+
+    return /^https?:\/\/[^/?#\s]/i.test(url) && (!Generic.isSafeUrl || Generic.isSafeUrl(url)) ? url : "";
+  }
+
+  /**
+   * A line's text cut into pieces: {text} as it is, and {text, url,
+   * start, end} for a link - `text` its alias, `start`/`end` where the
+   * whole link sits in the line.
+   */
+  function links(text) {
+    var pieces = [];
+    var at = 0;
+    var match;
+
+    text = text || "";
+    LINK.lastIndex = 0;
+
+    while ((match = LINK.exec(text))) {
+      var raw = match[1] !== undefined ? match[0] : trimAddress(match[0]);
+      var url = address(match[1] !== undefined ? match[2] : raw);
+
+      LINK.lastIndex = match.index + raw.length;
+
+      if (!url) {
+        continue;
+      }
+
+      if (match.index > at) {
+        pieces.push({ text: text.slice(at, match.index) });
+      }
+
+      pieces.push({
+        text: match[1] !== undefined ? match[1] : raw,
+        url: url,
+        start: match.index,
+        end: match.index + raw.length
+      });
+      at = match.index + raw.length;
+    }
+
+    if (at < text.length) {
+      pieces.push({ text: text.slice(at) });
+    }
+
+    return pieces;
+  }
+
+  /** A link written for the line: [alias](address), the alias without
+   * the square brackets that would end it. */
+  function linkText(alias, url) {
+    var label = squeeze(alias || "").replace(/[\[\]]/g, "").trim();
+
+    return label && label !== url ? "[" + label + "](" + url + ")" : url;
+  }
+
+  /** Text pasted that is one address and nothing else, or "". */
+  function onlyAddress(text) {
+    var value = (text || "").trim();
+
+    return /^(?:https?:\/\/|www\.)\S+$/i.test(value) ? address(value) : "";
+  }
+
   /* -- Writing ------------------------------------------------------------- */
 
   var BOX = "\u2610 ";
@@ -597,13 +700,38 @@
     return "";
   }
 
+  /** A line's text with its links as "alias (address)". */
+  function plainText(text) {
+    return links(text)
+      .map(function (piece) {
+        return piece.url && piece.text !== piece.url ? piece.text + " (" + piece.url + ")" : piece.text;
+      })
+      .join("");
+  }
+
+  /** A line's text in an element, its links as links. */
+  function appendText(element, text) {
+    links(text).forEach(function (piece) {
+      if (!piece.url) {
+        element.appendChild(document.createTextNode(piece.text));
+        return;
+      }
+
+      var anchor = document.createElement("a");
+
+      anchor.href = piece.url;
+      anchor.textContent = piece.text;
+      element.appendChild(anchor);
+    });
+  }
+
   /** Plain text: a tab (or `options.indent`) per level, markers. */
   function toText(lines, options) {
     var step = (options && options.indent) || "\t";
 
     return lines
       .map(function (line) {
-        return new Array(line.indent + 1).join(step) + prefix(line) + line.text;
+        return new Array(line.indent + 1).join(step) + prefix(line) + plainText(line.text);
       })
       .join("\n");
   }
@@ -643,7 +771,7 @@
           block.appendChild(document.createTextNode(" "));
         }
 
-        block.appendChild(document.createTextNode(line.text));
+        appendText(block, line.text);
         root.appendChild(mark(block, line));
 
         return;
@@ -672,7 +800,7 @@
         item.appendChild(document.createTextNode(line.done ? TICKED : BOX));
       }
 
-      item.appendChild(document.createTextNode(line.text));
+      appendText(item, line.text);
       stack[stack.length - 1].list.appendChild(mark(item, line));
     });
 
@@ -689,6 +817,9 @@
     fromText: fromText,
     toText: toText,
     toHtml: toHtml,
-    write: write
+    write: write,
+    links: links,
+    linkText: linkText,
+    onlyAddress: onlyAddress
   };
 })(window, document);

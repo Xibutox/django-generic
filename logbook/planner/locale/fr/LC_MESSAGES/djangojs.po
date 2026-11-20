@@ -63,8 +63,14 @@ msgstr "Ouvrir la tâche"
 msgid "Open %(url)s in a new tab"
 msgstr "Ouvrir %(url)s dans un nouvel onglet"
 
-msgid "Open the link under the pointer, in a new tab"
-msgstr "Ouvrir le lien sous le pointeur, dans un nouvel onglet"
+msgid "On a link being written: open it in a new tab"
+msgstr "Sur un lien en cours d'écriture : l'ouvrir dans un nouvel onglet"
+
+msgid "Paste an address"
+msgstr "Coller une adresse"
+
+msgid "On selected text: makes it a link, [text](address)"
+msgstr "Sur du texte sélectionné : en fait un lien, [texte](adresse)"
 
 msgid "Status"
 msgstr "Statut"
@@ -114,8 +120,8 @@ msgstr "Le chronomètre n’a pas pu être modifié."
 msgid "AUT task - a meeting, support"
 msgstr "Tâche AUT - une réunion, du support"
 
-msgid "Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents."
-msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une case à cocher, /fnc, /dm ou /aut pour une tâche. Tab indente."
+msgid "Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents. An address pasted on selected text makes it a link: [text](address)."
+msgstr "Commencez une ligne par # pour un titre, - pour une puce, [] pour une case à cocher, /fnc, /dm ou /aut pour une tâche. Tab indente. Une adresse collée sur du texte sélectionné en fait un lien : [texte](adresse)."
 
 msgid "Criticality"
 msgstr "Criticité"

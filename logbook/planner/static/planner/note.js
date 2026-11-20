@@ -69,7 +69,8 @@
     ["Ctrl+Z", t("Undo a paste, a move, a removal")],
     ["Ctrl+Enter", t("Tick or untick a to-do")],
     ["Ctrl+S", t("Save now")],
-    ["Ctrl+click", t("Open the link under the pointer, in a new tab")],
+    ["Ctrl+click", t("On a link being written: open it in a new tab")],
+    [t("Paste an address"), t("On selected text: makes it a link, [text](address)")],
     ["Escape", t("Let go of the selection")]
   ];
 
@@ -109,57 +110,6 @@
     node.appendChild(icon(name));
 
     return node;
-  }
-
-  // An address in a line's text: http(s)://... or www...., up to a
-  // space; the punctuation that ends a sentence is left out.
-  var URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
-  var URL_TRAIL = /[.,;:!?'"\u00bb\u2019\u201d]+$/;
-
-  /** The addresses in a text: [{start, end, url, label}], each one an
-   * http(s) URL a link may point to. A closing bracket that does not
-   * close one of the address's own is left out, as in "(see
-   * https://example.org)". */
-  function findLinks(text) {
-    var found = [];
-    var match;
-
-    URL_PATTERN.lastIndex = 0;
-
-    while ((match = URL_PATTERN.exec(text || ""))) {
-      var raw = match[0];
-
-      for (;;) {
-        var trimmed = raw.replace(URL_TRAIL, "");
-        var last = trimmed.charAt(trimmed.length - 1);
-        var pairs = { ")": "(", "]": "[", "}": "{" };
-
-        if (pairs[last] && trimmed.split(pairs[last]).length < trimmed.split(last).length) {
-          trimmed = trimmed.slice(0, -1);
-        }
-
-        if (trimmed === raw) {
-          break;
-        }
-
-        raw = trimmed;
-      }
-
-      var url = /^www\./i.test(raw) ? "https://" + raw : raw;
-
-      if (raw.length > 4 && /^https?:\/\/[^/?#]/i.test(url) && Generic.isSafeUrl(url)) {
-        found.push({ start: match.index, end: match.index + raw.length, url: url, label: linkLabel(url) });
-      }
-    }
-
-    return found;
-  }
-
-  /** What a link chip says: the host, without www. */
-  function linkLabel(url) {
-    var host = url.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
-
-    return host.replace(/^www\./i, "") || url;
   }
 
   /** Open an address in a new tab, the page unable to reach back. */
@@ -372,7 +322,7 @@
         el(
           "p",
           "note-editor__help muted",
-          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents.")
+          t("Start a line with # for a heading, - for a bullet, [] for a to-do, /fnc, /dm or /aut for a task. Tab indents. An address pasted on selected text makes it a link: [text](address).")
         )
       );
     }
@@ -568,6 +518,10 @@
     });
     text.addEventListener("focus", function () {
       self.current = line;
+      // A line with links shows them until it is written in.
+      if (line.row.classList.contains("has-links")) {
+        self.grow(line);
+      }
     });
     // Ctrl+click (Cmd+click) on an address opens it; a plain click does
     // too where the line cannot be written.
@@ -578,8 +532,19 @@
     row.appendChild(kind);
     row.appendChild(check);
     row.appendChild(text);
-    line.linkBox = el("span", "note-line__links");
-    row.appendChild(line.linkBox);
+    // The line read: its links by their alias, opening in a new tab.
+    line.view = el("div", "note-line__view");
+    line.view.addEventListener("click", function (event) {
+      if (event.target.closest("a")) {
+        event.stopPropagation();
+        return;
+      }
+
+      if (self.canEdit) {
+        self.focus(line, null);
+      }
+    });
+    row.appendChild(line.view);
     line.taskBox = el("span", "note-line__task");
     row.appendChild(line.taskBox);
     this.paint(line);
@@ -869,42 +834,51 @@
 
   /* -- Links: an address in a line opens in a new tab -------------------- */
 
-  /** A chip beside the line for each address in its text. */
+  /** The line as it reads: its text, its links by their alias. */
   NoteEditor.prototype.paintLinks = function (line) {
-    var box = line.linkBox;
-    var links = findLinks(line.input.value);
-    var signature = links
-      .map(function (link) {
-        return link.url;
-      })
-      .join("\n");
+    var view = line.view;
+    var value = line.input.value;
 
-    if (!box || box.signature === signature) {
+    if (!view || view.painted === value) {
       return;
     }
 
-    box.signature = signature;
-    box.textContent = "";
-    links.forEach(function (link) {
-      var anchor = el("a", "note-line__link");
+    var pieces = clipboard.links(value);
+    var linked = pieces.some(function (piece) {
+      return piece.url;
+    });
 
-      anchor.href = link.url;
+    view.painted = value;
+    view.textContent = "";
+    line.row.classList.toggle("has-links", linked);
+
+    if (!linked) {
+      return;
+    }
+
+    pieces.forEach(function (piece) {
+      if (!piece.url) {
+        view.appendChild(document.createTextNode(piece.text));
+        return;
+      }
+
+      var anchor = el("a", "note-line__link", piece.text);
+
+      anchor.href = piece.url;
       anchor.target = "_blank";
       anchor.rel = "noopener noreferrer";
-      anchor.title = Generic.format(t("Open %(url)s in a new tab"), { url: link.url });
-      anchor.appendChild(icon("open_in_new"));
-      anchor.appendChild(el("span", "note-line__link-label", link.label));
-      box.appendChild(anchor);
+      anchor.title = Generic.format(t("Open %(url)s in a new tab"), { url: piece.url });
+      view.appendChild(anchor);
     });
   };
 
   /** The address in the line's text around this offset, if any. */
   NoteEditor.prototype.linkAt = function (line, offset) {
-    var links = findLinks(line.input.value);
+    var pieces = clipboard.links(line.input.value);
 
-    for (var index = 0; index < links.length; index += 1) {
-      if (offset >= links[index].start && offset <= links[index].end) {
-        return links[index];
+    for (var index = 0; index < pieces.length; index += 1) {
+      if (pieces[index].url && offset >= pieces[index].start && offset <= pieces[index].end) {
+        return pieces[index];
       }
     }
 
@@ -1365,6 +1339,19 @@
 
     var pasted = clipboard.read(data);
     var plain = data.getData("text/plain");
+    var input = line.input;
+    var url = clipboard.onlyAddress(plain);
+
+    // An address pasted on selected text: the text becomes its link.
+    if (url && input.selectionStart !== input.selectionEnd) {
+      var selected = input.value.slice(input.selectionStart, input.selectionEnd);
+
+      if (selected.indexOf("\n") === -1) {
+        event.preventDefault();
+        insertText(input, clipboard.linkText(selected, url));
+        return;
+      }
+    }
 
     if (!pasted.length) {
       return;
