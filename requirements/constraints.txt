@@ -246,7 +246,7 @@ mypy-extensions==1.1.0
     #   black
     #   isort
     #   mypy
-nh3==0.3.7
+nh3==0.3.8
     # via django-generic
 nodeenv==1.11.0
     # via pre-commit
