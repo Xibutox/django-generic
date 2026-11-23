@@ -6,7 +6,9 @@
  * way for a tree drawn like the tree pages (css/tree.css): the table's
  * records first - its filters, search and order still apply - each
  * with an arrow to the records of the next level, which have one to
- * theirs. Nothing is fetched before it is unfolded: a level is one
+ * theirs. A level may unfold into several relations: each is drawn
+ * below the record in the order declared, its own heading, pages and
+ * foot. Nothing is fetched before it is unfolded: a relation is one
  * request, a page at a time.
  *
  * Each level is drawn with its own resource's columns and the same
@@ -171,7 +173,11 @@
   /* -- A level, as its table describes it -------------------------------- */
 
   function Level(config, index) {
-    this.index = index;
+    // The number the endpoint knows it by; the levels below, by theirs
+    // (linked by OutlineView: `children`).
+    this.index = typeof config.index === "number" ? config.index : index;
+    this.childIndexes = Array.isArray(config.children) ? config.children : null;
+    this.children = [];
     this.name = config.name;
     this.resource = config.resource;
     this.title = config.title || "";
@@ -197,11 +203,29 @@
   /* -- The outline -------------------------------------------------------- */
 
   function OutlineView(controller, config) {
+    var self = this;
+    var byIndex = {};
+
     this.controller = controller;
     this.config = config;
     this.pageSize = config.pageSize || 25;
     this.levels = (config.levels || []).map(function (level, index) {
-      return new Level(level, index);
+      var made = new Level(level, index);
+
+      byIndex[made.index] = made;
+
+      return made;
+    });
+    // Each level's relations, in the order declared; a configuration
+    // naming none is a chain, each level below the one before.
+    this.levels.forEach(function (level, position) {
+      var below = level.childIndexes || (position + 1 < self.levels.length ? [self.levels[position + 1].index] : []);
+
+      level.children = below
+        .map(function (index) {
+          return byIndex[index];
+        })
+        .filter(Boolean);
     });
     this.width = Math.max.apply(
       null,
@@ -209,8 +233,10 @@
         return Math.max(1, level.columns.length);
       })
     );
-    this.top = this.node({ id: null }, -1);
+    // Above the first level: the table, unfolding into its rows.
+    this.top = this.node({ id: null }, -1, { children: this.levels.slice(0, 1), index: -1 });
     this.top.expanded = true;
+    this.topSection = this.sectionsOf(this.top)[0];
     this.recentWrites = {};
     this.editable = this.levels.some(function (level) {
       return (
@@ -226,25 +252,87 @@
     this.build();
   }
 
-  OutlineView.prototype.node = function (data, depth) {
+  /** A record of `level`, drawn `depth` steps below the top. Its
+   * records below are in `sections`, one a relation of its level. */
+  OutlineView.prototype.node = function (data, depth, level) {
+    var relations = (level && level.children.length) || 0;
+    var counts = Array.isArray(data.counts) ? data.counts.slice(0, relations) : [data.children || 0];
+
     return {
       id: data.id,
       url: data.url || "",
       row: data.row || {},
-      count: data.children || 0,
+      level: level,
+      counts: counts,
+      count: counts.reduce(function (sum, value) {
+        return sum + (Number(value) || 0);
+      }, 0),
       depth: depth,
       expanded: false,
-      loaded: false,
-      loading: false,
-      failed: false,
-      items: [],
-      total: 0,
+      sections: null,
       parent: null,
       element: null,
-      cells: [],
-      head: null
+      cells: []
     };
   };
+
+  /** The records of one relation below `owner`: what is loaded, paged,
+   * headed and closed by a foot of its own. */
+  function Section(owner, level, count) {
+    this.owner = owner;
+    this.level = level;
+    this.count = Number(count) || 0;
+    this.items = [];
+    this.total = 0;
+    this.loaded = false;
+    this.loading = false;
+    this.failed = false;
+    this.asking = null;
+    this.head = null;
+  }
+
+  /** The relations `node` unfolds into, in the order declared. */
+  OutlineView.prototype.sectionsOf = function (node) {
+    if (!node.sections) {
+      node.sections = (node.level ? node.level.children : []).map(function (level, place) {
+        return new Section(node, level, node.counts[place]);
+      });
+    }
+
+    return node.sections;
+  };
+
+  /** The relations drawn below `node` when it is open: those holding
+   * records, being read, or offering to add the first one. */
+  OutlineView.prototype.shownSections = function (node) {
+    var self = this;
+
+    return this.sectionsOf(node).filter(function (section) {
+      return (
+        section.count > 0 ||
+        section.total > 0 ||
+        section.items.length > 0 ||
+        section.loading ||
+        section.failed ||
+        Boolean(self.addUrlBelow(section))
+      );
+    });
+  };
+
+  OutlineView.prototype.loadingOf = function (node) {
+    return (node.sections || []).some(function (section) {
+      return section.loading;
+    });
+  };
+
+  /** What a level unfolds into, as its heading names it. */
+  function titlesBelow(level) {
+    return (level ? level.children : [])
+      .map(function (child) {
+        return child.title || child.label;
+      })
+      .join(", ");
+  }
 
   OutlineView.prototype.build = function () {
     var self = this;
@@ -371,7 +459,7 @@
     this.drawEditButton();
     this.root.classList.toggle("is-editing", this.editing);
 
-    this.top.items.forEach(function walk(node) {
+    this.walk(function (node) {
       self.drawOpenLink(node);
       node.cells.forEach(function (cell) {
         if (!cell.writable) {
@@ -382,12 +470,23 @@
           self.unmountCell(cell);
         }
       });
-      node.items.forEach(walk);
     });
 
     if (this.editing) {
       this.mountPending();
     }
+  };
+
+  /** Every record drawn or kept, top first, each before those below. */
+  OutlineView.prototype.walk = function (visit) {
+    (function down(node) {
+      (node.sections || []).forEach(function (section) {
+        section.items.forEach(function (child) {
+          visit(child);
+          down(child);
+        });
+      });
+    })(this.top);
   };
 
   OutlineView.prototype.isNumber = function (column) {
@@ -456,20 +555,21 @@
     var params = this.tableParams();
     var key = JSON.stringify(params);
 
-    if (key === this.asked && this.top.loaded) {
+    if (key === this.asked && this.topSection.loaded) {
       return;
     }
 
     this.asked = key;
-    this.load(this.top, false);
+    this.load(this.topSection, false);
   };
 
   /* -- Fetching ----------------------------------------------------------- */
 
-  OutlineView.prototype.fetch = function (parent, offset, limit) {
-    var params = { level: parent.depth + 1, offset: offset, limit: limit || this.pageSize };
+  /** One page of `section`: the table's rows, or a record's. */
+  OutlineView.prototype.fetch = function (section, offset, limit) {
+    var params = { level: section.level.index, offset: offset, limit: limit || this.pageSize };
 
-    if (parent === this.top) {
+    if (section.owner === this.top) {
       Object.assign(params, this.tableParams());
     } else {
       // What the table always sends - a record's tab names its
@@ -478,27 +578,26 @@
         params,
         core.resolveExtraParams(this.controller.options, this.controller.table)
       );
-      params.parent = parent.id;
+      params.parent = section.owner.id;
     }
 
     return generic().api.get(this.config.url, params);
   };
 
-  OutlineView.prototype.adopt = function (parent, data, before) {
-    var child = this.node(data, parent.depth + 1);
+  OutlineView.prototype.adopt = function (section, data, before) {
+    var child = this.node(data, section.owner.depth + 1, section.level);
 
-    child.parent = parent;
+    child.parent = section;
 
-    // Found again: it stays open, its rows kept.
+    // Found again: it stays open, its relations' rows kept.
     if (before && before.expanded && this.opens(child)) {
       child.expanded = true;
-      child.loaded = before.loaded;
-      child.items = before.items;
-      child.total = before.total;
-      child.head = before.head;
-      child.items.forEach(function (item) {
-        item.parent = child;
+      child.sections = before.sections;
+      (child.sections || []).forEach(function (kept, place) {
+        kept.owner = child;
+        kept.count = Number(child.counts[place]) || 0;
       });
+      before.sections = null;
     }
 
     if (before) {
@@ -508,34 +607,34 @@
     return child;
   };
 
-  /** Fill `parent` with the page asked for: replaced, or added to. */
-  OutlineView.prototype.load = function (parent, append, limit) {
+  /** Fill `section` with the page asked for: replaced, or added to. */
+  OutlineView.prototype.load = function (section, append, limit) {
     var self = this;
-    var offset = append ? parent.items.length : 0;
+    var offset = append ? section.items.length : 0;
     var asking = {};
 
-    parent.asking = asking;
-    parent.loading = true;
-    parent.failed = false;
-    this.redraw(parent);
+    section.asking = asking;
+    section.loading = true;
+    section.failed = false;
+    this.redraw(section.owner);
 
-    return this.fetch(parent, offset, limit)
+    return this.fetch(section, offset, limit)
       .then(function (answer) {
-        if (parent.asking !== asking) {
+        if (section.asking !== asking) {
           return;
         }
 
         var known = {};
 
         if (!append) {
-          parent.items.forEach(function (child) {
+          section.items.forEach(function (child) {
             known[child.id] = child;
           });
-          parent.items = [];
+          section.items = [];
         }
 
         (answer.items || []).forEach(function (data) {
-          parent.items.push(self.adopt(parent, data, known[data.id]));
+          section.items.push(self.adopt(section, data, known[data.id]));
           delete known[data.id];
         });
 
@@ -543,30 +642,30 @@
           self.forget(known[key], true);
         });
 
-        parent.total = answer.total || 0;
-        parent.loaded = true;
-        parent.loading = false;
+        section.total = answer.total || 0;
+        section.loaded = true;
+        section.loading = false;
 
-        if (parent === self.top) {
+        if (section.owner === self.top) {
           self.announce();
         }
 
-        self.redraw(parent);
+        self.redraw(section.owner);
       })
       .catch(function (error) {
-        if (parent.asking !== asking) {
+        if (section.asking !== asking) {
           return;
         }
 
-        parent.loading = false;
-        parent.failed = true;
-        self.redraw(parent);
+        section.loading = false;
+        section.failed = true;
+        self.redraw(section.owner);
         generic().toast((error && error.message) || t("This level could not be loaded."), "error");
       });
   };
 
   OutlineView.prototype.announce = function () {
-    var total = this.top.total;
+    var total = this.topSection.total;
 
     this.status.textContent = total
       ? core.format(generic().nt("%(count)s record", "%(count)s records", total), { count: number(total) })
@@ -596,10 +695,10 @@
     }
 
     var self = this;
-    var level = this.levels[node.depth];
+    var level = node.level;
     var row = el("tr", "tree-row outline-row");
     var tools = el("td", "tree-table__tools");
-    var leaf = node.depth >= this.levels.length - 1;
+    var leaf = !level.children.length;
 
     row.setAttribute("role", "row");
     row.setAttribute("aria-level", String(node.depth + 1));
@@ -735,24 +834,34 @@
     this.fill(cell.holder, cell.column, node.row);
   };
 
-  /** The address adding a record to the level below `parent`, its
-   * `{parent}` filled in; "" for the top or a level adding nothing. */
-  OutlineView.prototype.addUrlBelow = function (parent) {
-    var level = this.levels[parent.depth + 1];
-    var url = level && level.addUrl && parent !== this.top ? level.addUrl.replace("{parent}", encodeURIComponent(parent.id)) : "";
+  /** The address adding a record of `section`'s relation to its
+   * record, its `{parent}` filled in; "" for the top or a level adding
+   * nothing. */
+  OutlineView.prototype.addUrlBelow = function (section) {
+    var level = section.level;
+    var owner = section.owner;
+    var url = level && level.addUrl && owner !== this.top ? level.addUrl.replace("{parent}", encodeURIComponent(owner.id)) : "";
 
     return url && core.isSafeUrl(url) ? url : "";
   };
 
-  /** Whether `node` unfolds: it holds records, or - none yet - the
-   * level below can be added to, its foot offering the first one. */
+  /** Whether `node` unfolds: it holds records, or - none yet - a
+   * relation below can be added to, its foot offering the first one. */
   OutlineView.prototype.opens = function (node) {
-    return node.count > 0 || Boolean(this.addUrlBelow(node));
+    var self = this;
+
+    return (
+      node.count > 0 ||
+      this.sectionsOf(node).some(function (section) {
+        return Boolean(self.addUrlBelow(section));
+      })
+    );
   };
 
   OutlineView.prototype.updateRow = function (node) {
     var toggle = node.toggleButton;
     var expandable = this.opens(node);
+    var loading = this.loadingOf(node);
 
     toggle.textContent = "";
     toggle.disabled = !expandable;
@@ -760,12 +869,12 @@
 
     if (expandable) {
       toggle.appendChild(
-        icon(node.loading ? "progress_activity" : node.expanded ? "expand_more" : "chevron_right", node.loading ? "tree-row__spin" : "")
+        icon(loading ? "progress_activity" : node.expanded ? "expand_more" : "chevron_right", loading ? "tree-row__spin" : "")
       );
       toggle.setAttribute("aria-label", node.expanded ? t("Fold") : t("Unfold"));
       node.element.setAttribute("aria-expanded", node.expanded ? "true" : "false");
       node.countBadge.textContent = number(node.count);
-      node.countBadge.title = this.levels[node.depth + 1] ? this.levels[node.depth + 1].title : "";
+      node.countBadge.title = titlesBelow(node.level);
       node.countBadge.hidden = !node.count;
     } else {
       toggle.removeAttribute("aria-label");
@@ -774,16 +883,17 @@
     }
   };
 
-  /** A row spanning the table at the level below `parent`. */
-  OutlineView.prototype.levelRow = function (parent, className) {
+  /** A row spanning the table at the level of `section`. */
+  OutlineView.prototype.levelRow = function (section, className) {
+    var depth = section.owner.depth + 1;
     var row = el("tr", "tree-row " + className);
     var cell = el("td");
     var inner = el("div", "tree-row__inner tree-foot");
 
-    row.setAttribute("data-depth", String(parent.depth + 1));
-    tint(row, this.levels[parent.depth + 1]);
+    row.setAttribute("data-depth", String(depth));
+    tint(row, section.level);
     cell.colSpan = this.width + 1;
-    inner.style.paddingInlineStart = (parent.depth + 1) * 1.25 + "rem";
+    inner.style.paddingInlineStart = depth * 1.25 + "rem";
     cell.appendChild(inner);
     row.appendChild(cell);
     row.inner = inner;
@@ -791,20 +901,22 @@
     return row;
   };
 
-  /** The headings of a level below the top: its own columns' titles. */
-  OutlineView.prototype.headOf = function (parent) {
-    if (parent === this.top) {
+  /** The headings of a relation below a record: its name and its own
+   * columns' titles. */
+  OutlineView.prototype.headOf = function (section) {
+    if (section.owner === this.top) {
       return null;
     }
 
-    if (parent.head) {
-      return parent.head;
+    if (section.head) {
+      return section.head;
     }
 
-    var level = this.levels[parent.depth + 1];
+    var level = section.level;
+    var depth = section.owner.depth + 1;
     var row = el("tr", "tree-row tree-row--head outline-head");
 
-    row.setAttribute("data-depth", String(parent.depth + 1));
+    row.setAttribute("data-depth", String(depth));
     tint(row, level);
 
     for (var index = 0; index < this.width; index += 1) {
@@ -814,7 +926,7 @@
       if (index === 0) {
         var inner = el("div", "tree-row__inner");
 
-        inner.style.paddingInlineStart = (parent.depth + 1) * 1.25 + "rem";
+        inner.style.paddingInlineStart = depth * 1.25 + "rem";
         inner.append(icon("subdirectory_arrow_right", "muted"), el("span", "outline-head__level", level.title));
 
         if (column) {
@@ -834,34 +946,34 @@
     }
 
     row.appendChild(el("td", "outline-head__cell"));
-    parent.head = row;
+    section.head = row;
 
     return row;
   };
 
-  /** The row closing a level: loading, failed, more to show, add. */
-  OutlineView.prototype.footOf = function (parent) {
+  /** The row closing a relation: loading, failed, more to show, add. */
+  OutlineView.prototype.footOf = function (section) {
     var self = this;
-    var level = this.levels[parent.depth + 1];
-    var shown = parent.items.length;
-    var more = parent.total - shown;
-    var addUrl = this.addUrlBelow(parent);
+    var level = section.level;
+    var shown = section.items.length;
+    var more = section.total - shown;
+    var addUrl = this.addUrlBelow(section);
 
-    if (!parent.loading && !parent.failed && more <= 0 && shown && !addUrl) {
+    if (!section.loading && !section.failed && more <= 0 && shown && !addUrl) {
       return null;
     }
 
-    var row = this.levelRow(parent, "tree-row--foot");
+    var row = this.levelRow(section, "tree-row--foot");
     var rest = row.inner;
 
-    if (parent.loading) {
+    if (section.loading) {
       rest.append(icon("progress_activity", "tree-row__spin"), el("span", "muted", t("Loading\u2026")));
-    } else if (parent.failed) {
+    } else if (section.failed) {
       var retry = el("button", "button button--sm button--ghost", t("Try again"));
 
       retry.type = "button";
       retry.addEventListener("click", function () {
-        self.load(parent, false);
+        self.load(section, false);
       });
       rest.append(el("span", "muted", t("This level could not be loaded.")), retry);
     } else {
@@ -876,9 +988,9 @@
           el("span", "", core.format(t("Show %(count)s more"), { count: number(Math.min(more, self.pageSize)) }))
         );
         next.addEventListener("click", function () {
-          self.load(parent, true);
+          self.load(section, true);
         });
-        rest.append(el("span", "muted", core.format(t("%(shown)s of %(total)s"), { shown: number(shown), total: number(parent.total) })), next);
+        rest.append(el("span", "muted", core.format(t("%(shown)s of %(total)s"), { shown: number(shown), total: number(section.total) })), next);
       }
 
       if (addUrl) {
@@ -895,7 +1007,7 @@
             }
 
             event.preventDefault();
-            self.openAdd(parent, addUrl);
+            self.openAdd(section, addUrl);
           });
         }
       }
@@ -904,31 +1016,37 @@
     return row;
   };
 
-  /** Every row below `parent`, in order, as it should be drawn now. */
-  OutlineView.prototype.rowsBelow = function (parent) {
+  /** Every row below `node`, in order, as it should be drawn now: each
+   * of its relations, headed, its records and theirs, then its foot. */
+  OutlineView.prototype.rowsBelow = function (node) {
     var self = this;
     var rows = [];
 
-    if (!parent.expanded) {
+    if (!node.expanded) {
       return rows;
     }
 
-    var head = parent.items.length ? this.headOf(parent) : null;
+    var sections = this.shownSections(node);
 
-    if (head) {
-      rows.push(head);
-    }
+    sections.forEach(function (section) {
+      // Several relations: each named, even before its first record.
+      var head = section.items.length || sections.length > 1 ? self.headOf(section) : null;
 
-    parent.items.forEach(function (child) {
-      rows.push(self.rowOf(child));
-      rows = rows.concat(self.rowsBelow(child));
+      if (head) {
+        rows.push(head);
+      }
+
+      section.items.forEach(function (child) {
+        rows.push(self.rowOf(child));
+        rows = rows.concat(self.rowsBelow(child));
+      });
+
+      var foot = self.footOf(section);
+
+      if (foot) {
+        rows.push(foot);
+      }
     });
-
-    var foot = this.footOf(parent);
-
-    if (foot) {
-      rows.push(foot);
-    }
 
     return rows;
   };
@@ -992,18 +1110,28 @@
   };
 
   OutlineView.prototype.toggle = function (node, open) {
+    var self = this;
+
     if (!this.opens(node)) {
       return;
     }
 
     node.expanded = open === undefined ? !node.expanded : Boolean(open);
 
-    if (node.expanded && !node.loaded) {
-      this.load(node, false);
+    var waiting = node.expanded
+      ? this.shownSections(node).filter(function (section) {
+          return !section.loaded && !section.loading;
+        })
+      : [];
+
+    if (!waiting.length) {
+      this.redraw(node);
       return;
     }
 
-    this.redraw(node);
+    waiting.forEach(function (section) {
+      self.load(section, false);
+    });
   };
 
   /* -- Unfolding a level at once ---------------------------------------- */
@@ -1012,23 +1140,26 @@
    * level shown holding records and still folded, in the order they
    * are drawn - the rows on screen first. */
   OutlineView.prototype.nextLevel = function () {
+    var self = this;
     var depth = Infinity;
     var nodes = [];
 
     (function walk(parent) {
-      parent.items.forEach(function (node) {
-        if (node.count > 0 && !node.expanded && !node.loading) {
-          if (node.depth < depth) {
-            depth = node.depth;
-            nodes = [];
-          }
+      (parent.sections || []).forEach(function (section) {
+        section.items.forEach(function (node) {
+          if (node.count > 0 && !node.expanded && !self.loadingOf(node)) {
+            if (node.depth < depth) {
+              depth = node.depth;
+              nodes = [];
+            }
 
-          if (node.depth === depth) {
-            nodes.push(node);
+            if (node.depth === depth) {
+              nodes.push(node);
+            }
+          } else if (node.expanded && node.depth < depth) {
+            walk(node);
           }
-        } else if (node.expanded && node.depth < depth) {
-          walk(node);
-        }
+        });
       });
     })(this.top);
 
@@ -1043,13 +1174,13 @@
     }
 
     var next = this.nextLevel();
-    var level = next.nodes.length ? this.levels[next.depth + 1] : null;
+    var below = next.nodes.length ? titlesBelow(next.nodes[0].level) : "";
     var working = Boolean(this.expanding);
     // The first press unfolds the first level; once a record is open,
     // the next one - greyed out when nothing is left.
     var deeper = next.nodes.length
       ? next.depth > 0
-      : this.top.items.some(function (node) {
+      : this.topSection.items.some(function (node) {
           return node.expanded;
         });
 
@@ -1058,9 +1189,9 @@
       icon(working ? "progress_activity" : "unfold_more", working ? "tree-row__spin" : ""),
       el("span", "", deeper ? t("Expand next level") : t("Expand first level"))
     );
-    button.disabled = working || !level;
-    button.title = level
-      ? core.format(t("Show the %(name)s of the rows shown"), { name: (level.title || level.label).toLowerCase() })
+    button.disabled = working || !next.nodes.length;
+    button.title = below
+      ? core.format(t("Show the %(name)s of the rows shown"), { name: below.toLowerCase() })
       : t("Every row shown is unfolded");
   };
 
@@ -1070,6 +1201,7 @@
     var self = this;
     var nodes = this.nextLevel().nodes.slice(0, UNFOLD_AT_ONCE);
     var waiting = [];
+    var byLevel = {};
     var chunks = [];
 
     if (this.expanding || !nodes.length) {
@@ -1079,19 +1211,36 @@
     nodes.forEach(function (node) {
       node.expanded = true;
 
-      if (!node.loaded) {
-        node.asking = {};
-        node.loading = true;
-        node.failed = false;
-        waiting.push(node);
-      }
+      self.shownSections(node).forEach(function (section) {
+        if (section.loaded || section.loading) {
+          return;
+        }
+
+        // Nothing there yet: its foot offers the first one.
+        if (!section.count) {
+          section.loaded = true;
+          return;
+        }
+
+        section.asking = {};
+        section.loading = true;
+        section.failed = false;
+        waiting.push(section);
+        (byLevel[section.level.index] = byLevel[section.level.index] || []).push(section);
+      });
 
       self.redraw(node);
     });
 
-    for (var index = 0; index < waiting.length; index += PARENTS_AT_ONCE) {
-      chunks.push(waiting.slice(index, index + PARENTS_AT_ONCE));
-    }
+    // One request names records of one relation: grouped by it, in the
+    // order they are drawn.
+    Object.keys(byLevel).forEach(function (key) {
+      var sections = byLevel[key];
+
+      for (var index = 0; index < sections.length; index += PARENTS_AT_ONCE) {
+        chunks.push(sections.slice(index, index + PARENTS_AT_ONCE));
+      }
+    });
 
     this.expanding = true;
     this.drawExpandButton();
@@ -1103,11 +1252,11 @@
         });
       }, Promise.resolve())
       .catch(function (error) {
-        waiting.forEach(function (node) {
-          if (node.loading) {
-            node.loading = false;
-            node.failed = true;
-            self.redraw(node);
+        waiting.forEach(function (section) {
+          if (section.loading) {
+            section.loading = false;
+            section.failed = true;
+            self.redraw(section.owner);
           }
         });
         generic().toast((error && error.message) || t("This level could not be loaded."), "error");
@@ -1118,22 +1267,22 @@
       });
   };
 
-  /** The first page below each of `nodes`, records of one level, in one
-   * request. */
-  OutlineView.prototype.loadMany = function (nodes) {
+  /** The first page of each of `sections`, one relation below several
+   * records, in one request. */
+  OutlineView.prototype.loadMany = function (sections) {
     var self = this;
-    var asked = nodes.map(function (node) {
-      return { node: node, asking: node.asking };
+    var asked = sections.map(function (section) {
+      return { section: section, asking: section.asking };
     });
     var params = Object.assign(
       {},
       core.resolveExtraParams(this.controller.options, this.controller.table),
       {
-        level: nodes[0].depth + 1,
+        level: sections[0].level.index,
         limit: this.pageSize,
-        parents: nodes
-          .map(function (node) {
-            return node.id;
+        parents: sections
+          .map(function (section) {
+            return section.owner.id;
           })
           .join(",")
       }
@@ -1149,36 +1298,35 @@
         });
 
         asked.forEach(function (entry) {
-          var node = entry.node;
-          var group = groups[String(node.id)];
+          var section = entry.section;
+          var group = groups[String(section.owner.id)];
 
           // Folded, unfolded again or gone since: its own answer counts.
-          if (node.asking !== entry.asking) {
+          if (section.asking !== entry.asking) {
             return;
           }
 
-          node.loading = false;
+          section.loading = false;
 
           if (!group) {
             // Out of this reader's sight now: folded again.
-            node.expanded = false;
+            section.owner.expanded = false;
           } else {
-            node.items = (group.items || []).map(function (data) {
-              return self.adopt(node, data, null);
+            section.items = (group.items || []).map(function (data) {
+              return self.adopt(section, data, null);
             });
-            node.total = group.total || 0;
-            node.loaded = true;
+            section.total = group.total || 0;
+            section.loaded = true;
           }
 
-          self.redraw(node);
+          self.redraw(section.owner);
         });
       });
   };
 
   OutlineView.prototype.collapseAll = function () {
-    this.top.items.forEach(function walk(node) {
+    this.walk(function (node) {
       node.expanded = false;
-      node.items.forEach(walk);
     });
     this.redraw(this.top);
   };
@@ -1203,13 +1351,15 @@
     node.element = null;
 
     if (deep) {
-      node.items.forEach(function (child) {
-        self.forget(child, true);
-      });
+      (node.sections || []).forEach(function (section) {
+        section.items.forEach(function (child) {
+          self.forget(child, true);
+        });
 
-      if (node.head && node.head.parentNode) {
-        node.head.parentNode.removeChild(node.head);
-      }
+        if (section.head && section.head.parentNode) {
+          section.head.parentNode.removeChild(section.head);
+        }
+      });
     }
   };
 
@@ -1481,27 +1631,35 @@
 
   /* -- Loading again ------------------------------------------------------ */
 
-  /** Load again every level that is open, keeping it open. */
+  /** Load again every relation that is open, keeping it open. */
   OutlineView.prototype.reload = function () {
     var self = this;
     var open = [];
 
     function walk(node) {
-      if (node.expanded && node.loaded) {
-        open.push(node);
-        node.items.forEach(walk);
+      if (!node.expanded) {
+        return;
       }
+
+      (node.sections || []).forEach(function (section) {
+        if (section.loaded) {
+          open.push(section);
+          section.items.forEach(walk);
+        }
+      });
     }
 
     walk(this.top);
 
-    return open.reduce(function (chain, node) {
+    return open.reduce(function (chain, section) {
       return chain.then(function () {
-        if (node !== self.top && !(node.element && node.element.parentNode)) {
+        var owner = section.owner;
+
+        if (owner !== self.top && !(owner.element && owner.element.parentNode)) {
           return null;
         }
 
-        return self.load(node, false, Math.min(200, Math.max(self.pageSize, node.items.length)));
+        return self.load(section, false, Math.min(200, Math.max(self.pageSize, section.items.length)));
       });
     }, Promise.resolve());
   };
@@ -1566,7 +1724,7 @@
   /* -- A record in a dialog ---------------------------------------------- */
 
   OutlineView.prototype.opensInDialog = function (node) {
-    var level = this.levels[node.depth];
+    var level = node.level;
 
     return Boolean(this.editing && level && level.changeUrl && generic().dialogs && generic().dialogs.record);
   };
@@ -1576,7 +1734,7 @@
    * level is read again once it is saved. */
   OutlineView.prototype.openRecord = function (node) {
     var self = this;
-    var level = this.levels[node.depth];
+    var level = node.level;
     var url = level.changeUrl.replace("{id}", encodeURIComponent(node.id));
 
     if (!core.isSafeUrl(url)) {
@@ -1590,7 +1748,7 @@
           return;
         }
 
-        var parent = node.parent || self.top;
+        var parent = node.parent || self.topSection;
 
         self.recentWrites[level.resource + ":" + node.id] = Date.now();
         self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length)));
@@ -1609,12 +1767,12 @@
     return Boolean(level && level.addInDialog && generic().dialogs && generic().dialogs.record);
   };
 
-  /** A new record below `parent`, its form over the outline: once it is
-   * saved, `parent` is read again - open, and the records below it that
-   * were open kept so - and its count follows. */
-  OutlineView.prototype.openAdd = function (parent, url) {
+  /** A new record of `section`'s relation, its form over the outline:
+   * once it is saved, the relation is read again - open, and the
+   * records below it that were open kept so - and its count follows. */
+  OutlineView.prototype.openAdd = function (section, url) {
     var self = this;
-    var level = this.levels[parent.depth + 1];
+    var level = section.level;
 
     return generic()
       .dialogs.record({ url: url, title: core.format(t("Add %(name)s"), { name: level.label.toLowerCase() }), icon: "add" })
@@ -1628,18 +1786,30 @@
           self.recentWrites[level.resource + ":" + result.id] = Date.now();
         }
 
-        parent.expanded = true;
+        var owner = section.owner;
+
+        owner.expanded = true;
         generic().toast(core.format(t("\u201c%(name)s\u201d was added."), { name: result.label || String(result.id) }), "success");
 
-        return self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length + 1))).then(function () {
-          if (parent.failed) {
+        return self.load(section, false, Math.min(200, Math.max(self.pageSize, section.items.length + 1))).then(function () {
+          if (section.failed) {
             return;
           }
 
-          parent.count = parent.total;
+          var place = (owner.sections || []).indexOf(section);
 
-          if (parent.element) {
-            self.updateRow(parent);
+          section.count = section.total;
+
+          if (place !== -1) {
+            owner.counts[place] = section.total;
+          }
+
+          owner.count = owner.counts.reduce(function (sum, value) {
+            return sum + (Number(value) || 0);
+          }, 0);
+
+          if (owner.element) {
+            self.updateRow(owner);
           }
         });
       });
@@ -1650,9 +1820,9 @@
   /** Whether the record can be dragged now: its level keeps an order of
    * its own, and the outline is being edited. */
   OutlineView.prototype.movesNow = function (node) {
-    var level = this.levels[node.depth];
+    var level = node.level;
 
-    return Boolean(this.editing && level && level.movable && node.parent && node.parent !== this.top);
+    return Boolean(this.editing && level && level.movable && node.parent && node.parent.owner !== this.top);
   };
 
   /** Put `node` before or after another record of its parent: written,
@@ -1661,7 +1831,7 @@
     var self = this;
     var parent = node.parent;
     var url = new URL(this.config.moveUrl, window.location.origin);
-    var body = { level: node.depth, parent: parent.id, id: node.id };
+    var body = { level: node.level.index, parent: parent.owner.id, id: node.id };
     var extra = core.resolveExtraParams(this.controller.options, this.controller.table);
 
     if (!this.config.moveUrl || !core.isSafeUrl(this.config.moveUrl)) {
@@ -1678,7 +1848,7 @@
       body.after = where.after.id;
     }
 
-    this.recentWrites[this.levels[node.depth].resource + ":" + node.id] = Date.now();
+    this.recentWrites[node.level.resource + ":" + node.id] = Date.now();
     node.element.classList.add("is-saving");
 
     return generic()
@@ -1696,7 +1866,7 @@
 
           return left - right;
         });
-        self.redraw(parent);
+        self.redraw(parent.owner);
 
         if (node.element) {
           cells().flash(node.element);
@@ -1875,15 +2045,21 @@
       case "ArrowRight":
         if (this.opens(node) && !node.expanded) {
           this.toggle(node, true);
-        } else if (node.expanded && node.items.length) {
-          this.focus(node.items[0].element);
+        } else if (node.expanded) {
+          var first = this.shownSections(node).filter(function (section) {
+            return section.items.length;
+          })[0];
+
+          if (first) {
+            this.focus(first.items[0].element);
+          }
         }
         break;
       case "ArrowLeft":
         if (node.expanded) {
           this.toggle(node, false);
-        } else if (node.parent && node.parent.element) {
-          this.focus(node.parent.element);
+        } else if (node.parent && node.parent.owner.element) {
+          this.focus(node.parent.owner.element);
         }
         break;
       case "Enter":

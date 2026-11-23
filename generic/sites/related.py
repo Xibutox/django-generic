@@ -154,19 +154,15 @@ class BoundRelatedTable:
 
     def inherited_outline(self) -> Any:
         """What the record's own outline unfolds below this relation,
-        when its first level is this table's."""
+        when the record unfolds into this table's rows."""
         from generic.sites.outlines import tail
 
         bound = self.parent.get_outline()
 
-        if (
-            bound is None
-            or self.definition.model is not None
-            or bound.levels[1].name != self.name
-        ):
+        if bound is None or self.definition.model is not None:
             return None
 
-        return tail(bound.outline, bound.levels)
+        return tail(bound.outline, bound.levels, self.name)
 
     def get_outline_config(self, request: Any, obj: Any) -> Any:
         """The outline's configuration for this record's table, or None

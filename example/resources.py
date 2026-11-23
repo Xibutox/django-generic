@@ -1123,16 +1123,23 @@ class CustomerResource(ModelResource):
         "hours_logged",
         "average_satisfaction",
     )
-    # The list unfolds: each customer's tickets, each ticket's time
-    # entries - the *Outline* button of the table's toolbar. The cells
-    # the ticket and time entry resources let their reader edit are
-    # edited there (docs/outlines.md).
+    # The list unfolds: each customer's tickets, each ticket into two
+    # relations side by side - its time entries, then its comments -
+    # the *Outline* button of the table's toolbar. The cells the
+    # ticket, time entry and comment resources let their reader edit
+    # are edited there (docs/outlines.md).
     outline = Outline(
         Level(
             "tickets",
             columns=("reference", "title", "assignee", "priority", "due_on"),
+            children=(
+                Level(
+                    "time_entries",
+                    columns=("spent_on", "agent", "hours", "note"),
+                ),
+                Level("comments", columns=("author", "body", "created_at")),
+            ),
         ),
-        Level("time_entries", columns=("spent_on", "agent", "hours", "note")),
         title=_("Tickets and time"),
         columns=("name", "segment", "account_manager", "ticket_count"),
     )

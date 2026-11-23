@@ -18,7 +18,7 @@ from django.core.exceptions import ImproperlyConfigured
 from example.models import Equipment, Maintenance, Supplier
 from generic.api.tags import PALETTE
 from generic.sites import AutoResource, Level, ModelResource, Outline, site
-from generic.sites.outlines import as_outline
+from generic.sites.outlines import as_outline, resolve
 from tests.testapp.models import Author, Document
 
 pytestmark = pytest.mark.django_db
@@ -459,7 +459,7 @@ class TestTheConfiguration:
         outline = admin_client.get("/example/customer/").context[
             "table_config"
         ]["options"]["outline"]
-        top, tickets, entries = outline["levels"]
+        top, tickets, entries, comments = outline["levels"]
 
         assert outline["title"] == "Tickets and time"
         assert [column["data"] for column in top["columns"]] == [
@@ -931,3 +931,213 @@ class TestLongTexts:
         # Their order: the model's.
         bound = other_site.get_resource(Ticket).get_outline()
         assert bound.position_of(bound.levels[1]) == "position"
+
+
+CUSTOMERS = "/api/example/customer/outline/"
+
+
+class TestSeveralRelations:
+    """A level unfolding into several relations, side by side: each
+    customer's tickets unfold into their time entries, then their
+    comments - each relation its own level, its own pages, its own
+    *Add*."""
+
+    @pytest.fixture
+    def desk(self, support_desk) -> dict:
+        from example.models import Customer, TicketComment, TimeEntry
+
+        acme = Customer.objects.create(name="Acme")
+        login = support_desk["login"]
+        login.customer = acme
+        login.save()
+
+        for hours in ("1.00", "2.50"):
+            TimeEntry.objects.create(
+                ticket=login, agent=login.assignee, hours=Decimal(hours)
+            )
+
+        TicketComment.objects.create(
+            ticket=login, author="Lea", body="Released.", position=9
+        )
+
+        return {"acme": acme, **support_desk}
+
+    def test_the_declaration_is_a_tree(self):
+        from example.models import Customer
+
+        bound = site.get_resource(Customer).get_outline()
+
+        assert [
+            (level.index, level.name, level.parent, level.children)
+            for level in bound.levels
+        ] == [
+            (0, "", None, [1]),
+            (1, "tickets", 0, [2, 3]),
+            (2, "time_entries", 1, []),
+            (3, "comments", 1, []),
+        ]
+        assert [level.depth for level in bound.levels] == [0, 1, 2, 2]
+
+    def test_the_configuration_names_each_levels_relations(self, admin_client):
+        outline = admin_client.get("/example/customer/").context[
+            "table_config"
+        ]["options"]["outline"]
+
+        assert [
+            (level["index"], level["parent"], level["children"])
+            for level in outline["levels"]
+        ] == [(0, None, [1]), (1, 0, [2, 3]), (2, 1, []), (3, 1, [])]
+        entries, comments = outline["levels"][2:]
+
+        # Each relation keeps its own columns, editing, order and add.
+        assert entries["columns"][0]["data"] == "spent_on"
+        assert comments["movable"] is True
+        assert "movable" not in entries
+        assert entries["addUrl"].startswith("/example/timeentry/add/?ticket=")
+        assert comments["addUrl"].startswith(
+            "/example/ticketcomment/add/?ticket="
+        )
+        # Four models, four colours.
+        assert len({level["color"] for level in outline["levels"]}) == 4
+
+    def test_a_record_counts_each_relation(self, admin_client, desk):
+        tickets = get(admin_client, CUSTOMERS, level=1, parent=desk["acme"].pk)
+        (item,) = tickets["items"]
+
+        # Two time entries, then three comments (two from the desk).
+        assert item["counts"] == [2, 3]
+        assert item["children"] == 5
+
+        login = desk["login"].pk
+        entries = get(admin_client, CUSTOMERS, level=2, parent=login)
+        comments = get(admin_client, CUSTOMERS, level=3, parent=login)
+
+        assert sorted(names(entries, "hours")) == ["1.00", "2.50"]
+        assert names(comments, "author")[-1] == "Lea"
+        # A leaf: nothing below, one count.
+        assert "counts" not in comments["items"][0]
+
+        many = get(admin_client, CUSTOMERS, level=3, parents=f"{login}")
+        assert [group["total"] for group in many["groups"]] == [3]
+
+    def test_a_record_of_a_second_relation_is_moved(self, admin_client, desk):
+        from example.models import TicketComment
+
+        login = desk["login"]
+        last = TicketComment.objects.get(author="Lea")
+        first = login.comments.exclude(pk=last.pk).first()
+        response = admin_client.post(
+            "/api/example/customer/outline/move/",
+            {
+                "level": 3,
+                "parent": login.pk,
+                "id": last.pk,
+                "before": first.pk,
+            },
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200, response.content
+        assert response.json()["order"][0] == str(last.pk)
+
+    def test_a_relation_out_of_sight_leaves_its_sibling(
+        self, client, django_user_model, desk
+    ):
+        reader = client_with(
+            client,
+            django_user_model,
+            "view_customer",
+            "view_ticket",
+            "view_ticketcomment",
+        )
+        outline = reader.get("/example/customer/").context["table_config"][
+            "options"
+        ]["outline"]
+
+        assert [
+            (level["name"], level["children"]) for level in outline["levels"]
+        ] == [("", [1]), ("tickets", [3]), ("comments", [])]
+
+        (item,) = get(reader, CUSTOMERS, level=1, parent=desk["acme"].pk)[
+            "items"
+        ]
+
+        # Only the comments count: the time entries are not theirs.
+        assert item["children"] == 3
+        assert "counts" not in item
+        get(reader, CUSTOMERS, status=404, level=2, parent=desk["login"].pk)
+        get(reader, CUSTOMERS, level=3, parent=desk["login"].pk)
+
+    def test_the_top_may_unfold_into_several(self):
+        from example.models import Agent
+
+        _outline, levels = resolve(
+            Agent, Outline(children=("tickets", "time_entries")), "R.outline"
+        )
+
+        assert [(level.name, level.children) for level in levels] == [
+            ("", [1, 2]),
+            ("tickets", []),
+            ("time_entries", []),
+        ]
+
+    def test_a_tab_unfolds_what_the_records_outline_has_below_it(
+        self, admin_client, desk
+    ):
+        response = admin_client.get(f"/example/customer/{desk['acme'].pk}/")
+        (table,) = [
+            table
+            for table in response.context["related_tables"]
+            if table["name"] == "tickets"
+        ]
+        levels = table["config"]["options"]["outline"]["levels"]
+
+        assert [(level["name"], level["children"]) for level in levels] == [
+            ("", [1, 2]),
+            ("time_entries", []),
+            ("comments", []),
+        ]
+
+    @pytest.mark.parametrize(
+        "outline,message",
+        [
+            (Outline("tickets", children=("tickets",)), "either a chain"),
+            (
+                Outline(Level("tickets", children=("comments",)), "x"),
+                "children and a level after it",
+            ),
+            (
+                Outline(Level("tickets", children=("comments", "comments"))),
+                "twice",
+            ),
+            (
+                Outline(
+                    Level(
+                        "tickets",
+                        children=(Level("customer", children=()),),
+                    )
+                ),
+                "one record",
+            ),
+        ],
+    )
+    def test_what_cannot_be_is_refused(self, other_site, outline, message):
+        from example.models import Agent
+
+        with pytest.raises(ImproperlyConfigured, match=message):
+            other_site.auto(Agent, outline=outline)
+
+    def test_at_most_five_levels_deep(self, other_site):
+        from example.models import Agent
+
+        deep = Outline(
+            "accounts",
+            "tickets",
+            "tags",
+            "tickets",
+            "tags",
+            Level("tickets", children=("comments",)),
+        )
+
+        with pytest.raises(ImproperlyConfigured, match="5 at most"):
+            other_site.auto(Agent, outline=deep)

@@ -78,6 +78,69 @@ class CustomerResource(ModelResource):
 - **The keyboard** walks it as it walks a tree: up and down, right to
   unfold, left to fold or go up, Enter to open the record.
 
+## Several relations a level
+
+A record may unfold into more than one relation: a project into its
+architecture, an architecture into its milestones *and* its platforms,
+each platform into its own milestones. The level names its relations
+in `children`, and they are drawn below each record in that order -
+each one headed by its name and columns, its records, its *Show more*
+and its *Add ...*:
+
+```python
+outline = Outline(
+    Level(
+        "architectures",
+        children=(
+            Level("milestones", title=_("Architecture milestones")),
+            Level("platforms", children=(
+                Level("milestones", title=_("Platform milestones")),
+            )),
+        ),
+    ),
+)
+```
+
+```
+Project
+└── Architecture
+    ├── Architecture milestones
+    └── Platforms
+        └── Platform milestones
+```
+
+Each relation is a level of its own: its columns, its title, its
+colour, `editable`, `position` and the permissions of its resource, as
+for any level; its *Add* opens in a dialog when its resource says
+`add_in_dialog`. A record's arrow counts the records of all its
+relations; a relation with nothing in it and nothing to add is left
+out. *Expand next level* unfolds every relation of the rows shown, one
+request a relation for up to 25 records.
+
+`Outline("a", "b")` stays what it was - a chain, each level below the
+one before; the last level of a chain may have `children`. For the top
+itself to unfold into several relations, `Outline(children=("tickets",
+"invoices"))` - a chain or `children`, not both. Five levels deep at
+most, twenty relations in all; the same relation twice below one level
+is refused.
+
+In the example, a customer's tickets unfold into their time entries,
+then their comments:
+
+```python
+outline = Outline(
+    Level(
+        "tickets",
+        columns=("reference", "title", "assignee", "priority", "due_on"),
+        children=(
+            Level("time_entries", columns=("spent_on", "agent", "hours", "note")),
+            Level("comments", columns=("author", "body", "created_at")),
+        ),
+    ),
+    title=_("Tickets and time"),
+)
+```
+
 ## Editing in place
 
 The outline has an **Edit** button when some of its cells may be
@@ -203,7 +266,8 @@ or an `Outline`:
 
 | `Outline(...)` | Default | Means |
 | --- | --- | --- |
-| `*levels` | | the levels below the top, in order: relation names, or `Level(...)` |
+| `*levels` | | the levels below the top, a chain, each below the one before: relation names, or `Level(...)` |
+| `children` | | in place of `*levels`: the relations the top unfolds into side by side |
 | `title` | "Outline" | the button's label and the outline's name |
 | `columns` | the list's visible columns | the top level's columns, by name |
 | `page_size` | `25` | records per request when a level unfolds (1 to 200) |
@@ -221,10 +285,11 @@ or an `Outline`:
 | `editable` | `True` | `False`: this level read only |
 | `position` | the integer field its ordering starts with | the field keeping the records in order among their parent's, dragged in edit mode; `False`: none |
 | `color` | the palette's next one for a model not seen above | its rows' colour, a CSS colour; `False`: none |
+| `children` | the next level of the chain | the relations each record unfolds into, side by side in this order: names or `Level(...)` |
 
 A name is what `related` takes ([auto](auto.md#related-rows-the-one-thing-to-say)):
 a reverse foreign key's `related_name` or a many-to-many, either side.
-Five levels at most below the top.
+Five levels at most below the top, twenty relations in all.
 
 Checked at registration: each name must be a relation of the model
 above holding several records - a misspelt one names the relations
@@ -242,7 +307,9 @@ out from them, out of the navigation, as `related` models do.
 - The outline goes **as far down as the reader may view**: without the
   view permission on the visit model, the equipment has no arrow, and
   its endpoint answers 404 for that level. With nothing to unfold below
-  the top, there is no button.
+  the top, there is no button. A relation out of sight leaves its
+  siblings: a reader who may not view the time entries still unfolds a
+  ticket into its comments.
 - Columns are each level's table columns as **this reader** sees them
   (`field_permissions`).
 - Writing asks each record's resource, as any grid does; the endpoint
@@ -254,7 +321,7 @@ out from them, out of the navigation, as `related` models do.
 
 | Parameter | |
 | --- | --- |
-| `level` | `0`, the top (default), to the last level |
+| `level` | `0`, the top (default), or a level's number: the levels are numbered top first, each before the relations below it (`index` in the page's configuration; a chain's are 0, 1, 2...) |
 | `parent` | below the top: the key of the record unfolded, a record of the level above |
 | `offset`, `limit` | the page (`limit` ≤ 200, default `page_size`) |
 | `filters`, `search`, `ordering` | the top level: the table's, applied by its own backends |
@@ -267,7 +334,8 @@ out from them, out of the navigation, as `related` models do.
 
 Each `row` is the level resource's own table row - what its renderers
 and its cells read; `children` counts the records of the next level the
-reader may see. 404 for a level the reader may not view, a parent they
+reader may see. A level unfolding into several relations adds
+`counts`, one a relation in order (`"children": 5, "counts": [2, 3]`). 404 for a level the reader may not view, a parent they
 may not see, or a list without an outline; 400 for a parameter that is
 not a number or a missing `parent`.
 
@@ -293,6 +361,9 @@ the tab finds it by itself:
    outline is `("equipment", "maintenances")`: on a supplier's page,
    the *Equipment* tab unfolds into the visits, with the columns the
    outline gives them. Nothing to declare - `auto` included.
+   When the record unfolds into several relations, each tab takes
+   what is below its own - a customer's *Tickets* tab unfolds into the
+   time entries and the comments.
 2. **Else the related resource's outline**, if it declares one.
 
 The column pointing back at the record is left out of the first level,
@@ -332,8 +403,8 @@ editable_fields=("country",))`, or `list_editable=False` for no button.
   comments, their text written in place, dragged into another order
   (`TicketComment.position`), each one opened in a dialog.
 - *Customers* (by hand): *Tickets and time* unfolds into each
-  customer's tickets, then their time entries, with the columns named
-  per level; the ticket's assignee, priority and due date and the time
+  customer's tickets, then each ticket into two relations side by side,
+  its time entries and its comments, with the columns named per level; the ticket's assignee, priority and due date and the time
   entry's date, agent, hours and note are the editable ones - what
   those resources declare.
 - Every outline colours its levels by model, nothing declared: a

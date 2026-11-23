@@ -423,3 +423,74 @@ def test_a_refused_frame_opens_a_window(
     console.errors[:] = [
         error for error in console.errors if "frame-ancestors" not in error
     ]
+
+
+def test_a_level_unfolds_into_several_relations(page, admin, sign_in, desk):
+    """Each customer's tickets unfold into their time entries, then
+    their comments: two relations side by side, in the order declared,
+    each headed, paged and closed by its own *Add*."""
+    sign_in(admin)
+    page.goto("/example/customer/?outline=1")
+    unfold(page, 0, "Acme Corporation")
+    ticket = unfold(page, 1, "SD-1001")
+
+    heads = page.locator(".outline-head[data-depth='2']")
+    expect(heads).to_have_count(2)
+    expect(heads.nth(0)).to_contain_text("Time entries")
+    expect(heads.nth(1)).to_contain_text("Comments")
+    # Three time entries, two comments, each below its own heading.
+    expect(rows(page, 2)).to_have_count(5)
+    expect(ticket.locator(".tree-row__count")).to_have_text("5")
+    order = page.evaluate(
+        "() => Array.from(document.querySelectorAll("
+        "'.outline-table tr[data-depth=\"2\"]')).map((row) =>"
+        " row.classList.contains('outline-head') ? 'head'"
+        " : row.classList.contains('tree-row--foot') ? 'foot' : 'row')"
+    )
+    assert order == [
+        "head",
+        "row",
+        "row",
+        "row",
+        "foot",
+        "head",
+        "row",
+        "row",
+        "foot",
+    ]
+    feet = page.locator(".tree-row--foot[data-depth='2']")
+    expect(feet.nth(0)).to_contain_text("Add time entry")
+    expect(feet.nth(1)).to_contain_text("Add comment")
+    expect(rows(page, 2).last).to_contain_text("Yanis Bertrand")
+
+    # Folded and unfolded again: both relations come back.
+    ticket.locator(".tree-row__toggle").click()
+    expect(rows(page, 2)).to_have_count(0)
+    ticket.locator(".tree-row__toggle").click()
+    expect(rows(page, 2)).to_have_count(5)
+
+
+def test_several_relations_unfold_at_once(page, admin, sign_in, desk):
+    """*Expand next level* asks for each relation of the rows shown: one
+    request a relation."""
+    sign_in(admin)
+    page.goto("/example/customer/?outline=1")
+    expand = page.locator(".dt-outline-expand")
+    expand.click()
+    expect(rows(page, 1).filter(has_text="SD-1001")).to_have_count(1)
+
+    asked = []
+    page.on(
+        "request",
+        lambda request: "/outline/" in request.url
+        and asked.append(request.url),
+    )
+    expand.click()
+    expect(page.locator(".outline-head[data-depth='2']").first).to_be_visible()
+    expect(
+        rows(page, 2).filter(has_text="Fixed in the next release.")
+    ).to_have_count(1)
+    levels = sorted(
+        re.search(r"[?&]level=(\d+)", url).group(1) for url in asked
+    )
+    assert set(levels) == {"2", "3"}

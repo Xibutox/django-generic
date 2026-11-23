@@ -13,6 +13,14 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Outlines, several relations a level: `Level(..., children=(...))`
+  unfolds each record into several relations side by side, drawn in
+  the order declared, each with its heading, columns, permissions,
+  editing, order, pages and *Add* (in a dialog with `add_in_dialog`);
+  `Outline(children=(...))` does the same for the top. Existing chains
+  are unchanged. A customer's tickets now unfold into their time
+  entries, then their comments (docs/outlines.md, Several relations a
+  level).
 - Wiki, access and members: a wiki is *open* (as before), *protected*
   (everyone reads, its editors write) or *private* (its members read),
   has an owner - whoever made it - and members, people or groups, each

@@ -2015,8 +2015,8 @@ auto(Supplier, related=("equipment",), outline=("equipment", "maintenances"))
 class CustomerResource(ModelResource):
     outline = Outline(
         Level("tickets", columns=("reference", "title", "assignee"),
-              title=None, editable=True, color=None),
-        "time_entries",                      # a plain name is Level(name)
+              title=None, editable=True, color=None,
+              children=("time_entries", Level("comments"))),  # side by side
         title=_("Tickets and time"),         # button label; default "Outline"
         columns=("name", "segment"),         # the top level's; default visible list columns
         page_size=25, editable=True, max_columns=6, icon="account_tree",
@@ -2025,13 +2025,21 @@ class CustomerResource(ModelResource):
 
 Each name is a relation of the level above holding rows (reverse FK or
 M2M, either side; `relation_of` resolves the model and `back`, the
-lookup from the level's records to their parent). At most 5 levels;
-`page_size` 1-200. Checked at registration (`resource.get_outline()`,
+lookup from the level's records to their parent). Positional levels
+are a chain; `Level.children` (names or `Level`) are the relations a
+level unfolds into side by side, in order (the chain's last level
+only); `Outline(children=...)` the top's (not with positional levels;
+`tree_of` turns a chain into nested children). `resolve` numbers the
+levels preorder (`OutlineLevel.index`, `parent`, `children`, `depth`;
+a chain's are 0, 1, 2...). At most 5 deep (`MAX_LEVELS`), 20 relations
+(`MAX_RELATIONS`), no relation twice under one level; `page_size`
+1-200. Checked at registration (`resource.get_outline()`,
 `outlines.check`): names, options. Levels' resources and columns are
 resolved at first use (`ImproperlyConfigured`: not registered, unknown
 column). The list page (`get_list_table_config`) puts
 `options.outline = bound.get_config(request)` - `url`, `title`,
-`icon`, `pageSize`, `topics`, `levels: [{name, resource, title, label,
+`icon`, `pageSize`, `topics`, `levels: [{index, parent, children (the
+level numbers below, shown ones only), name, resource, title, label,
 columns (the level resource's own table columns, editable=False),
 color (`get_colors`: declared `Level.color` / `Outline.color` for the
 top, checked by `clean_color` in `resolve`; else `PALETTE`
@@ -2040,10 +2048,12 @@ distinct model, a model reached again keeping its own; `False` or
 `Outline(colors=False)`: None; `tail` carries both),
 addUrl ("{parent}" token; FK levels with add permission), addInDialog
 (the level resource's `adds_in_dialog()`: the foot's *Add* opens
-`openAdd(parent, url)` - `Generic.dialogs.record`, then `load(parent)`
-keeping open children (`adopt`), `parent.count = parent.total`), editable,
+`openAdd(section, url)` - `Generic.dialogs.record`, then `load(section)`
+keeping open children (`adopt`), `section.count = section.total` and
+the owner's `counts`), editable,
 editableUrl}]` - None (no button) when the reader cannot view below the
-top (`get_levels`: down to the first level without view permission).
+top (`get_levels`: the levels viewable whose level above is shown - a
+relation out of sight drops its subtree, not its siblings).
 Default columns: visible list columns minus the FK back up, at most
 `max_columns`, then up to `MAX_TEXT_COLUMNS` (2) hidden `TextField`
 columns (`is_text_field`) - `auto` puts a model's long texts at the end
@@ -2063,11 +2073,20 @@ page below each (`answer_many`; keys not found or not visible left
 out); `row` is the level resource's
 rows serializer (what its renderers and `cells.valueOf` read),
 `children` an annotation (`count_of`, a Subquery over the next level
-resource's `get_queryset`).
+resource's `get_queryset`; `with_counts`: a level with several
+relations gets `_outline_children_<n>` each, and items carry `counts`,
+one a relation in order, `children` their sum).
 
 JS `js/datatables/outline.js` (feature `outline`, loaded by
 `generic/datatable.html` with `css/tree.css`): toolbar button
-`.dt-outline-toggle` before the Views menu; `dt-container.is-outline`
+`.dt-outline-toggle` before the Views menu; levels linked by
+`index`/`children` (a config without them is a chain); a node is a
+record of `node.level`, its rows below in `node.sections` (one
+`Section` a relation: items, total, loaded, loading, failed, head,
+count; `node.parent` is the section holding it, `section.owner` the
+record), drawn in order by `rowsBelow` (`shownSections`: holding
+records, busy, or offering *Add*; each headed when several);
+`load`/`fetch`/`footOf`/`openAdd`/`move` work on a section; `dt-container.is-outline`
 hides the rows, count and pages (and the table's `.dt-edit-toggle`);
 the view (`OutlineView`, tree.css classes, `outline-row`,
 `outline-head` per unfolded level, a foot with *Show more* / *Add ...*;
