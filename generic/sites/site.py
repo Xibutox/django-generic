@@ -935,6 +935,7 @@ class GenericSite:
                         if resource.has_add_permission(request)
                         else ""
                     ),
+                    "add_in_dialog": resource.adds_in_dialog(),
                 }
             )
 

@@ -17,6 +17,9 @@
 
     {% if is_popup %}
       <input type="hidden" name="{{ popup_param }}" value="1">
+      {% if relation_request %}
+        <input type="hidden" name="{{ relation_request_param }}" value="{{ relation_request }}">
+      {% endif %}
     {% endif %}
 
     {% if fieldset_form.non_field_errors %}

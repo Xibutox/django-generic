@@ -185,6 +185,31 @@ Once accepted, the page shows its message and goes to
 what is now true - empty for a form that creates, the new values for one
 that edits.
 
+### In a dialog
+
+Opened as a popup - in a dialog's frame by `Generic.dialogs.record`, an
+*Add* button with [`add_in_dialog`](forms.md#adding-in-a-dialog), or a
+popup window (`?_popup=1&_relation_request=...`) - the page is framed by
+the site's own pages (`X-Frame-Options: SAMEORIGIN`), drawn without the
+navigation, and once accepted tells the page that opened it instead of
+going to `get_success_url`: the dialog closes, its page reads its rows
+again. The answer names what was saved (`id`, `_label`) when
+`form_valid` returns a record.
+
+A page that sends a popup on to another address - a first step, then
+the form - keeps it a popup with `generic.views.keep_popup(request,
+url)`, the address with the popup parameters the request came with
+(`_popup`, `_relation_request`, `_to_field`; nothing outside a popup):
+
+```python
+from django.shortcuts import redirect
+from generic.views import keep_popup
+
+def form_valid(self, serializer):
+    draft = serializer.save()
+    return redirect(keep_popup(self.request, draft.get_step_url()))
+```
+
 ### Options and hooks
 
 | Attribute | Hook | Default |

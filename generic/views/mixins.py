@@ -7,6 +7,7 @@ without the permissions, or the permissions without the fieldsets.
 from __future__ import annotations
 
 from typing import Any, Sequence
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
@@ -31,6 +32,51 @@ POPUP_PARAM = "_popup"
 #: Query parameter naming the field the opener expects back.
 TO_FIELD_PARAM = "_to_field"
 
+#: Query parameter naming the dialog (``Generic.dialogs.record``) or the
+#: window a popup reports back to.
+RELATION_REQUEST_PARAM = "_relation_request"
+
+#: What makes a page a popup, kept from one address to the next.
+POPUP_PARAMS = (POPUP_PARAM, RELATION_REQUEST_PARAM, TO_FIELD_PARAM)
+
+
+def popup_params(request: Any) -> dict[str, str]:
+    """The popup parameters ``request`` came with (``_popup``,
+    ``_relation_request``, ``_to_field``): empty outside a popup."""
+    found: dict[str, str] = {}
+
+    for name in POPUP_PARAMS:
+        value = request.GET.get(name) or request.POST.get(name)
+
+        if value:
+            found[name] = value
+
+    return found if POPUP_PARAM in found else {}
+
+
+def keep_popup(request: Any, url: str) -> str:
+    """``url`` with the popup parameters of ``request`` added, when it
+    is one: a view redirecting a popup - or a form opened in a dialog -
+    keeps the next page a popup, reporting to the same dialog::
+
+        return redirect(keep_popup(request, next_step_url))
+
+    Unchanged outside a popup, and for a parameter ``url`` already has.
+    """
+    params = popup_params(request)
+
+    if not params or not url:
+        return url
+
+    parts = urlsplit(url)
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    present = {name for name, _value in query}
+    query += [
+        (name, value) for name, value in params.items() if name not in present
+    ]
+
+    return urlunsplit(parts._replace(query=urlencode(query)))
+
 
 class PageMixin(ContextMixin):
     """Title, subtitle, breadcrumbs and toolbar.
@@ -49,6 +95,7 @@ class PageMixin(ContextMixin):
     toolbar_items: Sequence[ToolbarItem] = ()
     #: Whether the collapsible navigation sidebar is rendered.
     show_sidebar: bool = True
+    request: Any
 
     def get_page_title(self) -> str:
         return self.page_title
@@ -89,6 +136,10 @@ class PageMixin(ContextMixin):
                 "show_sidebar": self.show_sidebar and not popup,
                 "is_popup": popup,
                 "popup_param": POPUP_PARAM,
+                "relation_request_param": RELATION_REQUEST_PARAM,
+                "relation_request": (
+                    popup_params(self.request).get(RELATION_REQUEST_PARAM, "")
+                ),
             }
         )
 
@@ -204,6 +255,7 @@ class PopupMixin:
     already been typed.
     """
 
+    request: Any
     popup_response_template = "generic/popup_response.html"
 
     #: Reported to the opener so it knows whether to add an option or
@@ -228,6 +280,15 @@ class PopupMixin:
 
         if action == "change":
             payload["newValue"] = str(instance.pk)
+
+        # A form framed by a dialog (Generic.dialogs.record) is told
+        # apart from the others by the request it answers.
+        request_id = self.request.POST.get(
+            RELATION_REQUEST_PARAM
+        ) or self.request.GET.get(RELATION_REQUEST_PARAM)
+
+        if request_id:
+            payload["requestId"] = request_id
 
         # Handed over as a dict: the template serialises it with
         # json_script, so nothing is interpolated into executable code.

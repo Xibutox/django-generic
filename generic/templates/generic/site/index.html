@@ -66,7 +66,7 @@
               {% endif %}
               <div class="app-card__actions">
                 {% if item.add_url %}
-                  <a class="icon-button icon-button--sm" href="{{ item.add_url }}" title="{% translate 'Add' %}">
+                  <a class="icon-button icon-button--sm" href="{{ item.add_url }}" title="{% translate 'Add' %}"{% if item.add_in_dialog %} data-record-dialog="{{ item.label }}"{% endif %}>
                     {% translate "Add" as add_label %}
                     {% icon "add" "icon--sm" add_label %}
                   </a>

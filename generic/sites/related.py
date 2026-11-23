@@ -343,6 +343,13 @@ class BoundRelatedTable:
 
         return [config for config in configs if config]
 
+    def adds_in_dialog(self) -> bool:
+        """Whether its *Add* opens the form in a dialog over the page
+        (the related resource's ``add_in_dialog``)."""
+        resource = self.get_resource()
+
+        return resource is not None and resource.adds_in_dialog()
+
     def get_add_url(self, request: Any, obj: Any) -> str:
         """The related add page, with this record filled in."""
         resource = self.get_resource()

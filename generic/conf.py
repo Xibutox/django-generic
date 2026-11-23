@@ -106,6 +106,10 @@ DEFAULTS: dict[str, Any] = {
     "FORM_DEFAULT_SECTION": "general",
     "FORM_RELATED_POPUP_WIDTH": 980,
     "FORM_RELATED_POPUP_HEIGHT": 760,
+    # A resource's *Add* buttons - the list's, a related table's, an
+    # outline level's - open the form in a dialog over the page rather
+    # than going to it. A resource's ``add_in_dialog`` wins.
+    "ADD_IN_DIALOG": False,
     # A relation field whose model has no autocomplete endpoint embeds
     # its choices in the schema - up to this many, beyond which the
     # schema would be too heavy and the field needs an endpoint.

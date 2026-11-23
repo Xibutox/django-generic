@@ -103,6 +103,7 @@ See [Undo](undo.md).
 | `FORM_DEFAULT_SECTION` | `"general"` | Section for fields that name none |
 | `FORM_RELATED_POPUP_WIDTH` | `980` | Related editor popup |
 | `FORM_RELATED_POPUP_HEIGHT` | `760` | Related editor popup |
+| `ADD_IN_DIALOG` | `False` | *Add* buttons open the form in a dialog over the page; a resource's `add_in_dialog` wins ([Forms](forms.md#adding-in-a-dialog)) |
 | `FORM_CHOICES_LIMIT` | `200` | Choices embedded in a relation field without an autocomplete |
 | `FILE_MAX_SIZE` | `10 * 1024 * 1024` | The largest file, in bytes, a form's file field or the wiki's editor takes: refused in the browser before sending, and by the server ([Files](forms.md#files)) |
 

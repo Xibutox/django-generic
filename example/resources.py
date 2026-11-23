@@ -1484,6 +1484,10 @@ auto(
     # to it - a warranty end, a purchase price - from the list's
     # *Customize fields* (docs/custom-fields.md).
     custom_fields=True,
+    # Its *Add* buttons - the list's, a supplier's Equipment tab, the
+    # suppliers' outline - open the form in a dialog over the page,
+    # which reads its rows again once saved (docs/forms.md).
+    add_in_dialog=True,
 )
 
 

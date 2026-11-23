@@ -824,6 +824,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `inlines` | `()` | `TabularInline` / `StackedInline` classes |
 | `view_on_site` | True | link to `get_absolute_url()` |
 | `object_page` | `"detail"` | where a record opens: summary page, or `"change"` |
+| `add_in_dialog` | None (`GENERIC["ADD_IN_DIALOG"]`, False) | its *Add* buttons (list toolbar, related table, outline level, home page) open the form in `Generic.dialogs.record` over the page, read again once saved (`adds_in_dialog()`; `docs/forms.md#adding-in-a-dialog`) |
 | `detail_fieldsets` | form fieldsets | summary page sections (may include read-only methods) |
 | `detail_stats` | `()` | figures as tiles: fields, resource methods, model attributes |
 | `related_tables` | `()` | `RelatedTable(...)` tabs on the summary page |
@@ -2028,7 +2029,10 @@ top, checked by `clean_color` in `resolve`; else `PALETTE`
 (`generic.api.tags`, shared with `auto`'s choice tags) in turn per
 distinct model, a model reached again keeping its own; `False` or
 `Outline(colors=False)`: None; `tail` carries both),
-addUrl ("{parent}" token; FK levels with add permission), editable,
+addUrl ("{parent}" token; FK levels with add permission), addInDialog
+(the level resource's `adds_in_dialog()`: the foot's *Add* opens
+`openAdd(parent, url)` - `Generic.dialogs.record`, then `load(parent)`
+keeping open children (`adopt`), `parent.count = parent.total`), editable,
 editableUrl}]` - None (no button) when the reader cannot view below the
 top (`get_levels`: down to the first level without view permission).
 Default columns: visible list columns minus the FK back up, at most
@@ -2232,7 +2236,11 @@ the form; `validate(attrs)` sees each part's values under its name;
 errors raise `ImproperlyConfigured` at class definition. Template
 `generic/form_page.html` (blocks `form_intro`, `form_after`). Example:
 `example/form_pages.py` (notice, customer + first ticket, reassign a
-ticket), `docs/form-pages.md`.
+ticket), `docs/form-pages.md`. As a popup (`_popup`, e.g. in
+`Generic.dialogs.record`): framed by the site (`FormViewMixin.dispatch`
+-> `framed_by_this_site`), config `popup`/`popupRequest`, form.js
+`submitted` posts `generic:relation-saved` instead of redirecting; the
+answer carries `id`/`_label` when `form_valid` returns a record.
 
 ### 5.29 Locking records (`lock`)
 
@@ -2396,6 +2404,11 @@ measures; `layout_toolbar` in `generic/views/toolbar.py` splits).
 `ToolbarItem(placement=...)`: `"auto"` (default; a `variant="primary"`
 button is pinned), `"bar"` (never folds), `"menu"` (always in ⋯).
 Anything else raises `ValueError`. Never hand-build a "More" dropdown.
+`ToolbarItem(dialog=True)` renders `data-record-dialog="<label>"`: any
+`a[data-record-dialog]` opens its href in `Generic.dialogs.record`
+(dialogs.js `openLink`, plain left click only), toasts, then dispatches
+`generic:record-dialog-saved` (bubbling, `detail.result`); datatables
+`init.js` reloads every table on the page (and an active outline).
 
 ### CSS classes you may use (no new colours: use tokens)
 
@@ -2432,7 +2445,11 @@ button centre on its first line of text (`--message-line`).
   `Generic.flash(message, level)` (after navigation),
   `Generic.dialogs.confirm({title, message, confirmLabel, variant})`,
   `Generic.dialogs.record({url, title, icon})` (a record's form in a
-  framed dialog, `?_popup=1&_relation_request=`; resolves `{saved, id,
+  framed dialog, `?_popup=1&_relation_request=`; `generic.views.
+  keep_popup(request, url)` / `popup_params(request)` carry `_popup`,
+  `_relation_request`, `_to_field` across a redirect; a classic
+  `PopupMixin` view's `popup_response.js` posts the same message when
+  `requestId` is set; resolves `{saved, id,
   label}`, `{deleted}` or null; form.js posts `generic:relation-saved` /
   `generic:relation-deleted` to the opener or the framing page;
   `ResourceFormView` answers `X-Frame-Options: SAMEORIGIN` for popups,
@@ -2541,7 +2558,7 @@ strftime string fixes the text),
 `IMPORT_PREVIEW_ROWS`, `BULK_EDIT_MAX_ROWS` (1000), `UNDO_SECONDS` (600; None:
 no Undo), `UNDO_MAX_RECORDS` (1000), `AUTOCOMPLETE_PAGE_SIZE`,
 `AUTOCOMPLETE_MIN_INPUT_LENGTH`, `FORM_DEFAULT_SECTION`,
-`FORM_RELATED_POPUP_WIDTH/HEIGHT`, `FORM_CHOICES_LIMIT`, `FILE_MAX_SIZE`,
+`FORM_RELATED_POPUP_WIDTH/HEIGHT`, `ADD_IN_DIALOG` (False), `FORM_CHOICES_LIMIT`, `FILE_MAX_SIZE`,
 `EVENTS_WEBSOCKET_URL`, `EVENTS_BROADCAST_GROUP`,
 `EVENTS_RETENTION_DAYS`, `EVENTS_DISPATCH_ON_COMMIT`, `SHOW_PEOPLE`,
 `SHOW_MESSAGES`, `SHOW_TASKS`, `SHOW_MAILINGS`, `API_TOKEN_DEFAULT_DAYS`,

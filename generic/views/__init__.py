@@ -28,11 +28,14 @@ from generic.views.list import (
 )
 from generic.views.mixins import (
     POPUP_PARAM,
+    RELATION_REQUEST_PARAM,
     AccessMixin,
     FieldsetMixin,
     ModelPageMixin,
     PageMixin,
     PopupMixin,
+    keep_popup,
+    popup_params,
 )
 from generic.views.tables import ObjectColumn, ObjectRow, ObjectTable
 from generic.views.toolbar import (
@@ -44,6 +47,7 @@ from generic.views.toolbar import (
 __all__ = [
     "ORDER_PARAM",
     "POPUP_PARAM",
+    "RELATION_REQUEST_PARAM",
     "SEARCH_PARAM",
     "AccessMixin",
     "Breadcrumb",
@@ -64,5 +68,7 @@ __all__ = [
     "PopupMixin",
     "ToolbarItem",
     "collect_deletion_summary",
+    "keep_popup",
+    "popup_params",
     "toolbar_item_for_route",
 ]

@@ -1105,6 +1105,13 @@
     var message = data._message || t("Done.");
     var target = data._redirect;
 
+    // Opened in a dialog or a popup window: the page holding it is told,
+    // and closes it, rather than this frame going on to the next page.
+    if (this.config.popup) {
+      this.notifyOpener({ id: data.id !== undefined ? data.id : "", label: data._label || "" });
+      return;
+    }
+
     if (target && Generic.isSafeUrl(target)) {
       this.leave(target, message);
       return;

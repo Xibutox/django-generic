@@ -114,6 +114,25 @@
     }
   });
 
+  // A record added in a dialog over the page (an *Add* link marked
+  // `data-record-dialog`, dialogs.js): every table on it reads its rows
+  // again, an open outline every level it has open.
+  document.addEventListener("generic:record-dialog-saved", function () {
+    document.querySelectorAll("table").forEach(function (table) {
+      var controller = table.genericDataTable;
+
+      if (!controller || !controller.instance) {
+        return;
+      }
+
+      if (controller.outline && controller.outline.active) {
+        controller.outline.reload();
+      }
+
+      controller.reload(false);
+    });
+  });
+
   namespace.initialize = initialize;
 
   // Kept as the documented entry point, and for pages that build a

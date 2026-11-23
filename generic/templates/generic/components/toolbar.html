@@ -49,6 +49,7 @@
                    data-toolbar-copy="{{ slot.index }}"
                    {% if item.placement == "menu" %}data-menu-only{% else %}hidden{% endif %}
                    {% if item.title %}title="{{ item.title }}"{% endif %}
+                   {% if item.dialog %}data-record-dialog="{{ item.label }}"{% endif %}
                    {% if item.target == "_blank" %}rel="noopener"{% endif %}>
                   {% if item.icon %}{% icon item.icon %}{% endif %}
                   <span class="menu-item__label">{{ item.label }}</span>

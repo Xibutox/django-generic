@@ -654,6 +654,54 @@
     return done;
   }
 
+  /**
+   * An *Add* link marked `data-record-dialog` (its value the dialog's
+   * title): the form opens in a dialog over the page rather than in its
+   * place (`ModelResource.add_in_dialog`). Once it is saved, the page
+   * hears `generic:record-dialog-saved` - its tables read again
+   * (datatables/init.js). A click with a modifier key, or a middle
+   * click, still opens the page itself.
+   */
+  function openLink(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    var link = event.target && event.target.closest ? event.target.closest("a[data-record-dialog]") : null;
+    var href = link ? link.getAttribute("href") : "";
+
+    if (!href || !Generic.isSafeUrl(href)) {
+      return;
+    }
+
+    event.preventDefault();
+    record({
+      url: href,
+      title: link.getAttribute("data-record-dialog") || link.textContent.trim(),
+      icon: "add"
+    }).then(function (result) {
+      if (!result) {
+        return;
+      }
+
+      if (result.saved) {
+        Generic.toast(
+          Generic.format(t("\u201c%(name)s\u201d was added."), { name: result.label || String(result.id) }),
+          "success"
+        );
+      }
+
+      link.dispatchEvent(
+        new CustomEvent("generic:record-dialog-saved", {
+          bubbles: true,
+          detail: { result: result, url: href }
+        })
+      );
+    });
+  }
+
+  document.addEventListener("click", openLink);
+
   Generic.dialogs = {
     fields: fields,
     confirm: confirm,

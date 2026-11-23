@@ -229,7 +229,8 @@
               <p class="summary-related__description" x-text="related('{{ table.name|escapejs }}').description"></p>
               <a class="button button--sm"
                  x-show="related('{{ table.name|escapejs }}').addUrl"
-                 :href="safeUrl(related('{{ table.name|escapejs }}').addUrl)">
+                 :href="safeUrl(related('{{ table.name|escapejs }}').addUrl)"
+                 :data-record-dialog="related('{{ table.name|escapejs }}').addInDialog ? related('{{ table.name|escapejs }}').title : null">
                 {% icon "add" "icon--sm" %}
                 {% translate "Add" %}
               </a>

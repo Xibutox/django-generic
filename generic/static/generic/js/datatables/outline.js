@@ -180,6 +180,8 @@
     this.editable = config.editable || {};
     this.editableUrl = config.editableUrl || "";
     this.addUrl = config.addUrl || "";
+    // The add form in a dialog over the outline (add_in_dialog).
+    this.addInDialog = Boolean(config.addInDialog);
     this.rowKey = config.rowKey || "_pk";
     // Opened in a dialog while editing, and dragged into another order.
     this.changeUrl = config.changeUrl || "";
@@ -885,6 +887,17 @@
         add.href = addUrl;
         add.append(icon("add"), el("span", "", core.format(t("Add %(name)s"), { name: level.label.toLowerCase() })));
         rest.appendChild(add);
+
+        if (this.addsInDialog(level)) {
+          add.addEventListener("click", function (event) {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+
+            event.preventDefault();
+            self.openAdd(parent, addUrl);
+          });
+        }
       }
     }
 
@@ -1589,6 +1602,46 @@
         if (node.element) {
           node.element.focus();
         }
+      });
+  };
+
+  OutlineView.prototype.addsInDialog = function (level) {
+    return Boolean(level && level.addInDialog && generic().dialogs && generic().dialogs.record);
+  };
+
+  /** A new record below `parent`, its form over the outline: once it is
+   * saved, `parent` is read again - open, and the records below it that
+   * were open kept so - and its count follows. */
+  OutlineView.prototype.openAdd = function (parent, url) {
+    var self = this;
+    var level = this.levels[parent.depth + 1];
+
+    return generic()
+      .dialogs.record({ url: url, title: core.format(t("Add %(name)s"), { name: level.label.toLowerCase() }), icon: "add" })
+      .then(function (result) {
+        if (!result || !result.saved) {
+          return null;
+        }
+
+        // Its own event, already drawn here: not read a second time.
+        if (result.id !== undefined && result.id !== "") {
+          self.recentWrites[level.resource + ":" + result.id] = Date.now();
+        }
+
+        parent.expanded = true;
+        generic().toast(core.format(t("\u201c%(name)s\u201d was added."), { name: result.label || String(result.id) }), "success");
+
+        return self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length + 1))).then(function () {
+          if (parent.failed) {
+            return;
+          }
+
+          parent.count = parent.total;
+
+          if (parent.element) {
+            self.updateRow(parent);
+          }
+        });
       });
   };
 
