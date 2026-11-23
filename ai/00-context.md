@@ -365,8 +365,17 @@ number - `version`, `reference` DOC-00001, `code` the team's number,
 SHA-256, change note, sender), each resource scoped by `team_field`;
 `file_format` (`DOCX`, `PDF`: the extension, a field so lists search,
 filter and preset on it - "Word files"); `documents/versions.py`
-records, numbers (row lock) and restores versions; the document form's
-change note is a `form_extra_fields` entry. The Word merge is the
+records, numbers (row lock) and restores versions - never changed nor
+deleted (`has_delete_permission` False); the document form's
+change note is a `form_extra_fields` entry. Per-document access:
+`DocumentAccess` (user or group, `read`/`write`, an inline of the
+document form answering to the document's permissions) and
+`Document.restricted` (the list alone, not the team);
+`documents/access.py` writes the rules as `Q`s (`readable`,
+`writable`, `drafts`) used by `DocumentResource.scope_to_teams`, by
+`LiveDocuments.scope_to_teams` for what hangs on a document, by the
+merge and the drafts, and per object by `has_change_permission` and
+the bulk actions (`writes_only`). The Word merge is the
 example's own, not the framework's: `documents/merge.py` (`merge_docx`,
 `docx_response`, on python-docx + docxcompose,
 `docmanager/requirements.txt`), the page `DocumentResource.merge`

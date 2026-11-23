@@ -8,6 +8,7 @@ is declared like any django-generic screen (docs/ for each part).
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -16,9 +17,7 @@ from django.db.models import (
     BooleanField,
     Case,
     CharField,
-    Exists,
     F,
-    OuterRef,
     Q,
     QuerySet,
     Value,
@@ -31,6 +30,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from documents import (
+    access,
     codification,
     merging,
     preview,
@@ -42,6 +42,7 @@ from documents.models import (
     Codification,
     Comment,
     Document,
+    DocumentAccess,
     DocumentType,
     DocumentVersion,
     Folder,
@@ -60,6 +61,7 @@ from generic.sites import (
     ModelResource,
     RelatedTable,
     StackedInline,
+    TabularInline,
     TagStyle,
     action,
     display,
@@ -108,11 +110,25 @@ class LiveDocuments:
     #: The path from the model to its document.
     document_path = "document"
 
+    def scope_to_teams(self, request: Any, queryset: QuerySet) -> QuerySet:
+        # What hangs on a document follows the document: its team's,
+        # and what its access list shares beyond (access.py).
+        user = getattr(request, "user", None)
+
+        return queryset.filter(
+            access.readable(user, f"{self.document_path}__")
+        )
+
     def get_queryset(self, request: Any) -> QuerySet:
+        # And none of a document its reader may not read: a restricted
+        # one's versions, reviews and comments stay with it.
+        path = f"{self.document_path}__"
+
         return (
             super()
             .get_queryset(request)  # type: ignore[misc]
-            .filter(**{f"{self.document_path}__deleted_at__isnull": True})
+            .filter(**{f"{path}deleted_at__isnull": True})
+            .filter(access.readable(getattr(request, "user", None), path))
         )
 
 
@@ -135,15 +151,7 @@ def reads(user: Any, path: str = "") -> dict[str, Case]:
     has_file = ~Q(**{f"{path}file": ""})
     published = Q(**{f"{path}published_version__isnull": False})
 
-    if versions.sees_all_drafts(user):
-        drafts: Any = has_file
-    else:
-        drafts = has_file & Exists(
-            ReviewTask.objects.filter(
-                document=OuterRef(f"{path}pk"),
-                assignee=getattr(user, "pk", None),
-            )
-        )
+    drafts = has_file & access.drafts(user, path)
 
     return {
         "reads": Case(
@@ -219,6 +227,26 @@ STATUS_COLORS = {
     Document.Status.APPROVED: "#16a34a",
     Document.Status.OBSOLETE: "#991b1b",
 }
+
+
+def writes_only(function: Any, user: Any) -> Any:
+    """``function``, a bulk action, run on the documents of its
+    selection that ``user`` writes - none, it answers so."""
+
+    def narrowed(request: Any, queryset: QuerySet) -> Any:
+        writable = access.of(queryset, access.writable(user))
+
+        if not writable.exists():
+            return {
+                "message": gettext(
+                    "You may not change the selected documents."
+                ),
+                "level": "warning",
+            }
+
+        return function(request, writable)
+
+    return narrowed
 
 
 def human_size(size: int) -> str:
@@ -502,6 +530,26 @@ class CodificationResource(ModelResource):
             return "-"
 
 
+class DocumentAccessInline(TabularInline):
+    model = DocumentAccess
+    fields = ("user", "group", "level")
+    extra = 0
+    verbose_name_plural = _("Access")
+
+    # The document's list, not a model of its own: whoever reads the
+    # document reads it, whoever writes the document writes it
+    # (DocumentResource.has_change_permission says which documents).
+    def _has(self, request: Any, action: str) -> bool:
+        user = getattr(request, "user", None)
+
+        if user is None or not user.is_active:
+            return False
+
+        verb = "view" if action == "view" else "change"
+
+        return bool(user.has_perm(f"documents.{verb}_document"))
+
+
 @register(Document)
 class DocumentResource(ModelResource):
     icon = "description"
@@ -618,7 +666,20 @@ class DocumentResource(ModelResource):
             },
         ),
         (_("Description"), {"fields": ("description", "related")}),
+        (
+            _("Access"),
+            {
+                "fields": ("restricted",),
+                "description": _(
+                    "Its team reads it. The list below adds people and "
+                    "groups, in any team, each reading it or writing it "
+                    "too; restricted, the list alone reads it. "
+                    "Administrators and managers read every document."
+                ),
+            },
+        ),
     )
+    inlines = (DocumentAccessInline,)
     form_extra_fields = {
         "version_note": serializers.CharField(
             label=_("Change note"),
@@ -655,6 +716,7 @@ class DocumentResource(ModelResource):
                     "checked_out_by",
                     "related",
                     "description",
+                    "access_summary",
                 )
             },
         ),
@@ -721,15 +783,54 @@ class DocumentResource(ModelResource):
     list_charts = ("by_status", "by_team")
 
     def scope_to_teams(self, request: Any, queryset: QuerySet) -> QuerySet:
-        # Whoever is asked to review a document reads it, in their team
-        # or not: a review never stops at a door.
+        # Its team's unrestricted documents, the ones whose access list
+        # names the reader, and the ones a review asks them about - in
+        # their team or not: a review never stops at a door (access.py).
         user = getattr(request, "user", None)
 
-        return widened(
-            queryset,
-            super().scope_to_teams(request, queryset),
-            Q(reviews__tasks__assignee=getattr(user, "pk", None)),
+        return access.of(queryset, access.readable(user))
+
+    @display(description=_("Access"))
+    def access_summary(self, document: Document) -> str:
+        return access.summary(document)
+
+    def has_change_permission(self, request: Any, obj: Any = None) -> bool:
+        # The role says whether one writes documents; the document's
+        # access list, whether this one.
+        return super().has_change_permission(request, obj) and (
+            obj is None or access.may_write(request.user, obj)
         )
+
+    def has_delete_permission(self, request: Any, obj: Any = None) -> bool:
+        return super().has_delete_permission(request, obj) and (
+            obj is None or access.may_write(request.user, obj)
+        )
+
+    def unlocked(
+        self, request: Any, queryset: QuerySet, delete: bool = False
+    ) -> QuerySet:
+        # A selection deleted holds only what its reader writes.
+        return access.of(
+            super().unlocked(request, queryset, delete=delete),
+            access.writable(getattr(request, "user", None)),
+        )
+
+    def get_actions(self, request: Any, trashing: Any = None) -> dict:
+        # An action that writes runs on the documents its reader
+        # writes, whatever else the selection holds.
+        actions = super().get_actions(request, trashing=trashing)
+        user = getattr(request, "user", None)
+
+        for name, entry in actions.items():
+            function = getattr(self, name, None)
+            permissions = getattr(function, "allowed_permissions", ("change",))
+
+            if set(permissions) & {"change", "delete"}:
+                actions[name] = dataclasses.replace(
+                    entry, function=writes_only(entry.function, user)
+                )
+
+        return actions
 
     def get_list_queryset(self, request: Any) -> QuerySet:
         # Which file each row's reader reads: the working one for its
@@ -761,6 +862,7 @@ class DocumentResource(ModelResource):
         number = serializer.extra_values.get("codify", False)
         stamp = {} if change else {"created_by": request.user}
         document = serializer.save(**stamp)
+        access.keep_writer(request.user, document)
 
         # A file sent is a new version; a form saved without one only
         # changed what is said about the document.
@@ -1210,15 +1312,11 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
         queryset = super().get_queryset(request)
         user = getattr(request, "user", None)
 
-        if versions.sees_all_drafts(user):
-            return queryset
-
-        # Readers read published versions - and the drafts of what a
-        # review asks them about.
+        # Readers read published versions; the drafts are for the
+        # document's authors and whoever a review asks (access.drafts).
         return queryset.filter(
-            Q(published_at__isnull=False)
-            | Q(document__tasks__assignee=getattr(user, "pk", None))
-        ).distinct()
+            Q(published_at__isnull=False) | access.drafts(user, "document__")
+        )
 
     def may_download(self, request: Any, obj: Any, field: str) -> bool:
         return obj.is_published or versions.sees_drafts(
@@ -1229,9 +1327,21 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
         # Never rewritten: a correction is a new version.
         return False
 
+    def has_delete_permission(self, request: Any, obj: Any = None) -> bool:
+        # Nor ever deleted: the history of a document is kept whole.
+        # The document goes to the trash with its versions, and only
+        # emptying the trash deletes them (empty_trash).
+        return False
+
     def save_model(self, request: Any, serializer: Any, change: bool) -> Any:
         upload = serializer.validated_data["file"]
         document = serializer.validated_data["document"]
+
+        if not access.may_write(request.user, document):
+            raise serializers.ValidationError(
+                {"document": gettext("You may not change this document.")}
+            )
+
         version = serializer.save(
             number=versions.next_number(document),
             created_by=request.user,
@@ -1254,7 +1364,14 @@ class DocumentVersionResource(LiveDocuments, ModelResource):
         confirm=_("Make this version the document's file again?"),
     )
     def restore(self, request: Any, queryset: Any) -> dict:
+        user = getattr(request, "user", None)
         chosen = list(queryset[:2])
+
+        if len(chosen) == 1 and not access.may_write(user, chosen[0].document):
+            return {
+                "message": gettext("You may not change this document."),
+                "level": "warning",
+            }
 
         if len(chosen) != 1:
             return {

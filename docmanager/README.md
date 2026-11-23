@@ -24,9 +24,12 @@ docmanager/
 │   └── wsgi.py
 └── documents/
     ├── models.py       Folder (a team's), Tag, DocumentType, Codification,
-    │                   Document, DocumentVersion, Comment, TeamWiki,
-    │                   Workflow, WorkflowStep, Review, ReviewStep, ReviewTask
+    │                   Document, DocumentAccess, DocumentVersion, Comment,
+    │                   TeamWiki, Workflow, WorkflowStep, Review, ReviewStep,
+    │                   ReviewTask
     ├── resources.py    the screens, each scoped to its team (team_field)
+    ├── access.py       who reads and who writes one document: its team,
+    │                   its access list, restricted or shared beyond
     ├── versions.py     how a version is recorded, labelled (0.1, 1.0, 1.1...),
     │                   published and restored
     ├── text.py         the text of a file, for the search (docx, pptx,
@@ -87,7 +90,7 @@ Sign in at <http://localhost:8000/> - every password is `demo`:
 | `alice` | Legal (leader), Engineering | Editors | both teams' documents |
 | `bob` | Engineering (leader) | Editors | Engineering's |
 | `carol` | Human resources (leader) | Editors | Human resources' |
-| `viewer` | Legal | Readers | Legal's, read only |
+| `viewer` | Legal | Readers | Legal's, and Engineering's release procedure shared with him, read only |
 | `quentin` | - | Quality (a role) | only what a review asks of him |
 
 Waiting for them when they sign in: `quentin` has two tasks (the NDA's
@@ -205,7 +208,23 @@ not the internet: its secret key and passwords are public.
   them all, each downloadable under the name it was sent with; *Add*
   there sends a new one too. Select an old version and *Restore*: it
   becomes the current file again, as a new version - nothing is ever
-  overwritten.
+  overwritten, and no version is ever deleted, not even by an
+  administrator: the document goes to the trash with all of them.
+- **Who reads which document.** A document is its team's - and its
+  *Access* list's, in its form: people and groups, of any team or
+  none, each to *Read* or to *Read and write*. Ticked *Restricted*,
+  the list alone reads it, its team no longer does. As `alice`, the
+  *Architecture notes* are gone: Engineering's, but restricted to
+  `bob`. As `viewer`, Engineering's *Release procedure* is there,
+  shared with him to read - its published version only. Whoever
+  restricts a document stays among its writers; administrators and
+  managers read and write every document. The list follows the
+  document everywhere: its versions, comments, reviews, tasks, the
+  search, the Word merge, the bulk actions - an action that writes
+  leaves out the documents of the selection its reader only reads.
+  Writing still takes the role's permission: a *Readers* member listed
+  to write still reads only. Whoever a review asks reads the document
+  it is about, as before.
 - **History.** A document's *History* tab says who changed what and
   when; its versions say which file.
 - **Review.** *To review* in the list's views, *Approve* as a bulk

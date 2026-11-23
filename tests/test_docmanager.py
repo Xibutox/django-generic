@@ -1229,6 +1229,143 @@ FEATURES_SCENARIO = PRELUDE + textwrap.dedent("""
     """)
 
 
+#: Who reads and writes one document: restricted to its list, shared
+#: beyond its team, read or written - and versions never deleted.
+ACCESS_SCENARIO = PRELUDE + textwrap.dedent("""
+    from documents.models import DocumentAccess
+
+    def ids(username, url="/api/documents/document/"):
+        rows = signed_in(username).get(
+            url, {"draw": 1, "length": 200}
+        ).json()["data"]
+        return {row["_pk"] for row in rows}
+
+    def as_json(client, method, url, payload):
+        return client.generic(
+            method, url, json.dumps(payload),
+            content_type="application/json",
+        )
+
+    def act(client, name, document):
+        return as_json(
+            client, "POST", "/api/documents/document/actions/",
+            {"action": name, "ids": [document.pk]},
+        )
+
+    # Seeded: the architecture notes are Bob's alone, not Engineering's.
+    notes = Document.objects.get(title="Architecture notes")
+    assert notes.restricted
+    assert notes.pk in ids("bob")
+    assert notes.pk not in ids("alice")
+    assert notes.pk in ids("manager") and notes.pk in ids("admin")
+    alice, bob = signed_in("alice"), signed_in("bob")
+    assert alice.get(f"/documents/document/{notes.pk}/").status_code == 404
+    assert alice.get(
+        f"/api/documents/document/{notes.pk}/files/file/"
+    ).status_code == 404
+    hidden = set(notes.versions.values_list("pk", flat=True))
+    assert hidden and not hidden & ids(
+        "alice", "/api/documents/documentversion/"
+    )
+    assert hidden <= ids("bob", "/api/documents/documentversion/")
+
+    # The release procedure is shared with Victor, in Legal: he reads
+    # its published version, never its drafts.
+    release = Document.objects.get(title="Release procedure")
+    assert release.pk in ids("viewer")
+    viewer = signed_in("viewer")
+    assert viewer.get(
+        f"/api/documents/document/{release.pk}/files/published_file/"
+    ).status_code == 200
+    assert viewer.get(
+        f"/api/documents/document/{release.pk}/files/file/"
+    ).status_code in (403, 404)
+    seen = ids("viewer", "/api/documents/documentversion/")
+    mine = set(release.versions.values_list("pk", flat=True))
+    published = set(
+        release.versions.filter(published_at__isnull=False)
+        .values_list("pk", flat=True)
+    )
+    assert seen & mine == published, (seen & mine, published)
+
+    # Shared with Bob to read: he reads, and changes nothing.
+    framework = Document.objects.get(title="Supplier framework agreement")
+    assert framework.pk not in ids("bob")
+    entry = DocumentAccess.objects.create(
+        document=framework,
+        user=get_user_model().objects.get(username="bob"),
+    )
+    assert framework.pk in ids("bob")
+    assert bob.get(f"/documents/document/{framework.pk}/").status_code == 200
+    url = f"/api/documents/document/{framework.pk}/"
+    assert as_json(bob, "PATCH", url, {"title": "Mine"}).status_code == 403
+    assert bob.delete(url).status_code == 403
+    answer = act(bob, "codify", framework).json()
+    assert answer["level"] == "warning", answer
+    data = {"_payload": json.dumps({"document": framework.pk})}
+    data["file"] = SimpleUploadedFile("mine.docx", b"mine")
+    refused = bob.generic(
+        "POST", "/api/documents/documentversion/",
+        encode_multipart(BOUNDARY, data), content_type=MULTIPART_CONTENT,
+    )
+    assert refused.status_code == 400, refused.content
+    assert framework.versions.count() == 3
+
+    # To write: he does.
+    entry.level = DocumentAccess.Level.WRITE
+    entry.save()
+    changed = as_json(bob, "PATCH", url, {"title": "Framework agreement"})
+    assert changed.status_code == 200, changed.content
+
+    # Restricted by Alice: Victor, Legal's reader, no longer reads it;
+    # Alice, who restricted it, stays among its writers.
+    restricted = as_json(alice, "PATCH", url, {"restricted": True})
+    assert restricted.status_code == 200, restricted.content
+    assert framework.pk not in ids("viewer")
+    assert framework.pk in ids("alice") and framework.pk in ids("bob")
+    assert DocumentAccess.objects.filter(
+        document=framework, user__username="alice", level="write"
+    ).exists()
+    summary = json.dumps(
+        alice.get(f"/api/documents/document/{framework.pk}/summary/").json()
+    )
+    assert "Restricted to" in summary, summary
+
+    # The access list from the document's form: the letter template
+    # restricted to Victor, to read - and to Alice, who restricted it.
+    letter = Document.objects.get(title="Letter template")
+    viewer_pk = get_user_model().objects.get(username="viewer").pk
+    listed = as_json(alice, "PATCH", f"/api/documents/document/{letter.pk}/", {
+        "restricted": True,
+        "_inlines": {"accesses": [
+            {"user": viewer_pk, "group": None, "level": "read"},
+        ]},
+    })
+    assert listed.status_code == 200, listed.content
+    levels = dict(letter.accesses.values_list("user__username", "level"))
+    assert levels == {"viewer": "read", "alice": "write"}, levels
+    assert letter.pk in ids("viewer") and letter.pk in ids("alice")
+    assert letter.pk not in ids("bob")
+
+    # A version is never deleted - not even by the managers.
+    version = framework.versions.order_by("number").first()
+    for username in ("alice", "manager", "admin"):
+        deleted = signed_in(username).delete(
+            f"/api/documents/documentversion/{version.pk}/"
+        )
+        assert deleted.status_code == 403, (username, deleted.status_code)
+    assert framework.versions.count() == 3
+
+    for page in (
+        f"/documents/document/{framework.pk}/",
+        f"/documents/document/{framework.pk}/change/",
+        "/documents/document/add/",
+    ):
+        assert alice.get(page).status_code == 200, page
+    print("ok")
+    """)
+
+
 def manage(*args: str) -> subprocess.CompletedProcess:
     env = {
         name: value
@@ -1343,6 +1480,13 @@ def test_uploaded_word_files_are_merged_when_turned_on():
 
 def test_files_are_searched_published_previewed_and_trashed():
     result = manage("-c", FEATURES_SCENARIO)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().endswith("ok")
+
+
+def test_each_document_says_who_reads_and_writes_it():
+    result = manage("-c", ACCESS_SCENARIO)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip().endswith("ok")

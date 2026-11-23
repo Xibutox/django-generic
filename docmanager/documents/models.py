@@ -398,6 +398,17 @@ class Document(Trashable):
     checked_out_at = models.DateTimeField(
         _("checked out at"), null=True, blank=True, editable=False
     )
+    #: Read by the people and groups of its access list only, not by
+    #: its whole team (``access.py``).
+    restricted = models.BooleanField(
+        _("restricted"),
+        default=False,
+        help_text=_(
+            "Only the people and groups listed under Access read it - "
+            "its team no longer does. Unticked, the list shares it "
+            "beyond its team."
+        ),
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_("created by"),
@@ -535,6 +546,65 @@ class DocumentVersion(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.file_format = extension_of(self.file_name or self.file.name)
         super().save(*args, **kwargs)
+
+
+class DocumentAccess(models.Model):
+    """A person or a group who reads - or writes - one document,
+    whatever their teams (``access.py``)."""
+
+    class Level(models.TextChoices):
+        READ = "read", _("Read")
+        WRITE = "write", _("Read and write")
+
+    document = models.ForeignKey(
+        Document,
+        verbose_name=_("document"),
+        on_delete=models.CASCADE,
+        related_name="accesses",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("person"),
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    group = models.ForeignKey(
+        "auth.Group",
+        verbose_name=_("group"),
+        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    level = models.CharField(
+        _("access"),
+        max_length=10,
+        choices=Level.choices,
+        default=Level.READ,
+    )
+
+    class Meta:
+        ordering = ("document", "pk")
+        verbose_name = _("access")
+        verbose_name_plural = _("access")
+        constraints = (
+            models.CheckConstraint(
+                condition=models.Q(user__isnull=False, group__isnull=True)
+                | models.Q(user__isnull=True, group__isnull=False),
+                name="documents_access_user_or_group",
+            ),
+        )
+
+    def __str__(self) -> str:
+        return f"{self.user or self.group}: {self.get_level_display()}"
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if (self.user_id is None) == (self.group_id is None):
+            raise ValidationError(_("Name a person or a group - one of them."))
 
 
 class Comment(models.Model):

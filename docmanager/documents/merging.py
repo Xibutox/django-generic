@@ -23,7 +23,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.utils.translation import gettext
 
-from documents import versions
+from documents import access, versions
 from documents.merge import DocxMergeError, docx_name, docx_response
 from documents.models import Document, DocumentVersion, Folder
 
@@ -67,16 +67,10 @@ def reachable_documents(request: Any) -> Any:
         .select_related("folder__team", "published_version")
     )
 
-    if versions.sees_all_drafts(user):
-        return queryset.filter(file_format__in=WORD_FORMATS)
-
     return queryset.filter(
-        Q(
-            file_format__in=WORD_FORMATS,
-            tasks__assignee=getattr(user, "pk", None),
-        )
+        (Q(file_format__in=WORD_FORMATS) & access.drafts(user))
         | Q(published_version__file_format__in=WORD_FORMATS)
-    ).distinct()
+    )
 
 
 def readable_file(document: Document, user: Any) -> Any:

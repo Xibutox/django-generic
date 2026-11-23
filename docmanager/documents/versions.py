@@ -9,8 +9,8 @@ Each version is numbered twice. ``number`` counts every file sent, 1,
 while the document is a draft, ``1.0`` once approved (:func:`publish`)
 - then ``1.1``, ``1.2`` for the next draft, and ``2.0`` at the next
 approval. The approved version is the *published* one: whoever may not
-change documents reads that one, never a draft, while the authors work
-on the next (:func:`sees_drafts`).
+change the document reads that one, never a draft, while its authors
+work on the next (:func:`sees_drafts`, ``access.py``).
 """
 
 from __future__ import annotations
@@ -27,12 +27,8 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext
 
-from documents import stamping, text
-from documents.models import Document, DocumentVersion, ReviewTask
-
-#: The documents' permission that makes one an author: who holds it
-#: reads the drafts.
-AUTHOR_PERMISSION = "documents.change_document"
+from documents import access, stamping, text
+from documents.models import Document, DocumentVersion
 
 
 def describe(stored: Any) -> dict[str, Any]:
@@ -86,27 +82,11 @@ def draft_label(document: Document, besides: Any = None) -> str:
     return f"{major}.{1 if latest.is_published else minor + 1}"
 
 
-def sees_all_drafts(user: Any) -> bool:
-    """Whether ``user`` reads every draft they may see: the authors."""
-    return bool(
-        getattr(user, "is_authenticated", False)
-        and user.has_perm(AUTHOR_PERMISSION)
-    )
-
-
 def sees_drafts(user: Any, document: Document) -> bool:
-    """Whether ``user`` reads ``document``'s working file - an author,
-    or someone a review asks about it. Everyone else reads its published
-    version only."""
-    if sees_all_drafts(user):
-        return True
-
-    return bool(
-        getattr(user, "is_authenticated", False)
-        and ReviewTask.objects.filter(
-            document=document, assignee=user.pk
-        ).exists()
-    )
+    """Whether ``user`` reads ``document``'s working file - one of its
+    authors (``access.writable``), or someone a review asks about it.
+    Everyone else reads its published version only."""
+    return access.sees_drafts(user, document)
 
 
 def original_name(upload: Any, stored: Any) -> str:
