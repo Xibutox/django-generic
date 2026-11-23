@@ -29,6 +29,13 @@ WSGI, SQLite.
   headings, to-dos, tables, the bullets of plain text - comes in as
   lines of the note. A paste, a move or a removal is undone from its
   toast, or with Ctrl+Z right after. The keyboard button lists the keys.
+  Links read like HTML, by their alias: a line holds them as
+  `[alias](address)`, written so or made by pasting an address on
+  selected text; a link pasted from OneNote, Word or a web page keeps
+  its text as the alias, and an address alone (`https://...`,
+  `www....`) is a link too. Out of the line, they show as links opening
+  in a new tab; a click elsewhere on the line edits it, the address in
+  sight (Ctrl+click on it opens it).
 - **Attach to a task**: selected lines (or the current one) added to
   the specification of a task that already exists, under the note's
   title and the day - the task picked in a dialog, searched by

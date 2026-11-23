@@ -117,18 +117,22 @@
   margin-top: var(--space-2);
 }
 
-.note-line--heading .note-line__text {
+.note-line--heading .note-line__text,
+.note-line--heading .note-line__view {
   font-size: var(--font-size-lg);
   font-weight: 700;
 }
 
-.note-line--bullet .note-line__text {
+.note-line--bullet .note-line__text,
+.note-line--bullet .note-line__view {
   padding-inline-start: 1rem;
   background: radial-gradient(circle, var(--text-secondary) 0.18rem, transparent 0.2rem) no-repeat 0.2rem 0.6rem / 0.6rem 0.6rem;
 }
 
 .note-line.is-done .note-line__text,
-.note-line.is-task-done .note-line__text {
+.note-line.is-done .note-line__view,
+.note-line.is-task-done .note-line__text,
+.note-line.is-task-done .note-line__view {
   color: var(--text-muted);
   text-decoration: line-through;
 }
@@ -152,7 +156,8 @@
   border-inline-start-color: oklch(0.6 0.12 185);
 }
 
-.note-line--task .note-line__text {
+.note-line--task .note-line__text,
+.note-line--task .note-line__view {
   font-weight: 600;
 }
 
@@ -170,6 +175,47 @@
 
 .note-line__task:empty {
   display: none;
+}
+
+/* A line with links reads as text with links, by their alias; written
+   in, it shows its [alias](address) to change. */
+.note-line__view {
+  display: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--line-box);
+  padding: 0.3rem 0;
+  color: var(--text-primary);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.note-line.has-links .note-line__text:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px !important;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.note-line.has-links .note-line__text:not(:focus) + .note-line__view {
+  display: block;
+}
+
+.note-line__link {
+  color: var(--text-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.note-line__link:hover {
+  text-decoration-thickness: 2px;
 }
 
 .note-line__task-kind {
