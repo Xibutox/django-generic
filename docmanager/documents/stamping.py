@@ -65,8 +65,9 @@ def stamp(data: bytes, lines: list[str]) -> bytes | None:
                     io.BytesIO(overlay(*size, lines))
                 ).pages[0]
 
-            page.merge_page(drawn[size])
-            writer.add_page(page)
+            # Merged once in the writer: pypdf 7 no longer rewrites
+            # a page that belongs to no writer.
+            writer.add_page(page).merge_page(drawn[size])
 
         output = io.BytesIO()
         writer.write(output)
