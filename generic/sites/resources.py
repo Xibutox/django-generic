@@ -286,6 +286,11 @@ class ModelResource(PagesMixin):
     form_serializer: Any = None
     inlines: Sequence[type] = ()
     view_on_site: bool = True
+    #: Its *Add* buttons - the list's, a related table's or an outline
+    #: level's adding one of these - open the form in a dialog over the
+    #: page, which is read again once it is saved, rather than going to
+    #: it. None follows ``GENERIC["ADD_IN_DIALOG"]`` (off).
+    add_in_dialog: bool | None = None
 
     # -- the summary page ---------------------------------------------------
 
@@ -533,6 +538,13 @@ class ModelResource(PagesMixin):
 
     def get_add_url(self) -> str:
         return self._reverse(self.url_name("add"))
+
+    def adds_in_dialog(self) -> bool:
+        """Whether its *Add* buttons open the form in a dialog."""
+        if self.add_in_dialog is None:
+            return bool(generic_settings.ADD_IN_DIALOG)
+
+        return bool(self.add_in_dialog)
 
     def get_change_url(self, pk: Any) -> str:
         return self._reverse(self.url_name("change"), pk=pk)

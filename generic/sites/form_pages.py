@@ -54,7 +54,8 @@ from rest_framework.settings import api_settings
 
 from generic.api.relations import DISPLAY_KEY
 from generic.sites.pages import ResourcePageView
-from generic.sites.views import SiteViewMixin
+from generic.sites.views import SiteViewMixin, framed_by_this_site
+from generic.views.mixins import RELATION_REQUEST_PARAM, popup_params
 from generic.views.toolbar import Breadcrumb
 
 
@@ -117,6 +118,17 @@ class FormViewMixin:
     description: Any = ""
     #: The page header's icon.
     icon = "edit_note"
+
+    def dispatch(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        response = super().dispatch(  # type: ignore[misc]
+            request, *args, **kwargs
+        )
+
+        # A form opened in a dialog is a frame of this site.
+        if self.is_popup():  # type: ignore[attr-defined]
+            framed_by_this_site(response)
+
+        return response
 
     # -- the serializer ------------------------------------------------
 
@@ -243,6 +255,13 @@ class FormViewMixin:
             "initial": initial,
             "initialDisplay": display,
             "label": force_str(self.get_page_title()),  # type: ignore
+            # Opened in a dialog (Generic.dialogs.record) or a popup
+            # window: once accepted, it reports to the page holding it
+            # instead of going on to ``success_url``.
+            "popup": self.is_popup(),  # type: ignore[attr-defined]
+            "popupRequest": popup_params(self.request).get(
+                RELATION_REQUEST_PARAM, ""
+            ),
         }
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
@@ -330,6 +349,11 @@ class FormViewMixin:
             "_message": self.get_success_message(result),
             "_redirect": url,
         }
+
+        # What was saved, for a dialog the form was opened in.
+        if getattr(result, "pk", None) is not None:
+            payload["id"] = result.pk
+            payload["_label"] = force_str(result)
 
         if not url:
             # The form stays: it opens again on what is now true - empty

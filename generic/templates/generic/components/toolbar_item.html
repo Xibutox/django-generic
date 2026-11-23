@@ -14,6 +14,7 @@
      target="{{ item.target }}"
      {% if slot %}data-toolbar-slot="{{ slot.index }}"{% if not item.pinned %} data-foldable{% endif %}{% endif %}
      {% if item.title %}title="{{ item.title }}"{% endif %}
+     {% if item.dialog %}data-record-dialog="{{ item.label }}"{% endif %}
      {% if item.target == "_blank" %}rel="noopener"{% endif %}>
     {% if item.icon %}{% icon item.icon %}{% endif %}
     {{ item.label }}

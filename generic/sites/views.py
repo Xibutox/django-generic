@@ -28,12 +28,12 @@ from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.sites.dashboard import dashboard_entries
 from generic.views.delete import GenericDeleteView
-from generic.views.mixins import POPUP_PARAM, PageMixin
+from generic.views.mixins import (
+    POPUP_PARAM,
+    RELATION_REQUEST_PARAM,
+    PageMixin,
+)
 from generic.views.toolbar import Breadcrumb, ToolbarItem
-
-#: Query parameter carrying the id of a relation popup's request, so
-#: the page that opened it knows which field to update.
-RELATION_REQUEST_PARAM = "_relation_request"
 
 
 class SiteViewMixin(PageMixin):
@@ -282,6 +282,7 @@ class ResourceListView(ResourceViewMixin, TemplateView):
                 label=gettext("Add %(name)s") % {"name": resource.get_label()},
                 icon="add",
                 variant="primary",
+                dialog=resource.adds_in_dialog(),
             )
         ]
 

@@ -510,6 +510,7 @@ def build_summary(resource: Any, request: Any, obj: Any) -> dict[str, Any]:
                 if lock.freezes(bound.name)
                 else bound.get_add_url(request, obj)
             ),
+            "addInDialog": bound.adds_in_dialog(),
         }
         for bound in resource.get_related_tables(request)
         if bound.is_visible(request)

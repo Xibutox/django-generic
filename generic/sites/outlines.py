@@ -723,6 +723,9 @@ class BoundOutline:
                 "label": resource.get_label(),
                 "columns": columns,
                 "addUrl": self.get_add_url(request, level, back),
+                # The add form over the outline, its parent read again
+                # once saved (ModelResource.add_in_dialog).
+                "addInDialog": resource.adds_in_dialog(),
                 "rowKey": "_pk",
                 "color": colors[level.index],
             }

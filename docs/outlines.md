@@ -57,6 +57,10 @@ class CustomerResource(ModelResource):
   nothing yet unfolds too, so its first record is added the same way
   (*Nothing here.*, then *Add …*); for a reader who may not add, it
   stays a leaf.
+  With the level's resource's `add_in_dialog` (docs/forms.md), the form
+  opens in a dialog over the outline instead: once saved, the parent is
+  read again - still open, the records open below it kept so - and its
+  count follows.
 - **Kept**: the outline is remembered for the table (in the browser,
   and in the address as `?outline=1`, so a link opens it). *Collapse
   all* folds everything, *Refresh* reads every open level again; a

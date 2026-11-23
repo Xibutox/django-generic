@@ -61,6 +61,11 @@ class ToolbarItem:
     css_class: str = ""
     #: One of :data:`PLACEMENTS`.
     placement: str = "auto"
+    #: Open ``url`` - a record's form - in a dialog over the page
+    #: (``Generic.dialogs.record``) rather than going to it; the page's
+    #: tables are read again once it is saved. A click with a modifier
+    #: key, or a middle click, still opens the page itself.
+    dialog: bool = False
 
     def __post_init__(self) -> None:
         if self.variant not in VARIANTS:

@@ -117,6 +117,46 @@ rather than producing a dead button.
 Overrides merge along the MRO, so a subclass restates only what it
 changes.
 
+## Adding in a dialog
+
+An *Add* button goes to the add form, by default. With `add_in_dialog`
+it opens the form in a dialog over the page instead - the record's
+form in a frame (`Generic.dialogs.record`) - and the page reads its
+rows again once it is saved:
+
+```python
+class EquipmentResource(ModelResource):
+    add_in_dialog = True
+
+# or for every resource, settings.py
+GENERIC = {"ADD_IN_DIALOG": True}
+```
+
+The resource's attribute wins over the setting (`None`, the default,
+follows it; the setting is off). It covers every *Add* of the
+resource's records:
+
+| Button | Once saved |
+| --- | --- |
+| The list's *Add ...* | the table reads its page again; an open outline every open level |
+| A related table's *Add* on a record's page | the table and its tab's count |
+| An outline level's *Add ...* (`docs/outlines.md`) | the parent read again, still open, the records open below it kept so, its count updated |
+| The home page's *+* | nothing to read again |
+
+A click with Ctrl, Cmd, Shift or Alt, or a middle click, still opens
+the form's page. A button of your own does the same with
+`ToolbarItem(..., dialog=True)`, or any link with
+`data-record-dialog="<the dialog's title>"`; the page hears
+`generic:record-dialog-saved` (`detail.result`: `{saved, id, label}`)
+on the link, bubbling.
+
+The form in the dialog is a popup (`?_popup=1&_relation_request=...`):
+the resource's form, a [form page](form-pages.md#in-a-dialog) or a
+classic `GenericCreateView` tells the dialog what it saved. A view that
+redirects a popup keeps the parameters with
+`generic.views.keep_popup(request, url)`. A frame the server refuses
+falls back to a window, the same way.
+
 ## Forms that are not a record's
 
 A form writing no model, a few fields of a record on a page of their
