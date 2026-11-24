@@ -31,6 +31,7 @@ from documents import codification, samples, versions, workflows
 from documents.models import (
     Codification,
     Document,
+    DocumentAccess,
     DocumentType,
     Folder,
     Review,
@@ -108,6 +109,15 @@ TYPE_OF = {
     "Report template": "Template",
     "Welcome guide": "Guide",
     "Salary grid": "Note",
+}
+
+#: title: (restricted, [(username, level)]) - who reads a document
+#: beyond its team, or instead of it. Architecture notes: Bob's alone,
+#: Alice no longer reads them. The release procedure: Engineering's,
+#: and Victor's (Legal) too, its published version.
+ACCESS = {
+    "Architecture notes": (True, [("bob", DocumentAccess.Level.WRITE)]),
+    "Release procedure": (False, [("viewer", DocumentAccess.Level.READ)]),
 }
 
 #: name: (team or None, description, [(name, kind, rule, people, roles,
@@ -318,6 +328,9 @@ EDITOR_MODELS = (
     "review",
     "reviewstep",
 )
+#: Who writes picks people and groups: a document's access list, a
+#: workflow's steps.
+PICKERS = ("view_user", "view_group")
 #: What everyone reads beside: the settings of the numbering.
 SETTINGS_MODELS = ("documenttype", "codification")
 WIKI_PAGE = tuple(
@@ -538,6 +551,7 @@ class Command(BaseCommand):
             self.workflows(teams)
 
         self.periodic(kinds)
+        self.accesses()
         # Files sent before their text was read: read now.
         versions.fill_text()
 
@@ -548,6 +562,27 @@ class Command(BaseCommand):
                 "quentin or manager - password demo."
             )
         )
+
+    def accesses(self) -> None:
+        """A document kept from part of its team, and one shared beyond
+        it - each once: a list already written stays as it is."""
+        User = get_user_model()
+
+        for title, (restricted, entries) in ACCESS.items():
+            document = Document.objects.filter(title=title).first()
+
+            if document is None or document.accesses.exists():
+                continue
+
+            for username, level in entries:
+                DocumentAccess.objects.create(
+                    document=document,
+                    user=User.objects.get(username=username),
+                    level=level,
+                )
+
+            if restricted:
+                Document.objects.filter(pk=document.pk).update(restricted=True)
 
     def periodic(self, kinds: dict[str, DocumentType]) -> None:
         """Types read again every so often - and the release procedure
@@ -714,6 +749,7 @@ class Command(BaseCommand):
                 ),
                 *(f"view_{model}" for model in SETTINGS_MODELS),
                 "view_team",
+                *PICKERS,
                 *WIKI_PAGE,
             )
         )
@@ -751,6 +787,7 @@ class Command(BaseCommand):
                     for verb in ("view", "add", "change", "delete")
                 ),
                 *WIKI_PAGE,
+                *PICKERS,
                 "see_every_team",
             )
         )

@@ -1154,3 +1154,63 @@ msgstr "Le fichier fusionné est prêt."
 
 msgid "The request failed. Please try again."
 msgstr "La requête a échoué. Veuillez réessayer."
+
+msgid "restricted"
+msgstr "restreint"
+
+msgid ""
+"Only the people and groups listed under Access read it - its team no longer "
+"does. Unticked, the list shares it beyond its team."
+msgstr ""
+"Seuls les personnes et groupes de la liste Accès le lisent - son équipe ne "
+"le lit plus. Décoché, la liste le partage au-delà de son équipe."
+
+msgid "person"
+msgstr "personne"
+
+msgid "group"
+msgstr "groupe"
+
+msgid "access"
+msgstr "accès"
+
+msgid "Read"
+msgstr "Lecture"
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "Name a person or a group - one of them."
+msgstr "Indiquez une personne ou un groupe - l'un des deux."
+
+msgid "Access"
+msgstr "Accès"
+
+msgid ""
+"Its team reads it. The list below adds people and groups, in any team, each "
+"reading it or writing it too; restricted, the list alone reads it. "
+"Administrators and managers read every document."
+msgstr ""
+"Son équipe le lit. La liste ci-dessous ajoute des personnes et des groupes, "
+"de toute équipe, chacun en lecture ou en écriture ; restreint, seule la "
+"liste le lit. Les administrateurs et les managers lisent tous les documents."
+
+msgid "You may not change the selected documents."
+msgstr "Vous ne pouvez pas modifier les documents sélectionnés."
+
+msgid "You may not change this document."
+msgstr "Vous ne pouvez pas modifier ce document."
+
+#, python-format
+msgid "Restricted to %(who)s"
+msgstr "Réservé à %(who)s"
+
+msgid "nobody"
+msgstr "personne"
+
+#, python-format
+msgid "Its team, and %(who)s"
+msgstr "Son équipe, et %(who)s"
+
+msgid "Its team"
+msgstr "Son équipe"

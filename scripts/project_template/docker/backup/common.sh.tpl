@@ -79,7 +79,10 @@ verify_backup() {
 
     (cd "$dir" && grep -E '^[0-9a-f]{64}  ' MANIFEST | sha256sum --check --quiet) \
         || fail "$name: a checksum does not match"
-    decrypt "$dir/database.dump.gpg" | pg_restore --list > /dev/null \
+    # pg_restore stops after the table of contents: the rest is read
+    # through, so gpg checks the whole file instead of a broken pipe.
+    decrypt "$dir/database.dump.gpg" \
+        | { pg_restore --list > /dev/null && cat > /dev/null; } \
         || fail "$name: the database dump cannot be read"
     decrypt "$dir/media.tar.gz.gpg" | tar -tzf - > /dev/null \
         || fail "$name: the files archive cannot be read"
