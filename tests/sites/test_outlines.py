@@ -513,6 +513,88 @@ class TestTheConfiguration:
         assert not any("editable" in level for level in levels)
 
 
+class TestOpenInDialog:
+    """A level's records opening their form in a dialog over the
+    outline, edit mode or not (``open_in_dialog``)."""
+
+    def levels(self, resource, rf, user) -> list[dict]:
+        request = rf.get("/")
+        request.user = user
+
+        return resource.get_outline_config(request)["levels"]
+
+    def test_off_by_default(self, redeclare, rf, admin_user):
+        resource = redeclare(Outline("equipment", "maintenances"))
+
+        assert not any(
+            "openInDialog" in level
+            for level in self.levels(resource, rf, admin_user)
+        )
+
+    def test_a_level_opts_in(self, admin_client):
+        outline = admin_client.get("/example/customer/").context[
+            "table_config"
+        ]["options"]["outline"]
+        top, tickets, entries, comments = outline["levels"]
+
+        assert entries["openInDialog"] is True
+        assert entries["changeUrl"] == "/example/timeentry/{id}/change/"
+        assert not any(
+            "openInDialog" in level for level in (top, tickets, comments)
+        )
+
+    def test_the_top_and_a_level_not_edited_too(
+        self, redeclare, rf, admin_user
+    ):
+        resource = redeclare(
+            Outline(
+                Level("equipment", open_in_dialog=True, editable=False),
+                "maintenances",
+                open_in_dialog=True,
+            )
+        )
+        top, equipment, visits = self.levels(resource, rf, admin_user)
+
+        assert top["openInDialog"] is True
+        assert top["changeUrl"] == "/example/supplier/{id}/change/"
+        # Not edited in place, but its form still opens over the page.
+        assert equipment["openInDialog"] is True
+        assert equipment["changeUrl"] == "/example/equipment/{id}/change/"
+        assert "editable" not in equipment
+        assert "openInDialog" not in visits
+
+        resource = redeclare(
+            Outline(
+                Level("equipment", open_in_dialog=True),
+                "maintenances",
+                editable=False,
+            )
+        )
+        top, equipment, visits = self.levels(resource, rf, admin_user)
+
+        assert equipment["openInDialog"] is True
+        assert "changeUrl" not in top
+        assert "changeUrl" not in visits
+
+    def test_a_reader_who_may_not_change_them_follows_the_link(
+        self, client, django_user_model
+    ):
+        reader = client_with(
+            client,
+            django_user_model,
+            "view_customer",
+            "view_ticket",
+            "view_timeentry",
+        )
+        outline = reader.get("/example/customer/").context["table_config"][
+            "options"
+        ]["outline"]
+        entries = outline["levels"][2]
+
+        assert "openInDialog" not in entries
+        assert "changeUrl" not in entries
+
+
 class TestColours:
     """Each model of an outline its colour: the rows of one told from
     another's at a glance."""

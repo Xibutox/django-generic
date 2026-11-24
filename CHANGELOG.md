@@ -21,6 +21,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   are unchanged. A customer's tickets now unfold into their time
   entries, then their comments (docs/outlines.md, Several relations a
   level).
+- Outlines, records in a dialog outside edit mode: `Level(...,
+  open_in_dialog=True)` (`Outline(open_in_dialog=True)` for the top)
+  opens a record's form in a dialog from its link without the *Edit*
+  button, for readers who may change it; once saved its section is read
+  again, the open records kept open. Off by default. A customer's time
+  entries open so (docs/outlines.md, Opening records in a dialog).
 - Wiki, access and members: a wiki is *open* (as before), *protected*
   (everyone reads, its editors write) or *private* (its members read),
   has an owner - whoever made it - and members, people or groups, each

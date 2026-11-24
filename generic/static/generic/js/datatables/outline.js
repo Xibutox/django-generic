@@ -189,8 +189,10 @@
     // The add form in a dialog over the outline (add_in_dialog).
     this.addInDialog = Boolean(config.addInDialog);
     this.rowKey = config.rowKey || "_pk";
-    // Opened in a dialog while editing, and dragged into another order.
+    // Opened in a dialog while editing - or always, the level opting
+    // in (open_in_dialog) - and dragged into another order.
     this.changeUrl = config.changeUrl || "";
+    this.openInDialog = Boolean(config.openInDialog);
     this.movable = Boolean(config.movable);
     // Its rows' colour, told from the other models' (tint()).
     this.color = config.color || "";
@@ -412,7 +414,8 @@
     this.body.addEventListener("keydown", function (event) {
       self.keydown(event);
     });
-    // Editing: a record's link opens its form in a dialog.
+    // Editing, or a level opening in a dialog: a record's link opens
+    // its form over the outline.
     this.body.addEventListener("click", function (event) {
       var link = event.target.closest && event.target.closest("a.tree-row__name, a.outline-row__open");
       var row = link && link.closest("tr.outline-row");
@@ -796,8 +799,8 @@
     return row;
   };
 
-  /** The icon at the end of a row: the record's page, or - editing -
-   * its form in a dialog. */
+  /** The icon at the end of a row: the record's page, or - editing,
+   * or its level opening in a dialog - its form in a dialog. */
   OutlineView.prototype.drawOpenLink = function (node) {
     var link = node.openLink;
 
@@ -1726,12 +1729,19 @@
   OutlineView.prototype.opensInDialog = function (node) {
     var level = node.level;
 
-    return Boolean(this.editing && level && level.changeUrl && generic().dialogs && generic().dialogs.record);
+    return Boolean(
+      level &&
+        level.changeUrl &&
+        (this.editing || level.openInDialog) &&
+        generic().dialogs &&
+        generic().dialogs.record
+    );
   };
 
   /** The record's whole form, over the outline: what its row does not
-   * show - a long text, the fields of its own - is written there. Its
-   * level is read again once it is saved. */
+   * show - a long text, the fields of its own - is written there. Once
+   * it is saved, its section is read again - the records that were
+   * open kept so - and so are its own relations that were open. */
   OutlineView.prototype.openRecord = function (node) {
     var self = this;
     var level = node.level;
@@ -1751,16 +1761,39 @@
         var parent = node.parent || self.topSection;
 
         self.recentWrites[level.resource + ":" + node.id] = Date.now();
-        self.load(parent, false, Math.min(200, Math.max(self.pageSize, parent.items.length)));
 
         if (result.saved) {
           generic().toast(core.format(t("\u201c%(name)s\u201d was saved."), { name: result.label || String(node.id) }), "success");
         }
 
-        if (node.element) {
-          node.element.focus();
-        }
+        return self.load(parent, false, self.limitOf(parent)).then(function () {
+          // Found again, in the place of the one opened.
+          var again =
+            parent.items.filter(function (item) {
+              return String(item.id) === String(node.id);
+            })[0] || null;
+          var open = again && again.expanded ? (again.sections || []).filter(function (section) {
+            return section.loaded;
+          }) : [];
+
+          return Promise.all(
+            open.map(function (section) {
+              return self.load(section, false, self.limitOf(section));
+            })
+          ).then(function () {
+            var row = (again || node).element;
+
+            if (row && row.parentNode) {
+              row.focus();
+            }
+          });
+        });
       });
+  };
+
+  /** As many records as `section` shows, to read it again whole. */
+  OutlineView.prototype.limitOf = function (section) {
+    return Math.min(200, Math.max(this.pageSize, section.items.length));
   };
 
   OutlineView.prototype.addsInDialog = function (level) {

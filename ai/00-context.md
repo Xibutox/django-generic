@@ -2025,11 +2025,13 @@ class CustomerResource(ModelResource):
     outline = Outline(
         Level("tickets", columns=("reference", "title", "assignee"),
               title=None, editable=True, color=None,
+              open_in_dialog=False,      # True: its records' form in a dialog, edit mode or not
               children=("time_entries", Level("comments"))),  # side by side
         title=_("Tickets and time"),         # button label; default "Outline"
         columns=("name", "segment"),         # the top level's; default visible list columns
         page_size=25, editable=True, max_columns=6, icon="account_tree",
-        color=None, colors=True)             # the top's colour; False: none
+        color=None, colors=True,             # the top's colour; False: none
+        open_in_dialog=False)                # the top's records in a dialog, as Level's
 ```
 
 Each name is a relation of the level above holding rows (reverse FK or
@@ -2140,7 +2142,14 @@ team's tickets tab (declared).
 
 Editing also gives, per level (`get_editing`): `changeUrl` (change
 permission; the first column's link and the open icon open the form in
-`Generic.dialogs.record`, the level reloaded once saved) and `movable`.
+`Generic.dialogs.record` while editing - `OutlineView.opensInDialog` -
+the level reloaded once saved) and `movable`. `Level(open_in_dialog=
+True)` (`Outline(open_in_dialog=True)` for the top; default False;
+`BoundOutline.opens_in_dialog`) gives `changeUrl` and `openInDialog:
+true` with the change permission, `editable=False` or not: its records
+open in the dialog outside edit mode too. Saved, `openRecord` reloads
+the record's section (`load`, `adopt` keeping open records open), then
+the record's own open sections (`limitOf`), and focuses it again.
 A level below the top reached by a foreign key keeps an order of its
 own when `Level(position=...)` names an integer field, or by default
 when the level resource's `ordering` (else `Meta.ordering`), its key
