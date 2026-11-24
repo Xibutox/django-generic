@@ -30,6 +30,16 @@ the same renderers - and the cells its resource lets this reader edit
 Nothing is loaded before it is unfolded: one request a level, a page
 at a time, from ``GET api/<app>/<model>/outline/``.
 
+A level may unfold into several relations, side by side, each drawn
+in the order declared with its own heading, columns, pages and *Add*::
+
+    outline = Outline(
+        Level("architectures", children=(
+            "milestones",
+            Level("platforms", children=("milestones",)),
+        )),
+    )
+
 Below the top, a level whose records are kept in an order of their own
 - an integer field its ordering starts with, ``position`` say - has
 them dragged into another order (``POST .../outline/move/``), and in
@@ -77,8 +87,12 @@ MAX_PARENTS = 25
 #: none.
 MAX_TEXT_COLUMNS = 2
 
+#: The most relations one outline unfolds into, every level counted.
+MAX_RELATIONS = 20
+
 #: The annotation carrying how many records of the next level a record
-#: has.
+#: has; a level unfolding into several relations gets one per relation,
+#: ``_outline_children_<n>``.
 CHILDREN = "_outline_children"
 
 #: Where the parent's key goes in a level's *Add* address.
@@ -109,18 +123,41 @@ class Level:
     #: The colour marking its rows, a CSS colour. Default: one of the
     #: palette's, a colour a model of the outline. ``False``: none.
     color: Any = None
+    #: The relations each record of the level unfolds into, side by
+    #: side in this order: names, or ``Level``. Default: the next level
+    #: of the outline's chain, if any.
+    children: Sequence[Any] = ()
+
+    def __post_init__(self) -> None:
+        children = self.children
+
+        if isinstance(children, (str, Level)):
+            children = (children,)
+
+        object.__setattr__(
+            self,
+            "children",
+            tuple(
+                child if isinstance(child, Level) else Level(name=child)
+                for child in (children or ())
+            ),
+        )
 
 
 class Outline:
     """Declare the levels a list unfolds into.
 
     ``Outline("equipment", "maintenances")``: each level a relation
-    name, or a ``Level`` to say more about it.
+    name, or a ``Level`` to say more about it - each one below the
+    level before. A level unfolding into several relations names them
+    in its ``children``; ``Outline(children=(...))`` does the same for
+    the top.
     """
 
     def __init__(
         self,
         *levels: Any,
+        children: Sequence[Any] = (),
         title: Any = None,
         columns: Sequence[str] | None = None,
         page_size: int = 25,
@@ -130,11 +167,15 @@ class Outline:
         color: Any = None,
         colors: bool = True,
     ) -> None:
-        #: The levels below the top, in order.
+        #: The levels below the top, in order: a chain, each one below
+        #: the one before.
         self.levels = tuple(
             level if isinstance(level, Level) else Level(name=level)
             for level in levels
         )
+        #: The relations the top unfolds into side by side, in place of
+        #: a chain.
+        self.children = Level(name="", children=children).children
         #: The button's tip and the outline's label. Default:
         #: "Outline".
         self.title = title
@@ -159,9 +200,45 @@ class Outline:
         self.colors = colors
 
     def __repr__(self) -> str:
+        if self.children:
+            names = ", ".join(repr(level.name) for level in self.children)
+
+            return f"Outline(children=({names}))"
+
         names = ", ".join(repr(level.name) for level in self.levels)
 
         return f"Outline({names})"
+
+
+def tree_of(outline: Outline, where: str) -> tuple[Level, ...]:
+    """The relations the top unfolds into, each carrying its own: the
+    chain of ``Outline(a, b, c)`` is ``a`` holding ``b`` holding ``c``."""
+    if outline.levels and outline.children:
+        raise ImproperlyConfigured(
+            f"{where} names levels and children: either a chain, "
+            f"Outline('a', 'b'), or the top's relations side by side, "
+            f"Outline(children=('a', 'b'))."
+        )
+
+    if outline.children:
+        return tuple(outline.children)
+
+    below: tuple[Level, ...] = ()
+
+    for level in reversed(outline.levels):
+        if below and level.children:
+            raise ImproperlyConfigured(
+                f"{where}: '{level.name}' has children and a level after "
+                f"it. Name every relation below it in its children, or "
+                f"give children to the last level only."
+            )
+
+        if below:
+            level = dataclasses.replace(level, children=below)
+
+        below = (level,)
+
+    return below
 
 
 def as_outline(value: Any, owner: str) -> Outline | None:
@@ -233,6 +310,12 @@ class OutlineLevel:
     #: The lookup from this level's records to their parent's key.
     back: str
     declared: Level | None
+    #: The level above, by its number; None for the top.
+    parent: int | None = None
+    #: The levels its records unfold into, by their numbers, in order.
+    children: list[int] = dataclasses.field(default_factory=list)
+    #: How far below the top: 0 for the top.
+    depth: int = 0
 
     def is_foreign_key(self) -> bool:
         """Whether each record has one parent, by a field of its own:
@@ -281,16 +364,12 @@ def resolve(
     if outline is None:
         return None
 
-    if not outline.levels:
+    tree = tree_of(outline, where)
+
+    if not tree:
         raise ImproperlyConfigured(
             f"{where} names no level: give it the relations to unfold, "
             f"Outline('equipment', 'maintenances')."
-        )
-
-    if len(outline.levels) > MAX_LEVELS:
-        raise ImproperlyConfigured(
-            f"{where} has {len(outline.levels)} levels below the top; "
-            f"{MAX_LEVELS} at most."
         )
 
     if not 1 <= outline.page_size <= MAX_LIMIT:
@@ -307,17 +386,45 @@ def resolve(
         )
     ]
 
-    for index, declared in enumerate(outline.levels, start=1):
-        model, back = relation_of(model, declared.name, where)
-        levels.append(
-            OutlineLevel(
-                index=index,
+    def walk(above: OutlineLevel, children: Sequence[Level]) -> None:
+        seen = set()
+
+        for declared in children:
+            if declared.name in seen:
+                raise ImproperlyConfigured(
+                    f"{where} unfolds {above.model.__name__} into "
+                    f"'{declared.name}' twice."
+                )
+
+            seen.add(declared.name)
+
+            if above.depth + 1 > MAX_LEVELS:
+                raise ImproperlyConfigured(
+                    f"{where} goes more than {MAX_LEVELS} levels below the "
+                    f"top, at '{declared.name}'; {MAX_LEVELS} at most."
+                )
+
+            if len(levels) > MAX_RELATIONS:
+                raise ImproperlyConfigured(
+                    f"{where} unfolds into more than {MAX_RELATIONS} "
+                    f"relations; {MAX_RELATIONS} at most."
+                )
+
+            related, back = relation_of(above.model, declared.name, where)
+            level = OutlineLevel(
+                index=len(levels),
                 name=declared.name,
-                model=model,
+                model=related,
                 back=back,
                 declared=declared,
+                parent=above.index,
+                depth=above.depth + 1,
             )
-        )
+            levels.append(level)
+            above.children.append(level.index)
+            walk(level, declared.children)
+
+    walk(levels[0], tree)
 
     for level in levels:
         columns = (
@@ -397,17 +504,27 @@ def is_position_field(model: Any, name: Any) -> bool:
     )
 
 
-def tail(outline: Outline, levels: list[OutlineLevel]) -> Outline | None:
-    """The outline below its first level, drawn from that level: what a
-    record's table of those rows unfolds into. None when nothing is
-    left to unfold."""
-    if len(levels) < 3:
+def tail(
+    outline: Outline, levels: list[OutlineLevel], name: str | None = None
+) -> Outline | None:
+    """The outline below one of the top's relations (``name``, default
+    the first), drawn from that relation's level: what a record's table
+    of those rows unfolds into. None when the top does not unfold into
+    it, or nothing is left to unfold below it."""
+    first = next(
+        (
+            levels[index].declared
+            for index in levels[0].children
+            if name is None or levels[index].name == name
+        ),
+        None,
+    )
+
+    if first is None or not first.children:
         return None
 
-    first = outline.levels[0]
-
     return Outline(
-        *outline.levels[1:],
+        children=first.children,
         title=outline.title,
         columns=first.columns,
         page_size=outline.page_size,
@@ -473,15 +590,41 @@ class BoundOutline:
     def get_levels(self, request: Any) -> list[OutlineLevel]:
         """The levels this reader may see: down to the first whose
         records they may not view."""
-        shown = []
+        shown: list[OutlineLevel] = []
+        numbers: set[int] = set()
 
         for level in self.levels:
+            if level.parent is not None and level.parent not in numbers:
+                continue
+
             if not self.resource_of(level).has_view_permission(request):
-                break
+                if level.index == 0:
+                    break
+
+                continue
 
             shown.append(level)
+            numbers.add(level.index)
 
         return shown
+
+    def children_shown(
+        self, level: OutlineLevel, levels: list[OutlineLevel]
+    ) -> list[OutlineLevel]:
+        """The levels below ``level`` among ``levels``, in order."""
+        by_index = {shown.index: shown for shown in levels}
+
+        return [by_index[i] for i in level.children if i in by_index]
+
+    def level_of(self, levels: list[OutlineLevel], value: Any) -> Any:
+        """The level a parameter names, among those shown."""
+        number = read_number(value, "level", 0)
+
+        for level in levels:
+            if level.index == number:
+                return level
+
+        raise NotFound(gettext("There is no such level."))
 
     def is_visible(self, request: Any) -> bool:
         """Something to unfold: the top and at least one level."""
@@ -717,6 +860,13 @@ class BoundOutline:
             resource = self.resource_of(level)
             columns = self.get_columns(request, level)
             entry = {
+                # The level's number, the one the endpoint is asked
+                # with; the level above and those below, by theirs.
+                "index": level.index,
+                "parent": level.parent,
+                "children": [
+                    child.index for child in self.children_shown(level, levels)
+                ],
                 "name": level.name,
                 "resource": resource.label_lower,
                 "title": self.get_title_of(level),
@@ -815,36 +965,27 @@ class BoundOutline:
         from generic.sites.summary import record_url
 
         levels = self.get_levels(request)
-        number = read_number(params.get("level"), "level", 0)
-
-        if number >= len(levels):
-            raise NotFound(gettext("There is no such level."))
-
+        level = self.level_of(levels, params.get("level"))
+        number = level.index
         offset = read_number(params.get("offset"), "offset", 0)
         limit = read_number(
             params.get("limit"), "limit", self.outline.page_size
         )
         limit = max(1, min(limit, MAX_LIMIT))
-        level = levels[number]
         resource = self.resource_of(level)
 
         if number > 0 and params.get("parents") not in (None, ""):
             return self.answer_many(
-                request, levels, number, params.get("parents"), limit, context
+                request, levels, level, params.get("parents"), limit, context
             )
 
         if number == 0:
-            rows = top
-
-            if len(levels) > 1:
-                rows = rows.annotate(
-                    **{CHILDREN: self.count_of(request, levels[1])}
-                )
+            rows = self.with_counts(request, top, level, levels)
         else:
             parent = self.find_parent(
-                request, levels[number - 1], params.get("parent")
+                request, self.levels[level.parent], params.get("parent")
             )
-            rows = self.children_of(request, levels, number, parent)
+            rows = self.children_of(request, levels, level, parent)
 
         total = rows.count()
 
@@ -859,19 +1000,42 @@ class BoundOutline:
                 rows[offset : offset + limit],
                 context,
                 record_url,
+                len(self.children_shown(level, levels)),
             ),
         }
+
+    def with_counts(
+        self,
+        request: Any,
+        rows: Any,
+        level: OutlineLevel,
+        levels: list[OutlineLevel],
+    ) -> Any:
+        """``rows``, records of ``level``, each with how many records it
+        holds of each level below: one annotation a relation."""
+        below = self.children_shown(level, levels)
+
+        if len(below) == 1:
+            return rows.annotate(
+                **{CHILDREN: self.count_of(request, below[0])}
+            )
+
+        return rows.annotate(
+            **{
+                f"{CHILDREN}_{place}": self.count_of(request, child)
+                for place, child in enumerate(below)
+            }
+        )
 
     def children_of(
         self,
         request: Any,
         levels: list[OutlineLevel],
-        number: int,
+        level: OutlineLevel,
         parent: Any,
     ) -> Any:
-        """The records of level ``number`` below ``parent``, in their
-        order, each with how many it holds of the next level."""
-        level = levels[number]
+        """The records of ``level`` below ``parent``, in their order,
+        each with how many it holds of the levels below."""
         rows = (
             self.resource_of(level)
             .get_list_queryset(request)
@@ -879,12 +1043,7 @@ class BoundOutline:
             .order_by(*self.get_ordering(request, level))
         )
 
-        if number + 1 < len(levels):
-            rows = rows.annotate(
-                **{CHILDREN: self.count_of(request, levels[number + 1])}
-            )
-
-        return rows
+        return self.with_counts(request, rows, level, levels)
 
     def items_of(
         self,
@@ -893,27 +1052,42 @@ class BoundOutline:
         rows: Any,
         context: dict[str, Any],
         record_url: Any,
+        relations: int = 1,
     ) -> list[dict[str, Any]]:
+        """Each record's key, page, row and how many records it holds
+        below - ``counts`` too, one a relation in order, when it unfolds
+        into several (``relations``)."""
         page = list(rows)
         serializer = resource.get_rows_serializer_class(request)(
             page, many=True, context=context
         )
+        items = []
 
-        return [
-            {
+        for obj, data in zip(page, serializer.data):
+            item = {
                 "id": force_str(obj.pk),
                 "url": record_url(self.site, request, obj),
                 "children": getattr(obj, CHILDREN, 0) or 0,
                 "row": data,
             }
-            for obj, data in zip(page, serializer.data)
-        ]
+
+            if relations > 1:
+                counts = [
+                    getattr(obj, f"{CHILDREN}_{place}", 0) or 0
+                    for place in range(relations)
+                ]
+                item["children"] = sum(counts)
+                item["counts"] = counts
+
+            items.append(item)
+
+        return items
 
     def answer_many(
         self,
         request: Any,
         levels: list[OutlineLevel],
-        number: int,
+        level: OutlineLevel,
         value: Any,
         limit: int,
         context: dict[str, Any],
@@ -939,7 +1113,7 @@ class BoundOutline:
                 }
             )
 
-        above = levels[number - 1]
+        above = self.levels[level.parent or 0]
         found = {}
 
         for key in dict.fromkeys(keys):
@@ -948,23 +1122,29 @@ class BoundOutline:
             except NotFound:
                 continue
 
-        resource = self.resource_of(levels[number])
+        resource = self.resource_of(level)
+        relations = len(self.children_shown(level, levels))
         groups = []
 
         for key, parent in found.items():
-            rows = self.children_of(request, levels, number, parent)
+            rows = self.children_of(request, levels, level, parent)
             groups.append(
                 {
                     "parent": key,
                     "total": rows.count(),
                     "offset": 0,
                     "items": self.items_of(
-                        request, resource, rows[:limit], context, record_url
+                        request,
+                        resource,
+                        rows[:limit],
+                        context,
+                        record_url,
+                        relations,
                     ),
                 }
             )
 
-        return {"level": number, "limit": limit, "groups": groups}
+        return {"level": level.index, "limit": limit, "groups": groups}
 
     def move(self, request: Any, data: Any) -> dict[str, Any]:
         """Put one record of a level before another of the same parent
@@ -977,12 +1157,11 @@ class BoundOutline:
         history and live updates follow - and each one asked for.
         """
         levels = self.get_levels(request)
-        number = read_number(data.get("level"), "level", 0)
+        level = self.level_of(levels, data.get("level"))
+        number = level.index
 
-        if not 0 < number < len(levels):
+        if number == 0:
             raise NotFound(gettext("There is no such level."))
-
-        level = levels[number]
 
         if not self.may_move(request, level):
             raise PermissionDenied(
@@ -992,7 +1171,7 @@ class BoundOutline:
         position = self.position_of(level) or ""
         resource = self.resource_of(level)
         parent = self.find_parent(
-            request, levels[number - 1], data.get("parent")
+            request, self.levels[level.parent or 0], data.get("parent")
         )
         siblings = list(
             resource.get_queryset(request)
