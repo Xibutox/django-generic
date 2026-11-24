@@ -183,6 +183,29 @@ back to deny*) does not refuse it. A frame refused all the same opens
 the form in a window of its own instead, which answers the outline the
 same way.
 
+### Opening records in a dialog, edit mode or not
+
+A level whose records are read and changed in their form more than in
+their cells - a time entry's note, a task's details - says
+`open_in_dialog=True`: the first column's link and the icon at the end
+of each row open the record's form in the dialog without the *Edit*
+button, for readers with the change permission on its model (others
+follow the link to its page). Once saved, the record's section is read
+again - the records open in it stay open, and so do the record's own
+relations that were open - and the record keeps the focus. The level
+need not be editable in place: `Level("tasks", editable=False,
+open_in_dialog=True)` opens its forms all the same. Off by default;
+`Outline(open_in_dialog=True)` does the same for the top level.
+
+```python
+outline = Outline(
+    Level("tickets", children=(
+        Level("time_entries", open_in_dialog=True),
+        "comments",
+    )),
+)
+```
+
 The rows alternate their colour as a table's do, counted down the
 page whatever their level.
 
@@ -276,6 +299,7 @@ or an `Outline`:
 | `icon` | `account_tree` | the button's icon |
 | `color` | the palette's | the top level's rows' colour, a CSS colour; `False`: none |
 | `colors` | `True` | `False`: no level coloured |
+| `open_in_dialog` | `False` | the top level's records open in a dialog, edit mode or not, as `Level`'s |
 
 | `Level(...)` | Default | Means |
 | --- | --- | --- |
@@ -286,6 +310,7 @@ or an `Outline`:
 | `position` | the integer field its ordering starts with | the field keeping the records in order among their parent's, dragged in edit mode; `False`: none |
 | `color` | the palette's next one for a model not seen above | its rows' colour, a CSS colour; `False`: none |
 | `children` | the next level of the chain | the relations each record unfolds into, side by side in this order: names or `Level(...)` |
+| `open_in_dialog` | `False` | `True`: its records' form opens in a dialog over the outline, edit mode or not, their section read again once saved ([above](#opening-records-in-a-dialog-edit-mode-or-not)) |
 
 A name is what `related` takes ([auto](auto.md#related-rows-the-one-thing-to-say)):
 a reverse foreign key's `related_name` or a many-to-many, either side.
@@ -406,6 +431,7 @@ editable_fields=("country",))`, or `list_editable=False` for no button.
   customer's tickets, then each ticket into two relations side by side,
   its time entries and its comments, with the columns named per level; the ticket's assignee, priority and due date and the time
   entry's date, agent, hours and note are the editable ones - what
-  those resources declare.
+  those resources declare. A time entry opens in a dialog, edit mode
+  or not (`open_in_dialog=True`).
 - Every outline colours its levels by model, nothing declared: a
   customer blue, its tickets green, their time entries amber.

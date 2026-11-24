@@ -1127,7 +1127,8 @@ class CustomerResource(ModelResource):
     # relations side by side - its time entries, then its comments -
     # the *Outline* button of the table's toolbar. The cells the
     # ticket, time entry and comment resources let their reader edit
-    # are edited there (docs/outlines.md).
+    # are edited there (docs/outlines.md). A time entry's link opens
+    # its form in a dialog, edit mode or not (open_in_dialog).
     outline = Outline(
         Level(
             "tickets",
@@ -1136,6 +1137,7 @@ class CustomerResource(ModelResource):
                 Level(
                     "time_entries",
                     columns=("spent_on", "agent", "hours", "note"),
+                    open_in_dialog=True,
                 ),
                 Level("comments", columns=("author", "body", "created_at")),
             ),

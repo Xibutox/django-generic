@@ -44,7 +44,7 @@ Below the top, a level whose records are kept in an order of their own
 - an integer field its ordering starts with, ``position`` say - has
 them dragged into another order (``POST .../outline/move/``), and in
 edit mode a record opens in a dialog for the fields its row does not
-show.
+show - in or out of edit mode with ``Level(open_in_dialog=True)``.
 
 The browser names a level by its number and a record by its key; the
 endpoint resolves both through the declaration and the resources' own
@@ -127,6 +127,10 @@ class Level:
     #: side in this order: names, or ``Level``. Default: the next level
     #: of the outline's chain, if any.
     children: Sequence[Any] = ()
+    #: Whether a record's link opens its form in a dialog over the
+    #: outline, edit mode or not - its section read again once saved.
+    #: Default: only while editing.
+    open_in_dialog: bool = False
 
     def __post_init__(self) -> None:
         children = self.children
@@ -166,6 +170,7 @@ class Outline:
         icon: str = "account_tree",
         color: Any = None,
         colors: bool = True,
+        open_in_dialog: bool = False,
     ) -> None:
         #: The levels below the top, in order: a chain, each one below
         #: the one before.
@@ -198,6 +203,9 @@ class Outline:
         #: Rows coloured by their model when True: the records of one
         #: model told from another's at a glance.
         self.colors = colors
+        #: The top level's records open in a dialog, as
+        #: ``Level.open_in_dialog``.
+        self.open_in_dialog = open_in_dialog
 
     def __repr__(self) -> str:
         if self.children:
@@ -636,6 +644,14 @@ class BoundOutline:
             level.declared is None or level.declared.editable
         )
 
+    def opens_in_dialog(self, level: OutlineLevel) -> bool:
+        """Whether the level's records open in a dialog outside edit
+        mode too: what the declaration says."""
+        if level.declared is None:
+            return bool(self.outline.open_in_dialog)
+
+        return bool(level.declared.open_in_dialog)
+
     # -- the order of a level -----------------------------------------
 
     def position_of(self, level: OutlineLevel) -> str | None:
@@ -739,13 +755,20 @@ class BoundOutline:
     ) -> dict[str, Any]:
         """What this reader may write in the level: its cells' schemas,
         the form its records open in, whether they are dragged."""
-        if not self.is_editable(level):
-            return {}
-
         resource = self.resource_of(level)
         editing: dict[str, Any] = {}
+        changes = resource.has_change_permission(request)
 
-        if resource.has_change_permission(request):
+        # Its records' form over the outline, in edit mode or - the
+        # level opting in - always (Level.open_in_dialog).
+        if changes and self.opens_in_dialog(level):
+            editing["changeUrl"] = resource.get_change_url_template()
+            editing["openInDialog"] = True
+
+        if not self.is_editable(level):
+            return editing
+
+        if changes:
             editing["changeUrl"] = resource.get_change_url_template()
 
         if self.may_move(request, level):
