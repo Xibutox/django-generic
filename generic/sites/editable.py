@@ -385,6 +385,35 @@ def group_changes(
     ]
 
 
+def cleared(serializer_class: Any, values: dict[str, Any]) -> dict:
+    """``values`` with an emptied control read as "no value".
+
+    A cell's control sends what it holds: an emptied date, number or
+    relation is ``""``, which only a text field takes. Where the field
+    may be null, that is what the reader meant - the form does the same
+    (``SchemaForm.normalize``). A field that may not be null keeps the
+    ``""``, and says it is required.
+    """
+    if "" not in values.values():
+        return values
+
+    fields = serializer_class().fields
+    result = dict(values)
+
+    for name, value in values.items():
+        field = fields.get(name)
+
+        if (
+            value == ""
+            and field is not None
+            and field.allow_null
+            and not isinstance(field, serializers.CharField)
+        ):
+            result[name] = None
+
+    return result
+
+
 def write(
     resource: Any,
     request: Any,
@@ -417,7 +446,7 @@ def write(
             )
             serializer = serializer_class(
                 target,
-                data=values,
+                data=cleared(serializer_class, values),
                 partial=True,
                 context={"request": request},
             )

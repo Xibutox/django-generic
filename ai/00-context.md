@@ -1058,6 +1058,8 @@ the same field schema the form renderer reads - and one commit is one
 `PATCH api/<app>/<model>/<pk>/cells/` keyed by **public column name**.
 `changes` may carry fields of several models; they are resolved, each
 validated by the form's own serializer, and saved in one transaction.
+An emptied control's `""` is `None` for a nullable non-text field
+(`editable.cleared`, as `SchemaForm.normalize` does for the form).
 `save_editable` is the whole of the write and replacing it replaces the
 write; calling `super()` keeps the default and adds to it. Errors come
 back keyed by column so they land on the cell. See `docs/editable.md`.

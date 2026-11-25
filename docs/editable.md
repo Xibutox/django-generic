@@ -407,6 +407,10 @@ POST api/<app>/<model>/rows/?_related=example.ticket.time_entries:12
 {"agent": 7, "hours": "1.25", "spent_on": "2026-09-24"}
 ```
 
+An emptied control sends `""`: a date, a number or a relation that may
+be null takes it as cleared (`null`), as the form does; one that may
+not answers that it is required. A text field keeps the empty text.
+
 Both carry the grid they were written in — `_grid` or `_related`, as
 the table's rows do — and read from it what the grid allows. The
 answer is the **whole row**, as the table would draw it now: changing

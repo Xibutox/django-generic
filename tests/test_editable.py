@@ -430,6 +430,53 @@ class TestWriting:
         assert entry.hours == Decimal("1.50")
 
 
+class TestEmptiedCells:
+    """A control emptied in its cell sends "", not null."""
+
+    def test_an_emptied_date_is_cleared(self, admin_client, support_desk):
+        ticket = support_desk["login"]
+        ticket.due_on = datetime.date(2026, 10, 1)
+        ticket.save()
+
+        response = patch(
+            admin_client,
+            f"/api/example/ticket/{ticket.pk}/cells/",
+            {"due_on": ""},
+        )
+        ticket.refresh_from_db()
+
+        assert response.status_code == 200, response.content
+        assert ticket.due_on is None
+
+    def test_an_emptied_relation_is_cleared(self, admin_client, support_desk):
+        ticket = support_desk["login"]
+        assert ticket.assignee_id is not None
+
+        response = patch(
+            admin_client,
+            f"/api/example/ticket/{ticket.pk}/cells/",
+            {"assignee": ""},
+        )
+        ticket.refresh_from_db()
+
+        assert response.status_code == 200, response.content
+        assert ticket.assignee_id is None
+
+    def test_a_date_that_may_not_be_empty_says_so(self, admin_client, entry):
+        response = patch(admin_client, cells(entry.pk), {"spent_on": ""})
+        entry.refresh_from_db()
+
+        assert response.status_code == 400
+        assert "spent_on" in response.json()
+        assert entry.spent_on == datetime.date(2026, 9, 1)
+
+    def test_an_emptied_text_stays_text(self, admin_client, entry):
+        patch(admin_client, cells(entry.pk), {"note": ""})
+        entry.refresh_from_db()
+
+        assert entry.note == ""
+
+
 class TestRefusals:
     def test_a_column_nobody_declared_is_refused(self, admin_client, entry):
         response = patch(admin_client, cells(entry.pk), {"ticket": 1})
