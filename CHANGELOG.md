@@ -97,6 +97,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   address.
 
 ### Fixed
+- A cell emptied in a grid or an outline is cleared: a date, number or
+  relation that may be null took the control's `""` as an invalid
+  value ("Date has wrong format"); it is now `null`, as in the form.
+  A field that may not be null still answers that it is required.
 - Outlines: a record without records of the next level unfolds when
   the reader may add them, its foot offering *Add …* for the first
   one; before, the add row only showed under a record holding at

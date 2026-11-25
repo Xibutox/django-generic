@@ -9,14 +9,6 @@ versions follow [semantic versioning](https://semver.org): from 1.0.0
 on, a declaration that works keeps working until the next major
 version.
 
-## [Unreleased]
-
-### Fixed
-- A cell emptied in a grid or an outline is cleared: a date, number or
-  relation that may be null took the control's `""` as an invalid
-  value ("Date has wrong format"); it is now `null`, as in the form.
-  A field that may not be null still answers that it is required.
-
 ## [1.6.0] - 2026-11-11
 
 ### Added
