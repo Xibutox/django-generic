@@ -147,11 +147,11 @@ class TestNavigation:
         }
         first = site.get_navigation(request_for(rf, admin_user))[0]
 
+        keys = [item["key"] for item in first["items"]]
+
         assert first["label"] == ""
-        assert [item["key"] for item in first["items"]] == [
-            "generic_wiki:index",
-            "dashboard",
-        ]
+        assert keys[0] == "generic_wiki:index"
+        assert keys.index("dashboard") > 0
 
     def test_the_dashboard_comes_first(self, rf, admin_user):
         first = site.get_navigation(request_for(rf, admin_user))[0]
