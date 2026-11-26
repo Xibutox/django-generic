@@ -199,7 +199,16 @@
         delay: 250,
         cache: true,
         data: function (params) {
-          return { q: params.term || "", page: params.page || 1 };
+          var data = { q: params.term || "", page: params.page || 1 };
+          // More of the query string, read at each search: a dependent
+          // relation sends the value it follows (forms/widgets.js).
+          var extra = typeof options.extraParams === "function" ? options.extraParams() : null;
+
+          Object.keys(extra || {}).forEach(function (key) {
+            data[key] = extra[key];
+          });
+
+          return data;
         },
         processResults: function (response) {
           return {

@@ -836,7 +836,81 @@
 
   SchemaForm.prototype.snapshot = function () {
     this.initialValues = this.values();
+    this.rememberForwarded();
     this.setDirty(false);
+  };
+
+  /* -- Dependent relations ---------------------------------------------
+   *
+   * A field with `forward` follows another one, `forward.on`: its
+   * autocomplete is narrowed to the options matching that field's value
+   * (widgets.js sends it), and it is emptied when that value changes -
+   * a contact of the customer no longer chosen means nothing. The
+   * server checks the pair again on save.
+   */
+
+  /** The value `name` holds: its control's, or the record's when the
+   *  form does not let the reader change it. */
+  SchemaForm.prototype.forwardedValue = function (name) {
+    var entry = this.fields.get(name);
+
+    if (entry && !entry.readOnly) {
+      return entry.widget.get();
+    }
+
+    var data = this.mode === "update" ? this.objectData || {} : this.config.initial || {};
+    var value = data[name];
+
+    return value === undefined ? null : value;
+  };
+
+  SchemaForm.prototype.rememberForwarded = function () {
+    var self = this;
+
+    this.forwarded = {};
+    this.fields.forEach(function (entry) {
+      var forward = entry.field.forward;
+
+      if (forward) {
+        self.forwarded[forward.on] = JSON.stringify(self.forwardedValue(forward.on));
+      }
+    });
+  };
+
+  /** `name` changed: empty the fields that follow it, if its value did. */
+  SchemaForm.prototype.followForwarded = function (name) {
+    var self = this;
+    var seen = this.forwarded || {};
+
+    if (!Object.prototype.hasOwnProperty.call(seen, name)) {
+      return;
+    }
+
+    var now = JSON.stringify(this.forwardedValue(name));
+
+    if (now === seen[name]) {
+      return;
+    }
+
+    seen[name] = now;
+    this.fields.forEach(function (entry) {
+      var forward = entry.field.forward;
+
+      if (!forward || forward.on !== name || forward.clear === false || entry.readOnly) {
+        return;
+      }
+
+      if (forms.widgets.isEmpty(entry.widget.get())) {
+        return;
+      }
+
+      entry.widget.set(entry.widget.multiple ? [] : null, {});
+      // Told like any change: the form is dirty, and a field that
+      // follows this one is emptied in turn.
+      (entry.widget.select || entry.widget.root).dispatchEvent(
+        new CustomEvent("generic:change", { bubbles: true })
+      );
+    });
   };
 
   SchemaForm.prototype.computeDirty = function () {
@@ -888,7 +962,13 @@
     });
 
     ["input", "change", "generic:change"].forEach(function (type) {
-      self.form.addEventListener(type, function () {
+      self.form.addEventListener(type, function (event) {
+        var box = event.target && event.target.closest ? event.target.closest(".sf-field") : null;
+
+        if (box && box.dataset.field && type !== "input") {
+          self.followForwarded(box.dataset.field);
+        }
+
         self.updateDirty();
       });
     });

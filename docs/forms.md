@@ -197,6 +197,72 @@ page's default sections and never sent back. A name that is a field of
 the model, or a value that is not a DRF field, raises
 `ImproperlyConfigured`.
 
+## Relations that follow another field
+
+A relation whose options depend on another field of the form - the
+contacts of the customer chosen, the agents of the team - is declared
+with `forwards` on the resource:
+
+```python
+from generic.sites import Forward
+
+
+class TicketResource(ModelResource):
+    forwards = (Forward("assignee", on="team", lookup="team"),)
+```
+
+- **The options.** Each search of `assignee`'s autocomplete sends the
+  value `team` holds (its control's, or the record's when the reader
+  may not change it), and the autocomplete offers only the agents whose
+  `team` matches. With no team chosen, every agent is offered. The
+  labels of values already held are not narrowed.
+  The resource's own autocomplete does it, and so does an
+  `AutocompleteView` named by an `autocompleteUrl` override.
+- **A change.** When `team` changes, the form empties `assignee`
+  (`clear=False` keeps it); a field following `assignee` is emptied in
+  turn.
+- **A save.** The pair is checked by the serializer, so the form, a
+  table's or an outline's cell, a bulk edit and an import all keep to
+  it: a value that is not one of the options of the `on` it is saved
+  with is refused ("Not one of the choices for this team."). When
+  `on` alone changes - a cell moving the ticket to another team - a
+  value it no longer allows is emptied, as the form empties it, if the
+  field may be empty and `clear` is set. A record saved before the
+  rule is left alone until one of the two changes.
+
+| Argument | Meaning |
+| --- | --- |
+| `field` | The relation whose options narrow |
+| `on` | The field of the same form they follow |
+| `lookup` | Path on the options' model matched against `on`'s value (its key, for a relation) |
+| `filter` | `filter(queryset, value, request)` returning the options, for a rule a lookup cannot say; one of `lookup` and `filter` |
+| `model` | The options' model when `field` is a plain key whose autocomplete `form_overrides` names (`autocompleteUrl`), so that a save is checked too |
+| `clear` | Empty `field` when `on` changes (True) |
+
+```python
+def tasks_of_project(queryset, value, request):
+    """A project's tasks, kept in another database."""
+    project = Project.objects.filter(pk=value).first()
+    return queryset.filter(project_id=project.board_id if project else None)
+
+
+class MilestoneResource(ModelResource):
+    form_overrides = {
+        "board_task": {"relation": True, "autocompleteUrl": TASKS_URL},
+    }
+    forwards = (
+        Forward("board_task", on="project", filter=tasks_of_project,
+                model=Task),
+    )
+```
+
+The browser names the form and the field (`forward_from`,
+`forward_field`, `forward_value`); what is filtered on is declared on
+the resource, never sent. A request naming a form the reader may
+neither add to nor change, or a field nobody declared, is not
+narrowed. A table cell's own autocomplete is not narrowed: the save
+holds it to the rule.
+
 ## Sections
 
 A field whose `section` names an undeclared section would silently

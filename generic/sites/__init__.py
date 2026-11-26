@@ -103,6 +103,7 @@ from generic.sites.form_pages import (
     FormViewMixin,
     ResourceFormPageView,
 )
+from generic.sites.forwards import Forward
 from generic.sites.grids import Grid
 from generic.sites.imports import Import
 from generic.sites.inlines import InlineResource, StackedInline, TabularInline
@@ -137,6 +138,7 @@ __all__ = [
     "DataResource",
     "Duplicate",
     "FormPageView",
+    "Forward",
     "FormViewMixin",
     "Lock",
     "GenericSite",

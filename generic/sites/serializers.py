@@ -1059,10 +1059,12 @@ def validate_tree_links(serializer: Any, attrs: dict[str, Any]) -> Any:
     """Refuse a link making a record part of itself (``generic.sites.
     trees``): the form, a table's cells and an import all validate
     through here."""
+    from generic.sites.forwards import check_forwards
     from generic.sites.trees import check_links
 
     attrs = FormModelSerializer.validate(serializer, attrs)
     check_links(serializer.Meta.model, serializer.instance, attrs)
+    check_forwards(serializer, attrs)
 
     return attrs
 
@@ -1191,6 +1193,8 @@ def build_form_serializer(
         **declared,
         **methods,
         "validate": validate_tree_links,
+        # Whose form it is: its dependent relations (``forwards``).
+        "generic_resource": source,
         "Meta": meta,
         "form_sections": tuple(sections),
         "form_overrides": merged,

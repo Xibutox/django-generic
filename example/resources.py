@@ -60,6 +60,7 @@ from generic.sites import (
     Chart,
     DataResource,
     Duplicate,
+    Forward,
     Grid,
     Import,
     Kpi,
@@ -237,6 +238,12 @@ class TicketResource(ModelResource):
     # read-only; the Triage grid below is where they are written.
     # Not the status: it moves through its transitions (below).
     editable_fields = ("team", "assignee", "priority", "due_on")
+
+    # An assignee is one of the team's agents: the form offers only
+    # those of the team chosen, and empties the assignee when the team
+    # changes; a cell or a bulk edit moving a ticket to another team
+    # leaves it unassigned. Saving checks it, whatever sent it.
+    forwards = (Forward("assignee", on="team", lookup="team"),)
 
     # What a selection of tickets may be given at once, from the list's
     # selection bar: *Edit the selected tickets*. Tags are added to or

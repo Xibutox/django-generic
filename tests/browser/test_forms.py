@@ -115,3 +115,30 @@ def test_a_reader_is_refused_the_add_page(
 
     assert response.status == 403
     expect(page.locator(".schema-form")).to_have_count(0)
+
+
+def test_an_assignee_follows_the_team(signed_in, desk):
+    """``Forward("assignee", on="team")``: the agents of the team chosen
+    are offered, and moving the ticket to another team empties it."""
+    page = signed_in
+    ticket = desk["login"]
+    page.goto(f"/example/ticket/{ticket.pk}/change/")
+    assignee = field(page, "assignee").locator(".select2-selection")
+    expect(assignee).to_contain_text("Camille Rousseau")
+
+    assignee.click()
+    options = page.locator(".select2-container--open .select2-results__option")
+    expect(options.filter(has_text="Lea Martin")).to_have_count(1)
+    expect(options.filter(has_text="Yanis Bertrand")).to_have_count(0)
+    page.keyboard.press("Escape")
+
+    pick(page, "team", "Infra", "Infrastructure")
+    expect(assignee).not_to_contain_text("Camille Rousseau")
+
+    pick(page, "assignee", "", "Yanis Bertrand")
+    page.get_by_role("button", name="Save", exact=True).click()
+
+    expect(page).to_have_url(re.compile(rf"/example/ticket/{ticket.pk}/$"))
+    ticket.refresh_from_db()
+    assert ticket.team.name == "Infrastructure"
+    assert ticket.assignee.name == "Yanis Bertrand"

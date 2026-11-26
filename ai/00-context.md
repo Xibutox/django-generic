@@ -144,6 +144,8 @@ generic/
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
+│   ├── forwards.py         Forward: a relation's options following another field
+│   │                       (autocomplete narrowed, emptied on change, checked on save)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── files.py            a record's files: download URL, which are shown, the answer
@@ -838,6 +840,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `form_overrides` | `{}` | per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText`, `widget` (`textarea`, `select`, `json`, `color`, `password`). A boolean is a switch labelled beside it; its box (`.sf-field--boolean`, forms and stacked inlines) keeps a label's room so it sits level with its row |
 | `form_field_kwargs` | `{}` | per field, DRF `extra_kwargs`: `{"token": {"write_only": True, "required": False}}`. What the field does; `form_overrides` is how it is drawn |
 | `form_extra_fields` | `{}` | questions the form asks that are not model fields (`{"note": serializers.CharField(required=False)}`): write only, placed by `fieldsets`, stripped before the save, read in `save_model` as `serializer.extra_values` |
+| `forwards` | `()` | dependent relations, `Forward("assignee", on="team", lookup="team")` (or `filter=(queryset, value, request)`, `model=` for a plain key with an `autocompleteUrl` override): the form sends `on`'s value with each search of the field's autocomplete (`forward_from`/`forward_field`/`forward_value`), which offers the matching options; it empties the field when `on` changes (`clear`); the serializer refuses a pair that does not match, and empties a value an `on` changed alone no longer allows (cells, bulk edit). Untouched pairs are left alone (`generic/sites/forwards.py`, `docs/forms.md#relations-that-follow-another-field`) |
 | `form_serializer` | None | hand-written `FormModelSerializer` |
 | `inlines` | `()` | `TabularInline` / `StackedInline` classes |
 | `view_on_site` | True | link to `get_absolute_url()` |

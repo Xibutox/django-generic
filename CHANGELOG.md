@@ -13,6 +13,15 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Relations that follow another field: `forwards = (Forward("assignee",
+  on="team", lookup="team"),)` on a resource. The form sends the team
+  chosen with each search of the assignee's autocomplete, which offers
+  that team's agents only, and empties the assignee when the team
+  changes. Saving checks the pair - form, cells, bulk edit, import -
+  and a cell moving a ticket to another team leaves it unassigned
+  (`filter=` for a rule a lookup cannot say, `model=` for a plain
+  key). A ticket's assignee now follows its team (docs/forms.md,
+  Relations that follow another field).
 - Outlines, several relations a level: `Level(..., children=(...))`
   unfolds each record into several relations side by side, drawn in
   the order declared, each with its heading, columns, permissions,

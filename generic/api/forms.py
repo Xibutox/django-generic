@@ -384,6 +384,9 @@ class FormSerializerMixin:
                 generic_settings.FORM_RELATED_POPUP_HEIGHT,
             ),
             "autocompleteUrl": overrides.get("autocompleteUrl"),
+            # The field whose value narrows the options, and empties
+            # this one when it changes (``generic.sites.forwards``).
+            "forward": overrides.get("forward"),
             # What a file chooser offers, and the largest file it takes:
             # both checked in the browser before anything is sent, and
             # by the server again.
