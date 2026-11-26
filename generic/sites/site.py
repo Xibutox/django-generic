@@ -52,6 +52,45 @@ _TOKEN_NAME = re.compile(r"^--[a-z0-9-]+$")
 _TOKEN_VALUE = re.compile(r"^[#a-zA-Z0-9 .,%()/-]+$")
 
 
+def forced_order(
+    groups: list[dict[str, Any]],
+    keys: Any,
+) -> list[dict[str, Any]]:
+    """``groups`` in the order ``GENERIC["NAVIGATION_ORDER"]`` forces.
+
+    The entries it names come first in their group, in its order; the
+    groups holding one come first after the top group (the dashboard's,
+    which stays first), by the first of theirs it names. Everything
+    else keeps its place after them.
+    """
+    if not keys:
+        return groups
+
+    rank: dict[str, int] = {}
+
+    for index, key in enumerate(keys):
+        rank.setdefault(str(key), index)
+
+    last = len(rank)
+
+    def place(item: dict[str, Any]) -> int:
+        return rank.get(str(item.get("key", "")), last)
+
+    for entry in groups:
+        # Stable: what is not named keeps its order, after.
+        entry["items"].sort(key=place)
+
+    top = [entry for entry in groups if entry["label"] == ""]
+    rest = [entry for entry in groups if entry["label"] != ""]
+    rest.sort(
+        key=lambda entry: min(
+            (place(item) for item in entry["items"]), default=last
+        )
+    )
+
+    return top + rest
+
+
 @dataclasses.dataclass
 class NavigationLink:
     """A navigation entry that is not a registered resource."""
@@ -808,6 +847,7 @@ class GenericSite:
                     "icon": "dashboard",
                     "order": -1,
                     "exact": True,
+                    "key": "dashboard",
                 }
             )
 
@@ -831,6 +871,7 @@ class GenericSite:
                         "url": url,
                         "icon": resource.get_icon(),
                         "order": resource.order,
+                        "key": resource.label_lower,
                     }
                 )
 
@@ -847,6 +888,7 @@ class GenericSite:
                         "url": url,
                         "icon": resource.get_icon(),
                         "order": resource.order,
+                        "key": resource.label_lower,
                     }
                 )
 
@@ -870,6 +912,7 @@ class GenericSite:
                         "icon": link.icon,
                         "order": link.order,
                         "target": link.target,
+                        "key": link.route or url,
                     }
                 )
 
@@ -878,6 +921,8 @@ class GenericSite:
         for entry in groups.values():
             entry["items"].sort(key=lambda item: item["order"])
             result.append(entry)
+
+        result = forced_order(result, generic_settings.NAVIGATION_ORDER)
 
         self.mark_current(result, request.path)
 

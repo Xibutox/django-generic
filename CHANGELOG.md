@@ -13,6 +13,12 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- The sidebar in a forced order: `GENERIC["NAVIGATION_ORDER"]` names
+  entries by key - `"<app>.<model>"`, `"<app>.<model>:<page>"`, a
+  link's route, `"dashboard"`. They come first in their group, in that
+  order, and their groups first after the top one; the rest keeps its
+  place. Each navigation entry carries its `key` (docs/sites.md, The
+  order of the sidebar).
 - Relations that follow another field: `forwards = (Forward("assignee",
   on="team", lookup="team"),)` on a resource. The form sends the team
   chosen with each search of the assignee's autocomplete, which offers

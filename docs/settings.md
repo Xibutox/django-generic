@@ -36,6 +36,7 @@ once instead of silently reading `None`.
 | `DJANGO_ADMIN` | `True` | Whether Django's admin answers at all. `False`: every page of the default admin site is a 404, its sign-in form included, even where `urls.py` mounts it, and the link goes ([Security](security.md#the-django-admin)) |
 | `THEME` | `{}` | Appearance parameters or tokens: `{"--ui-hue": "150", "--ui-contrast": "0.2"}` — see [Appearance](sites.md#appearance) |
 | `NAVIGATION` | `[]` | Extra sidebar groups — see [Sites](sites.md#navigation-and-the-dashboard) |
+| `NAVIGATION_ORDER` | `[]` | The sidebar's entries in a forced order, by key (`"<app>.<model>"`, `"<app>.<model>:<page>"`, a link's route); their groups first after the top one — see [Sites](sites.md#the-order-of-the-sidebar) |
 | `SEARCH_RESULTS_PER_RESOURCE` | `5` | Records per resource in the command palette |
 
 ## Data tables

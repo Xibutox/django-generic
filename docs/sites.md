@@ -786,6 +786,45 @@ GENERIC = {
 }
 ```
 
+### The order of the sidebar
+
+Without anything said, the top group comes first - the dashboard, the
+wiki and the framework's other links - then each group in the order
+its first resource registers (the order of `INSTALLED_APPS`), then the
+groups of links alone; inside a group, by `order` (0 by default), a
+resource's pages right after it.
+
+`NAVIGATION_ORDER` forces it, naming entries by key:
+
+```python
+GENERIC = {
+    "NAVIGATION_ORDER": [
+        # The tracking view first, then the lists of its group.
+        "app1.model1:active-platforms",
+        "app1.model1",
+        "app1.model2",
+        "app1.model3",
+        # Another application's group next.
+        "app2.model1",
+    ],
+}
+```
+
+| Entry | Key |
+| --- | --- |
+| A resource's list (or a data resource's) | `"<app>.<model>"`, as `"example.ticket"` |
+| One of its pages (`ResourcePage`, `@page`, a board, a calendar) | `"<app>.<model>:<page>"`, as `"example.customer:map"` |
+| A link (`site.add_link`, `NAVIGATION`) | its route, as `"generic_wiki:index"`, or its URL |
+| The dashboard | `"dashboard"` |
+
+The entries named come first in their group, in the order of the list;
+the groups holding one come first after the top group, which stays
+first, in the order of the first of theirs named. Every entry not
+named keeps its place after them, so naming one entry of each of your
+groups is enough to put your applications under the wiki and before
+the framework's own groups. A key that matches nothing is ignored.
+Each entry of `site.get_navigation()` carries its `key`.
+
 The dashboard lists the same resources with *Open* and *Add*, under the
 wiki pages pinned to it. Point `site.index_template` at your own
 template to change it, and feed it with:

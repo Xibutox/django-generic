@@ -2598,6 +2598,10 @@ write (also a *Write a message* button on the notifications page),
 when the URLconf is; `GenericConfig.arm_django_admin`),
 `THEME` (`{"--ui-hue": "150", "--ui-colorfulness": "1", "--ui-tint": "0.35",
 "--ui-contrast": "0", "--ui-stripes": "0.6"}`), `NAVIGATION`,
+`NAVIGATION_ORDER` (`[]`; keys `"<app>.<model>"`, `"<app>.<model>:<page>"`,
+a link's route or URL, `"dashboard"`: named entries first in their group,
+their groups first after the top one, the rest in place;
+`forced_order` in `generic/sites/site.py`; every entry carries its `key`),
 `SEARCH_RESULTS_PER_RESOURCE`, `TABLE_PAGE_SIZE`, `TABLE_DATETIME_FORMAT`
 (None: date/datetime cells travel as ISO in the active zone and
 `datatables/core.js formatStamp` draws them in `<html lang>`; a
