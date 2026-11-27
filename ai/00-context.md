@@ -144,6 +144,8 @@ generic/
 │   ├── dashboard.py        Kpi, Cards: key figures and record cards on the dashboard,
 │   │                       a declared filter tree each (§5.19)
 │   ├── editable.py         editable columns, as_grid, cell writes, new rows (add_options, create)
+│   ├── forwards.py         Forward: a relation's options following another field
+│   │                       (autocomplete narrowed, emptied on change, checked on save)
 │   ├── grids.py            Grid, BoundGrid, RowContext: grids over any set of rows (_grid)
 │   ├── summary.py          build_summary(): a record as typed JSON for its summary page
 │   ├── files.py            a record's files: download URL, which are shown, the answer
@@ -838,6 +840,7 @@ Also valid: `site.register(Model, ResourceClass)` or
 | `form_overrides` | `{}` | per field: `width` (1-12), `rows`, `placeholder`, `label`, `helpText`, `widget` (`textarea`, `select`, `json`, `color`, `password`). A boolean is a switch labelled beside it; its box (`.sf-field--boolean`, forms and stacked inlines) keeps a label's room so it sits level with its row |
 | `form_field_kwargs` | `{}` | per field, DRF `extra_kwargs`: `{"token": {"write_only": True, "required": False}}`. What the field does; `form_overrides` is how it is drawn |
 | `form_extra_fields` | `{}` | questions the form asks that are not model fields (`{"note": serializers.CharField(required=False)}`): write only, placed by `fieldsets`, stripped before the save, read in `save_model` as `serializer.extra_values` |
+| `forwards` | `()` | dependent relations, `Forward("assignee", on="team", lookup="team")` (or `filter=(queryset, value, request)`, `model=` for a plain key with an `autocompleteUrl` override): the form sends `on`'s value with each search of the field's autocomplete (`forward_from`/`forward_field`/`forward_value`), which offers the matching options; it empties the field when `on` changes (`clear`); the serializer refuses a pair that does not match, and empties a value an `on` changed alone no longer allows (cells, bulk edit). Untouched pairs are left alone (`generic/sites/forwards.py`, `docs/forms.md#relations-that-follow-another-field`) |
 | `form_serializer` | None | hand-written `FormModelSerializer` |
 | `inlines` | `()` | `TabularInline` / `StackedInline` classes |
 | `view_on_site` | True | link to `get_absolute_url()` |
@@ -1058,6 +1061,8 @@ the same field schema the form renderer reads - and one commit is one
 `PATCH api/<app>/<model>/<pk>/cells/` keyed by **public column name**.
 `changes` may carry fields of several models; they are resolved, each
 validated by the form's own serializer, and saved in one transaction.
+An emptied control's `""` is `None` for a nullable non-text field
+(`editable.cleared`, as `SchemaForm.normalize` does for the form).
 `save_editable` is the whole of the write and replacing it replaces the
 write; calling `super()` keeps the default and adds to it. Errors come
 back keyed by column so they land on the cell. See `docs/editable.md`.
@@ -2593,6 +2598,10 @@ write (also a *Write a message* button on the notifications page),
 when the URLconf is; `GenericConfig.arm_django_admin`),
 `THEME` (`{"--ui-hue": "150", "--ui-colorfulness": "1", "--ui-tint": "0.35",
 "--ui-contrast": "0", "--ui-stripes": "0.6"}`), `NAVIGATION`,
+`NAVIGATION_ORDER` (`[]`; keys `"<app>.<model>"`, `"<app>.<model>:<page>"`,
+a link's route or URL, `"dashboard"`: named entries first in their group,
+their groups first after the top one, the rest in place;
+`forced_order` in `generic/sites/site.py`; every entry carries its `key`),
 `SEARCH_RESULTS_PER_RESOURCE`, `TABLE_PAGE_SIZE`, `TABLE_DATETIME_FORMAT`
 (None: date/datetime cells travel as ISO in the active zone and
 `datatables/core.js formatStamp` draws them in `<html lang>`; a

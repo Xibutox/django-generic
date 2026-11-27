@@ -109,6 +109,50 @@ class TestNavigation:
             "Send a notice",
         ]
 
+    def test_an_order_may_be_forced(self, rf, admin_user, settings):
+        """``NAVIGATION_ORDER`` names entries by key: they come first in
+        their group, in its order, and their groups first after the
+        top one. An unknown key is ignored."""
+        settings.GENERIC = {
+            **settings.GENERIC,
+            "NAVIGATION_ORDER": [
+                "example.agent",
+                "example.customer:map",
+                "example.customer",
+                "nobody.nothing",
+                "example.team",
+            ],
+        }
+        groups = site.get_navigation(request_for(rf, admin_user))
+        labels = self.labels(groups)
+
+        assert labels[:3] == ["", "Organisation", "Support"]
+        organisation, support = groups[1], groups[2]
+        assert [item["label"] for item in organisation["items"]] == [
+            "Agents",
+            "Teams",
+            "Tags",
+        ]
+        assert [item["label"] for item in support["items"]][:4] == [
+            "Customer map",
+            "Customers",
+            "Tickets",
+            "Due dates",
+        ]
+
+    def test_the_wiki_stays_in_the_top_group(self, rf, admin_user, settings):
+        settings.GENERIC = {
+            **settings.GENERIC,
+            "NAVIGATION_ORDER": ["generic_wiki:index", "dashboard"],
+        }
+        first = site.get_navigation(request_for(rf, admin_user))[0]
+
+        keys = [item["key"] for item in first["items"]]
+
+        assert first["label"] == ""
+        assert keys[0] == "generic_wiki:index"
+        assert keys.index("dashboard") > 0
+
     def test_the_dashboard_comes_first(self, rf, admin_user):
         first = site.get_navigation(request_for(rf, admin_user))[0]
 
@@ -180,6 +224,8 @@ class TestNavigation:
                         "icon": "bar_chart",
                         "order": 0,
                         "target": "",
+                        # What NAVIGATION_ORDER names it by.
+                        "key": "/weekly/",
                     }
                 ],
             }

@@ -4843,6 +4843,10 @@ msgstr "Ce n'est pas une valeur de ce type."
 msgid "Not one of the choices."
 msgstr "Ce n'est pas l'un des choix."
 
+#, python-format
+msgid "Not one of the choices for this %(field)s."
+msgstr "Ce n'est pas l'un des choix pour ce champ « %(field)s »."
+
 msgid "Longer than the longest."
 msgstr "Plus long que la longueur maximale."
 

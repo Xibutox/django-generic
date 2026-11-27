@@ -81,6 +81,7 @@ from generic.api.viewsets import FORM_PARSERS, FormSchemaViewSetMixin
 from generic.conf import generic_settings
 from generic.openapi import framework_schema
 from generic.reports import Report
+from generic.sites.forwards import narrow_autocomplete
 from generic.sites.grids import ARGUMENT_ERRORS, GRID_PARAM
 from generic.sites.related import RELATED_PARAM
 from generic.views.delete import collect_deletion_summary
@@ -1596,6 +1597,10 @@ class ResourceViewSet(
 
         if len(term) < generic_settings.AUTOCOMPLETE_MIN_INPUT_LENGTH:
             return Response({"results": [], "pagination": {"more": False}})
+
+        # Asked by a form for a field that follows another: the options
+        # matching that one's value (``forwards``).
+        queryset = narrow_autocomplete(queryset, request, resource.site)
 
         queryset = resource.rank_search_results(
             request,

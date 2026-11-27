@@ -521,6 +521,8 @@ class PagesMixin:
                         "url": url,
                         "icon": declared.icon,
                         "order": self.order,  # type: ignore[attr-defined]
+                        "key": f"{getattr(self, 'label_lower', '')}:"
+                        f"{declared.name}",
                     }
                 )
 

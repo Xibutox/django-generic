@@ -87,6 +87,14 @@ class AutocompleteView(APIView):
 
         return self.queryset.all()
 
+    def narrow_queryset(self, request: Any) -> QuerySet:
+        """The options, narrowed when a form asks for a field that
+        follows another one (a resource's ``forwards``)."""
+        from generic.sites import site
+        from generic.sites.forwards import narrow_autocomplete
+
+        return narrow_autocomplete(self.get_queryset(), request, site)
+
     def filter_queryset(
         self,
         queryset: QuerySet,
@@ -151,7 +159,7 @@ class AutocompleteView(APIView):
         offset = (page - 1) * self.page_size
 
         queryset = self.order_queryset(
-            self.filter_queryset(self.get_queryset(), term)
+            self.filter_queryset(self.narrow_queryset(request), term)
         )
 
         # One extra row is what tells Select2 whether to keep scrolling,

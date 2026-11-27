@@ -49,6 +49,12 @@ DEFAULTS: dict[str, Any] = {
     # [{"title": "Reports", "items": [{"title": "Weekly", "route":
     #   "reports:weekly", "icon": "bar_chart", "permission": "..."}]}]
     "NAVIGATION": [],
+    # The sidebar's entries in a forced order, by key: a resource's
+    # "<app>.<model>", one of its pages' "<app>.<model>:<page>", a
+    # link's route or URL, "dashboard". Named entries come first in
+    # their group, in this order, and their groups first after the top
+    # one (the dashboard's, the wiki's); the rest follow as before.
+    "NAVIGATION_ORDER": [],
     # Path of the events WebSocket. None switches the client off, for a
     # project served by a WSGI server.
     "EVENTS_WEBSOCKET_URL": "/ws/events/",

@@ -530,6 +530,32 @@
     var searchable =
       relation || multiple || choices.length > SEARCHABLE_CHOICES;
 
+    /**
+     * A relation that follows another field (`field.forward`, from a
+     * resource's `forwards`): each search sends that field's value, and
+     * the server offers the options matching it.
+     */
+    function forwardParams() {
+      var forward = field.forward;
+      var form = context.form;
+
+      if (!forward || !form || typeof form.forwardedValue !== "function") {
+        return null;
+      }
+
+      var value = form.forwardedValue(forward.on);
+
+      if (value === null || value === undefined) {
+        value = "";
+      }
+
+      return {
+        forward_from: forward.from,
+        forward_field: forward.field,
+        forward_value: Array.isArray(value) ? value.join(",") : String(value)
+      };
+    }
+
     function mount() {
       if (!searchable || enhanced || !Generic.select2 || !Generic.select2.available()) {
         return;
@@ -537,6 +563,7 @@
 
       Generic.select2.init(select, {
         url: field.autocompleteUrl,
+        extraParams: forwardParams,
         placeholder: field.placeholder,
         allowClear: !multiple && (!field.required || field.allowNull),
         disabled: select.disabled,

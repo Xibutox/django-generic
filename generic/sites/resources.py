@@ -28,6 +28,8 @@ from generic.api.filters import apply_search, split_search_terms
 from generic.conf import generic_settings
 from generic.search.ranking import rank
 from generic.sites.decorators import action
+from generic.sites.forwards import Forward
+from generic.sites.forwards import form_overrides as forward_overrides
 from generic.sites.pages import PagesMixin
 from generic.sites.serializers import (
     ROW_KEY,
@@ -268,6 +270,10 @@ class ModelResource(PagesMixin):
     field_permissions: dict[str, Any] = {}
     #: Presentation per field: width, placeholder, label...
     form_overrides: dict[str, dict[str, Any]] = {}
+    #: Relations whose options follow another field of the form:
+    #: ``Forward("contact", on="customer", lookup="customer")``
+    #: (generic.sites.forwards, docs/forms.md).
+    forwards: tuple[Forward, ...] = ()
     #: Serializer options per field, as DRF's ``extra_kwargs``:
     #: ``{"password": {"write_only": True, "required": False}}``. This
     #: is the behaviour of the field - what may be written, what is
@@ -2004,7 +2010,7 @@ class ModelResource(PagesMixin):
                 fields=self.get_fields(),
                 readonly_fields=self.get_readonly_fields(),
                 fieldsets=self.get_fieldsets(),
-                overrides=self.form_overrides,
+                overrides=forward_overrides(self, self.form_overrides),
                 extra_kwargs=self.form_field_kwargs,
                 extra_fields=self.form_extra_fields,
                 source=self,

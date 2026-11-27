@@ -13,6 +13,21 @@ The format is [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- The sidebar in a forced order: `GENERIC["NAVIGATION_ORDER"]` names
+  entries by key - `"<app>.<model>"`, `"<app>.<model>:<page>"`, a
+  link's route, `"dashboard"`. They come first in their group, in that
+  order, and their groups first after the top one; the rest keeps its
+  place. Each navigation entry carries its `key` (docs/sites.md, The
+  order of the sidebar).
+- Relations that follow another field: `forwards = (Forward("assignee",
+  on="team", lookup="team"),)` on a resource. The form sends the team
+  chosen with each search of the assignee's autocomplete, which offers
+  that team's agents only, and empties the assignee when the team
+  changes. Saving checks the pair - form, cells, bulk edit, import -
+  and a cell moving a ticket to another team leaves it unassigned
+  (`filter=` for a rule a lookup cannot say, `model=` for a plain
+  key). A ticket's assignee now follows its team (docs/forms.md,
+  Relations that follow another field).
 - Outlines, several relations a level: `Level(..., children=(...))`
   unfolds each record into several relations side by side, drawn in
   the order declared, each with its heading, columns, permissions,
@@ -97,6 +112,10 @@ The format is [Keep a Changelog](https://keepachangelog.com).
   address.
 
 ### Fixed
+- A cell emptied in a grid or an outline is cleared: a date, number or
+  relation that may be null took the control's `""` as an invalid
+  value ("Date has wrong format"); it is now `null`, as in the form.
+  A field that may not be null still answers that it is required.
 - Outlines: a record without records of the next level unfolds when
   the reader may add them, its foot offering *Add …* for the first
   one; before, the add row only showed under a record holding at
