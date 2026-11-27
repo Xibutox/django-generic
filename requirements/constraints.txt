@@ -172,7 +172,7 @@ et-xmlfile==2.0.0
     # via openpyxl
 factory-boy==3.3.3
     # via django-generic
-faker==40.54.0
+faker==40.63.0
     # via
     #   django-generic
     #   factory-boy
@@ -321,7 +321,7 @@ pyopenssl==26.4.0
     # via twisted
 pyparsing==3.3.3
     # via pip-requirements-parser
-pypdf==7.1.0
+pypdf==7.2.0
     # via -r requirements/../docmanager/requirements.txt
 pytest==9.2.0
     # via
